@@ -13,26 +13,26 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, date, time, location, num_teams, price_per_player, status")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: event }, { count: confirmedCount }, { data: myAttendance }] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id, date, time, location, num_teams, price_per_player, status")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("attendance")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", id)
+      .eq("status", "confirmed"),
+    supabase
+      .from("attendance")
+      .select("status")
+      .eq("event_id", id)
+      .eq("profile_id", profile.id)
+      .maybeSingle(),
+  ]);
 
   if (!event) notFound();
-
-  const { count: confirmedCount } = await supabase
-    .from("attendance")
-    .select("id", { count: "exact", head: true })
-    .eq("event_id", id)
-    .eq("status", "confirmed");
-
-  const { data: myAttendance } = await supabase
-    .from("attendance")
-    .select("status")
-    .eq("event_id", id)
-    .eq("profile_id", profile.id)
-    .maybeSingle();
 
   const statusInfo = EVENT_STATUS_LABELS[event.status];
   const isFinished = event.status === "finished";

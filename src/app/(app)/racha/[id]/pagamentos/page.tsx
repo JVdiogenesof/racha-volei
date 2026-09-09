@@ -10,23 +10,16 @@ export default async function PagamentosPage({ params }: { params: Promise<{ id:
   await requireOrganizer();
   const supabase = await createClient();
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, date, price_per_player")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: event }, { data: confirmed }, { data: paymentRows }] = await Promise.all([
+    supabase.from("events").select("id, date, price_per_player").eq("id", id).maybeSingle(),
+    supabase
+      .from("attendance")
+      .select("profile_id, profiles(full_name)")
+      .eq("event_id", id)
+      .eq("status", "confirmed"),
+    supabase.from("payments").select("profile_id, paid").eq("event_id", id),
+  ]);
   if (!event) notFound();
-
-  const { data: confirmed } = await supabase
-    .from("attendance")
-    .select("profile_id, profiles(full_name)")
-    .eq("event_id", id)
-    .eq("status", "confirmed");
-
-  const { data: paymentRows } = await supabase
-    .from("payments")
-    .select("profile_id, paid")
-    .eq("event_id", id);
 
   const paidByProfile = new Map((paymentRows ?? []).map((p) => [p.profile_id, p.paid]));
   const price = Number(event.price_per_player ?? 0);

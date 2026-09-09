@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
-import { setAttendance } from "./actions";
+import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
+import { setAttendance, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -15,28 +16,20 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, date, status")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }] = await Promise.all([
+    supabase.from("events").select("id, date, status").eq("id", id).maybeSingle(),
+    supabase
+      .from("attendance")
+      .select("profile_id, status, profiles(full_name, avatar_url)")
+      .eq("event_id", id)
+      .order("confirmed_at", { ascending: true }),
+    supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+  ]);
 
   if (!event) notFound();
 
   const eventFinished = event.status === "finished";
-
-  const { data: attendanceList } = await supabase
-    .from("attendance")
-    .select("status, profiles(full_name, avatar_url)")
-    .eq("event_id", id)
-    .order("confirmed_at", { ascending: true });
-
-  const { data: myAttendance } = await supabase
-    .from("attendance")
-    .select("status")
-    .eq("event_id", id)
-    .eq("profile_id", profile.id)
-    .maybeSingle();
+  const eventCancelled = event.status === "cancelled";
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
 
@@ -52,7 +45,11 @@ export default async function ConfirmarPresencaPage({
         </p>
       </div>
 
-      {eventFinished ? (
+      {eventCancelled ? (
+        <p className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-4 text-sm text-orange-700">
+          Esse racha foi cancelado — não dá mais pra confirmar ou desmarcar presença.
+        </p>
+      ) : eventFinished ? (
         <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
           Esse racha já terminou — não dá mais pra confirmar ou desmarcar presença.
         </p>
@@ -80,15 +77,23 @@ export default async function ConfirmarPresencaPage({
       <section>
         <h2 className="font-semibold text-brand-navy">Confirmados ({confirmados.length})</h2>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {confirmados.map((a, i) => {
+          {confirmados.map((a) => {
             const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
             return (
               <li
-                key={i}
+                key={a.profile_id}
                 className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5"
               >
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                 <span className="truncate text-sm text-brand-navy">{p?.full_name}</span>
+                {profile.is_organizer && (
+                  <RemoveAttendanceButton
+                    eventId={id}
+                    profileId={a.profile_id}
+                    fullName={p?.full_name ?? "esse jogador"}
+                    action={removeAttendance}
+                  />
+                )}
               </li>
             );
           })}

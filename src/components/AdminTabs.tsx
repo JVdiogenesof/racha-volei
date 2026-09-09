@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserCheck, SlidersHorizontal, CalendarPlus } from "lucide-react";
+import { UserCheck, SlidersHorizontal, CalendarPlus, Award } from "lucide-react";
 
 const TABS = [
   { href: "/admin/solicitacoes", label: "Solicitações", icon: UserCheck },
   { href: "/admin/jogadores", label: "Notas dos jogadores", icon: SlidersHorizontal },
   { href: "/admin/rachas", label: "Criar racha", icon: CalendarPlus },
+  { href: "/admin/ranking", label: "Rankings", icon: Award },
 ];
 
 export function AdminTabs() {

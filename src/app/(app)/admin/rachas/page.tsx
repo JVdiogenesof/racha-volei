@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
-import { createEvent, updateEvent, deleteEvent } from "./actions";
+import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 
 export default async function AdminRachasPage() {
   await requireOrganizer();
@@ -83,7 +83,13 @@ export default async function AdminRachasPage() {
         <h2 className="font-semibold text-brand-navy">Rachas criados</h2>
         <div className="mt-3 space-y-2">
           {events?.map((e) => (
-            <EventListItem key={e.id} event={e} updateEvent={updateEvent} deleteEvent={deleteEvent} />
+            <EventListItem
+              key={e.id}
+              event={e}
+              updateEvent={updateEvent}
+              cancelEvent={cancelEvent}
+              deleteEvent={deleteEvent}
+            />
           ))}
           {!events?.length && <p className="text-sm text-gray-500">Nenhum racha criado ainda.</p>}
         </div>

@@ -26,31 +26,32 @@ export async function getNotifications(
 ): Promise<NotificationItem[]> {
   const items: NotificationItem[] = [];
 
-  if (profile.is_organizer) {
-    const { count: pendingCount } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "pending");
-
-    if (pendingCount) {
-      items.push({
-        id: "admin-pending",
-        type: "admin_pending",
-        message:
-          pendingCount === 1
-            ? "1 solicitação de cadastro esperando aprovação"
-            : `${pendingCount} solicitações de cadastro esperando aprovação`,
-        href: "/admin/solicitacoes",
-      });
-    }
-  }
-
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, date, status, price_per_player")
-    .gte("date", twoWeeksAgo)
-    .order("date", { ascending: true });
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [{ count: pendingCount }, { data: events }, { count: newAvisosCount }] = await Promise.all([
+    profile.is_organizer
+      ? supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending")
+      : Promise.resolve({ count: 0 }),
+    supabase
+      .from("events")
+      .select("id, date, status, price_per_player")
+      .gte("date", twoWeeksAgo)
+      .order("date", { ascending: true }),
+    supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
+  ]);
+
+  if (pendingCount) {
+    items.push({
+      id: "admin-pending",
+      type: "admin_pending",
+      message:
+        pendingCount === 1
+          ? "1 solicitação de cadastro esperando aprovação"
+          : `${pendingCount} solicitações de cadastro esperando aprovação`,
+      href: "/admin/solicitacoes",
+    });
+  }
 
   const eventIds = (events ?? []).map((e) => e.id);
 
@@ -118,12 +119,6 @@ export async function getNotifications(
       });
     }
   }
-
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-  const { count: newAvisosCount } = await supabase
-    .from("announcements")
-    .select("id", { count: "exact", head: true })
-    .gte("created_at", threeDaysAgo);
 
   if (newAvisosCount) {
     items.push({

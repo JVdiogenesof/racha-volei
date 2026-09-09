@@ -72,6 +72,19 @@ export async function updateEvent(formData: FormData) {
   revalidatePath(`/racha/${eventId}`);
 }
 
+export async function cancelEvent(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+
+  const { error } = await supabase.from("events").update({ status: "cancelled" }).eq("id", eventId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/rachas");
+  revalidatePath("/racha");
+  revalidatePath(`/racha/${eventId}`);
+}
+
 export async function deleteEvent(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

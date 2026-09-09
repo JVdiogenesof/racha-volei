@@ -10,9 +10,26 @@ export async function voteMvp(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const votedForProfileId = String(formData.get("votedForProfileId"));
 
+  if (votedForProfileId === profile.id) {
+    throw new Error("Você não pode votar em si mesmo.");
+  }
+
   const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
   if (event?.status !== "finished") {
     throw new Error("A votação de MVP só abre depois que o racha for finalizado.");
+  }
+
+  const [{ count: confirmedCount }, { count: votesCount }] = await Promise.all([
+    supabase
+      .from("attendance")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .eq("status", "confirmed"),
+    supabase.from("mvp_votes").select("id", { count: "exact", head: true }).eq("event_id", eventId),
+  ]);
+
+  if ((confirmedCount ?? 0) > 0 && (votesCount ?? 0) > (confirmedCount ?? 0) / 2) {
+    throw new Error("A votação já foi encerrada — a maioria já votou.");
   }
 
   const { error } = await supabase.from("mvp_votes").insert({

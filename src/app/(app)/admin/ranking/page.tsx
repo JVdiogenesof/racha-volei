@@ -1,0 +1,113 @@
+import { createClient } from "@/lib/supabase/server";
+import { requireOrganizer } from "@/lib/auth";
+import { getRankingCounts } from "@/lib/rankings";
+import { RankingAdjustControl } from "@/components/RankingAdjustControl";
+import { DeleteRankingAdjustmentButton } from "@/components/DeleteRankingAdjustmentButton";
+import { adjustRanking, deleteRankingAdjustment } from "./actions";
+
+const METRIC_LABELS: Record<string, string> = {
+  attendance: "presença",
+  mvp: "MVP",
+  wins: "vitória",
+};
+
+export default async function AdminRankingPage() {
+  await requireOrganizer();
+  const supabase = await createClient();
+
+  const [{ data: profiles }, counts, { data: adjustmentRows }] = await Promise.all([
+    supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name"),
+    getRankingCounts(supabase),
+    supabase
+      .from("ranking_adjustments")
+      .select("id, metric, delta, reason, profiles!ranking_adjustments_profile_id_profiles_id_fk(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-brand-navy">Editar rankings</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Ajuste manualmente presenças, MVPs e vitórias de qualquer jogador pra corrigir algum problema.
+        </p>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-gray-200">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+              <th className="px-4 py-2.5">Jogador</th>
+              <th className="px-4 py-2.5">Presenças</th>
+              <th className="px-4 py-2.5">MVPs</th>
+              <th className="px-4 py-2.5">Vitórias</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {(profiles ?? []).map((p) => (
+              <tr key={p.id}>
+                <td className="px-4 py-2.5 font-medium text-brand-navy">{p.full_name}</td>
+                <td className="px-4 py-2.5">
+                  <RankingAdjustControl
+                    profileId={p.id}
+                    metric="attendance"
+                    value={counts.attendance.get(p.id) ?? 0}
+                    action={adjustRanking}
+                  />
+                </td>
+                <td className="px-4 py-2.5">
+                  <RankingAdjustControl
+                    profileId={p.id}
+                    metric="mvp"
+                    value={counts.mvp.get(p.id) ?? 0}
+                    action={adjustRanking}
+                  />
+                </td>
+                <td className="px-4 py-2.5">
+                  <RankingAdjustControl
+                    profileId={p.id}
+                    metric="wins"
+                    value={counts.wins.get(p.id) ?? 0}
+                    action={adjustRanking}
+                  />
+                </td>
+              </tr>
+            ))}
+            {!profiles?.length && (
+              <tr>
+                <td className="px-4 py-4 text-sm text-gray-500" colSpan={4}>
+                  Nenhum jogador aprovado ainda.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <section>
+        <h2 className="font-semibold text-brand-navy">Últimos ajustes manuais</h2>
+        <div className="mt-3 space-y-2">
+          {(adjustmentRows ?? []).map((a) => {
+            const p = a.profiles as unknown as { full_name: string } | null;
+            return (
+              <div
+                key={a.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              >
+                <span className="text-gray-600">
+                  {a.delta > 0 ? "+" : ""}
+                  {a.delta} {METRIC_LABELS[a.metric] ?? a.metric} em{" "}
+                  <strong className="text-brand-navy">{p?.full_name}</strong>
+                  {a.reason ? ` — ${a.reason}` : ""}
+                </span>
+                <DeleteRankingAdjustmentButton adjustmentId={a.id} action={deleteRankingAdjustment} />
+              </div>
+            );
+          })}
+          {!adjustmentRows?.length && <p className="text-sm text-gray-500">Nenhum ajuste manual feito ainda.</p>}
+        </div>
+      </section>
+    </div>
+  );
+}

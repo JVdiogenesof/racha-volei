@@ -6,6 +6,7 @@ import { Pencil, X } from "lucide-react";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { ActionForm } from "./ActionForm";
 import { DeleteEventButton } from "./DeleteEventButton";
+import { CancelEventButton } from "./CancelEventButton";
 
 type EventData = {
   id: string;
@@ -20,10 +21,12 @@ type EventData = {
 export function EventListItem({
   event,
   updateEvent,
+  cancelEvent,
   deleteEvent,
 }: {
   event: EventData;
   updateEvent: (formData: FormData) => Promise<void>;
+  cancelEvent: (formData: FormData) => Promise<void>;
   deleteEvent: (formData: FormData) => Promise<void>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -51,6 +54,7 @@ export function EventListItem({
         >
           {editing ? <X className="h-4 w-4" strokeWidth={2} /> : <Pencil className="h-4 w-4" strokeWidth={2} />}
         </button>
+        {event.status !== "cancelled" && <CancelEventButton eventId={event.id} action={cancelEvent} />}
         <DeleteEventButton eventId={event.id} action={deleteEvent} />
       </div>
 

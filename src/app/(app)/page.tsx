@@ -9,20 +9,22 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   const today = new Date().toISOString().slice(0, 10);
-  const { data: proximoRacha } = await supabase
-    .from("events")
-    .select("id, date, time, location")
-    .gte("date", today)
-    .neq("status", "finished")
-    .order("date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  const { data: avisos } = await supabase
-    .from("announcements")
-    .select("id, title, body, image_url, created_at, profiles(full_name)")
-    .order("created_at", { ascending: false })
-    .limit(2);
+  const [{ data: proximoRacha }, { data: avisos }] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id, date, time, location")
+      .gte("date", today)
+      .neq("status", "finished")
+      .neq("status", "cancelled")
+      .order("date", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("announcements")
+      .select("id, title, body, image_url, created_at, profiles(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(2),
+  ]);
 
   return (
     <div className="space-y-6">

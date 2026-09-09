@@ -76,6 +76,7 @@ alter table team_members enable row level security;
 alter table announcements enable row level security;
 alter table mvp_votes enable row level security;
 alter table match_wins enable row level security;
+alter table ranking_adjustments enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -172,6 +173,14 @@ create policy "match_wins_select" on match_wins for select to authenticated usin
 create policy "match_wins_insert" on match_wins for insert to authenticated
   with check (public.is_organizer() and recorded_by = auth.uid());
 create policy "match_wins_delete" on match_wins for delete to authenticated
+  using (public.is_organizer());
+
+-- ranking_adjustments: leitura aberta (soma no cálculo do ranking pra todo mundo);
+-- só organizador cria/apaga ajuste manual.
+create policy "ranking_adjustments_select" on ranking_adjustments for select to authenticated using (true);
+create policy "ranking_adjustments_insert" on ranking_adjustments for insert to authenticated
+  with check (public.is_organizer() and created_by = auth.uid());
+create policy "ranking_adjustments_delete" on ranking_adjustments for delete to authenticated
   using (public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,

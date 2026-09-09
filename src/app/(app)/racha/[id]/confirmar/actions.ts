@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireOrganizer } from "@/lib/auth";
 
 export async function setAttendance(formData: FormData) {
   const profile = await requireProfile();
@@ -14,6 +14,9 @@ export async function setAttendance(formData: FormData) {
   if (event?.status === "finished") {
     throw new Error("Esse racha já terminou, não dá mais pra confirmar presença.");
   }
+  if (event?.status === "cancelled") {
+    throw new Error("Esse racha foi cancelado, não dá mais pra confirmar presença.");
+  }
 
   const { error } = await supabase.from("attendance").upsert(
     {
@@ -24,6 +27,23 @@ export async function setAttendance(formData: FormData) {
     },
     { onConflict: "event_id,profile_id" },
   );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+}
+
+export async function removeAttendance(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+
+  const { error } = await supabase
+    .from("attendance")
+    .delete()
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId);
 
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);

@@ -32,6 +32,13 @@ export const eventStatusEnum = pgEnum("event_status", [
   "teams_generated",
   "in_progress",
   "finished",
+  "cancelled",
+]);
+
+export const rankingMetricEnum = pgEnum("ranking_metric", [
+  "attendance",
+  "mvp",
+  "wins",
 ]);
 
 export const attendanceStatusEnum = pgEnum("attendance_status", [
@@ -160,6 +167,19 @@ export const matchWins = pgTable("match_wins", {
   teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   recordedBy: uuid("recorded_by").notNull().references(() => profiles.id),
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Correção manual de um dos rankings (presença/MVP/vitórias) feita por um
+// organizador. Somada em cima do valor calculado — não substitui o cálculo,
+// só ajusta pra corrigir casos que fugiram do fluxo normal do site.
+export const rankingAdjustments = pgTable("ranking_adjustments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  metric: rankingMetricEnum("metric").notNull(),
+  delta: integer("delta").notNull(),
+  reason: text("reason"),
+  createdBy: uuid("created_by").notNull().references(() => profiles.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const announcements = pgTable("announcements", {

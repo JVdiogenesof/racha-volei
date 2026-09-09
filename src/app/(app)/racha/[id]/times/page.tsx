@@ -13,20 +13,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, date, num_teams")
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: event }, { data: generation }] = await Promise.all([
+    supabase.from("events").select("id, date, num_teams").eq("id", id).maybeSingle(),
+    supabase
+      .from("team_generations")
+      .select("id, generated_at")
+      .eq("event_id", id)
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
   if (!event) notFound();
-
-  const { data: generation } = await supabase
-    .from("team_generations")
-    .select("id, generated_at")
-    .eq("event_id", id)
-    .order("generated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   let teams: {
     id: string;
