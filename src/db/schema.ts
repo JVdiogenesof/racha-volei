@@ -38,6 +38,12 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
   "declined",
 ]);
 
+export const attendanceFrequencyEnum = pgEnum("attendance_frequency", [
+  "weekly",
+  "biweekly",
+  "monthly",
+]);
+
 // Estende auth.users do Supabase (id compartilhado com o usuário autenticado).
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -46,6 +52,9 @@ export const profiles = pgTable("profiles", {
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   isSetter: boolean("is_setter").notNull().default(false),
+  attendanceFrequency: attendanceFrequencyEnum("attendance_frequency"),
+  hasVpaShirt: boolean("has_vpa_shirt").notNull().default(false),
+  wantsTournaments: boolean("wants_tournaments").notNull().default(false),
   isOrganizer: boolean("is_organizer").notNull().default(false),
   status: profileStatusEnum("status").notNull().default("pending"),
   approvedBy: uuid("approved_by"),

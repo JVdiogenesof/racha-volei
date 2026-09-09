@@ -16,7 +16,10 @@ export async function submitCadastro(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const birthdate = String(formData.get("birthdate") ?? "");
   const phone = String(formData.get("phone") ?? "").trim() || null;
-  const isSetter = formData.get("isSetter") === "on";
+  const isSetter = formData.get("position") === "setter";
+  const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
+  const hasVpaShirt = formData.get("hasVpaShirt") === "on";
+  const wantsTournaments = formData.get("wantsTournaments") === "on";
 
   if (!fullName || !birthdate) {
     throw new Error("Nome e data de aniversário são obrigatórios.");
@@ -34,6 +37,9 @@ export async function submitCadastro(formData: FormData) {
       birthdate,
       phone,
       is_setter: isSetter,
+      attendance_frequency: attendanceFrequency,
+      has_vpa_shirt: hasVpaShirt,
+      wants_tournaments: wantsTournaments,
       avatar_url: avatarUrl,
     },
     { onConflict: "id" },

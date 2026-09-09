@@ -5,6 +5,7 @@ import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } fr
 import { SkillSlider } from "@/components/SkillSlider";
 import { ScoreBar } from "@/components/ScoreBar";
 import { ActionForm } from "@/components/ActionForm";
+import { ATTENDANCE_FREQUENCY_OPTIONS } from "@/lib/attendanceFrequency";
 import { updateProfileData, updateSelfRatings } from "./actions";
 
 export default async function PerfilPage() {
@@ -67,14 +68,62 @@ export default async function PerfilPage() {
               className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-navy">Posição que joga</label>
+            <div className="mt-2 flex gap-4 text-sm text-brand-navy">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="position"
+                  value="attacker"
+                  defaultChecked={!profile.is_setter}
+                  className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                />
+                Atacando
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="position"
+                  value="setter"
+                  defaultChecked={profile.is_setter}
+                  className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                />
+                Levantando
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-navy">Pretende ir quantas vezes?</label>
+            <select
+              name="attendanceFrequency"
+              defaultValue={profile.attendance_frequency ?? "weekly"}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            >
+              {ATTENDANCE_FREQUENCY_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <label className="flex items-center gap-2 text-sm text-brand-navy">
             <input
               type="checkbox"
-              name="isSetter"
-              defaultChecked={profile.is_setter}
+              name="hasVpaShirt"
+              defaultChecked={profile.has_vpa_shirt}
               className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
             />
-            Eu jogo de levantador(a)
+            Já tenho a camisa do VPA
+          </label>
+          <label className="flex items-center gap-2 text-sm text-brand-navy">
+            <input
+              type="checkbox"
+              name="wantsTournaments"
+              defaultChecked={profile.wants_tournaments}
+              className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+            />
+            Pretendo participar de torneios e amistosos
           </label>
           <button
             type="submit"

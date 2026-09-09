@@ -76,7 +76,11 @@ export default async function AvisosPage() {
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{a.body}</p>
               {a.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={a.image_url} alt={a.title} className="mt-3 max-h-96 w-full rounded-lg object-cover" />
+                <img
+                  src={a.image_url}
+                  alt={a.title}
+                  className="mt-3 max-h-[32rem] w-full rounded-lg bg-gray-50 object-contain"
+                />
               )}
               <p className="mt-3 text-xs text-gray-400">
                 {author} · {new Date(a.created_at).toLocaleDateString("pt-BR")}
