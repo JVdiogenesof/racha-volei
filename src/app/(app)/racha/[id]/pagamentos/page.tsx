@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { Wallet, CheckCircle2, Circle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { ActionForm } from "@/components/ActionForm";
 import { setPaymentStatus } from "./actions";
 
 export default async function PagamentosPage({ params }: { params: Promise<{ id: string }> }) {
@@ -59,7 +60,10 @@ export default async function PagamentosPage({ params }: { params: Promise<{ id:
           const paid = paidByProfile.get(c.profile_id) ?? false;
           return (
             <li key={c.profile_id}>
-              <form action={setPaymentStatus}>
+              <ActionForm
+                action={setPaymentStatus}
+                successMessage={paid ? "Pagamento desmarcado." : "Pagamento confirmado!"}
+              >
                 <input type="hidden" name="eventId" value={id} />
                 <input type="hidden" name="profileId" value={c.profile_id} />
                 <input type="hidden" name="paid" value={(!paid).toString()} />
@@ -85,7 +89,7 @@ export default async function PagamentosPage({ params }: { params: Promise<{ id:
                     {paid ? "Pago" : "Marcar como pago"}
                   </span>
                 </button>
-              </form>
+              </ActionForm>
             </li>
           );
         })}

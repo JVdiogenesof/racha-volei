@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { ActionForm } from "@/components/ActionForm";
 import { approveProfile, rejectProfile } from "./actions";
 
 export default async function SolicitacoesPage() {
@@ -35,18 +36,18 @@ export default async function SolicitacoesPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <form action={approveProfile}>
+              <ActionForm action={approveProfile} successMessage={`${p.full_name} foi aprovado(a)!`}>
                 <input type="hidden" name="profileId" value={p.id} />
                 <button className="rounded-lg bg-brand-purple px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-purple-dark">
                   Aprovar
                 </button>
-              </form>
-              <form action={rejectProfile}>
+              </ActionForm>
+              <ActionForm action={rejectProfile} successMessage={`${p.full_name} foi rejeitado(a).`}>
                 <input type="hidden" name="profileId" value={p.id} />
                 <button className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
                   Rejeitar
                 </button>
-              </form>
+              </ActionForm>
             </div>
           </div>
         ))}

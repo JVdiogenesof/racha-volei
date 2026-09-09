@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, Wallet, PlayCircle, StopCircle, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
+import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
+import { ActionForm } from "@/components/ActionForm";
+import { ToastFromQuery } from "@/components/ToastFromQuery";
+import { startEvent, finishEvent } from "./actions";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,12 +34,25 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     .eq("profile_id", profile.id)
     .maybeSingle();
 
+  const statusInfo = EVENT_STATUS_LABELS[event.status];
+  const isFinished = event.status === "finished";
+  const isInProgress = event.status === "in_progress";
+
   return (
     <div className="space-y-6">
+      <ToastFromQuery param="criado" message="Racha criado com sucesso!" />
+
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">
-          Racha de {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-brand-navy">
+            Racha de {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
+          </h1>
+          {statusInfo && (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.className}`}>
+              {statusInfo.label}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-gray-500">
           {event.location ?? "Local a definir"}
           {event.time ? ` · ${event.time.slice(0, 5)}` : ""} · {event.num_teams} times
@@ -46,6 +63,33 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           <strong>{myAttendance?.status === "confirmed" ? "confirmado" : "de fora"}</strong>
         </p>
       </div>
+
+      {profile.is_organizer && !isFinished && (
+        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <p className="text-sm text-gray-600">
+            {isInProgress
+              ? "O racha está rolando. Termine o evento quando acabar pra liberar a votação de MVP."
+              : "Quando a galera chegar na quadra, inicie o evento."}
+          </p>
+          {isInProgress ? (
+            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora dá pra escolher o MVP." className="ml-auto shrink-0">
+              <input type="hidden" name="eventId" value={id} />
+              <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
+                <StopCircle className="h-4 w-4" strokeWidth={2} />
+                Terminar evento
+              </button>
+            </ActionForm>
+          ) : (
+            <ActionForm action={startEvent} successMessage="Racha iniciado!" className="ml-auto shrink-0">
+              <input type="hidden" name="eventId" value={id} />
+              <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-purple-dark">
+                <PlayCircle className="h-4 w-4" strokeWidth={2} />
+                Iniciar evento
+              </button>
+            </ActionForm>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <HubCard
@@ -60,7 +104,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           title="Times"
           description="Veja ou gere os times balanceados."
         />
-        <HubCard href={`/racha/${id}/mvp`} icon={Trophy} title="MVP" description="Vote em quem jogou melhor." />
+        <HubCard
+          href={`/racha/${id}/mvp`}
+          icon={Trophy}
+          title="MVP"
+          description={isFinished ? "Vote em quem jogou melhor." : "Libera depois que o racha terminar."}
+        />
         {profile.is_organizer && (
           <HubCard
             href={`/racha/${id}/pagamentos`}

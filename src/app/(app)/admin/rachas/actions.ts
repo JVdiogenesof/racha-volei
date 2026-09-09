@@ -36,5 +36,5 @@ export async function createEvent(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
-  redirect(`/racha/${data.id}`);
+  redirect(`/racha/${data.id}?criado=1`);
 }

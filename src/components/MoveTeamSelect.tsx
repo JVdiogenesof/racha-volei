@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionForm } from "./ActionForm";
+
 export function MoveTeamSelect({
   action,
   eventId,
@@ -14,7 +16,7 @@ export function MoveTeamSelect({
   teams: { id: string; teamNumber: number }[];
 }) {
   return (
-    <form action={action}>
+    <ActionForm action={action} successMessage="Jogador movido de time!">
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="teamMemberId" value={teamMemberId} />
       <select
@@ -29,6 +31,6 @@ export function MoveTeamSelect({
           </option>
         ))}
       </select>
-    </form>
+    </ActionForm>
   );
 }

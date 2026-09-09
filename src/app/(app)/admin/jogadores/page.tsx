@@ -3,6 +3,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerRatingEditor } from "@/components/PlayerRatingEditor";
+import { ActionForm } from "@/components/ActionForm";
 import { setRatingWeights } from "./actions";
 
 export default async function AdminJogadoresPage() {
@@ -30,7 +31,7 @@ export default async function AdminJogadoresPage() {
 
       <section className="rounded-xl border border-gray-200 p-6">
         <h2 className="font-semibold text-brand-navy">Peso da nota</h2>
-        <form action={setRatingWeights} className="mt-4 flex flex-wrap items-end gap-4">
+        <ActionForm action={setRatingWeights} successMessage="Peso atualizado!" className="mt-4 flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500">Peso da autoavaliação</label>
             <input
@@ -61,7 +62,7 @@ export default async function AdminJogadoresPage() {
           >
             Salvar peso
           </button>
-        </form>
+        </ActionForm>
       </section>
 
       <section className="space-y-2">

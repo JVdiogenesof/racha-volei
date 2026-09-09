@@ -1,8 +1,9 @@
-import { Megaphone } from "lucide-react";
+import { Megaphone, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { FileInput } from "@/components/FileInput";
-import { createAnnouncement } from "./actions";
+import { ActionForm } from "@/components/ActionForm";
+import { createAnnouncement, deleteAnnouncement } from "./actions";
 
 export default async function AvisosPage() {
   const profile = await requireProfile();
@@ -21,8 +22,9 @@ export default async function AvisosPage() {
       </h1>
 
       {profile.is_organizer && (
-        <form
+        <ActionForm
           action={createAnnouncement}
+          successMessage="Aviso publicado!"
           className="space-y-4 rounded-xl border border-gray-200 p-6"
         >
           <div>
@@ -56,15 +58,27 @@ export default async function AvisosPage() {
           >
             Publicar aviso
           </button>
-        </form>
+        </ActionForm>
       )}
 
       <div className="space-y-4">
         {announcements?.map((a) => {
           const author = (a.profiles as unknown as { full_name: string } | null)?.full_name;
           return (
-            <article key={a.id} className="rounded-xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-brand-navy">{a.title}</h2>
+            <article key={a.id} className="relative rounded-xl border border-gray-200 p-5">
+              {profile.is_organizer && (
+                <ActionForm action={deleteAnnouncement} successMessage="Aviso removido." className="absolute right-4 top-4">
+                  <input type="hidden" name="announcementId" value={a.id} />
+                  <button
+                    type="submit"
+                    aria-label="Remover aviso"
+                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                </ActionForm>
+              )}
+              <h2 className="pr-8 font-semibold text-brand-navy">{a.title}</h2>
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{a.body}</p>
               {a.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { SkillSlider } from "@/components/SkillSlider";
+import { ActionForm } from "@/components/ActionForm";
 import { SKILL_CATEGORIES, SKILL_LABELS, type RatingsByCategory } from "@/lib/scoring";
 import { setOrganizerRatings } from "@/app/(app)/admin/jogadores/actions";
 
@@ -39,7 +40,11 @@ export function PlayerRatingEditor({
         </span>
       </button>
       {open && (
-        <form action={setOrganizerRatings} className="space-y-4 border-t border-gray-100 px-4 py-4">
+        <ActionForm
+          action={setOrganizerRatings}
+          successMessage={`Nota de ${fullName} salva!`}
+          className="space-y-4 border-t border-gray-100 px-4 py-4"
+        >
           <input type="hidden" name="profileId" value={profileId} />
           {SKILL_CATEGORIES.map((c) => (
             <SkillSlider
@@ -55,7 +60,7 @@ export function PlayerRatingEditor({
           >
             Salvar nota do organizador
           </button>
-        </form>
+        </ActionForm>
       )}
     </div>
   );

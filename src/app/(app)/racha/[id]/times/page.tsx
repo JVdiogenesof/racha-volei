@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { MoveTeamSelect } from "@/components/MoveTeamSelect";
+import { ActionForm } from "@/components/ActionForm";
 import { generateTeams, moveMember } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -81,12 +82,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           </p>
         </div>
         {profile.is_organizer && (
-          <form action={generateTeams}>
+          <ActionForm
+            action={generateTeams}
+            successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}
+          >
             <input type="hidden" name="eventId" value={id} />
             <button className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark">
               {generation ? "Gerar novamente" : "Gerar times"}
             </button>
-          </form>
+          </ActionForm>
         )}
       </div>
 

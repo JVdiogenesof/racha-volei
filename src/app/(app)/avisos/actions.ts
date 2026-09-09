@@ -32,3 +32,14 @@ export async function createAnnouncement(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/avisos");
 }
+
+export async function deleteAnnouncement(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const announcementId = String(formData.get("announcementId"));
+
+  const { error } = await supabase.from("announcements").delete().eq("id", announcementId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/avisos");
+}

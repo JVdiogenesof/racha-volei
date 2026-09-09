@@ -3,6 +3,7 @@ import { Check, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
+import { ActionForm } from "@/components/ActionForm";
 import { setAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
@@ -50,22 +51,22 @@ export default async function ConfirmarPresencaPage({
       </div>
 
       <div className="flex gap-3">
-        <form action={setAttendance}>
+        <ActionForm action={setAttendance} successMessage="Presença confirmada!">
           <input type="hidden" name="eventId" value={id} />
           <input type="hidden" name="status" value="confirmed" />
           <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark">
             <Check className="h-4 w-4" strokeWidth={2} />
             Vou jogar
           </button>
-        </form>
-        <form action={setAttendance}>
+        </ActionForm>
+        <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
           <input type="hidden" name="eventId" value={id} />
           <input type="hidden" name="status" value="declined" />
           <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-600 hover:bg-gray-50">
             <X className="h-4 w-4" strokeWidth={2} />
             Não vou
           </button>
-        </form>
+        </ActionForm>
       </div>
 
       <section>

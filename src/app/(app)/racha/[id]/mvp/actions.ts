@@ -10,6 +10,11 @@ export async function voteMvp(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const votedForProfileId = String(formData.get("votedForProfileId"));
 
+  const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
+  if (event?.status !== "finished") {
+    throw new Error("A votação de MVP só abre depois que o racha for finalizado.");
+  }
+
   const { error } = await supabase.from("mvp_votes").insert({
     event_id: eventId,
     voter_profile_id: profile.id,

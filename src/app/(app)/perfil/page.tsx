@@ -4,6 +4,7 @@ import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { SkillSlider } from "@/components/SkillSlider";
 import { ScoreBar } from "@/components/ScoreBar";
+import { ActionForm } from "@/components/ActionForm";
 import { updateProfileData, updateSelfRatings } from "./actions";
 
 export default async function PerfilPage() {
@@ -38,7 +39,7 @@ export default async function PerfilPage() {
 
       <section className="rounded-xl border border-gray-200 p-6">
         <h2 className="font-semibold text-brand-navy">Dados pessoais</h2>
-        <form action={updateProfileData} className="mt-4 space-y-4">
+        <ActionForm action={updateProfileData} successMessage="Dados salvos!" className="mt-4 space-y-4">
           <div>
             <label className="block text-sm font-medium text-brand-navy">Nome completo</label>
             <input
@@ -81,7 +82,7 @@ export default async function PerfilPage() {
           >
             Salvar dados
           </button>
-        </form>
+        </ActionForm>
       </section>
 
       <section className="rounded-xl border border-gray-200 p-6">
@@ -89,7 +90,7 @@ export default async function PerfilPage() {
         <p className="mt-1 text-sm text-gray-500">
           Seja honesto — sua nota final também depende da avaliação dos organizadores.
         </p>
-        <form action={updateSelfRatings} className="mt-4 space-y-5">
+        <ActionForm action={updateSelfRatings} successMessage="Autoavaliação salva!" className="mt-4 space-y-5">
           {SKILL_CATEGORIES.map((c) => (
             <SkillSlider key={c} name={c} label={SKILL_LABELS[c]} defaultValue={self[c] ?? 2.5} />
           ))}
@@ -99,7 +100,7 @@ export default async function PerfilPage() {
           >
             Salvar autoavaliação
           </button>
-        </form>
+        </ActionForm>
       </section>
     </div>
   );

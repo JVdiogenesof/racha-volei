@@ -29,6 +29,7 @@ export const profileStatusEnum = pgEnum("profile_status", [
 export const eventStatusEnum = pgEnum("event_status", [
   "open",
   "teams_generated",
+  "in_progress",
   "finished",
 ]);
 
