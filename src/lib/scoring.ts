@@ -4,6 +4,7 @@ export const SKILL_CATEGORIES = [
   "serve",
   "reception",
   "defense",
+  "block",
 ] as const;
 
 export type SkillCategory = (typeof SKILL_CATEGORIES)[number];
@@ -13,7 +14,8 @@ export const SKILL_LABELS: Record<SkillCategory, string> = {
   setting: "Levantamento",
   serve: "Saque",
   reception: "Recepção/Passe",
-  defense: "Defesa/Bloqueio",
+  defense: "Defesa",
+  block: "Bloqueio",
 };
 
 const NEUTRAL_SCORE = 2.5;

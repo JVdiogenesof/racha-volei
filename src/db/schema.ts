@@ -18,6 +18,7 @@ export const skillCategoryEnum = pgEnum("skill_category", [
   "serve",
   "reception",
   "defense",
+  "block",
 ]);
 
 export const profileStatusEnum = pgEnum("profile_status", [
