@@ -14,6 +14,15 @@ const LINKS = [
   { href: "/historico", label: "Histórico", icon: History },
 ];
 
+function NavBadge({ count }: { count: number }) {
+  if (!count) return null;
+  return (
+    <span className="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export async function NavBar() {
   const supabase = await createClient();
   const {
@@ -27,6 +36,36 @@ export async function NavBar() {
     .select("full_name, avatar_url, is_organizer")
     .eq("id", user.id)
     .maybeSingle();
+
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [{ count: newAvisosCount }, { data: upcomingEvents }] = await Promise.all([
+    supabase
+      .from("announcements")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", threeDaysAgo),
+    supabase.from("events").select("id").gte("date", today).neq("status", "finished"),
+  ]);
+
+  let pendingConfirmCount = 0;
+  if (upcomingEvents?.length) {
+    const { data: myAttendance } = await supabase
+      .from("attendance")
+      .select("event_id")
+      .eq("profile_id", user.id)
+      .in(
+        "event_id",
+        upcomingEvents.map((e) => e.id),
+      );
+    const respondedIds = new Set((myAttendance ?? []).map((a) => a.event_id));
+    pendingConfirmCount = upcomingEvents.filter((e) => !respondedIds.has(e.id)).length;
+  }
+
+  const badgeByHref: Record<string, number> = {
+    "/avisos": newAvisosCount ?? 0,
+    "/racha": pendingConfirmCount,
+  };
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-navy text-white">
@@ -43,6 +82,7 @@ export async function NavBar() {
             >
               <link.icon className="h-4 w-4" strokeWidth={2} />
               {link.label}
+              <NavBadge count={badgeByHref[link.href] ?? 0} />
             </Link>
           ))}
           {profile?.is_organizer && (
@@ -77,7 +117,12 @@ export async function NavBar() {
             href={link.href}
             className="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-white/80"
           >
-            <link.icon className="h-5 w-5" strokeWidth={2} />
+            <span className="relative">
+              <link.icon className="h-5 w-5" strokeWidth={2} />
+              {Boolean(badgeByHref[link.href]) && (
+                <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+              )}
+            </span>
             {link.label}
           </Link>
         ))}

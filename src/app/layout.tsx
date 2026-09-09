@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/Toast";
@@ -18,6 +18,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "VPA Racha",
   description: "Organização do racha de vôlei: presença, times e avisos do grupo.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VPA Racha",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#101534",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

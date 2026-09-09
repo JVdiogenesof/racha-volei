@@ -1,0 +1,28 @@
+{
+  "name": "Vôlei Por Amor Racha",
+  "short_name": "VPA Racha",
+  "description": "Organização do racha de vôlei: presença, times e avisos do grupo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#101534",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "639x641",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
