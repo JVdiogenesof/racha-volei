@@ -33,7 +33,7 @@ export default function LoginPage() {
           />
         </svg>
 
-        <Logo className="mb-10 text-white" accentClassName="text-purple-300" />
+        <Logo className="mb-10" markClassName="h-16 w-16" />
 
         <span className="mb-6 inline-block w-fit rounded-full bg-brand-purple/20 px-3 py-1 text-xs font-semibold tracking-wide text-purple-200 ring-1 ring-inset ring-purple-400/30">
           RACHA DA GALERA

@@ -31,7 +31,7 @@ export async function NavBar() {
     <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-navy text-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/">
-          <Logo className="text-white" accentClassName="text-purple-300" />
+          <Logo markClassName="h-10 w-10" />
         </Link>
         <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
           {LINKS.map((link) => (
