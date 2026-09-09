@@ -26,6 +26,7 @@ const APP_TABLES = [
   "team_members",
   "announcements",
   "mvp_votes",
+  "match_wins",
 ];
 
 function loadEnvLocal() {

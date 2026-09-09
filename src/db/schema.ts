@@ -154,6 +154,14 @@ export const teamMembers = pgTable(
   (t) => [unique().on(t.teamId, t.profileId)],
 );
 
+export const matchWins = pgTable("match_wins", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  recordedBy: uuid("recorded_by").notNull().references(() => profiles.id),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const announcements = pgTable("announcements", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),

@@ -19,11 +19,18 @@ export function ActionForm({
   successMessage,
   children,
   className,
+  resetOnSuccess = false,
 }: {
   action: ActionFn;
   successMessage: string | ((formData: FormData) => string);
   children: ReactNode;
   className?: string;
+  /** Limpa os campos visíveis do form depois de uma ação bem-sucedida — só
+   * faz sentido em forms de "criar novo item" (ex: publicar aviso). Forms
+   * que editam/mostram um valor já salvo (perfil, notas, pesos) devem deixar
+   * como está (padrão), senão o campo fica em branco em vez de mostrar o
+   * valor que acabou de ser salvo. */
+  resetOnSuccess?: boolean;
 }) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -31,12 +38,14 @@ export function ActionForm({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
     startTransition(async () => {
       try {
         await action(formData);
         showToast(typeof successMessage === "function" ? successMessage(formData) : successMessage);
+        if (resetOnSuccess) form.reset();
         router.refresh();
       } catch (err) {
         showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");

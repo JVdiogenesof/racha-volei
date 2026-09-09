@@ -93,3 +93,43 @@ export async function moveMember(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/times`);
 }
+
+export async function recordMatchWin(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const teamId = String(formData.get("teamId"));
+
+  const { error } = await supabase.from("match_wins").insert({
+    event_id: eventId,
+    team_id: teamId,
+    recorded_by: organizer.id,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/times`);
+  revalidatePath("/ranking");
+}
+
+export async function undoLastMatchWin(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const teamId = String(formData.get("teamId"));
+
+  const { data: last } = await supabase
+    .from("match_wins")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("team_id", teamId)
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (last) {
+    const { error } = await supabase.from("match_wins").delete().eq("id", last.id);
+    if (error) throw new Error(error.message);
+  }
+  revalidatePath(`/racha/${eventId}/times`);
+  revalidatePath("/ranking");
+}

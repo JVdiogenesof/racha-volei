@@ -26,7 +26,7 @@ export function AnnouncementCard({
         <img
           src={announcement.image_url}
           alt={announcement.title}
-          className="mt-3 max-h-[32rem] w-full rounded-lg bg-gray-50 object-contain"
+          className="mt-3 max-h-[75vh] w-full rounded-lg bg-gray-50 object-contain"
         />
       )}
       <p className="mt-3 text-xs text-gray-400">

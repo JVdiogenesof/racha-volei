@@ -75,6 +75,7 @@ alter table teams enable row level security;
 alter table team_members enable row level security;
 alter table announcements enable row level security;
 alter table mvp_votes enable row level security;
+alter table match_wins enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -165,6 +166,13 @@ create policy "announcements_write" on announcements for all to authenticated
 create policy "mvp_votes_select" on mvp_votes for select to authenticated using (true);
 create policy "mvp_votes_insert" on mvp_votes for insert to authenticated
   with check (voter_profile_id = auth.uid());
+
+-- match_wins: leitura aberta (alimenta o ranking de vitórias); só organizador registra/apaga.
+create policy "match_wins_select" on match_wins for select to authenticated using (true);
+create policy "match_wins_insert" on match_wins for insert to authenticated
+  with check (public.is_organizer() and recorded_by = auth.uid());
+create policy "match_wins_delete" on match_wins for delete to authenticated
+  using (public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos

@@ -1,4 +1,4 @@
-import { CalendarCheck, Trophy } from "lucide-react";
+import { CalendarCheck, Trophy, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Leaderboard, type RankingEntry } from "@/components/Leaderboard";
@@ -7,11 +7,14 @@ export default async function RankingPage() {
   await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: attendanceRows }, { data: voteRows }, { data: profiles }] = await Promise.all([
-    supabase.from("attendance").select("profile_id").eq("status", "confirmed"),
-    supabase.from("mvp_votes").select("event_id, voted_for_profile_id"),
-    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved"),
-  ]);
+  const [{ data: attendanceRows }, { data: voteRows }, { data: profiles }, { data: winRows }, { data: memberRows }] =
+    await Promise.all([
+      supabase.from("attendance").select("profile_id").eq("status", "confirmed"),
+      supabase.from("mvp_votes").select("event_id, voted_for_profile_id"),
+      supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved"),
+      supabase.from("match_wins").select("team_id"),
+      supabase.from("team_members").select("team_id, profile_id"),
+    ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -52,8 +55,21 @@ export default async function RankingPage() {
     }
   }
 
+  const profileIdsByTeam = new Map<string, string[]>();
+  for (const m of memberRows ?? []) {
+    if (!profileIdsByTeam.has(m.team_id)) profileIdsByTeam.set(m.team_id, []);
+    profileIdsByTeam.get(m.team_id)!.push(m.profile_id);
+  }
+  const matchWinCount = new Map<string, number>();
+  for (const w of winRows ?? []) {
+    for (const profileId of profileIdsByTeam.get(w.team_id) ?? []) {
+      matchWinCount.set(profileId, (matchWinCount.get(profileId) ?? 0) + 1);
+    }
+  }
+
   const attendanceRanking = buildRanking(attendanceCount);
   const mvpRanking = buildRanking(mvpCount);
+  const winsRanking = buildRanking(matchWinCount);
 
   return (
     <div className="space-y-8">
@@ -70,6 +86,8 @@ export default async function RankingPage() {
       />
 
       <Leaderboard title="Mais vezes MVP" icon={Trophy} unit="MVPs" ranking={mvpRanking} />
+
+      <Leaderboard title="Mais vitórias" icon={Crown} unit="vitórias" ranking={winsRanking} />
     </div>
   );
 }

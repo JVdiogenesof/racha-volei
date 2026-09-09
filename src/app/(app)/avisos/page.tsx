@@ -27,6 +27,7 @@ export default async function AvisosPage() {
         <ActionForm
           action={createAnnouncement}
           successMessage="Aviso publicado!"
+          resetOnSuccess
           className="space-y-4 rounded-xl border border-gray-200 p-6"
         >
           <div>

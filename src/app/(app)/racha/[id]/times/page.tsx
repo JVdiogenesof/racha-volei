@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
+import { Trophy, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { MoveTeamSelect } from "@/components/MoveTeamSelect";
 import { ActionForm } from "@/components/ActionForm";
-import { generateTeams, moveMember } from "./actions";
+import { generateTeams, moveMember, recordMatchWin, undoLastMatchWin } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,6 +31,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   let teams: {
     id: string;
     teamNumber: number;
+    wins: number;
     members: { teamMemberId: string; profileId: string; fullName: string; overall: number; isSetter: boolean }[];
   }[] = [];
 
@@ -40,17 +42,28 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .eq("generation_id", generation.id)
       .order("team_number");
 
-    const { data: memberRows } = await supabase
-      .from("team_members")
-      .select("id, team_id, profile_id, profiles(full_name, is_setter)")
-      .in("team_id", (teamRows ?? []).map((t) => t.id));
+    const teamIds = (teamRows ?? []).map((t) => t.id);
 
-    const { selfByProfile, organizerByProfile } = await getAllRatings(supabase);
-    const weights = await getRatingWeights(supabase);
+    const [{ data: memberRows }, { selfByProfile, organizerByProfile }, weights, { data: winRows }] =
+      await Promise.all([
+        supabase
+          .from("team_members")
+          .select("id, team_id, profile_id, profiles(full_name, is_setter)")
+          .in("team_id", teamIds),
+        getAllRatings(supabase),
+        getRatingWeights(supabase),
+        supabase.from("match_wins").select("team_id").eq("event_id", id),
+      ]);
+
+    const winsByTeam = new Map<string, number>();
+    for (const w of winRows ?? []) {
+      winsByTeam.set(w.team_id, (winsByTeam.get(w.team_id) ?? 0) + 1);
+    }
 
     teams = (teamRows ?? []).map((t) => ({
       id: t.id,
       teamNumber: t.team_number,
+      wins: winsByTeam.get(t.id) ?? 0,
       members: (memberRows ?? [])
         .filter((m) => m.team_id === t.id)
         .map((m) => {
@@ -109,6 +122,41 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 <h3 className="font-semibold text-brand-navy">Time {team.teamNumber}</h3>
                 <span className="text-xs text-gray-400">soma: {sum.toFixed(1)}</span>
               </div>
+
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
+                <Trophy className="h-4 w-4 shrink-0 text-brand-purple" strokeWidth={2} />
+                <span className="text-sm font-medium text-brand-navy">
+                  {team.wins} {team.wins === 1 ? "vitória" : "vitórias"}
+                </span>
+                {profile.is_organizer && (
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {team.wins > 0 && (
+                      <ActionForm action={undoLastMatchWin} successMessage="Vitória desfeita.">
+                        <input type="hidden" name="eventId" value={id} />
+                        <input type="hidden" name="teamId" value={team.id} />
+                        <button
+                          type="submit"
+                          aria-label="Desfazer última vitória"
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                        >
+                          <Undo2 className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                      </ActionForm>
+                    )}
+                    <ActionForm action={recordMatchWin} successMessage={`+1 vitória pro Time ${team.teamNumber}!`}>
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="teamId" value={team.id} />
+                      <button
+                        type="submit"
+                        className="rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark"
+                      >
+                        +1 vitória
+                      </button>
+                    </ActionForm>
+                  </div>
+                )}
+              </div>
+
               <ul className="mt-3 space-y-2">
                 {team.members.map((m) => (
                   <li key={m.teamMemberId} className="flex items-center justify-between text-sm">
