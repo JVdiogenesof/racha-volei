@@ -17,11 +17,13 @@ export default async function ConfirmarPresencaPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, date")
+    .select("id, date, status")
     .eq("id", id)
     .maybeSingle();
 
   if (!event) notFound();
+
+  const eventFinished = event.status === "finished";
 
   const { data: attendanceList } = await supabase
     .from("attendance")
@@ -50,24 +52,30 @@ export default async function ConfirmarPresencaPage({
         </p>
       </div>
 
-      <div className="flex gap-3">
-        <ActionForm action={setAttendance} successMessage="Presença confirmada!">
-          <input type="hidden" name="eventId" value={id} />
-          <input type="hidden" name="status" value="confirmed" />
-          <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark">
-            <Check className="h-4 w-4" strokeWidth={2} />
-            Vou jogar
-          </button>
-        </ActionForm>
-        <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
-          <input type="hidden" name="eventId" value={id} />
-          <input type="hidden" name="status" value="declined" />
-          <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-600 hover:bg-gray-50">
-            <X className="h-4 w-4" strokeWidth={2} />
-            Não vou
-          </button>
-        </ActionForm>
-      </div>
+      {eventFinished ? (
+        <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
+          Esse racha já terminou — não dá mais pra confirmar ou desmarcar presença.
+        </p>
+      ) : (
+        <div className="flex gap-3">
+          <ActionForm action={setAttendance} successMessage="Presença confirmada!">
+            <input type="hidden" name="eventId" value={id} />
+            <input type="hidden" name="status" value="confirmed" />
+            <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark">
+              <Check className="h-4 w-4" strokeWidth={2} />
+              Vou jogar
+            </button>
+          </ActionForm>
+          <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
+            <input type="hidden" name="eventId" value={id} />
+            <input type="hidden" name="status" value="declined" />
+            <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-600 hover:bg-gray-50">
+              <X className="h-4 w-4" strokeWidth={2} />
+              Não vou
+            </button>
+          </ActionForm>
+        </div>
+      )}
 
       <section>
         <h2 className="font-semibold text-brand-navy">Confirmados ({confirmados.length})</h2>

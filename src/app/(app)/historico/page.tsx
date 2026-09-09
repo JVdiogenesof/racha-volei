@@ -6,11 +6,10 @@ export default async function HistoricoPage() {
   await requireProfile();
   const supabase = await createClient();
 
-  const today = new Date().toISOString().slice(0, 10);
   const { data: events } = await supabase
     .from("events")
     .select("id, date, location, price_per_player")
-    .lt("date", today)
+    .eq("status", "finished")
     .order("date", { ascending: false });
 
   const rows = await Promise.all(

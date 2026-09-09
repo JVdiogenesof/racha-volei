@@ -1,8 +1,9 @@
-import { Megaphone, Trash2 } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { FileInput } from "@/components/FileInput";
 import { ActionForm } from "@/components/ActionForm";
+import { DeleteAnnouncementButton } from "@/components/DeleteAnnouncementButton";
 import { createAnnouncement, deleteAnnouncement } from "./actions";
 
 export default async function AvisosPage() {
@@ -67,16 +68,9 @@ export default async function AvisosPage() {
           return (
             <article key={a.id} className="relative rounded-xl border border-gray-200 p-5">
               {profile.is_organizer && (
-                <ActionForm action={deleteAnnouncement} successMessage="Aviso removido." className="absolute right-3 top-3">
-                  <input type="hidden" name="announcementId" value={a.id} />
-                  <button
-                    type="submit"
-                    aria-label="Remover aviso"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
-                  >
-                    <Trash2 className="h-4 w-4" strokeWidth={2} />
-                  </button>
-                </ActionForm>
+                <div className="absolute right-3 top-3">
+                  <DeleteAnnouncementButton announcementId={a.id} action={deleteAnnouncement} />
+                </div>
               )}
               <h2 className="pr-12 font-semibold text-brand-navy">{a.title}</h2>
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{a.body}</p>

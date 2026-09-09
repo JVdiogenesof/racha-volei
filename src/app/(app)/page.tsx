@@ -12,6 +12,7 @@ export default async function HomePage() {
     .from("events")
     .select("id, date, time, location")
     .gte("date", today)
+    .neq("status", "finished")
     .order("date", { ascending: true })
     .limit(1)
     .maybeSingle();

@@ -10,6 +10,11 @@ export async function setAttendance(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const status = String(formData.get("status")) as "confirmed" | "declined";
 
+  const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
+  if (event?.status === "finished") {
+    throw new Error("Esse racha já terminou, não dá mais pra confirmar presença.");
+  }
+
   const { error } = await supabase.from("attendance").upsert(
     {
       event_id: eventId,
