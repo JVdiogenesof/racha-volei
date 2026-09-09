@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { FileInput } from "@/components/FileInput";
 import { ActionForm } from "@/components/ActionForm";
 import { DeleteAnnouncementButton } from "@/components/DeleteAnnouncementButton";
+import { AnnouncementCard } from "@/components/AnnouncementCard";
 import { createAnnouncement, deleteAnnouncement } from "./actions";
 
 export default async function AvisosPage() {
@@ -66,26 +67,17 @@ export default async function AvisosPage() {
         {announcements?.map((a) => {
           const author = (a.profiles as unknown as { full_name: string } | null)?.full_name;
           return (
-            <article key={a.id} className="relative rounded-xl border border-gray-200 p-5">
-              {profile.is_organizer && (
-                <div className="absolute right-3 top-3">
-                  <DeleteAnnouncementButton announcementId={a.id} action={deleteAnnouncement} />
-                </div>
-              )}
-              <h2 className="pr-12 font-semibold text-brand-navy">{a.title}</h2>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{a.body}</p>
-              {a.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={a.image_url}
-                  alt={a.title}
-                  className="mt-3 max-h-[32rem] w-full rounded-lg bg-gray-50 object-contain"
-                />
-              )}
-              <p className="mt-3 text-xs text-gray-400">
-                {author} · {new Date(a.created_at).toLocaleDateString("pt-BR")}
-              </p>
-            </article>
+            <AnnouncementCard
+              key={a.id}
+              announcement={{ ...a, author }}
+              actions={
+                profile.is_organizer && (
+                  <div className="absolute right-3 top-3">
+                    <DeleteAnnouncementButton announcementId={a.id} action={deleteAnnouncement} />
+                  </div>
+                )
+              }
+            />
           );
         })}
         {!announcements?.length && <p className="text-sm text-gray-500">Nenhum aviso ainda.</p>}

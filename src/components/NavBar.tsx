@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, CalendarDays, Users, Megaphone, History, ShieldCheck } from "lucide-react";
+import { Home, CalendarDays, Users, Award, Megaphone, History, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "@/components/Logo";
@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/", label: "Início", icon: Home },
   { href: "/racha", label: "Rachas", icon: CalendarDays },
   { href: "/jogadores", label: "Jogadores", icon: Users },
+  { href: "/ranking", label: "Ranking", icon: Award },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/historico", label: "Histórico", icon: History },
 ];

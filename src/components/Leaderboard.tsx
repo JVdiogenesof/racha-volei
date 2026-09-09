@@ -1,0 +1,87 @@
+import type { LucideIcon } from "lucide-react";
+import { Avatar } from "./Avatar";
+
+export type RankingEntry = {
+  profileId: string;
+  count: number;
+  fullName: string;
+  avatarUrl: string | null;
+};
+
+const MEDAL_BADGE = [
+  "border-yellow-300 bg-yellow-100 text-yellow-700",
+  "border-gray-300 bg-gray-100 text-gray-600",
+  "border-orange-300 bg-orange-100 text-orange-700",
+];
+
+export function Leaderboard({
+  title,
+  icon: Icon,
+  unit,
+  ranking,
+}: {
+  title: string;
+  icon: LucideIcon;
+  unit: string;
+  ranking: RankingEntry[];
+}) {
+  const podium = ranking.slice(0, 3);
+  const rest = ranking.slice(3, 10);
+  const podiumOrder = [podium[1], podium[0], podium[2]];
+
+  return (
+    <section className="rounded-xl border border-gray-200 p-6">
+      <div className="flex items-center gap-2 text-brand-navy">
+        <Icon className="h-5 w-5 text-brand-purple" strokeWidth={2} />
+        <h2 className="font-semibold">{title}</h2>
+      </div>
+
+      {!podium.length ? (
+        <p className="mt-4 text-sm text-gray-500">Ainda não tem dados suficientes.</p>
+      ) : (
+        <>
+          <div className="mt-6 grid grid-cols-3 items-end gap-3">
+            {podiumOrder.map((entry, slot) => {
+              if (!entry) return <div key={slot} />;
+              const place = podium.indexOf(entry);
+              const isFirst = place === 0;
+              return (
+                <div key={entry.profileId} className="flex flex-col items-center text-center">
+                  <span
+                    className={`mb-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${MEDAL_BADGE[place]}`}
+                  >
+                    {place + 1}º
+                  </span>
+                  <Avatar src={entry.avatarUrl} name={entry.fullName} size={isFirst ? "lg" : "md"} />
+                  <p className="mt-2 w-full truncate text-sm font-medium text-brand-navy">
+                    {entry.fullName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {entry.count} {unit}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {rest.length > 0 && (
+            <ul className="mt-6 divide-y divide-gray-100 border-t border-gray-100">
+              {rest.map((entry, i) => (
+                <li key={entry.profileId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                  <span className="flex items-center gap-3">
+                    <span className="w-6 shrink-0 text-center text-gray-400">{i + 4}º</span>
+                    <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
+                    <span className="text-brand-navy">{entry.fullName}</span>
+                  </span>
+                  <span className="shrink-0 text-gray-500">
+                    {entry.count} {unit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
+  );
+}

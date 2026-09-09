@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Megaphone, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
+import { AnnouncementCard } from "@/components/AnnouncementCard";
 
 export default async function HomePage() {
   const profile = await requireProfile();
@@ -19,9 +20,9 @@ export default async function HomePage() {
 
   const { data: avisos } = await supabase
     .from("announcements")
-    .select("id, title, created_at")
+    .select("id, title, body, image_url, created_at, profiles(full_name)")
     .order("created_at", { ascending: false })
-    .limit(3);
+    .limit(2);
 
   return (
     <div className="space-y-6">
@@ -69,14 +70,13 @@ export default async function HomePage() {
             Ver todos
           </Link>
         </div>
-        <ul className="mt-3 space-y-2">
-          {avisos?.map((a) => (
-            <li key={a.id} className="text-sm text-gray-700">
-              {a.title}
-            </li>
-          ))}
+        <div className="mt-3 space-y-4">
+          {avisos?.map((a) => {
+            const author = (a.profiles as unknown as { full_name: string } | null)?.full_name;
+            return <AnnouncementCard key={a.id} announcement={{ ...a, author }} />;
+          })}
           {!avisos?.length && <p className="text-sm text-gray-500">Nenhum aviso ainda.</p>}
-        </ul>
+        </div>
       </section>
     </div>
   );
