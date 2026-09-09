@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/privacidade"];
 const ONBOARDING_PATHS = ["/cadastro", "/aguardando-aprovacao"];
+const SELF_RATING_PATH = "/autoavaliacao";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -75,6 +76,28 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
+    }
+
+    const isSelfRatingPath = pathname.startsWith(SELF_RATING_PATH);
+
+    if (profile?.status === "approved") {
+      const { count } = await supabase
+        .from("self_ratings")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_id", user.id);
+      const hasSelfRating = (count ?? 0) > 0;
+
+      if (!hasSelfRating && !isSelfRatingPath) {
+        const url = request.nextUrl.clone();
+        url.pathname = SELF_RATING_PATH;
+        return NextResponse.redirect(url);
+      }
+
+      if (hasSelfRating && isSelfRatingPath) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/";
+        return NextResponse.redirect(url);
+      }
     }
   }
 
