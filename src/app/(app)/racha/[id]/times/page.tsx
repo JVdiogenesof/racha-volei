@@ -5,8 +5,10 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { MoveTeamSelect } from "@/components/MoveTeamSelect";
+import { SwapMemberSelect } from "@/components/SwapMemberSelect";
+import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
-import { generateTeams, moveMember, recordMatchWin, undoLastMatchWin } from "./actions";
+import { generateTeams, moveMember, swapMembers, recordMatchWin, undoLastMatchWin } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -82,26 +84,39 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     }));
   }
 
+  const eventDateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
+  const allMembersFlat = teams.flatMap((t) =>
+    t.members.map((m) => ({ teamMemberId: m.teamMemberId, fullName: m.fullName, teamNumber: t.teamNumber })),
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Times</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Racha de {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")} · {event.num_teams} times
+            Racha de {eventDateLabel} · {event.num_teams} times
           </p>
         </div>
-        {profile.is_organizer && (
-          <ActionForm
-            action={generateTeams}
-            successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}
-          >
-            <input type="hidden" name="eventId" value={id} />
-            <button className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark">
-              {generation ? "Gerar novamente" : "Gerar times"}
-            </button>
-          </ActionForm>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {generation && (
+            <ExportTeamsButton
+              eventDateLabel={eventDateLabel}
+              teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
+            />
+          )}
+          {profile.is_organizer && (
+            <ActionForm
+              action={generateTeams}
+              successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}
+            >
+              <input type="hidden" name="eventId" value={id} />
+              <button className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark">
+                {generation ? "Gerar novamente" : "Gerar times"}
+              </button>
+            </ActionForm>
+          )}
+        </div>
       </div>
 
       {!generation && (
@@ -161,16 +176,24 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       {m.isSetter && "🏐 "}
                       {m.fullName}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-xs text-gray-400">{m.overall.toFixed(1)}</span>
                       {profile.is_organizer && (
-                        <MoveTeamSelect
-                          action={moveMember}
-                          eventId={id}
-                          teamMemberId={m.teamMemberId}
-                          currentTeamId={team.id}
-                          teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
-                        />
+                        <>
+                          <SwapMemberSelect
+                            action={swapMembers}
+                            eventId={id}
+                            teamMemberId={m.teamMemberId}
+                            otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
+                          />
+                          <MoveTeamSelect
+                            action={moveMember}
+                            eventId={id}
+                            teamMemberId={m.teamMemberId}
+                            currentTeamId={team.id}
+                            teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
+                          />
+                        </>
                       )}
                     </div>
                   </li>

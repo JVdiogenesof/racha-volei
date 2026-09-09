@@ -94,6 +94,35 @@ export async function moveMember(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export async function swapMembers(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const memberIdA = String(formData.get("teamMemberId"));
+  const memberIdB = String(formData.get("swapWithTeamMemberId"));
+
+  if (!memberIdB || memberIdA === memberIdB) return;
+
+  const { data: rows, error: fetchError } = await supabase
+    .from("team_members")
+    .select("id, team_id")
+    .in("id", [memberIdA, memberIdB]);
+  if (fetchError) throw new Error(fetchError.message);
+
+  const a = rows?.find((r) => r.id === memberIdA);
+  const b = rows?.find((r) => r.id === memberIdB);
+  if (!a || !b) throw new Error("Jogador não encontrado.");
+  if (a.team_id === b.team_id) throw new Error("Esses dois jogadores já estão no mesmo time.");
+
+  const { error: e1 } = await supabase.from("team_members").update({ team_id: b.team_id }).eq("id", a.id);
+  if (e1) throw new Error(e1.message);
+
+  const { error: e2 } = await supabase.from("team_members").update({ team_id: a.team_id }).eq("id", b.id);
+  if (e2) throw new Error(e2.message);
+
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function recordMatchWin(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
