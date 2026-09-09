@@ -67,18 +67,18 @@ export default async function AvisosPage() {
           return (
             <article key={a.id} className="relative rounded-xl border border-gray-200 p-5">
               {profile.is_organizer && (
-                <ActionForm action={deleteAnnouncement} successMessage="Aviso removido." className="absolute right-4 top-4">
+                <ActionForm action={deleteAnnouncement} successMessage="Aviso removido." className="absolute right-3 top-3">
                   <input type="hidden" name="announcementId" value={a.id} />
                   <button
                     type="submit"
                     aria-label="Remover aviso"
-                    className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
                   >
                     <Trash2 className="h-4 w-4" strokeWidth={2} />
                   </button>
                 </ActionForm>
               )}
-              <h2 className="pr-8 font-semibold text-brand-navy">{a.title}</h2>
+              <h2 className="pr-12 font-semibold text-brand-navy">{a.title}</h2>
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">{a.body}</p>
               {a.image_url && (
                 // eslint-disable-next-line @next/next/no-img-element

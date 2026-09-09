@@ -1,0 +1,128 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Pencil, X } from "lucide-react";
+import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
+import { ActionForm } from "./ActionForm";
+import { DeleteEventButton } from "./DeleteEventButton";
+
+type EventData = {
+  id: string;
+  date: string;
+  time: string | null;
+  location: string | null;
+  num_teams: number;
+  price_per_player: number | null;
+  status: string;
+};
+
+export function EventListItem({
+  event,
+  updateEvent,
+  deleteEvent,
+}: {
+  event: EventData;
+  updateEvent: (formData: FormData) => Promise<void>;
+  deleteEvent: (formData: FormData) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const statusInfo = EVENT_STATUS_LABELS[event.status];
+
+  return (
+    <div className="rounded-lg border border-gray-200">
+      <div className="flex items-center gap-2 px-4 py-3">
+        <Link href={`/racha/${event.id}`} className="min-w-0 flex-1 truncate font-medium text-brand-navy hover:underline">
+          {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
+          {event.location ? ` · ${event.location}` : ""}
+        </Link>
+        <span
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+            statusInfo?.className ?? "bg-gray-100 text-gray-500"
+          }`}
+        >
+          {statusInfo?.label ?? event.status}
+        </span>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          aria-label={editing ? "Fechar edição" : "Editar racha"}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-brand-purple"
+        >
+          {editing ? <X className="h-4 w-4" strokeWidth={2} /> : <Pencil className="h-4 w-4" strokeWidth={2} />}
+        </button>
+        <DeleteEventButton eventId={event.id} action={deleteEvent} />
+      </div>
+
+      {editing && (
+        <ActionForm
+          action={async (formData) => {
+            await updateEvent(formData);
+            setEditing(false);
+          }}
+          successMessage="Racha atualizado!"
+          className="grid gap-4 border-t border-gray-100 p-4 sm:grid-cols-2"
+        >
+          <input type="hidden" name="eventId" value={event.id} />
+          <div>
+            <label className="block text-xs font-medium text-gray-500">Data</label>
+            <input
+              type="date"
+              name="date"
+              defaultValue={event.date}
+              required
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500">Horário</label>
+            <input
+              type="time"
+              name="time"
+              defaultValue={event.time?.slice(0, 5) ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500">Local</label>
+            <input
+              name="location"
+              defaultValue={event.location ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500">Número de times</label>
+            <input
+              type="number"
+              name="numTeams"
+              defaultValue={event.num_teams}
+              min={2}
+              required
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500">Valor por jogador (R$)</label>
+            <input
+              type="number"
+              name="pricePerPlayer"
+              step={0.5}
+              min={0}
+              defaultValue={event.price_per_player ?? ""}
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
+            >
+              Salvar alterações
+            </button>
+          </div>
+        </ActionForm>
+      )}
+    </div>
+  );
+}

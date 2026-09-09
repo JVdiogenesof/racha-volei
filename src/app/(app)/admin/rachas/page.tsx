@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
-import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
-import { createEvent } from "./actions";
+import { EventListItem } from "@/components/EventListItem";
+import { createEvent, updateEvent, deleteEvent } from "./actions";
 
 export default async function AdminRachasPage() {
   await requireOrganizer();
@@ -10,7 +9,7 @@ export default async function AdminRachasPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, num_teams, status")
+    .select("id, date, time, location, num_teams, price_per_player, status")
     .order("date", { ascending: false });
 
   return (
@@ -84,24 +83,9 @@ export default async function AdminRachasPage() {
         <h2 className="font-semibold text-brand-navy">Rachas criados</h2>
         <div className="mt-3 space-y-2">
           {events?.map((e) => (
-            <Link
-              key={e.id}
-              href={`/racha/${e.id}`}
-              className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50"
-            >
-              <span className="font-medium text-brand-navy">
-                {new Date(`${e.date}T00:00:00`).toLocaleDateString("pt-BR")}
-                {e.location ? ` · ${e.location}` : ""}
-              </span>
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                  EVENT_STATUS_LABELS[e.status]?.className ?? "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {EVENT_STATUS_LABELS[e.status]?.label ?? e.status}
-              </span>
-            </Link>
+            <EventListItem key={e.id} event={e} updateEvent={updateEvent} deleteEvent={deleteEvent} />
           ))}
+          {!events?.length && <p className="text-sm text-gray-500">Nenhum racha criado ainda.</p>}
         </div>
       </section>
     </div>

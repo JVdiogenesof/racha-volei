@@ -109,10 +109,20 @@ create policy "rating_weights_write" on rating_weights for all to authenticated
   with check (public.is_organizer());
 
 -- events: todo mundo lê, só organizador cria/edita/apaga.
+-- Separado em 3 políticas (em vez de "for all") porque o WITH CHECK de uma
+-- policy "for all" também vale pro UPDATE — se exigíssemos created_by = auth.uid()
+-- ali, um organizador não conseguiria editar/apagar um racha criado por outro.
 create policy "events_select" on events for select to authenticated using (true);
-create policy "events_write" on events for all to authenticated
-  using (public.is_organizer())
+
+create policy "events_insert" on events for insert to authenticated
   with check (public.is_organizer() and created_by = auth.uid());
+
+create policy "events_update" on events for update to authenticated
+  using (public.is_organizer())
+  with check (public.is_organizer());
+
+create policy "events_delete" on events for delete to authenticated
+  using (public.is_organizer());
 
 -- attendance: todo mundo lê (lista de confirmados é pública pro grupo);
 -- cada um confirma/desmarca a própria presença; organizador pode mexer em qualquer uma.
