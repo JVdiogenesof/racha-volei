@@ -4,8 +4,9 @@ import { useState } from "react";
 import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { SkillSlider } from "@/components/SkillSlider";
 import { ActionForm } from "@/components/ActionForm";
+import { RemoveMemberButton } from "@/components/RemoveMemberButton";
 import { SKILL_CATEGORIES, SKILL_LABELS, type RatingsByCategory } from "@/lib/scoring";
-import { setOrganizerRatings } from "@/app/(app)/admin/jogadores/actions";
+import { setOrganizerRatings, removeMember } from "@/app/(app)/admin/jogadores/actions";
 
 export function PlayerRatingEditor({
   profileId,
@@ -61,6 +62,11 @@ export function PlayerRatingEditor({
             Salvar nota do organizador
           </button>
         </ActionForm>
+      )}
+      {open && (
+        <div className="flex justify-end border-t border-gray-100 px-4 py-3">
+          <RemoveMemberButton profileId={profileId} fullName={fullName} action={removeMember} />
+        </div>
       )}
     </div>
   );

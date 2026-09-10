@@ -12,7 +12,8 @@ export interface CurrentProfile {
   has_vpa_shirt: boolean;
   wants_tournaments: boolean;
   is_organizer: boolean;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "removed" | "guest";
+  guest_for_event_id: string | null;
 }
 
 export async function requireProfile(): Promise<CurrentProfile> {
@@ -26,7 +27,7 @@ export async function requireProfile(): Promise<CurrentProfile> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, birthdate, phone, avatar_url, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, is_organizer, status",
+      "id, full_name, birthdate, phone, avatar_url, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, is_organizer, status, guest_for_event_id",
     )
     .eq("id", user.id)
     .maybeSingle();

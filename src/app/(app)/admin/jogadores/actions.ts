@@ -27,6 +27,31 @@ export async function setOrganizerRatings(formData: FormData) {
   revalidatePath("/admin/jogadores");
 }
 
+export async function removeMember(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const profileId = String(formData.get("profileId"));
+
+  if (profileId === organizer.id) {
+    throw new Error("Você não pode remover a si mesmo.");
+  }
+
+  const { data: target } = await supabase
+    .from("profiles")
+    .select("is_organizer")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (target?.is_organizer) {
+    throw new Error("Não dá pra remover outro organizador por aqui.");
+  }
+
+  const { error } = await supabase.from("profiles").update({ status: "removed" }).eq("id", profileId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/jogadores");
+  revalidatePath("/jogadores");
+  revalidatePath("/ranking");
+}
+
 export async function setRatingWeights(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

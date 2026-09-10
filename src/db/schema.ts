@@ -25,6 +25,8 @@ export const profileStatusEnum = pgEnum("profile_status", [
   "pending",
   "approved",
   "rejected",
+  "removed",
+  "guest",
 ]);
 
 export const eventStatusEnum = pgEnum("event_status", [
@@ -67,6 +69,12 @@ export const profiles = pgTable("profiles", {
   isOrganizer: boolean("is_organizer").notNull().default(false),
   status: profileStatusEnum("status").notNull().default("pending"),
   approvedBy: uuid("approved_by"),
+  // Só preenchido quando status = "guest": acesso temporário de gente de fora
+  // do grupo, restrito a esse racha específico. Some sozinho (cascade) se o
+  // racha for apagado, e o próprio guest é apagado quando o racha termina.
+  // FK pra events.id é adicionada à mão em rls.sql (referência cruzada com
+  // events.created_by -> profiles.id confundiria a inferência de tipos do Drizzle).
+  guestForEventId: uuid("guest_for_event_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

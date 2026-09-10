@@ -65,6 +65,7 @@ async function main() {
     }
     await sql`alter table profiles drop constraint if exists profiles_id_auth_users_id_fk`;
     await sql`alter table reserve_list drop constraint if exists reserve_list_auth_user_id_fk`;
+    await sql`alter table profiles drop constraint if exists profiles_guest_for_event_id_fk`;
 
     const script = fs.readFileSync(path.join(__dirname, "..", "supabase", "rls.sql"), "utf8");
     await sql.unsafe(script);

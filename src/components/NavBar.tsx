@@ -33,9 +33,29 @@ export async function NavBar() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, is_organizer")
+    .select("full_name, avatar_url, is_organizer, status, guest_for_event_id")
     .eq("id", user.id)
     .maybeSingle();
+
+  if (profile?.status === "guest") {
+    return (
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-navy text-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+          <Link href={`/racha/${profile.guest_for_event_id}`}>
+            <Logo markClassName="h-10 w-10" />
+          </Link>
+          <p className="hidden text-sm text-white/70 sm:block">
+            Acesso de convidado(a) — {profile.full_name}
+          </p>
+          <form action={signOut}>
+            <button className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium hover:bg-white/20">
+              Sair
+            </button>
+          </form>
+        </div>
+      </header>
+    );
+  }
 
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const today = new Date().toISOString().slice(0, 10);

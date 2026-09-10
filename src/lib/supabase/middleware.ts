@@ -45,7 +45,11 @@ export async function updateSession(request: NextRequest) {
 
   if (user && !isPublic) {
     const [{ data: profile }, { data: reserveEntry }] = await Promise.all([
-      supabase.from("profiles").select("status, is_organizer").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("status, is_organizer, guest_for_event_id")
+        .eq("id", user.id)
+        .maybeSingle(),
       supabase.from("reserve_list").select("id").eq("auth_user_id", user.id).maybeSingle(),
     ]);
 
@@ -62,6 +66,38 @@ export async function updateSession(request: NextRequest) {
       return response;
     }
 
+    // Acesso temporário: só enxerga o racha pro qual foi chamado, e só
+    // enquanto esse racha não tiver terminado/sido cancelado. Quando expira,
+    // o próprio perfil temporário é apagado e a pessoa volta pra lista de reserva.
+    if (profile?.status === "guest") {
+      const { data: guestEvent } = await supabase
+        .from("events")
+        .select("status")
+        .eq("id", profile.guest_for_event_id ?? "")
+        .maybeSingle();
+
+      const eventActive = guestEvent && guestEvent.status !== "finished" && guestEvent.status !== "cancelled";
+
+      if (!eventActive) {
+        await supabase.from("profiles").delete().eq("id", user.id);
+        if (!isReservePath) {
+          const url = request.nextUrl.clone();
+          url.pathname = RESERVE_PATH;
+          return NextResponse.redirect(url);
+        }
+        return response;
+      }
+
+      const allowedPrefix = `/racha/${profile.guest_for_event_id}`;
+      if (!pathname.startsWith(allowedPrefix)) {
+        const url = request.nextUrl.clone();
+        url.pathname = allowedPrefix;
+        return NextResponse.redirect(url);
+      }
+
+      return response;
+    }
+
     if (profile && isReservePath) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
@@ -75,7 +111,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (
-      (profile?.status === "pending" || profile?.status === "rejected") &&
+      (profile?.status === "pending" || profile?.status === "rejected" || profile?.status === "removed") &&
       !isOnboarding
     ) {
       const url = request.nextUrl.clone();

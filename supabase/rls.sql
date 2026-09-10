@@ -13,6 +13,11 @@ alter table reserve_list
   add constraint reserve_list_auth_user_id_fk
   foreign key (auth_user_id) references auth.users (id) on delete cascade;
 
+-- Acesso temporário de convidado: se o racha for apagado, o acesso some junto.
+alter table profiles
+  add constraint profiles_guest_for_event_id_fk
+  foreign key (guest_for_event_id) references events (id) on delete cascade;
+
 -- Função auxiliar: true se o usuário logado é organizador.
 -- SECURITY DEFINER + search_path fixo evita recursão de RLS ao consultar "profiles"
 -- e evita que a função seja sequestrada por um search_path malicioso.
@@ -60,7 +65,10 @@ security definer
 set search_path = public
 stable
 as $$
-  select coalesce((select status = 'approved' from profiles where id = auth.uid()), false);
+  -- "guest" (acesso temporário de fora do grupo pra 1 racha) também conta
+  -- como aprovado aqui, senão essa pessoa não consegue ver o nome/avatar dos
+  -- outros jogadores confirmados no racha que ela foi chamada pra jogar.
+  select coalesce((select status = 'approved' or status = 'guest' from profiles where id = auth.uid()), false);
 $$;
 
 drop trigger if exists trg_guard_profile_privileged_columns on profiles;
@@ -92,11 +100,21 @@ create policy "profiles_select" on profiles for select to authenticated
 create policy "profiles_insert_self" on profiles for insert to authenticated
   with check (id = auth.uid() and status = 'pending' and is_organizer = false and approved_by is null);
 
+-- organizador cria um perfil "guest" pra alguém de fora que ele chamou da
+-- lista de reserva pra jogar um racha específico.
+create policy "profiles_insert_guest_by_organizer" on profiles for insert to authenticated
+  with check (public.is_organizer() and status = 'guest');
+
 -- edição: a própria pessoa (campos privilegiados são bloqueados pelo trigger acima)
 -- ou qualquer organizador editando qualquer perfil.
 create policy "profiles_update" on profiles for update to authenticated
   using (id = auth.uid() or public.is_organizer())
   with check (id = auth.uid() or public.is_organizer());
+
+-- apagar perfil só é permitido pra "guest" (acesso expirado se apaga sozinho,
+-- ou organizador encerra na mão) -- nunca apaga membro de verdade por aqui.
+create policy "profiles_delete_guest" on profiles for delete to authenticated
+  using (status = 'guest' and (id = auth.uid() or public.is_organizer()));
 
 -- self_ratings: transparência total pra leitura; só o próprio dono escreve.
 create policy "self_ratings_select" on self_ratings for select to authenticated using (true);

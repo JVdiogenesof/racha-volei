@@ -220,6 +220,12 @@ export default async function ConfirmarPresencaPage({
                     >
                       <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                       <span className="flex-1 truncate text-sm">{p?.full_name}</span>
+                      <RemoveAttendanceButton
+                        eventId={id}
+                        profileId={a.profile_id}
+                        fullName={p?.full_name ?? "esse jogador"}
+                        action={removeAttendance}
+                      />
                     </li>
                   );
                 })}
@@ -242,6 +248,14 @@ export default async function ConfirmarPresencaPage({
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                   <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
                   {overall !== null && <span className="text-xs text-gray-400">{overall.toFixed(1)}</span>}
+                  {profile.is_organizer && (
+                    <RemoveAttendanceButton
+                      eventId={id}
+                      profileId={a.profile_id}
+                      fullName={p?.full_name ?? "esse jogador"}
+                      action={removeAttendance}
+                    />
+                  )}
                 </li>
               );
             })}
