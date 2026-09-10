@@ -48,3 +48,29 @@ export async function submitCadastro(formData: FormData) {
 
   redirect("/aguardando-aprovacao");
 }
+
+export async function submitReserveSignup(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const fullName = String(formData.get("fullName") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").trim();
+
+  if (!fullName || !phone) {
+    throw new Error("Nome e telefone são obrigatórios.");
+  }
+
+  const { error } = await supabase.from("reserve_list").upsert(
+    { auth_user_id: user.id, full_name: fullName, phone },
+    { onConflict: "auth_user_id" },
+  );
+  if (error) throw new Error(error.message);
+
+  redirect("/lista-de-reserva");
+}

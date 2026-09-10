@@ -8,6 +8,11 @@ alter table profiles
   add constraint profiles_id_auth_users_id_fk
   foreign key (id) references auth.users (id) on delete cascade;
 
+-- Mesma coisa pra lista de reserva (gente de fora do grupo).
+alter table reserve_list
+  add constraint reserve_list_auth_user_id_fk
+  foreign key (auth_user_id) references auth.users (id) on delete cascade;
+
 -- Função auxiliar: true se o usuário logado é organizador.
 -- SECURITY DEFINER + search_path fixo evita recursão de RLS ao consultar "profiles"
 -- e evita que a função seja sequestrada por um search_path malicioso.
@@ -77,6 +82,7 @@ alter table announcements enable row level security;
 alter table mvp_votes enable row level security;
 alter table match_wins enable row level security;
 alter table ranking_adjustments enable row level security;
+alter table reserve_list enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -181,6 +187,18 @@ create policy "ranking_adjustments_select" on ranking_adjustments for select to 
 create policy "ranking_adjustments_insert" on ranking_adjustments for insert to authenticated
   with check (public.is_organizer() and created_by = auth.uid());
 create policy "ranking_adjustments_delete" on ranking_adjustments for delete to authenticated
+  using (public.is_organizer());
+
+-- reserve_list: cada um só vê/edita a própria linha; organizador vê e mexe em todas
+-- (precisa ver o telefone de todo mundo pra poder chamar quando sobrar vaga).
+create policy "reserve_list_select" on reserve_list for select to authenticated
+  using (auth_user_id = auth.uid() or public.is_organizer());
+create policy "reserve_list_insert" on reserve_list for insert to authenticated
+  with check (auth_user_id = auth.uid());
+create policy "reserve_list_update" on reserve_list for update to authenticated
+  using (auth_user_id = auth.uid() or public.is_organizer())
+  with check (auth_user_id = auth.uid() or public.is_organizer());
+create policy "reserve_list_delete" on reserve_list for delete to authenticated
   using (public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,

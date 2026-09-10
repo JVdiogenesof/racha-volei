@@ -196,6 +196,18 @@ export const announcements = pgTable("announcements", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Pessoas de fora do grupo fixo que topam ser chamadas quando sobra vaga
+// num racha. Fluxo separado do cadastro normal (sem aprovação, sem acesso
+// ao resto do site) -- só nome e telefone pros organizadores ligarem.
+export const reserveList = pgTable("reserve_list", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authUserId: uuid("auth_user_id").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  contacted: boolean("contacted").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {
