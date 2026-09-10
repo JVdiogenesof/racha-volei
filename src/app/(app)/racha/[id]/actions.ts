@@ -9,6 +9,15 @@ export async function startEvent(formData: FormData) {
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
 
+  const { data: event } = await supabase
+    .from("events")
+    .select("official_list_open")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!event?.official_list_open) {
+    throw new Error("Abra a lista oficial antes de iniciar o evento.");
+  }
+
   const { error } = await supabase.from("events").update({ status: "in_progress" }).eq("id", eventId);
   if (error) throw new Error(error.message);
 

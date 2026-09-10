@@ -16,7 +16,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
 
   const [{ data: event }, { data: generation }] = await Promise.all([
-    supabase.from("events").select("id, date, num_teams").eq("id", id).maybeSingle(),
+    supabase.from("events").select("id, date, num_teams, official_list_open").eq("id", id).maybeSingle(),
     supabase
       .from("team_generations")
       .select("id, generated_at")
@@ -105,7 +105,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
             />
           )}
-          {profile.is_organizer && (
+          {profile.is_organizer && event.official_list_open && (
             <ActionForm
               action={generateTeams}
               successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}
@@ -119,7 +119,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {!generation && (
+      {!generation && !event.official_list_open && (
+        <p className="text-sm text-gray-500">
+          Os times só podem ser gerados depois que a lista oficial do racha abrir.
+        </p>
+      )}
+
+      {!generation && event.official_list_open && (
         <p className="text-sm text-gray-500">
           Os times ainda não foram gerados. {profile.is_organizer ? "Clique em \"Gerar times\" acima." : "Aguarde o organizador gerar."}
         </p>

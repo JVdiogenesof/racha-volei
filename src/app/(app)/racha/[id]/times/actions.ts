@@ -14,10 +14,13 @@ export async function generateTeams(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("num_teams")
+    .select("num_teams, official_list_open")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
+  if (!event.official_list_open) {
+    throw new Error("Abra a lista oficial antes de gerar os times.");
+  }
 
   const { data: confirmed } = await supabase
     .from("attendance")

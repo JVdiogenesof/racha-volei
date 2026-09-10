@@ -84,7 +84,9 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           <p className="text-sm text-gray-600">
             {isInProgress
               ? "O racha está rolando. Termine o evento quando acabar pra liberar a votação de MVP."
-              : "Quando a galera chegar na quadra, inicie o evento."}
+              : listOpen
+                ? "Quando a galera chegar na quadra, inicie o evento."
+                : "Abra a lista oficial (em \"Entrar na lista do racha\") antes de iniciar o evento."}
           </p>
           {isInProgress ? (
             <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora dá pra escolher o MVP." className="ml-auto shrink-0">
@@ -94,7 +96,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
                 Terminar evento
               </button>
             </ActionForm>
-          ) : (
+          ) : listOpen ? (
             <ActionForm action={startEvent} successMessage="Racha iniciado!" className="ml-auto shrink-0">
               <input type="hidden" name="eventId" value={id} />
               <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-purple-dark">
@@ -102,7 +104,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
                 Iniciar evento
               </button>
             </ActionForm>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -117,7 +119,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           href={`/racha/${id}/times`}
           icon={Users2}
           title="Times"
-          description="Veja ou gere os times balanceados."
+          description={listOpen ? "Veja ou gere os times balanceados." : "Libera depois que a lista oficial abrir."}
         />
         <HubCard
           href={`/racha/${id}/mvp`}
