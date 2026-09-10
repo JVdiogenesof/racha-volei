@@ -12,7 +12,7 @@ export default async function HomePage() {
   const [{ data: proximoRacha }, { data: avisos }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location")
+      .select("id, date, time, location, official_list_open")
       .gte("date", today)
       .neq("status", "finished")
       .neq("status", "cancelled")
@@ -53,7 +53,7 @@ export default async function HomePage() {
               href={`/racha/${proximoRacha.id}/confirmar`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
             >
-              Confirmar presença
+              {proximoRacha.official_list_open ? "Confirmar presença" : "Tenho interesse"}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </div>

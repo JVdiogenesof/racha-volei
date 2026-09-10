@@ -9,7 +9,7 @@ export default async function AdminRachasPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, num_teams, price_per_player, status")
+    .select("id, date, time, location, num_teams, price_per_player, status, official_list_open")
     .order("date", { ascending: false });
 
   return (

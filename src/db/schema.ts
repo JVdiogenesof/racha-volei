@@ -44,6 +44,7 @@ export const rankingMetricEnum = pgEnum("ranking_metric", [
 export const attendanceStatusEnum = pgEnum("attendance_status", [
   "confirmed",
   "declined",
+  "interested",
 ]);
 
 export const attendanceFrequencyEnum = pgEnum("attendance_frequency", [
@@ -109,6 +110,10 @@ export const events = pgTable("events", {
   numTeams: integer("num_teams").notNull().default(2),
   pricePerPlayer: numeric("price_per_player", { precision: 8, scale: 2 }),
   status: eventStatusEnum("status").notNull().default("open"),
+  // Fase de interesse (false) vs lista oficial aberta (true). Novos rachas
+  // nascem em fase de interesse; o organizador abre a lista oficial quando
+  // achar que já tem gente boa suficiente confirmando interesse.
+  officialListOpen: boolean("official_list_open").notNull().default(true),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

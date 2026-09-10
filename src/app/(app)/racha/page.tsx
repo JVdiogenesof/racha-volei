@@ -10,7 +10,7 @@ export default async function RachaListPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, status")
+    .select("id, date, time, location, status, official_list_open")
     .order("date", { ascending: false });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -59,7 +59,14 @@ export default async function RachaListPage() {
 function EventRow({
   event,
 }: {
-  event: { id: string; date: string; time: string | null; location: string | null; status: string };
+  event: {
+    id: string;
+    date: string;
+    time: string | null;
+    location: string | null;
+    status: string;
+    official_list_open: boolean;
+  };
 }) {
   return (
     <Link
@@ -82,13 +89,24 @@ function EventRow({
           </p>
         )}
       </div>
-      <span
-        className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-          EVENT_STATUS_LABELS[event.status]?.className ?? "bg-gray-100 text-gray-500"
-        }`}
-      >
-        {EVENT_STATUS_LABELS[event.status]?.label ?? event.status}
-      </span>
+      <div className="flex shrink-0 items-center gap-2">
+        {event.status === "open" && (
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+              event.official_list_open ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            {event.official_list_open ? "Lista aberta" : "Interesse"}
+          </span>
+        )}
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+            EVENT_STATUS_LABELS[event.status]?.className ?? "bg-gray-100 text-gray-500"
+          }`}
+        >
+          {EVENT_STATUS_LABELS[event.status]?.label ?? event.status}
+        </span>
+      </div>
     </Link>
   );
 }

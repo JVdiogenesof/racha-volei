@@ -16,6 +16,7 @@ type EventData = {
   num_teams: number;
   price_per_player: number | null;
   status: string;
+  official_list_open: boolean;
 };
 
 export function EventListItem({
@@ -39,6 +40,15 @@ export function EventListItem({
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           {event.location ? ` · ${event.location}` : ""}
         </Link>
+        {event.status === "open" && (
+          <span
+            className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
+              event.official_list_open ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+            }`}
+          >
+            {event.official_list_open ? "Lista oficial aberta" : "Fase de interesse"}
+          </span>
+        )}
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
             statusInfo?.className ?? "bg-gray-100 text-gray-500"

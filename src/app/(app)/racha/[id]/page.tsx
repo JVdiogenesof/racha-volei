@@ -13,30 +13,43 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { count: confirmedCount }, { data: myAttendance }] = await Promise.all([
-    supabase
-      .from("events")
-      .select("id, date, time, location, num_teams, price_per_player, status")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("attendance")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", id)
-      .eq("status", "confirmed"),
-    supabase
-      .from("attendance")
-      .select("status")
-      .eq("event_id", id)
-      .eq("profile_id", profile.id)
-      .maybeSingle(),
-  ]);
+  const [{ data: event }, { count: confirmedCount }, { count: interestedCount }, { data: myAttendance }] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("id, date, time, location, num_teams, price_per_player, status, official_list_open")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", id)
+        .eq("status", "confirmed"),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", id)
+        .eq("status", "interested"),
+      supabase
+        .from("attendance")
+        .select("status")
+        .eq("event_id", id)
+        .eq("profile_id", profile.id)
+        .maybeSingle(),
+    ]);
 
   if (!event) notFound();
 
   const statusInfo = EVENT_STATUS_LABELS[event.status];
   const isFinished = event.status === "finished";
   const isInProgress = event.status === "in_progress";
+  const listOpen = event.official_list_open;
+  const myStatusLabel =
+    myAttendance?.status === "confirmed"
+      ? "confirmado"
+      : myAttendance?.status === "interested"
+        ? "interessado"
+        : "de fora";
 
   return (
     <div className="space-y-6">
@@ -59,8 +72,10 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           {event.price_per_player ? ` · R$ ${Number(event.price_per_player).toFixed(2)} por jogador` : ""}
         </p>
         <p className="mt-1 text-sm text-gray-500">
-          {confirmedCount ?? 0} confirmados · você está{" "}
-          <strong>{myAttendance?.status === "confirmed" ? "confirmado" : "de fora"}</strong>
+          {listOpen
+            ? `${confirmedCount ?? 0} confirmados`
+            : `${interestedCount ?? 0} interessados`}{" "}
+          · você está <strong>{myStatusLabel}</strong>
         </p>
       </div>
 
@@ -95,8 +110,8 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         <HubCard
           href={`/racha/${id}/confirmar`}
           icon={CalendarCheck}
-          title="Confirmar presença"
-          description="Diga se você vai jogar."
+          title={listOpen ? "Entrar na lista do racha" : "Interesse no racha"}
+          description={listOpen ? "Confirme sua presença oficial." : "Diga se você tem interesse em jogar."}
         />
         <HubCard
           href={`/racha/${id}/times`}

@@ -8,14 +8,24 @@ export async function setAttendance(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
-  const status = String(formData.get("status")) as "confirmed" | "declined";
+  const status = String(formData.get("status")) as "confirmed" | "declined" | "interested";
 
-  const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, official_list_open")
+    .eq("id", eventId)
+    .maybeSingle();
   if (event?.status === "finished") {
     throw new Error("Esse racha já terminou, não dá mais pra confirmar presença.");
   }
   if (event?.status === "cancelled") {
     throw new Error("Esse racha foi cancelado, não dá mais pra confirmar presença.");
+  }
+  if (status === "confirmed" && !event?.official_list_open) {
+    throw new Error("A lista oficial ainda não abriu. Marque que tem interesse por enquanto.");
+  }
+  if (status === "interested" && event?.official_list_open) {
+    throw new Error("A lista oficial já abriu — confirme sua presença direto.");
   }
 
   const { error } = await supabase.from("attendance").upsert(
@@ -31,6 +41,20 @@ export async function setAttendance(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
+}
+
+export async function setOfficialListOpen(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const open = String(formData.get("open")) === "true";
+
+  const { error } = await supabase.from("events").update({ official_list_open: open }).eq("id", eventId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/racha");
+  revalidatePath("/");
 }
 
 export async function removeAttendance(formData: FormData) {

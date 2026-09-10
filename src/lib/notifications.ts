@@ -35,7 +35,7 @@ export async function getNotifications(
       : Promise.resolve({ count: 0 }),
     supabase
       .from("events")
-      .select("id, date, status, price_per_player")
+      .select("id, date, status, price_per_player, official_list_open")
       .gte("date", twoWeeksAgo)
       .order("date", { ascending: true }),
     supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
@@ -77,12 +77,25 @@ export async function getNotifications(
       month: "2-digit",
     });
     const myStatus = attendanceByEvent.get(event.id);
+    const activeEvent = event.status !== "finished" && event.status !== "cancelled";
 
-    if (event.status !== "finished" && !myStatus) {
+    if (activeEvent && event.official_list_open && (myStatus === undefined || myStatus === "interested")) {
       items.push({
         id: `confirm-${event.id}`,
         type: "confirm",
-        message: `Confirme sua presença no racha de ${dateLabel}`,
+        message:
+          myStatus === "interested"
+            ? `A lista oficial do racha de ${dateLabel} abriu — confirme sua presença!`
+            : `Confirme sua presença no racha de ${dateLabel}`,
+        href: `/racha/${event.id}/confirmar`,
+      });
+    }
+
+    if (activeEvent && !event.official_list_open && myStatus === undefined) {
+      items.push({
+        id: `confirm-${event.id}`,
+        type: "confirm",
+        message: `Diga se você tem interesse no racha de ${dateLabel}`,
         href: `/racha/${event.id}/confirmar`,
       });
     }

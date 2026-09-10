@@ -29,6 +29,7 @@ export async function createEvent(formData: FormData) {
       num_teams: numTeams,
       price_per_player: pricePerPlayer,
       created_by: organizer.id,
+      official_list_open: false,
     })
     .select("id")
     .single();
