@@ -38,7 +38,7 @@ export function RemoveAttendanceButton({
         });
       }}
       aria-label={`Remover ${fullName}`}
-      className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+      className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/40 hover:bg-red-500/15 hover:text-red-400 disabled:opacity-50"
     >
       {isPending ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />

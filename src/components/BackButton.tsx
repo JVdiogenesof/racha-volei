@@ -13,7 +13,7 @@ export function BackButton() {
     <button
       type="button"
       onClick={() => router.back()}
-      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-brand-navy"
+      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/60 transition hover:text-white"
     >
       <ArrowLeft className="h-4 w-4" strokeWidth={2} />
       Voltar

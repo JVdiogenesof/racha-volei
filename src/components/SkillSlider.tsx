@@ -16,10 +16,10 @@ export function SkillSlider({
   return (
     <div>
       <div className="flex items-center justify-between text-sm">
-        <label htmlFor={name} className="font-medium text-brand-navy">
+        <label htmlFor={name} className="font-medium text-white">
           {label}
         </label>
-        <span className="font-semibold text-brand-purple">{value.toFixed(1)}</span>
+        <span className="font-semibold text-purple-300">{value.toFixed(1)}</span>
       </div>
       <input
         id={name}

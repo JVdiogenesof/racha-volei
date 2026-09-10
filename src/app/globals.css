@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
-/* Identidade visual: roxo + branco + azul marinho (logo Vôlei Por Amor). */
+/* Identidade visual: roxo + azul marinho, tema escuro (logo Vôlei Por Amor). */
 :root {
-  --background: #ffffff;
-  --foreground: #12163a;
+  --background: #101534;
+  --foreground: #f4f3fb;
   --brand-purple: #6d28d9;
   --brand-purple-dark: #4c1d95;
   --brand-navy: #101534;

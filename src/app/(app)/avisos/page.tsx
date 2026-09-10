@@ -18,8 +18,8 @@ export default async function AvisosPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-brand-navy">
-        <Megaphone className="h-6 w-6 text-brand-purple" strokeWidth={2} />
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
+        <Megaphone className="h-6 w-6 text-purple-300" strokeWidth={2} />
         Avisos
       </h1>
 
@@ -28,28 +28,28 @@ export default async function AvisosPage() {
           action={createAnnouncement}
           successMessage="Aviso publicado!"
           resetOnSuccess
-          className="space-y-4 rounded-xl border border-gray-200 p-6"
+          className="space-y-4 rounded-xl border border-white/10 p-6"
         >
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Título</label>
+            <label className="block text-sm font-medium text-white">Título</label>
             <input
               name="title"
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Texto</label>
+            <label className="block text-sm font-medium text-white">Texto</label>
             <textarea
               name="body"
               required
               rows={3}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">
-              Foto <span className="text-gray-400">(opcional)</span>
+            <label className="block text-sm font-medium text-white">
+              Foto <span className="text-white/40">(opcional)</span>
             </label>
             <div className="mt-1">
               <FileInput name="image" accept="image/*" />
@@ -81,7 +81,7 @@ export default async function AvisosPage() {
             />
           );
         })}
-        {!announcements?.length && <p className="text-sm text-gray-500">Nenhum aviso ainda.</p>}
+        {!announcements?.length && <p className="text-sm text-white/60">Nenhum aviso ainda.</p>}
       </div>
     </div>
   );

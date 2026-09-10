@@ -35,7 +35,7 @@ export function CancelEventButton({
         });
       }}
       aria-label="Cancelar racha"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100 disabled:opacity-50"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-orange-500/30 bg-orange-500/15 text-orange-400 hover:bg-orange-500/20 disabled:opacity-50"
     >
       {isPending ? (
         <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />

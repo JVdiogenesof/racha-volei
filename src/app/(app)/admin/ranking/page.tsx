@@ -28,26 +28,26 @@ export default async function AdminRankingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Editar rankings</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-white">Editar rankings</h1>
+        <p className="mt-1 text-sm text-white/60">
           Ajuste manualmente presenças, MVPs e vitórias de qualquer jogador pra corrigir algum problema.
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200">
+      <div className="overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+            <tr className="border-b border-white/10 text-left text-xs text-white/60">
               <th className="px-4 py-2.5">Jogador</th>
               <th className="px-4 py-2.5">Presenças</th>
               <th className="px-4 py-2.5">MVPs</th>
               <th className="px-4 py-2.5">Vitórias</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/10">
             {(profiles ?? []).map((p) => (
               <tr key={p.id}>
-                <td className="px-4 py-2.5 font-medium text-brand-navy">{p.full_name}</td>
+                <td className="px-4 py-2.5 font-medium text-white">{p.full_name}</td>
                 <td className="px-4 py-2.5">
                   <RankingAdjustControl
                     profileId={p.id}
@@ -76,7 +76,7 @@ export default async function AdminRankingPage() {
             ))}
             {!profiles?.length && (
               <tr>
-                <td className="px-4 py-4 text-sm text-gray-500" colSpan={4}>
+                <td className="px-4 py-4 text-sm text-white/60" colSpan={4}>
                   Nenhum jogador aprovado ainda.
                 </td>
               </tr>
@@ -86,26 +86,26 @@ export default async function AdminRankingPage() {
       </div>
 
       <section>
-        <h2 className="font-semibold text-brand-navy">Últimos ajustes manuais</h2>
+        <h2 className="font-semibold text-white">Últimos ajustes manuais</h2>
         <div className="mt-3 space-y-2">
           {(adjustmentRows ?? []).map((a) => {
             const p = a.profiles as unknown as { full_name: string } | null;
             return (
               <div
                 key={a.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 px-3 py-2 text-sm"
               >
-                <span className="text-gray-600">
+                <span className="text-white/70">
                   {a.delta > 0 ? "+" : ""}
                   {a.delta} {METRIC_LABELS[a.metric] ?? a.metric} em{" "}
-                  <strong className="text-brand-navy">{p?.full_name}</strong>
+                  <strong className="text-white">{p?.full_name}</strong>
                   {a.reason ? ` — ${a.reason}` : ""}
                 </span>
                 <DeleteRankingAdjustmentButton adjustmentId={a.id} action={deleteRankingAdjustment} />
               </div>
             );
           })}
-          {!adjustmentRows?.length && <p className="text-sm text-gray-500">Nenhum ajuste manual feito ainda.</p>}
+          {!adjustmentRows?.length && <p className="text-sm text-white/60">Nenhum ajuste manual feito ainda.</p>}
         </div>
       </section>
     </div>

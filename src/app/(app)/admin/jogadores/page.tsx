@@ -23,17 +23,17 @@ export default async function AdminJogadoresPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Notas dos jogadores</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-white">Notas dos jogadores</h1>
+        <p className="mt-1 text-sm text-white/60">
           A nota final combina autoavaliação e nota do organizador conforme o peso abaixo.
         </p>
       </div>
 
-      <section className="rounded-xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-brand-navy">Peso da nota</h2>
+      <section className="rounded-xl border border-white/10 p-6">
+        <h2 className="font-semibold text-white">Peso da nota</h2>
         <ActionForm action={setRatingWeights} successMessage="Peso atualizado!" className="mt-4 flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500">Peso da autoavaliação</label>
+            <label className="block text-xs font-medium text-white/60">Peso da autoavaliação</label>
             <input
               type="number"
               name="selfWeight"
@@ -41,11 +41,11 @@ export default async function AdminJogadoresPage() {
               step={0.1}
               min={0}
               max={1}
-              className="mt-1 w-28 rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-28 rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500">Peso do organizador</label>
+            <label className="block text-xs font-medium text-white/60">Peso do organizador</label>
             <input
               type="number"
               name="organizerWeight"
@@ -53,7 +53,7 @@ export default async function AdminJogadoresPage() {
               step={0.1}
               min={0}
               max={1}
-              className="mt-1 w-28 rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-28 rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <button

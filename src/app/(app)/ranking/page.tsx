@@ -38,8 +38,8 @@ export default async function RankingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Ranking</h1>
-        <p className="mt-1 text-sm text-gray-500">Quem mais aparece e quem mais brilha nos rachas.</p>
+        <h1 className="text-2xl font-bold text-white">Ranking</h1>
+        <p className="mt-1 text-sm text-white/60">Quem mais aparece e quem mais brilha nos rachas.</p>
       </div>
 
       <Leaderboard

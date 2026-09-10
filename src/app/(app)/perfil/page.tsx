@@ -22,15 +22,15 @@ export default async function PerfilPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Meu perfil</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-white">Meu perfil</h1>
+        <p className="text-sm text-white/60">
           Sua nota final combina sua autoavaliação com a nota dos organizadores.
         </p>
       </div>
 
-      <section className="rounded-xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-brand-navy">Nota final</h2>
-        <p className="mt-1 text-sm text-gray-500">Geral: {overall.toFixed(1)} / 5</p>
+      <section className="rounded-xl border border-white/10 p-6">
+        <h2 className="font-semibold text-white">Nota final</h2>
+        <p className="mt-1 text-sm text-white/60">Geral: {overall.toFixed(1)} / 5</p>
         <div className="mt-4 space-y-3">
           {SKILL_CATEGORIES.map((c) => (
             <ScoreBar key={c} label={SKILL_LABELS[c]} value={finalScores[c]} />
@@ -38,46 +38,46 @@ export default async function PerfilPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-brand-navy">Dados pessoais</h2>
+      <section className="rounded-xl border border-white/10 p-6">
+        <h2 className="font-semibold text-white">Dados pessoais</h2>
         <ActionForm action={updateProfileData} successMessage="Dados salvos!" className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Nome completo</label>
+            <label className="block text-sm font-medium text-white">Nome completo</label>
             <input
               name="fullName"
               defaultValue={profile.full_name}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Data de aniversário</label>
+            <label className="block text-sm font-medium text-white">Data de aniversário</label>
             <input
               type="date"
               name="birthdate"
               defaultValue={profile.birthdate ?? ""}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Telefone</label>
+            <label className="block text-sm font-medium text-white">Telefone</label>
             <input
               name="phone"
               defaultValue={profile.phone ?? ""}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Posição que joga</label>
-            <div className="mt-2 flex gap-4 text-sm text-brand-navy">
+            <label className="block text-sm font-medium text-white">Posição que joga</label>
+            <div className="mt-2 flex gap-4 text-sm text-white">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="position"
                   value="attacker"
                   defaultChecked={!profile.is_setter}
-                  className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                  className="h-4 w-4 border-white/15 text-purple-300 focus:ring-brand-purple"
                 />
                 Atacando
               </label>
@@ -87,18 +87,18 @@ export default async function PerfilPage() {
                   name="position"
                   value="setter"
                   defaultChecked={profile.is_setter}
-                  className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                  className="h-4 w-4 border-white/15 text-purple-300 focus:ring-brand-purple"
                 />
                 Levantando
               </label>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-brand-navy">Pretende ir quantas vezes?</label>
+            <label className="block text-sm font-medium text-white">Pretende ir quantas vezes?</label>
             <select
               name="attendanceFrequency"
               defaultValue={profile.attendance_frequency ?? "weekly"}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             >
               {ATTENDANCE_FREQUENCY_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -107,21 +107,21 @@ export default async function PerfilPage() {
               ))}
             </select>
           </div>
-          <label className="flex items-center gap-2 text-sm text-brand-navy">
+          <label className="flex items-center gap-2 text-sm text-white">
             <input
               type="checkbox"
               name="hasVpaShirt"
               defaultChecked={profile.has_vpa_shirt}
-              className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+              className="h-4 w-4 rounded border-white/15 text-purple-300 focus:ring-brand-purple"
             />
             Já tenho a camisa do VPA
           </label>
-          <label className="flex items-center gap-2 text-sm text-brand-navy">
+          <label className="flex items-center gap-2 text-sm text-white">
             <input
               type="checkbox"
               name="wantsTournaments"
               defaultChecked={profile.wants_tournaments}
-              className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+              className="h-4 w-4 rounded border-white/15 text-purple-300 focus:ring-brand-purple"
             />
             Pretendo participar de torneios e amistosos
           </label>
@@ -134,9 +134,9 @@ export default async function PerfilPage() {
         </ActionForm>
       </section>
 
-      <section className="rounded-xl border border-gray-200 p-6">
-        <h2 className="font-semibold text-brand-navy">Minha autoavaliação</h2>
-        <p className="mt-1 text-sm text-gray-500">
+      <section className="rounded-xl border border-white/10 p-6">
+        <h2 className="font-semibold text-white">Minha autoavaliação</h2>
+        <p className="mt-1 text-sm text-white/60">
           Seja honesto — sua nota final também depende da avaliação dos organizadores.
         </p>
         <ActionForm action={updateSelfRatings} successMessage="Autoavaliação salva!" className="mt-4 space-y-5">

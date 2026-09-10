@@ -62,10 +62,10 @@ export default function LoginPage() {
       </div>
 
       <div className="relative flex flex-col items-center justify-center px-8 py-16">
-        <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-lg shadow-brand-navy/5">
+        <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-8 shadow-lg shadow-black/20">
           <LogoMark className="h-10 w-10 lg:hidden" />
-          <h2 className="mt-4 text-xl font-semibold text-brand-navy lg:mt-0">Acessar conta</h2>
-          <p className="mt-1 text-sm text-gray-500">Entre com sua conta Google.</p>
+          <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Acessar conta</h2>
+          <p className="mt-1 text-sm text-white/60">Entre com sua conta Google.</p>
           <div className="mt-6">
             <GoogleLoginButton />
           </div>

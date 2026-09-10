@@ -76,33 +76,33 @@ export default async function ConfirmarPresencaPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Lista do racha · {dateLabel}</h1>
+        <h1 className="text-2xl font-bold text-white">Lista do racha · {dateLabel}</h1>
         {!eventCancelled && !eventFinished && (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-white/60">
             Marque que tem interesse. Os organizadores confirmam manualmente quem entra na lista
             oficial{listOpen ? "" : ", que ainda não foi publicada"}.
           </p>
         )}
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-white/60">
           Situação atual: <strong>{statusLabel}</strong>
         </p>
       </div>
 
       {eventCancelled ? (
-        <p className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-4 text-sm text-orange-700">
+        <p className="rounded-xl border border-orange-500/30 bg-orange-500/15 px-4 py-4 text-sm text-orange-300">
           Esse racha foi cancelado — não dá mais pra responder.
         </p>
       ) : eventFinished ? (
-        <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
+        <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/60">
           Esse racha já terminou — não dá mais pra responder.
         </p>
       ) : myStatus === "confirmed" ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
-          <p className="text-sm text-green-700">🎉 Você está confirmado(a) pra esse racha!</p>
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
+          <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
           <ActionForm action={setAttendance} successMessage="Você marcou que não vai mais." className="ml-auto shrink-0">
             <input type="hidden" name="eventId" value={id} />
             <input type="hidden" name="status" value="declined" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
+            <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10">
               <X className="h-4 w-4" strokeWidth={2} />
               Não vou mais poder ir
             </button>
@@ -121,7 +121,7 @@ export default async function ConfirmarPresencaPage({
           <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
             <input type="hidden" name="eventId" value={id} />
             <input type="hidden" name="status" value="declined" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-600 hover:bg-gray-50">
+            <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-4 py-2 font-medium text-white/70 hover:bg-white/5">
               <X className="h-4 w-4" strokeWidth={2} />
               Não vou
             </button>
@@ -130,8 +130,8 @@ export default async function ConfirmarPresencaPage({
       )}
 
       {profile.is_organizer && !eventFinished && !eventCancelled && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-sm text-white/70">
             {confirmados.length} confirmados · {interessados.length} interessados
             {listOpen ? " · lista pública" : " · lista ainda privada"}
           </p>
@@ -143,7 +143,7 @@ export default async function ConfirmarPresencaPage({
             >
               <input type="hidden" name="eventId" value={id} />
               <input type="hidden" name="open" value="false" />
-              <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
+              <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10">
                 <Undo2 className="h-4 w-4" strokeWidth={2} />
                 Esconder lista de confirmados
               </button>
@@ -171,9 +171,9 @@ export default async function ConfirmarPresencaPage({
 
       {canSeeConfirmados && (
         <section>
-          <h2 className="font-semibold text-brand-navy">
+          <h2 className="font-semibold text-white">
             Confirmados ({confirmados.length})
-            {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-gray-400">(ainda privado)</span>}
+            {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-white/40">(ainda privado)</span>}
           </h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {confirmados.map((a) => {
@@ -181,10 +181,10 @@ export default async function ConfirmarPresencaPage({
               return (
                 <li
                   key={a.profile_id}
-                  className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
                 >
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                  <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
+                  <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
                   {profile.is_organizer && !eventFinished && !eventCancelled && (
                     <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
                       <input type="hidden" name="eventId" value={id} />
@@ -192,7 +192,7 @@ export default async function ConfirmarPresencaPage({
                       <button
                         type="submit"
                         aria-label="Voltar pra interessados"
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
                       >
                         <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2} />
                       </button>
@@ -209,13 +209,13 @@ export default async function ConfirmarPresencaPage({
                 </li>
               );
             })}
-            {!confirmados.length && <li className="text-sm text-gray-500">Ninguém confirmado ainda.</li>}
+            {!confirmados.length && <li className="text-sm text-white/60">Ninguém confirmado ainda.</li>}
           </ul>
         </section>
       )}
 
       <section>
-        <h2 className="font-semibold text-brand-navy">Interessados ({interessados.length})</h2>
+        <h2 className="font-semibold text-white">Interessados ({interessados.length})</h2>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {interessados.map((a) => {
             const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
@@ -223,11 +223,11 @@ export default async function ConfirmarPresencaPage({
             return (
               <li
                 key={a.profile_id}
-                className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5"
+                className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
               >
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
-                {overall !== null && <span className="text-xs text-gray-400">{overall.toFixed(1)}</span>}
+                <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                 {profile.is_organizer && !eventFinished && !eventCancelled && (
                   <ActionForm action={promoteToConfirmed} successMessage={`${p?.full_name ?? "Jogador"} confirmado!`}>
                     <input type="hidden" name="eventId" value={id} />
@@ -252,7 +252,7 @@ export default async function ConfirmarPresencaPage({
               </li>
             );
           })}
-          {!interessados.length && <li className="text-sm text-gray-500">Ninguém demonstrou interesse ainda.</li>}
+          {!interessados.length && <li className="text-sm text-white/60">Ninguém demonstrou interesse ainda.</li>}
         </ul>
       </section>
     </div>

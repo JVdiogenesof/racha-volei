@@ -33,11 +33,11 @@ export default async function JogadoresPage() {
 
   return (
     <div>
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-brand-navy">
-        <Users className="h-6 w-6 text-brand-purple" strokeWidth={2} />
+      <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
+        <Users className="h-6 w-6 text-purple-300" strokeWidth={2} />
         Jogadores
       </h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-white/60">
         Nota geral combinando autoavaliação e nota dos organizadores.
       </p>
 

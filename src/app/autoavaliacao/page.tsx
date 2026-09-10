@@ -19,8 +19,8 @@ export default async function AutoavaliacaoPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-16">
       <Logo className="mb-6" markClassName="h-12 w-12" />
-      <h1 className="text-2xl font-bold text-brand-navy">Sua autoavaliação</h1>
-      <p className="mt-1 text-sm text-gray-500">
+      <h1 className="text-2xl font-bold text-white">Sua autoavaliação</h1>
+      <p className="mt-1 text-sm text-white/60">
         Antes de continuar, avalie seu próprio nível em cada habilidade (0 a
         5). Isso ajuda a gerar times mais equilibrados. Seja honesto — sua
         nota final também depende da avaliação dos organizadores.

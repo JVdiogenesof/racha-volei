@@ -57,7 +57,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
 
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-brand-navy">
+          <h1 className="text-2xl font-bold text-white">
             Racha de {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           </h1>
           {statusInfo && (
@@ -66,12 +66,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-white/60">
           {event.location ?? "Local a definir"}
           {event.time ? ` · ${event.time.slice(0, 5)}` : ""} · {event.num_teams} times
           {event.price_per_player ? ` · R$ ${Number(event.price_per_player).toFixed(2)} por jogador` : ""}
         </p>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-white/60">
           {listOpen
             ? `${confirmedCount ?? 0} confirmados`
             : `${interestedCount ?? 0} interessados`}{" "}
@@ -80,8 +80,8 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       </div>
 
       {profile.is_organizer && !isFinished && (
-        <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-          <p className="text-sm text-gray-600">
+        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-sm text-white/70">
             {isInProgress
               ? "O racha está rolando. Termine o evento quando acabar pra liberar a escolha do MVP."
               : listOpen
@@ -146,14 +146,14 @@ function HubCard({
   return (
     <Link
       href={href}
-      className="group flex items-start gap-4 rounded-xl border border-gray-200 p-5 transition hover:border-brand-purple hover:shadow-sm"
+      className="group flex items-start gap-4 rounded-xl border border-white/10 p-5 transition hover:border-brand-purple hover:shadow-sm"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-purple/10 text-brand-purple transition group-hover:bg-brand-purple group-hover:text-white">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-purple/10 text-purple-300 transition group-hover:bg-brand-purple group-hover:text-white">
         <Icon className="h-5 w-5" strokeWidth={2} />
       </span>
       <div>
-        <p className="font-semibold text-brand-navy">{title}</p>
-        <p className="mt-1 text-sm text-gray-500">{description}</p>
+        <p className="font-semibold text-white">{title}</p>
+        <p className="mt-1 text-sm text-white/60">{description}</p>
       </div>
     </Link>
   );

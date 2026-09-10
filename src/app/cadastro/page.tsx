@@ -25,54 +25,54 @@ export default async function CadastroPage() {
 
   const memberForm = (
     <>
-      <p className="mb-6 text-sm text-gray-500">
+      <p className="mb-6 text-sm text-white/60">
         Esses dados ajudam a organizar o racha. Depois de enviar, um organizador
         precisa aprovar sua entrada.
       </p>
       <form action={submitCadastro} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Nome completo</label>
+          <label className="block text-sm font-medium text-white">Nome completo</label>
           <input
             name="fullName"
             defaultValue={defaultName}
             required
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Data de aniversário</label>
+          <label className="block text-sm font-medium text-white">Data de aniversário</label>
           <input
             type="date"
             name="birthdate"
             defaultValue={profile?.birthdate ?? ""}
             required
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-navy">
-            Telefone / WhatsApp <span className="text-gray-400">(opcional)</span>
+          <label className="block text-sm font-medium text-white">
+            Telefone / WhatsApp <span className="text-white/40">(opcional)</span>
           </label>
           <input
             name="phone"
             defaultValue={profile?.phone ?? ""}
             placeholder="(85) 90000-0000"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Posição que joga</label>
-          <div className="mt-2 flex gap-4 text-sm text-brand-navy">
+          <label className="block text-sm font-medium text-white">Posição que joga</label>
+          <div className="mt-2 flex gap-4 text-sm text-white">
             <label className="flex items-center gap-2">
               <input
                 type="radio"
                 name="position"
                 value="attacker"
                 defaultChecked={!profile?.is_setter}
-                className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                className="h-4 w-4 border-white/15 text-purple-300 focus:ring-brand-purple"
               />
               Atacando
             </label>
@@ -82,7 +82,7 @@ export default async function CadastroPage() {
                 name="position"
                 value="setter"
                 defaultChecked={profile?.is_setter ?? false}
-                className="h-4 w-4 border-gray-300 text-brand-purple focus:ring-brand-purple"
+                className="h-4 w-4 border-white/15 text-purple-300 focus:ring-brand-purple"
               />
               Levantando
             </label>
@@ -90,11 +90,11 @@ export default async function CadastroPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Pretende ir quantas vezes?</label>
+          <label className="block text-sm font-medium text-white">Pretende ir quantas vezes?</label>
           <select
             name="attendanceFrequency"
             defaultValue={profile?.attendance_frequency ?? "weekly"}
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           >
             {ATTENDANCE_FREQUENCY_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -104,22 +104,22 @@ export default async function CadastroPage() {
           </select>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-brand-navy">
+        <label className="flex items-center gap-2 text-sm text-white">
           <input
             type="checkbox"
             name="hasVpaShirt"
             defaultChecked={profile?.has_vpa_shirt ?? false}
-            className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+            className="h-4 w-4 rounded border-white/15 text-purple-300 focus:ring-brand-purple"
           />
           Já tenho a camisa do VPA
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-brand-navy">
+        <label className="flex items-center gap-2 text-sm text-white">
           <input
             type="checkbox"
             name="wantsTournaments"
             defaultChecked={profile?.wants_tournaments ?? false}
-            className="h-4 w-4 rounded border-gray-300 text-brand-purple focus:ring-brand-purple"
+            className="h-4 w-4 rounded border-white/15 text-purple-300 focus:ring-brand-purple"
           />
           Pretendo participar de torneios e amistosos
         </label>
@@ -136,28 +136,28 @@ export default async function CadastroPage() {
 
   const reserveForm = (
     <>
-      <p className="mb-6 text-sm text-gray-500">
+      <p className="mb-6 text-sm text-white/60">
         Não faz parte do grupo fixo, mas topa ser chamado(a) quando sobrar vaga de última hora
         num racha? Deixa seu nome e telefone aqui.
       </p>
       <form action={submitReserveSignup} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Nome completo</label>
+          <label className="block text-sm font-medium text-white">Nome completo</label>
           <input
             name="fullName"
             defaultValue={defaultName}
             required
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-brand-navy">Telefone / WhatsApp</label>
+          <label className="block text-sm font-medium text-white">Telefone / WhatsApp</label>
           <input
             name="phone"
             required
             placeholder="(85) 90000-0000"
-            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
         </div>
 
@@ -173,7 +173,7 @@ export default async function CadastroPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-16">
-      <h1 className="text-2xl font-bold text-brand-navy">Bem-vindo(a)!</h1>
+      <h1 className="text-2xl font-bold text-white">Bem-vindo(a)!</h1>
       <div className="mt-8">
         <CadastroTabs memberForm={memberForm} reserveForm={reserveForm} />
       </div>

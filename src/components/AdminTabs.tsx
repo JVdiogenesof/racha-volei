@@ -16,7 +16,7 @@ export function AdminTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200">
+    <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-white/10">
       {TABS.map((tab) => {
         const active = pathname === tab.href;
         return (
@@ -25,8 +25,8 @@ export function AdminTabs() {
             href={tab.href}
             className={`flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition ${
               active
-                ? "border-brand-purple text-brand-purple"
-                : "border-transparent text-gray-500 hover:text-brand-navy"
+                ? "border-brand-purple text-purple-300"
+                : "border-transparent text-white/60 hover:text-white"
             }`}
           >
             <tab.icon className="h-4 w-4" strokeWidth={2} />

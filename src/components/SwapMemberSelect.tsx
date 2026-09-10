@@ -23,7 +23,7 @@ export function SwapMemberSelect({
         onChange={(e) => {
           if (e.currentTarget.value) e.currentTarget.form?.requestSubmit();
         }}
-        className="rounded border border-gray-300 text-xs text-gray-500"
+        className="rounded border border-white/15 text-xs text-white/60"
       >
         <option value="" disabled>
           Trocar com...

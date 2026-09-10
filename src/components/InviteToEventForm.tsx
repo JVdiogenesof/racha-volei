@@ -12,7 +12,7 @@ export function InviteToEventForm({
   events: { id: string; label: string }[];
 }) {
   if (!events.length) {
-    return <p className="text-xs text-gray-400">Nenhum racha aberto pra chamar gente agora.</p>;
+    return <p className="text-xs text-white/40">Nenhum racha aberto pra chamar gente agora.</p>;
   }
 
   return (
@@ -22,7 +22,7 @@ export function InviteToEventForm({
         name="eventId"
         defaultValue=""
         required
-        className="rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+        className="rounded-lg border border-white/15 px-2 py-1.5 text-xs"
       >
         <option value="" disabled>
           Chamar pra...

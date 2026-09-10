@@ -39,11 +39,11 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-brand-navy">
-          <Trophy className="h-6 w-6 text-brand-purple" strokeWidth={2} />
+        <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
+          <Trophy className="h-6 w-6 text-purple-300" strokeWidth={2} />
           MVP · {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-white/60">
           {!eventFinished
             ? "Libera depois que o organizador terminar o evento."
             : profile.is_organizer
@@ -53,33 +53,33 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
       </div>
 
       {!eventFinished ? (
-        <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+        <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/60">
           Ainda não dá pra escolher o MVP — o racha precisa ser finalizado primeiro.
         </p>
       ) : !profile.is_organizer ? (
-        <div className="rounded-xl border border-gray-200 px-4 py-8 text-center">
+        <div className="rounded-xl border border-white/10 px-4 py-8 text-center">
           {mvp ? (
             <>
               <Avatar src={mvp.avatarUrl} name={mvp.fullName} size="md" />
-              <p className="mt-3 text-lg font-semibold text-brand-navy">🏆 {mvp.fullName}</p>
-              <p className="mt-1 text-sm text-gray-500">foi o MVP desse racha!</p>
+              <p className="mt-3 text-lg font-semibold text-white">🏆 {mvp.fullName}</p>
+              <p className="mt-1 text-sm text-white/60">foi o MVP desse racha!</p>
             </>
           ) : (
-            <p className="text-sm text-gray-500">Os organizadores ainda não escolheram o MVP.</p>
+            <p className="text-sm text-white/60">Os organizadores ainda não escolheram o MVP.</p>
           )}
         </div>
       ) : (
-        <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+        <ul className="divide-y divide-white/10 rounded-xl border border-white/10">
           {candidatos.map((c) => {
             const isMvp = c.profileId === event.mvp_profile_id;
             return (
               <li
                 key={c.profileId}
-                className={`flex items-center justify-between gap-3 px-4 py-3 ${isMvp ? "bg-amber-50/60" : ""}`}
+                className={`flex items-center justify-between gap-3 px-4 py-3 ${isMvp ? "bg-amber-500/15/60" : ""}`}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar src={c.avatarUrl} name={c.fullName} size="sm" />
-                  <span className="truncate text-sm text-brand-navy">
+                  <span className="truncate text-sm text-white">
                     {isMvp && "🏆 "}
                     {c.fullName}
                   </span>
@@ -89,7 +89,7 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
                     <input type="hidden" name="eventId" value={id} />
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/5"
                     >
                       <X className="h-3.5 w-3.5" strokeWidth={2} />
                       Remover escolha
@@ -111,7 +111,7 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
             );
           })}
           {!candidatos.length && (
-            <li className="px-4 py-6 text-center text-sm text-gray-500">Ninguém confirmado presença nesse racha.</li>
+            <li className="px-4 py-6 text-center text-sm text-white/60">Ninguém confirmado presença nesse racha.</li>
           )}
         </ul>
       )}

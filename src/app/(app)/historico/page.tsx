@@ -32,24 +32,24 @@ export default async function HistoricoPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-brand-navy">Histórico</h1>
+      <h1 className="text-2xl font-bold text-white">Histórico</h1>
 
       <div className="mt-6 space-y-3">
-        {!rows.length && <p className="text-sm text-gray-500">Ainda não teve racha finalizado.</p>}
+        {!rows.length && <p className="text-sm text-white/60">Ainda não teve racha finalizado.</p>}
         {rows.map((e) => (
           <Link
             key={e.id}
             href={`/racha/${e.id}`}
-            className="block rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50"
+            className="block rounded-lg border border-white/10 px-4 py-3 hover:bg-white/5"
           >
             <div className="flex items-center justify-between">
-              <span className="font-medium text-brand-navy">
+              <span className="font-medium text-white">
                 {new Date(`${e.date}T00:00:00`).toLocaleDateString("pt-BR")}
                 {e.location ? ` · ${e.location}` : ""}
               </span>
-              <span className="text-xs text-gray-400">{e.confirmedCount} jogadores</span>
+              <span className="text-xs text-white/40">{e.confirmedCount} jogadores</span>
             </div>
-            <div className="mt-1 flex gap-4 text-xs text-gray-500">
+            <div className="mt-1 flex gap-4 text-xs text-white/60">
               <span>MVP: {e.mvp ?? "não escolhido"}</span>
             </div>
           </Link>

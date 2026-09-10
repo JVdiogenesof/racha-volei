@@ -23,7 +23,7 @@ export function MoveTeamSelect({
         name="targetTeamId"
         defaultValue={currentTeamId}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="rounded border border-gray-300 text-xs"
+        className="rounded border border-white/15 text-xs"
       >
         {teams.map((t) => (
           <option key={t.id} value={t.id}>

@@ -93,8 +93,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Times</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-white">Times</h1>
+          <p className="mt-1 text-sm text-white/60">
             Racha de {eventDateLabel} · {event.num_teams} times
           </p>
         </div>
@@ -120,13 +120,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {!generation && !event.official_list_open && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/60">
           Os times só podem ser gerados depois que a lista oficial do racha abrir.
         </p>
       )}
 
       {!generation && event.official_list_open && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-white/60">
           Os times ainda não foram gerados. {profile.is_organizer ? "Clique em \"Gerar times\" acima." : "Aguarde o organizador gerar."}
         </p>
       )}
@@ -135,15 +135,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         {teams.map((team) => {
           const sum = team.members.reduce((s, m) => s + m.overall, 0);
           return (
-            <div key={team.id} className="rounded-xl border border-gray-200 p-4">
+            <div key={team.id} className="rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-brand-navy">Time {team.teamNumber}</h3>
-                <span className="text-xs text-gray-400">soma: {sum.toFixed(1)}</span>
+                <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
+                <span className="text-xs text-white/40">soma: {sum.toFixed(1)}</span>
               </div>
 
-              <div className="mt-2 flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2">
-                <Trophy className="h-4 w-4 shrink-0 text-brand-purple" strokeWidth={2} />
-                <span className="text-sm font-medium text-brand-navy">
+              <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
+                <Trophy className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
+                <span className="text-sm font-medium text-white">
                   {team.wins} {team.wins === 1 ? "vitória" : "vitórias"}
                 </span>
                 {profile.is_organizer && (
@@ -155,7 +155,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         <button
                           type="submit"
                           aria-label="Desfazer última vitória"
-                          className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                          className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
                         >
                           <Undo2 className="h-3.5 w-3.5" strokeWidth={2} />
                         </button>
@@ -178,12 +178,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               <ul className="mt-3 space-y-2">
                 {team.members.map((m) => (
                   <li key={m.teamMemberId} className="flex items-center justify-between text-sm">
-                    <span className="text-brand-navy">
+                    <span className="text-white">
                       {m.isSetter && "🏐 "}
                       {m.fullName}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-gray-400">{m.overall.toFixed(1)}</span>
+                      <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
                       {profile.is_organizer && (
                         <>
                           <SwapMemberSelect

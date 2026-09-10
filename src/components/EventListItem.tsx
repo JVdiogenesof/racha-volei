@@ -34,16 +34,16 @@ export function EventListItem({
   const statusInfo = EVENT_STATUS_LABELS[event.status];
 
   return (
-    <div className="rounded-lg border border-gray-200">
+    <div className="rounded-lg border border-white/10">
       <div className="flex items-center gap-2 px-4 py-3">
-        <Link href={`/racha/${event.id}`} className="min-w-0 flex-1 truncate font-medium text-brand-navy hover:underline">
+        <Link href={`/racha/${event.id}`} className="min-w-0 flex-1 truncate font-medium text-white hover:underline">
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           {event.location ? ` · ${event.location}` : ""}
         </Link>
         {event.status === "open" && (
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-              event.official_list_open ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+              event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"
             }`}
           >
             {event.official_list_open ? "Lista oficial aberta" : "Fase de interesse"}
@@ -51,7 +51,7 @@ export function EventListItem({
         )}
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-            statusInfo?.className ?? "bg-gray-100 text-gray-500"
+            statusInfo?.className ?? "bg-white/10 text-white/60"
           }`}
         >
           {statusInfo?.label ?? event.status}
@@ -60,7 +60,7 @@ export function EventListItem({
           type="button"
           onClick={() => setEditing((v) => !v)}
           aria-label={editing ? "Fechar edição" : "Editar racha"}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-brand-purple"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 hover:bg-white/5 hover:text-purple-300"
         >
           {editing ? <X className="h-4 w-4" strokeWidth={2} /> : <Pencil className="h-4 w-4" strokeWidth={2} />}
         </button>
@@ -75,56 +75,56 @@ export function EventListItem({
             setEditing(false);
           }}
           successMessage="Racha atualizado!"
-          className="grid gap-4 border-t border-gray-100 p-4 sm:grid-cols-2"
+          className="grid gap-4 border-t border-white/10 p-4 sm:grid-cols-2"
         >
           <input type="hidden" name="eventId" value={event.id} />
           <div>
-            <label className="block text-xs font-medium text-gray-500">Data</label>
+            <label className="block text-xs font-medium text-white/60">Data</label>
             <input
               type="date"
               name="date"
               defaultValue={event.date}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500">Horário</label>
+            <label className="block text-xs font-medium text-white/60">Horário</label>
             <input
               type="time"
               name="time"
               defaultValue={event.time?.slice(0, 5) ?? ""}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500">Local</label>
+            <label className="block text-xs font-medium text-white/60">Local</label>
             <input
               name="location"
               defaultValue={event.location ?? ""}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500">Número de times</label>
+            <label className="block text-xs font-medium text-white/60">Número de times</label>
             <input
               type="number"
               name="numTeams"
               defaultValue={event.num_teams}
               min={2}
               required
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500">Valor por jogador (R$)</label>
+            <label className="block text-xs font-medium text-white/60">Valor por jogador (R$)</label>
             <input
               type="number"
               name="pricePerPlayer"
               step={0.5}
               min={0}
               defaultValue={event.price_per_player ?? ""}
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <div className="sm:col-span-2">

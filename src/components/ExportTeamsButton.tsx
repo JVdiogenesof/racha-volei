@@ -39,10 +39,10 @@ export function ExportTeamsButton({
     <button
       type="button"
       onClick={handleExport}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-brand-navy hover:bg-gray-50"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-2 text-sm font-medium text-white hover:bg-white/5"
     >
       {copied ? (
-        <Check className="h-4 w-4 text-green-600" strokeWidth={2} />
+        <Check className="h-4 w-4 text-green-400" strokeWidth={2} />
       ) : (
         <Share2 className="h-4 w-4" strokeWidth={2} />
       )}

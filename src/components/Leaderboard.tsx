@@ -9,9 +9,9 @@ export type RankingEntry = {
 };
 
 const MEDAL_BADGE = [
-  "border-yellow-300 bg-yellow-100 text-yellow-700",
-  "border-gray-300 bg-gray-100 text-gray-600",
-  "border-orange-300 bg-orange-100 text-orange-700",
+  "border-yellow-300 bg-yellow-500/20 text-yellow-300",
+  "border-white/15 bg-white/10 text-white/70",
+  "border-orange-300 bg-orange-500/20 text-orange-300",
 ];
 
 export function Leaderboard({
@@ -30,14 +30,14 @@ export function Leaderboard({
   const podiumOrder = [podium[1], podium[0], podium[2]];
 
   return (
-    <section className="rounded-xl border border-gray-200 p-6">
-      <div className="flex items-center gap-2 text-brand-navy">
-        <Icon className="h-5 w-5 text-brand-purple" strokeWidth={2} />
+    <section className="rounded-xl border border-white/10 p-6">
+      <div className="flex items-center gap-2 text-white">
+        <Icon className="h-5 w-5 text-purple-300" strokeWidth={2} />
         <h2 className="font-semibold">{title}</h2>
       </div>
 
       {!podium.length ? (
-        <p className="mt-4 text-sm text-gray-500">Ainda não tem dados suficientes.</p>
+        <p className="mt-4 text-sm text-white/60">Ainda não tem dados suficientes.</p>
       ) : (
         <>
           <div className="mt-6 grid grid-cols-3 items-end gap-3">
@@ -53,10 +53,10 @@ export function Leaderboard({
                     {place + 1}º
                   </span>
                   <Avatar src={entry.avatarUrl} name={entry.fullName} size={isFirst ? "lg" : "md"} />
-                  <p className="mt-2 w-full truncate text-sm font-medium text-brand-navy">
+                  <p className="mt-2 w-full truncate text-sm font-medium text-white">
                     {entry.fullName}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-white/60">
                     {entry.count} {unit}
                   </p>
                 </div>
@@ -65,15 +65,15 @@ export function Leaderboard({
           </div>
 
           {rest.length > 0 && (
-            <ul className="mt-6 divide-y divide-gray-100 border-t border-gray-100">
+            <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
               {rest.map((entry, i) => (
                 <li key={entry.profileId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
                   <span className="flex items-center gap-3">
-                    <span className="w-6 shrink-0 text-center text-gray-400">{i + 4}º</span>
+                    <span className="w-6 shrink-0 text-center text-white/40">{i + 4}º</span>
                     <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
-                    <span className="text-brand-navy">{entry.fullName}</span>
+                    <span className="text-white">{entry.fullName}</span>
                   </span>
-                  <span className="shrink-0 text-gray-500">
+                  <span className="shrink-0 text-white/60">
                     {entry.count} {unit}
                   </span>
                 </li>

@@ -20,7 +20,7 @@ export default async function RachaListPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-brand-navy">Rachas</h1>
+        <h1 className="text-2xl font-bold text-white">Rachas</h1>
         {profile.is_organizer && (
           <Link
             href="/admin/rachas"
@@ -33,9 +33,9 @@ export default async function RachaListPage() {
       </div>
 
       <section>
-        <h2 className="font-semibold text-brand-navy">Próximos</h2>
+        <h2 className="font-semibold text-white">Próximos</h2>
         <div className="mt-3 space-y-2">
-          {!proximos.length && <p className="text-sm text-gray-500">Nenhum racha marcado ainda.</p>}
+          {!proximos.length && <p className="text-sm text-white/60">Nenhum racha marcado ainda.</p>}
           {proximos.map((e) => (
             <EventRow key={e.id} event={e} />
           ))}
@@ -44,7 +44,7 @@ export default async function RachaListPage() {
 
       {passados.length > 0 && (
         <section>
-          <h2 className="font-semibold text-brand-navy">Passados</h2>
+          <h2 className="font-semibold text-white">Passados</h2>
           <div className="mt-3 space-y-2">
             {passados.map((e) => (
               <EventRow key={e.id} event={e} />
@@ -71,10 +71,10 @@ function EventRow({
   return (
     <Link
       href={`/racha/${event.id}`}
-      className="flex items-center justify-between rounded-lg border border-gray-200 px-4 py-3 hover:bg-gray-50"
+      className="flex items-center justify-between rounded-lg border border-white/10 px-4 py-3 hover:bg-white/5"
     >
       <div>
-        <p className="font-medium text-brand-navy">
+        <p className="font-medium text-white">
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
             weekday: "long",
             day: "2-digit",
@@ -83,7 +83,7 @@ function EventRow({
           {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
         </p>
         {event.location && (
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-gray-500">
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-white/60">
             <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
             {event.location}
           </p>
@@ -93,7 +93,7 @@ function EventRow({
         {event.status === "open" && (
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              event.official_list_open ? "bg-blue-50 text-blue-700" : "bg-amber-50 text-amber-700"
+              event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"
             }`}
           >
             {event.official_list_open ? "Lista aberta" : "Interesse"}
@@ -101,7 +101,7 @@ function EventRow({
         )}
         <span
           className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-            EVENT_STATUS_LABELS[event.status]?.className ?? "bg-gray-100 text-gray-500"
+            EVENT_STATUS_LABELS[event.status]?.className ?? "bg-white/10 text-white/60"
           }`}
         >
           {EVENT_STATUS_LABELS[event.status]?.label ?? event.status}

@@ -18,16 +18,16 @@ export function AddDirectToConfirmedForm({
     <ActionForm
       action={action}
       successMessage="Jogador adicionado aos confirmados!"
-      className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3"
+      className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-white/15 px-4 py-3"
     >
       <input type="hidden" name="eventId" value={eventId} />
-      <UserPlus className="h-4 w-4 shrink-0 text-gray-400" strokeWidth={2} />
-      <span className="text-sm text-gray-500">Alguém pagou mas não marcou interesse?</span>
+      <UserPlus className="h-4 w-4 shrink-0 text-white/40" strokeWidth={2} />
+      <span className="text-sm text-white/60">Alguém pagou mas não marcou interesse?</span>
       <select
         name="profileId"
         defaultValue=""
         required
-        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+        className="rounded-lg border border-white/15 px-2 py-1.5 text-sm"
       >
         <option value="" disabled>
           Escolher jogador...

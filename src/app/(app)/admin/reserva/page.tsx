@@ -37,22 +37,22 @@ export default async function AdminReservaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">Lista de reserva</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-white">Lista de reserva</h1>
+        <p className="mt-1 text-sm text-white/60">
           Pessoas de fora do grupo que topam ser chamadas quando sobrar vaga de última hora num
           racha. Quem é chamado(a) ganha acesso ao site só pra esse racha, e volta pra reserva
           automaticamente depois que ele terminar.
         </p>
       </div>
 
-      <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+      <ul className="divide-y divide-white/10 rounded-xl border border-white/10">
         {rows?.map((r) => {
           const guestEventId = guestEventByAuthUserId.get(r.auth_user_id);
           return (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
-                <p className="font-medium text-brand-navy">{r.full_name}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-gray-500">
+                <p className="font-medium text-white">{r.full_name}</p>
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/60">
                   <Phone className="h-3.5 w-3.5" strokeWidth={2} />
                   {r.phone}
                 </p>
@@ -60,7 +60,7 @@ export default async function AdminReservaPage() {
               <div className="flex flex-wrap items-center gap-2">
                 {guestEventId ? (
                   <>
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1.5 text-xs font-medium text-blue-300">
                       <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
                       Chamado(a) pro racha de {eventLabelById.get(guestEventId) ?? "..."}
                     </span>
@@ -83,8 +83,8 @@ export default async function AdminReservaPage() {
                     type="submit"
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
                       r.contacted
-                        ? "border-green-200 bg-green-100 text-green-700"
-                        : "border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
+                        ? "border-green-500/30 bg-green-500/20 text-green-300"
+                        : "border-white/15 bg-white/5 text-white/60 hover:bg-white/10"
                     }`}
                   >
                     {r.contacted ? (
@@ -101,7 +101,7 @@ export default async function AdminReservaPage() {
           );
         })}
         {!rows?.length && (
-          <li className="px-4 py-4 text-sm text-gray-500">Ninguém na lista de reserva ainda.</li>
+          <li className="px-4 py-4 text-sm text-white/60">Ninguém na lista de reserva ainda.</li>
         )}
       </ul>
     </div>
