@@ -2,42 +2,42 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireOrganizer } from "@/lib/auth";
 
-export async function voteMvp(formData: FormData) {
-  const profile = await requireProfile();
+export async function setMvp(formData: FormData) {
+  await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
-  const votedForProfileId = String(formData.get("votedForProfileId"));
-
-  if (votedForProfileId === profile.id) {
-    throw new Error("Você não pode votar em si mesmo.");
-  }
+  const profileId = String(formData.get("profileId"));
 
   const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
   if (event?.status !== "finished") {
-    throw new Error("A votação de MVP só abre depois que o racha for finalizado.");
+    throw new Error("Só dá pra escolher o MVP depois que o racha for finalizado.");
   }
 
-  const [{ count: confirmedCount }, { count: votesCount }] = await Promise.all([
-    supabase
-      .from("attendance")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("status", "confirmed"),
-    supabase.from("mvp_votes").select("id", { count: "exact", head: true }).eq("event_id", eventId),
-  ]);
-
-  if ((confirmedCount ?? 0) > 0 && (votesCount ?? 0) > (confirmedCount ?? 0) / 2) {
-    throw new Error("A votação já foi encerrada — a maioria já votou.");
+  const { data: attendance } = await supabase
+    .from("attendance")
+    .select("status")
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (attendance?.status !== "confirmed") {
+    throw new Error("O MVP precisa ser alguém confirmado nesse racha.");
   }
 
-  const { error } = await supabase.from("mvp_votes").insert({
-    event_id: eventId,
-    voter_profile_id: profile.id,
-    voted_for_profile_id: votedForProfileId,
-  });
-
+  const { error } = await supabase.from("events").update({ mvp_profile_id: profileId }).eq("id", eventId);
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/mvp`);
+  revalidatePath("/ranking");
+}
+
+export async function clearMvp(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+
+  const { error } = await supabase.from("events").update({ mvp_profile_id: null }).eq("id", eventId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/mvp`);
+  revalidatePath("/ranking");
 }

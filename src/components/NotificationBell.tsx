@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Wallet, Megaphone, X } from "lucide-react";
+import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -10,7 +10,7 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   confirm: CalendarCheck,
   teams: Users2,
   mvp: Trophy,
-  payment: Wallet,
+  publish_list: Rocket,
   avisos: Megaphone,
 };
 

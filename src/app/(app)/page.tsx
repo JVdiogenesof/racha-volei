@@ -53,7 +53,7 @@ export default async function HomePage() {
               href={`/racha/${proximoRacha.id}/confirmar`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
             >
-              {proximoRacha.official_list_open ? "Confirmar presença" : "Tenho interesse"}
+              {proximoRacha.official_list_open ? "Ver lista de confirmados" : "Tenho interesse"}
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
           </div>

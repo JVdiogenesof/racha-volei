@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type NotificationType = "admin_pending" | "confirm" | "teams" | "mvp" | "payment" | "avisos";
+export type NotificationType = "admin_pending" | "confirm" | "teams" | "mvp" | "publish_list" | "avisos";
 
 export type NotificationItem = {
   id: string;
@@ -18,7 +18,7 @@ type ProfileForNotifications = {
  * Calculadas na hora a partir dos dados existentes (sem tabela de
  * notificações/estado de "lido") -- cada notificação some sozinha assim que
  * a condição que a gerou deixa de existir (aprovou o cadastro, confirmou
- * presença, marcou o pagamento, etc).
+ * presença, escolheu o MVP, etc).
  */
 export async function getNotifications(
   supabase: SupabaseClient,
@@ -28,6 +28,7 @@ export async function getNotifications(
 
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const [{ count: pendingCount }, { data: events }, { count: newAvisosCount }] = await Promise.all([
     profile.is_organizer
@@ -35,7 +36,7 @@ export async function getNotifications(
       : Promise.resolve({ count: 0 }),
     supabase
       .from("events")
-      .select("id, date, status, price_per_player, official_list_open")
+      .select("id, date, status, official_list_open, mvp_profile_id")
       .gte("date", twoWeeksAgo)
       .order("date", { ascending: true }),
     supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
@@ -55,21 +56,11 @@ export async function getNotifications(
 
   const eventIds = (events ?? []).map((e) => e.id);
 
-  const [{ data: myAttendance }, { data: myVotes }, { data: myPayments }] = eventIds.length
-    ? await Promise.all([
-        supabase
-          .from("attendance")
-          .select("event_id, status")
-          .eq("profile_id", profile.id)
-          .in("event_id", eventIds),
-        supabase.from("mvp_votes").select("event_id").eq("voter_profile_id", profile.id).in("event_id", eventIds),
-        supabase.from("payments").select("event_id, paid").eq("profile_id", profile.id).in("event_id", eventIds),
-      ])
-    : [{ data: [] }, { data: [] }, { data: [] }];
+  const { data: myAttendance } = eventIds.length
+    ? await supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id).in("event_id", eventIds)
+    : { data: [] };
 
   const attendanceByEvent = new Map((myAttendance ?? []).map((a) => [a.event_id, a.status]));
-  const votedEventIds = new Set((myVotes ?? []).map((v) => v.event_id));
-  const paidByEvent = new Map((myPayments ?? []).map((p) => [p.event_id, p.paid]));
 
   for (const event of events ?? []) {
     const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
@@ -79,19 +70,7 @@ export async function getNotifications(
     const myStatus = attendanceByEvent.get(event.id);
     const activeEvent = event.status !== "finished" && event.status !== "cancelled";
 
-    if (activeEvent && event.official_list_open && (myStatus === undefined || myStatus === "interested")) {
-      items.push({
-        id: `confirm-${event.id}`,
-        type: "confirm",
-        message:
-          myStatus === "interested"
-            ? `A lista oficial do racha de ${dateLabel} abriu — confirme sua presença!`
-            : `Confirme sua presença no racha de ${dateLabel}`,
-        href: `/racha/${event.id}/confirmar`,
-      });
-    }
-
-    if (activeEvent && !event.official_list_open && myStatus === undefined) {
+    if (activeEvent && myStatus === undefined) {
       items.push({
         id: `confirm-${event.id}`,
         type: "confirm",
@@ -109,26 +88,21 @@ export async function getNotifications(
       });
     }
 
-    if (event.status === "finished" && myStatus === "confirmed" && !votedEventIds.has(event.id)) {
+    if (profile.is_organizer && activeEvent && !event.official_list_open && event.date <= tomorrow) {
       items.push({
-        id: `mvp-${event.id}`,
-        type: "mvp",
-        message: `Vote no MVP do racha de ${dateLabel}`,
-        href: `/racha/${event.id}/mvp`,
+        id: `publish-${event.id}`,
+        type: "publish_list",
+        message: `Publique a lista de confirmados do racha de ${dateLabel}`,
+        href: `/racha/${event.id}/confirmar`,
       });
     }
 
-    if (
-      myStatus === "confirmed" &&
-      event.price_per_player &&
-      Number(event.price_per_player) > 0 &&
-      paidByEvent.get(event.id) !== true
-    ) {
+    if (profile.is_organizer && event.status === "finished" && !event.mvp_profile_id) {
       items.push({
-        id: `payment-${event.id}`,
-        type: "payment",
-        message: `Falta pagar o racha de ${dateLabel} (R$ ${Number(event.price_per_player).toFixed(2)})`,
-        href: `/racha/${event.id}`,
+        id: `mvp-${event.id}`,
+        type: "mvp",
+        message: `Escolha o MVP do racha de ${dateLabel}`,
+        href: `/racha/${event.id}/mvp`,
       });
     }
   }

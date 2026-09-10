@@ -8,41 +8,24 @@ export default async function HistoricoPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, location, price_per_player")
+    .select("id, date, location, price_per_player, mvp_profile_id, profiles!events_mvp_profile_id_profiles_id_fk(full_name)")
     .eq("status", "finished")
     .order("date", { ascending: false });
 
   const rows = await Promise.all(
     (events ?? []).map(async (event) => {
-      const [{ count: confirmedCount }, { data: votes }, { data: payments }] = await Promise.all([
-        supabase
-          .from("attendance")
-          .select("id", { count: "exact", head: true })
-          .eq("event_id", event.id)
-          .eq("status", "confirmed"),
-        supabase
-          .from("mvp_votes")
-          .select("voted_for_profile_id, profiles!mvp_votes_voted_for_profile_id_fkey(full_name)")
-          .eq("event_id", event.id),
-        supabase.from("payments").select("paid").eq("event_id", event.id),
-      ]);
+      const { count: confirmedCount } = await supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", event.id)
+        .eq("status", "confirmed");
 
-      const tally = new Map<string, { count: number; name: string }>();
-      for (const v of votes ?? []) {
-        const name = (v.profiles as unknown as { full_name: string } | null)?.full_name ?? "—";
-        const current = tally.get(v.voted_for_profile_id) ?? { count: 0, name };
-        current.count += 1;
-        tally.set(v.voted_for_profile_id, current);
-      }
-      const mvp = [...tally.values()].sort((a, b) => b.count - a.count)[0]?.name ?? null;
-      const paidCount = (payments ?? []).filter((p) => p.paid).length;
+      const mvp = (event.profiles as unknown as { full_name: string } | null)?.full_name ?? null;
 
       return {
         ...event,
         confirmedCount: confirmedCount ?? 0,
         mvp,
-        paidCount,
-        totalPayments: payments?.length ?? 0,
       };
     }),
   );
@@ -67,10 +50,7 @@ export default async function HistoricoPage() {
               <span className="text-xs text-gray-400">{e.confirmedCount} jogadores</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-gray-500">
-              <span>MVP: {e.mvp ?? "sem votos"}</span>
-              <span>
-                Pagamentos: {e.paidCount}/{e.totalPayments}
-              </span>
+              <span>MVP: {e.mvp ?? "não escolhido"}</span>
             </div>
           </Link>
         ))}

@@ -118,10 +118,12 @@ export const events = pgTable("events", {
   numTeams: integer("num_teams").notNull().default(2),
   pricePerPlayer: numeric("price_per_player", { precision: 8, scale: 2 }),
   status: eventStatusEnum("status").notNull().default("open"),
-  // Fase de interesse (false) vs lista oficial aberta (true). Novos rachas
-  // nascem em fase de interesse; o organizador abre a lista oficial quando
-  // achar que já tem gente boa suficiente confirmando interesse.
+  // Fase de interesse (false) vs lista de confirmados pública (true). Novos
+  // rachas nascem em fase de interesse; o organizador monta a lista de
+  // confirmados manualmente e só a publica quando estiver pronta.
   officialListOpen: boolean("official_list_open").notNull().default(true),
+  // MVP escolhido pelos organizadores depois que o racha termina (sem votação).
+  mvpProfileId: uuid("mvp_profile_id").references(() => profiles.id, { onDelete: "set null" }),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

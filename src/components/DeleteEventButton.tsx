@@ -22,7 +22,7 @@ export function DeleteEventButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          "Excluir esse racha? Presença, times, pagamentos e votos de MVP dele também são apagados. Essa ação não pode ser desfeita.",
+          "Excluir esse racha? Presença, times e MVP dele também são apagados. Essa ação não pode ser desfeita.",
         );
         if (!confirmed) return;
 

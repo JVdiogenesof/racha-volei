@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, ThumbsUp, Rocket, Undo2 } from "lucide-react";
+import { Check, X, ThumbsUp, Rocket, Undo2, ArrowLeftRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -7,7 +7,7 @@ import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
-import { setAttendance, setOfficialListOpen, removeAttendance } from "./actions";
+import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -62,30 +62,22 @@ export default async function ConfirmarPresencaPage({
         : myStatus === "declined"
           ? "Não vai"
           : "Ainda não respondeu";
+  const canSeeConfirmados = listOpen || profile.is_organizer;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">
-          {listOpen ? "Entrar na lista do racha" : "Interesse no racha"} · {dateLabel}
-        </h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Lista do racha · {dateLabel}</h1>
         {!eventCancelled && !eventFinished && (
           <p className="mt-1 text-sm text-gray-500">
-            {listOpen
-              ? "A lista oficial está aberta — confirme sua presença pra garantir vaga nos times."
-              : "Diz que topa pra gente ver quem tá on antes de abrir a lista oficial."}
+            Marque que tem interesse. Os organizadores confirmam manualmente quem entra na lista
+            oficial{listOpen ? "" : ", que ainda não foi publicada"}.
           </p>
         )}
         <p className="mt-1 text-sm text-gray-500">
           Situação atual: <strong>{statusLabel}</strong>
         </p>
       </div>
-
-      {myStatus === "interested" && listOpen && !eventFinished && !eventCancelled && (
-        <p className="rounded-xl border border-brand-purple/30 bg-brand-purple/5 px-4 py-3 text-sm text-brand-navy">
-          Você tinha marcado interesse e a lista oficial abriu! Confirme sua presença abaixo pra garantir sua vaga. 🙌
-        </p>
-      )}
 
       {eventCancelled ? (
         <p className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-4 text-sm text-orange-700">
@@ -95,22 +87,15 @@ export default async function ConfirmarPresencaPage({
         <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-4 text-sm text-gray-500">
           Esse racha já terminou — não dá mais pra responder.
         </p>
-      ) : listOpen ? (
-        <div className="flex gap-3">
-          <ActionForm action={setAttendance} successMessage="Presença confirmada!">
-            <input type="hidden" name="eventId" value={id} />
-            <input type="hidden" name="status" value="confirmed" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark">
-              <Check className="h-4 w-4" strokeWidth={2} />
-              Confirmar presença
-            </button>
-          </ActionForm>
-          <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
+      ) : myStatus === "confirmed" ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm text-green-700">🎉 Você está confirmado(a) pra esse racha!</p>
+          <ActionForm action={setAttendance} successMessage="Você marcou que não vai mais." className="ml-auto shrink-0">
             <input type="hidden" name="eventId" value={id} />
             <input type="hidden" name="status" value="declined" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-600 hover:bg-gray-50">
+            <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
               <X className="h-4 w-4" strokeWidth={2} />
-              Não vou
+              Não vou mais poder ir
             </button>
           </ActionForm>
         </div>
@@ -137,109 +122,49 @@ export default async function ConfirmarPresencaPage({
 
       {profile.is_organizer && !eventFinished && !eventCancelled && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          <p className="text-sm text-gray-600">
+            {confirmados.length} confirmados · {interessados.length} interessados
+            {listOpen ? " · lista pública" : " · lista ainda privada"}
+          </p>
           {listOpen ? (
-            <>
-              <p className="text-sm text-gray-600">A lista oficial está aberta pra esse racha.</p>
-              <ActionForm
-                action={setOfficialListOpen}
-                successMessage="Voltou pra fase de interesse."
-                className="ml-auto shrink-0"
-              >
-                <input type="hidden" name="eventId" value={id} />
-                <input type="hidden" name="open" value="false" />
-                <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-white">
-                  <Undo2 className="h-4 w-4" strokeWidth={2} />
-                  Voltar pra interesse
-                </button>
-              </ActionForm>
-            </>
+            <ActionForm
+              action={setOfficialListOpen}
+              successMessage="Lista de confirmados escondida de novo."
+              className="ml-auto shrink-0"
+            >
+              <input type="hidden" name="eventId" value={id} />
+              <input type="hidden" name="open" value="false" />
+              <button className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50">
+                <Undo2 className="h-4 w-4" strokeWidth={2} />
+                Esconder lista de confirmados
+              </button>
+            </ActionForm>
           ) : (
-            <>
-              <p className="text-sm text-gray-600">
-                {interessados.length} {interessados.length === 1 ? "pessoa demonstrou" : "pessoas demonstraram"}{" "}
-                interesse até agora.
-              </p>
-              <ActionForm
-                action={setOfficialListOpen}
-                successMessage="Lista oficial aberta! Quem tinha interesse precisa confirmar presença."
-                className="ml-auto shrink-0"
-              >
-                <input type="hidden" name="eventId" value={id} />
-                <input type="hidden" name="open" value="true" />
-                <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
-                  <Rocket className="h-4 w-4" strokeWidth={2} />
-                  Abrir lista oficial
-                </button>
-              </ActionForm>
-            </>
+            <ActionForm
+              action={setOfficialListOpen}
+              successMessage="Lista de confirmados publicada!"
+              className="ml-auto shrink-0"
+            >
+              <input type="hidden" name="eventId" value={id} />
+              <input type="hidden" name="open" value="true" />
+              <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
+                <Rocket className="h-4 w-4" strokeWidth={2} />
+                Publicar lista de confirmados
+              </button>
+            </ActionForm>
           )}
         </div>
       )}
 
-      {listOpen ? (
-        <>
-          <section>
-            <h2 className="font-semibold text-brand-navy">Confirmados ({confirmados.length})</h2>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {confirmados.map((a) => {
-                const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
-                return (
-                  <li
-                    key={a.profile_id}
-                    className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5"
-                  >
-                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                    <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
-                    {profile.is_organizer && (
-                      <RemoveAttendanceButton
-                        eventId={id}
-                        profileId={a.profile_id}
-                        fullName={p?.full_name ?? "esse jogador"}
-                        action={removeAttendance}
-                      />
-                    )}
-                  </li>
-                );
-              })}
-              {!confirmados.length && <li className="text-sm text-gray-500">Ninguém confirmou ainda.</li>}
-            </ul>
-          </section>
-
-          {profile.is_organizer && interessados.length > 0 && (
-            <section>
-              <h2 className="font-semibold text-brand-navy">
-                Interessados que ainda não confirmaram ({interessados.length})
-              </h2>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                {interessados.map((a) => {
-                  const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
-                  return (
-                    <li
-                      key={a.profile_id}
-                      className="flex items-center gap-3 rounded-lg border border-dashed border-gray-200 px-3 py-2.5 text-gray-500"
-                    >
-                      <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                      <span className="flex-1 truncate text-sm">{p?.full_name}</span>
-                      <RemoveAttendanceButton
-                        eventId={id}
-                        profileId={a.profile_id}
-                        fullName={p?.full_name ?? "esse jogador"}
-                        action={removeAttendance}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          )}
-        </>
-      ) : (
+      {canSeeConfirmados && (
         <section>
-          <h2 className="font-semibold text-brand-navy">Interessados ({interessados.length})</h2>
+          <h2 className="font-semibold text-brand-navy">
+            Confirmados ({confirmados.length})
+            {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-gray-400">(ainda privado)</span>}
+          </h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {interessados.map((a) => {
+            {confirmados.map((a) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
-              const overall = overallFor(a.profile_id);
               return (
                 <li
                   key={a.profile_id}
@@ -247,7 +172,19 @@ export default async function ConfirmarPresencaPage({
                 >
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                   <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
-                  {overall !== null && <span className="text-xs text-gray-400">{overall.toFixed(1)}</span>}
+                  {profile.is_organizer && !eventFinished && !eventCancelled && (
+                    <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="profileId" value={a.profile_id} />
+                      <button
+                        type="submit"
+                        aria-label="Voltar pra interessados"
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      >
+                        <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2} />
+                      </button>
+                    </ActionForm>
+                  )}
                   {profile.is_organizer && (
                     <RemoveAttendanceButton
                       eventId={id}
@@ -259,10 +196,52 @@ export default async function ConfirmarPresencaPage({
                 </li>
               );
             })}
-            {!interessados.length && <li className="text-sm text-gray-500">Ninguém demonstrou interesse ainda.</li>}
+            {!confirmados.length && <li className="text-sm text-gray-500">Ninguém confirmado ainda.</li>}
           </ul>
         </section>
       )}
+
+      <section>
+        <h2 className="font-semibold text-brand-navy">Interessados ({interessados.length})</h2>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {interessados.map((a) => {
+            const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+            const overall = overallFor(a.profile_id);
+            return (
+              <li
+                key={a.profile_id}
+                className="flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5"
+              >
+                <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
+                <span className="flex-1 truncate text-sm text-brand-navy">{p?.full_name}</span>
+                {overall !== null && <span className="text-xs text-gray-400">{overall.toFixed(1)}</span>}
+                {profile.is_organizer && !eventFinished && !eventCancelled && (
+                  <ActionForm action={promoteToConfirmed} successMessage={`${p?.full_name ?? "Jogador"} confirmado!`}>
+                    <input type="hidden" name="eventId" value={id} />
+                    <input type="hidden" name="profileId" value={a.profile_id} />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1 rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark"
+                    >
+                      <Check className="h-3 w-3" strokeWidth={2} />
+                      Confirmar
+                    </button>
+                  </ActionForm>
+                )}
+                {profile.is_organizer && (
+                  <RemoveAttendanceButton
+                    eventId={id}
+                    profileId={a.profile_id}
+                    fullName={p?.full_name ?? "esse jogador"}
+                    action={removeAttendance}
+                  />
+                )}
+              </li>
+            );
+          })}
+          {!interessados.length && <li className="text-sm text-gray-500">Ninguém demonstrou interesse ainda.</li>}
+        </ul>
+      </section>
     </div>
   );
 }

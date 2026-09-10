@@ -25,7 +25,7 @@ export default function PrivacidadePage() {
             <li>Nome, foto de perfil e e-mail da sua conta Google, usados apenas para login.</li>
             <li>Dados de cadastro que você preenche: aniversário, telefone e se joga de levantador.</li>
             <li>Suas autoavaliações de habilidade no vôlei.</li>
-            <li>Confirmações de presença, votos de MVP e status de pagamento dos rachas.</li>
+            <li>Confirmações e interesse de presença nos rachas.</li>
           </ul>
         </section>
 

@@ -1,49 +1,27 @@
 import { notFound } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { Trophy, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
-import { voteMvp } from "./actions";
+import { setMvp, clearMvp } from "./actions";
 
 export default async function MvpPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: confirmed }, { data: myVote }, { count: votesCount }] = await Promise.all([
-    supabase.from("events").select("id, date, status").eq("id", id).maybeSingle(),
+  const [{ data: event }, { data: confirmed }] = await Promise.all([
+    supabase.from("events").select("id, date, status, mvp_profile_id").eq("id", id).maybeSingle(),
     supabase
       .from("attendance")
       .select("profile_id, profiles(full_name, avatar_url)")
       .eq("event_id", id)
       .eq("status", "confirmed"),
-    supabase
-      .from("mvp_votes")
-      .select("voted_for_profile_id")
-      .eq("event_id", id)
-      .eq("voter_profile_id", profile.id)
-      .maybeSingle(),
-    supabase.from("mvp_votes").select("id", { count: "exact", head: true }).eq("event_id", id),
   ]);
   if (!event) notFound();
 
   const eventFinished = event.status === "finished";
-  const totalConfirmed = confirmed?.length ?? 0;
-
-  const votingClosed = totalConfirmed > 0 && (votesCount ?? 0) > totalConfirmed / 2;
-
-  const canVote = eventFinished && !myVote && !votingClosed;
-  const canSeeResults = eventFinished && (Boolean(myVote) || profile.is_organizer || votingClosed);
-
-  const { data: allVotes } = canSeeResults
-    ? await supabase.from("mvp_votes").select("voted_for_profile_id").eq("event_id", id)
-    : { data: null };
-
-  const tally = new Map<string, number>();
-  for (const v of allVotes ?? []) {
-    tally.set(v.voted_for_profile_id, (tally.get(v.voted_for_profile_id) ?? 0) + 1);
-  }
 
   const candidatos = (confirmed ?? [])
     .map((c) => {
@@ -52,13 +30,11 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
         profileId: c.profile_id,
         fullName: p?.full_name ?? "—",
         avatarUrl: p?.avatar_url ?? null,
-        votes: tally.get(c.profile_id) ?? 0,
       };
     })
-    .sort((a, b) => (canSeeResults ? b.votes - a.votes : a.fullName.localeCompare(b.fullName)));
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
-  const maxVotes = Math.max(0, ...candidatos.map((c) => c.votes));
-  const faltam = Math.max(0, Math.floor(totalConfirmed / 2) + 1 - (votesCount ?? 0));
+  const mvp = candidatos.find((c) => c.profileId === event.mvp_profile_id) ?? null;
 
   return (
     <div className="space-y-6">
@@ -69,12 +45,10 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
         </h1>
         <p className="mt-1 text-sm text-gray-500">
           {!eventFinished
-            ? "A votação abre depois que o organizador terminar o evento."
-            : votingClosed
-              ? "Votação encerrada — a maioria já votou."
-              : myVote
-                ? "Você já votou. Aguarde o resultado."
-                : "Vote em quem jogou melhor no racha (menos em você mesmo 😉)."}
+            ? "Libera depois que o organizador terminar o evento."
+            : profile.is_organizer
+              ? "Escolha quem foi o melhor jogador desse racha."
+              : "O MVP é escolhido pelos organizadores depois do racha."}
         </p>
       </div>
 
@@ -82,66 +56,64 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
         <p className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
           Ainda não dá pra escolher o MVP — o racha precisa ser finalizado primeiro.
         </p>
-      ) : (
-        <>
-          {!canSeeResults && (
-            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-              <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>
-                  {votesCount ?? 0} de {totalConfirmed} confirmados já votaram
-                </span>
-                <span>faltam {faltam} pra fechar</span>
-              </div>
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
-                <div
-                  className="h-full rounded-full bg-brand-purple transition-all"
-                  style={{
-                    width: `${totalConfirmed ? Math.min(100, ((votesCount ?? 0) / totalConfirmed) * 100) : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
+      ) : !profile.is_organizer ? (
+        <div className="rounded-xl border border-gray-200 px-4 py-8 text-center">
+          {mvp ? (
+            <>
+              <Avatar src={mvp.avatarUrl} name={mvp.fullName} size="md" />
+              <p className="mt-3 text-lg font-semibold text-brand-navy">🏆 {mvp.fullName}</p>
+              <p className="mt-1 text-sm text-gray-500">foi o MVP desse racha!</p>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">Os organizadores ainda não escolheram o MVP.</p>
           )}
-
-          <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
-            {candidatos.map((c) => {
-              const isMe = c.profileId === profile.id;
-              const isLeader = canSeeResults && c.votes === maxVotes && maxVotes > 0;
-              return (
-                <li
-                  key={c.profileId}
-                  className={`flex items-center justify-between gap-3 px-4 py-3 ${isLeader ? "bg-amber-50/60" : ""}`}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Avatar src={c.avatarUrl} name={c.fullName} size="sm" />
-                    <span className="truncate text-sm text-brand-navy">
-                      {isLeader && "🏆 "}
-                      {c.fullName}
-                      {isMe && <span className="text-gray-400"> (você)</span>}
-                    </span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    {canSeeResults && (
-                      <span className="text-sm font-medium text-brand-purple">{c.votes} voto(s)</span>
-                    )}
-                    {canVote && !isMe && (
-                      <ActionForm action={voteMvp} successMessage="Voto registrado!">
-                        <input type="hidden" name="eventId" value={id} />
-                        <input type="hidden" name="votedForProfileId" value={c.profileId} />
-                        <button className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-purple-dark">
-                          Votar
-                        </button>
-                      </ActionForm>
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-            {!candidatos.length && (
-              <li className="px-4 py-6 text-center text-sm text-gray-500">Ninguém confirmou presença nesse racha.</li>
-            )}
-          </ul>
-        </>
+        </div>
+      ) : (
+        <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200">
+          {candidatos.map((c) => {
+            const isMvp = c.profileId === event.mvp_profile_id;
+            return (
+              <li
+                key={c.profileId}
+                className={`flex items-center justify-between gap-3 px-4 py-3 ${isMvp ? "bg-amber-50/60" : ""}`}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar src={c.avatarUrl} name={c.fullName} size="sm" />
+                  <span className="truncate text-sm text-brand-navy">
+                    {isMvp && "🏆 "}
+                    {c.fullName}
+                  </span>
+                </div>
+                {isMvp ? (
+                  <ActionForm action={clearMvp} successMessage="Escolha removida.">
+                    <input type="hidden" name="eventId" value={id} />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                    >
+                      <X className="h-3.5 w-3.5" strokeWidth={2} />
+                      Remover escolha
+                    </button>
+                  </ActionForm>
+                ) : (
+                  <ActionForm action={setMvp} successMessage={`${c.fullName} escolhido(a) como MVP!`}>
+                    <input type="hidden" name="eventId" value={id} />
+                    <input type="hidden" name="profileId" value={c.profileId} />
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-purple-dark"
+                    >
+                      Escolher como MVP
+                    </button>
+                  </ActionForm>
+                )}
+              </li>
+            );
+          })}
+          {!candidatos.length && (
+            <li className="px-4 py-6 text-center text-sm text-gray-500">Ninguém confirmado presença nesse racha.</li>
+          )}
+        </ul>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, Wallet, PlayCircle, StopCircle, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -83,13 +83,13 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
           <p className="text-sm text-gray-600">
             {isInProgress
-              ? "O racha está rolando. Termine o evento quando acabar pra liberar a votação de MVP."
+              ? "O racha está rolando. Termine o evento quando acabar pra liberar a escolha do MVP."
               : listOpen
                 ? "Quando a galera chegar na quadra, inicie o evento."
-                : "Abra a lista oficial (em \"Entrar na lista do racha\") antes de iniciar o evento."}
+                : "Publique a lista de confirmados (em \"Lista do racha\") antes de iniciar o evento."}
           </p>
           {isInProgress ? (
-            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora dá pra escolher o MVP." className="ml-auto shrink-0">
+            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora os organizadores podem escolher o MVP." className="ml-auto shrink-0">
               <input type="hidden" name="eventId" value={id} />
               <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
                 <StopCircle className="h-4 w-4" strokeWidth={2} />
@@ -112,29 +112,21 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         <HubCard
           href={`/racha/${id}/confirmar`}
           icon={CalendarCheck}
-          title={listOpen ? "Entrar na lista do racha" : "Interesse no racha"}
-          description={listOpen ? "Confirme sua presença oficial." : "Diga se você tem interesse em jogar."}
+          title="Lista do racha"
+          description="Diga se você tem interesse em jogar."
         />
         <HubCard
           href={`/racha/${id}/times`}
           icon={Users2}
           title="Times"
-          description={listOpen ? "Veja ou gere os times balanceados." : "Libera depois que a lista oficial abrir."}
+          description={listOpen ? "Veja ou gere os times balanceados." : "Libera depois que a lista de confirmados for publicada."}
         />
         <HubCard
           href={`/racha/${id}/mvp`}
           icon={Trophy}
           title="MVP"
-          description={isFinished ? "Vote em quem jogou melhor." : "Libera depois que o racha terminar."}
+          description={isFinished ? "Escolhido pelos organizadores." : "Libera depois que o racha terminar."}
         />
-        {profile.is_organizer && (
-          <HubCard
-            href={`/racha/${id}/pagamentos`}
-            icon={Wallet}
-            title="Pagamentos"
-            description="Controle de quem já pagou."
-          />
-        )}
       </div>
     </div>
   );

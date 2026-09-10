@@ -8,24 +8,18 @@ export async function setAttendance(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
-  const status = String(formData.get("status")) as "confirmed" | "declined" | "interested";
+  const status = String(formData.get("status")) as "declined" | "interested";
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, official_list_open")
-    .eq("id", eventId)
-    .maybeSingle();
+  if (status !== "interested" && status !== "declined") {
+    throw new Error("Só os organizadores podem confirmar presença de alguém na lista.");
+  }
+
+  const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
   if (event?.status === "finished") {
-    throw new Error("Esse racha já terminou, não dá mais pra confirmar presença.");
+    throw new Error("Esse racha já terminou, não dá mais pra responder.");
   }
   if (event?.status === "cancelled") {
-    throw new Error("Esse racha foi cancelado, não dá mais pra confirmar presença.");
-  }
-  if (status === "confirmed" && !event?.official_list_open) {
-    throw new Error("A lista oficial ainda não abriu. Marque que tem interesse por enquanto.");
-  }
-  if (status === "interested" && event?.official_list_open) {
-    throw new Error("A lista oficial já abriu — confirme sua presença direto.");
+    throw new Error("Esse racha foi cancelado, não dá mais pra responder.");
   }
 
   const { error } = await supabase.from("attendance").upsert(
@@ -37,6 +31,44 @@ export async function setAttendance(formData: FormData) {
     },
     { onConflict: "event_id,profile_id" },
   );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+}
+
+export async function promoteToConfirmed(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+
+  const { error } = await supabase.from("attendance").upsert(
+    {
+      event_id: eventId,
+      profile_id: profileId,
+      status: "confirmed",
+      confirmed_at: new Date().toISOString(),
+    },
+    { onConflict: "event_id,profile_id" },
+  );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+}
+
+export async function demoteToInterested(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+
+  const { error } = await supabase
+    .from("attendance")
+    .update({ status: "interested" })
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId);
 
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);
