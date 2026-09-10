@@ -7,6 +7,7 @@ import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
+import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
@@ -31,6 +32,10 @@ export default async function ConfirmarPresencaPage({
       : Promise.resolve(null),
   ]);
 
+  const { data: approvedProfiles } = profile.is_organizer
+    ? await supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name")
+    : { data: null };
+
   if (!event) notFound();
 
   const eventFinished = event.status === "finished";
@@ -40,6 +45,10 @@ export default async function ConfirmarPresencaPage({
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
+  const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
+  const addDirectOptions = (approvedProfiles ?? [])
+    .filter((p) => !confirmedIds.has(p.id))
+    .map((p) => ({ id: p.id, fullName: p.full_name }));
 
   function overallFor(profileId: string) {
     if (!ratingsData) return null;
@@ -154,6 +163,10 @@ export default async function ConfirmarPresencaPage({
             </ActionForm>
           )}
         </div>
+      )}
+
+      {profile.is_organizer && !eventFinished && !eventCancelled && (
+        <AddDirectToConfirmedForm action={promoteToConfirmed} eventId={id} players={addDirectOptions} />
       )}
 
       {canSeeConfirmados && (
