@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
-import { QuickAccessRail } from "@/components/QuickAccessRail";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
@@ -230,8 +229,6 @@ export default async function HomePage() {
       </section>
 
       <BirthdaysCard profiles={birthdayProfiles ?? []} />
-
-      <QuickAccessRail />
     </div>
   );
 }
