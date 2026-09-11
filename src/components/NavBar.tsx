@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Home, CalendarDays, Users, Award, Megaphone, History, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "@/components/Logo";
 import { Avatar } from "@/components/Avatar";
+import { NavIsland } from "@/components/NavIsland";
 
 type NavProfile = {
   full_name: string;
@@ -14,24 +14,6 @@ type NavProfile = {
   status: string;
   guest_for_event_id: string | null;
 };
-
-const LINKS = [
-  { href: "/", label: "Início", icon: Home },
-  { href: "/racha", label: "Rachas", icon: CalendarDays },
-  { href: "/jogadores", label: "Jogadores", icon: Users },
-  { href: "/ranking", label: "Ranking", icon: Award },
-  { href: "/avisos", label: "Avisos", icon: Megaphone },
-  { href: "/historico", label: "Histórico", icon: History },
-];
-
-function NavBadge({ count }: { count: number }) {
-  if (!count) return null;
-  return (
-    <span className="ml-0.5 inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
-      {count > 9 ? "9+" : count}
-    </span>
-  );
-}
 
 export async function NavBar() {
   const cached = await readProfileFromHeaders<NavProfile>();
@@ -110,28 +92,6 @@ export async function NavBar() {
         <Link href="/">
           <Logo markClassName="h-10 w-10" />
         </Link>
-        <nav className="hidden items-center gap-1 text-sm font-medium sm:flex">
-          {LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-white/80 transition hover:bg-white/10 hover:text-white"
-            >
-              <link.icon className="h-4 w-4" strokeWidth={2} />
-              {link.label}
-              <NavBadge count={badgeByHref[link.href] ?? 0} />
-            </Link>
-          ))}
-          {profile?.is_organizer && (
-            <Link
-              href="/admin/solicitacoes"
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-purple-300 transition hover:bg-white/10 hover:text-purple-200"
-            >
-              <ShieldCheck className="h-4 w-4" strokeWidth={2} />
-              Admin
-            </Link>
-          )}
-        </nav>
         <div className="flex items-center gap-2.5">
           <Link
             href="/perfil"
@@ -147,32 +107,7 @@ export async function NavBar() {
           </form>
         </div>
       </div>
-      <nav className="flex items-center gap-1 overflow-x-auto border-t border-white/10 px-2 py-2 text-xs font-medium sm:hidden">
-        {LINKS.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-white/80"
-          >
-            <span className="relative">
-              <link.icon className="h-5 w-5" strokeWidth={2} />
-              {Boolean(badgeByHref[link.href]) && (
-                <span className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />
-              )}
-            </span>
-            {link.label}
-          </Link>
-        ))}
-        {profile?.is_organizer && (
-          <Link
-            href="/admin/solicitacoes"
-            className="flex shrink-0 flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-purple-300"
-          >
-            <ShieldCheck className="h-5 w-5" strokeWidth={2} />
-            Admin
-          </Link>
-        )}
-      </nav>
+      <NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} />
     </header>
   );
 }
