@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { Home, CalendarDays, Users, Award, Megaphone, History, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
+import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "@/components/Logo";
 import { Avatar } from "@/components/Avatar";
+
+type NavProfile = {
+  full_name: string;
+  avatar_url: string | null;
+  is_organizer: boolean;
+  status: string;
+  guest_for_event_id: string | null;
+};
 
 const LINKS = [
   { href: "/", label: "Início", icon: Home },
@@ -24,18 +34,25 @@ function NavBadge({ count }: { count: number }) {
 }
 
 export async function NavBar() {
+  const cached = await readProfileFromHeaders<NavProfile>();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  let userId: string;
+  let profile: NavProfile | null;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name, avatar_url, is_organizer, status, guest_for_event_id")
-    .eq("id", user.id)
-    .maybeSingle();
+  if (cached) {
+    userId = cached.userId;
+    profile = cached.profile;
+  } else {
+    // Fallback: só acontece se essa requisição não passou pelo middleware.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
+    userId = user.id;
+    const { data } = await supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle();
+    profile = data;
+  }
 
   if (profile?.status === "guest") {
     return (
@@ -73,7 +90,7 @@ export async function NavBar() {
     const { data: myAttendance } = await supabase
       .from("attendance")
       .select("event_id")
-      .eq("profile_id", user.id)
+      .eq("profile_id", userId)
       .in(
         "event_id",
         upcomingEvents.map((e) => e.id),

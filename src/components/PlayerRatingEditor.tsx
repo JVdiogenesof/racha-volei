@@ -6,7 +6,7 @@ import { SkillSlider } from "@/components/SkillSlider";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveMemberButton } from "@/components/RemoveMemberButton";
 import { SKILL_CATEGORIES, SKILL_LABELS, type RatingsByCategory } from "@/lib/scoring";
-import { setOrganizerRatings, removeMember } from "@/app/(app)/admin/jogadores/actions";
+import { setOrganizerRatings, updatePlayerProfile, removeMember } from "@/app/(app)/admin/jogadores/actions";
 
 export function PlayerRatingEditor({
   profileId,
@@ -40,6 +40,30 @@ export function PlayerRatingEditor({
           />
         </span>
       </button>
+      {open && (
+        <ActionForm
+          action={updatePlayerProfile}
+          successMessage={`Perfil de ${fullName} atualizado!`}
+          className="space-y-3 border-t border-white/10 px-4 py-4"
+        >
+          <input type="hidden" name="profileId" value={profileId} />
+          <div>
+            <label className="block text-xs font-medium text-white/60">Nome completo</label>
+            <input
+              name="fullName"
+              defaultValue={fullName}
+              required
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
+          >
+            Salvar perfil
+          </button>
+        </ActionForm>
+      )}
       {open && (
         <ActionForm
           action={setOrganizerRatings}

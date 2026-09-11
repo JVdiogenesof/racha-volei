@@ -5,16 +5,20 @@ import { FileInput } from "@/components/FileInput";
 import { ActionForm } from "@/components/ActionForm";
 import { DeleteAnnouncementButton } from "@/components/DeleteAnnouncementButton";
 import { AnnouncementCard } from "@/components/AnnouncementCard";
+import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { createAnnouncement, deleteAnnouncement } from "./actions";
 
 export default async function AvisosPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: announcements } = await supabase
-    .from("announcements")
-    .select("id, title, body, image_url, created_at, profiles(full_name)")
-    .order("created_at", { ascending: false });
+  const [{ data: announcements }, { data: birthdayProfiles }] = await Promise.all([
+    supabase
+      .from("announcements")
+      .select("id, title, body, image_url, created_at, profiles(full_name)")
+      .order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -22,6 +26,8 @@ export default async function AvisosPage() {
         <Megaphone className="h-6 w-6 text-purple-300" strokeWidth={2} />
         Avisos
       </h1>
+
+      <BirthdaysCard profiles={birthdayProfiles ?? []} />
 
       {profile.is_organizer && (
         <ActionForm

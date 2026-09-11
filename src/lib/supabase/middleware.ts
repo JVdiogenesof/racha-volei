@@ -1,10 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { PROFILE_COLUMNS, USER_ID_HEADER, PROFILE_HEADER } from "./session-headers";
 
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/privacidade"];
 const ONBOARDING_PATHS = ["/cadastro", "/aguardando-aprovacao"];
 const RESERVE_PATH = "/lista-de-reserva";
 const SELF_RATING_PATH = "/autoavaliacao";
+const HAS_SELF_RATING_COOKIE = "has_self_rating";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -45,13 +47,21 @@ export async function updateSession(request: NextRequest) {
 
   if (user && !isPublic) {
     const [{ data: profile }, { data: reserveEntry }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("status, is_organizer, guest_for_event_id")
-        .eq("id", user.id)
-        .maybeSingle(),
+      supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle(),
       supabase.from("reserve_list").select("id").eq("auth_user_id", user.id).maybeSingle(),
     ]);
+
+    // Repassa o perfil já carregado pros Server Components via header, pra
+    // NavBar/NotificationCenter/requireProfile() não refazerem a mesma consulta
+    // (+ getUser()) a cada navegação — era a maior causa de lentidão pra trocar
+    // de tela, já que os três rodavam em toda página.
+    if (profile) {
+      const existingCookies = response.cookies.getAll();
+      request.headers.set(USER_ID_HEADER, user.id);
+      request.headers.set(PROFILE_HEADER, encodeURIComponent(JSON.stringify(profile)));
+      response = NextResponse.next({ request });
+      for (const cookie of existingCookies) response.cookies.set(cookie);
+    }
 
     const isOnboarding = ONBOARDING_PATHS.some((p) => pathname.startsWith(p));
     const isReservePath = pathname.startsWith(RESERVE_PATH);
@@ -134,11 +144,21 @@ export async function updateSession(request: NextRequest) {
     const isSelfRatingPath = pathname.startsWith(SELF_RATING_PATH);
 
     if (profile?.status === "approved") {
-      const { count } = await supabase
-        .from("self_ratings")
-        .select("id", { count: "exact", head: true })
-        .eq("profile_id", user.id);
-      const hasSelfRating = (count ?? 0) > 0;
+      // Uma vez preenchida, a autoavaliação nunca deixa de existir — então dá
+      // pra guardar isso num cookie e parar de bater no banco a cada
+      // navegação só pra confirmar de novo o que já sabíamos.
+      let hasSelfRating = request.cookies.get(HAS_SELF_RATING_COOKIE)?.value === "1";
+
+      if (!hasSelfRating) {
+        const { count } = await supabase
+          .from("self_ratings")
+          .select("id", { count: "exact", head: true })
+          .eq("profile_id", user.id);
+        hasSelfRating = (count ?? 0) > 0;
+        if (hasSelfRating) {
+          response.cookies.set(HAS_SELF_RATING_COOKIE, "1", { maxAge: 60 * 60 * 24 * 365, path: "/" });
+        }
+      }
 
       if (!hasSelfRating && !isSelfRatingPath) {
         const url = request.nextUrl.clone();

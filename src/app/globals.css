@@ -86,3 +86,30 @@ form[aria-busy="true"] button[type="submit"]::after {
     transform: rotate(360deg);
   }
 }
+
+/* Confete ao marcar vitória de um time (ver MatchWinButton). Cada bolinha
+   nasce girada num ângulo diferente (--angle) e "voa" nessa direção. */
+.confetti-particle {
+  position: absolute;
+  font-size: 12px;
+  animation: confetti-pop 0.6s ease-out forwards;
+  transform: rotate(var(--angle)) translateY(0);
+}
+
+@keyframes confetti-pop {
+  from {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(-28px) scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-particle {
+    animation: none;
+    display: none;
+  }
+}

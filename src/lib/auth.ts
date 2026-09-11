@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
+import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 
 export interface CurrentProfile {
   id: string;
@@ -17,6 +19,11 @@ export interface CurrentProfile {
 }
 
 export async function requireProfile(): Promise<CurrentProfile> {
+  const cached = await readProfileFromHeaders<CurrentProfile>();
+  if (cached) return cached.profile;
+
+  // Fallback: só acontece se essa requisição não passou pelo middleware
+  // (ex: chamada fora do matcher do proxy.ts).
   const supabase = await createClient();
   const {
     data: { user },
@@ -26,9 +33,7 @@ export async function requireProfile(): Promise<CurrentProfile> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "id, full_name, birthdate, phone, avatar_url, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, is_organizer, status, guest_for_event_id",
-    )
+    .select(PROFILE_COLUMNS)
     .eq("id", user.id)
     .maybeSingle();
 

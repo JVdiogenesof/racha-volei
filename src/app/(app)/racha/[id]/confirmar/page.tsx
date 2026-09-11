@@ -8,6 +8,7 @@ import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
 import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
+import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
@@ -135,6 +136,12 @@ export default async function ConfirmarPresencaPage({
             {confirmados.length} confirmados · {interessados.length} interessados
             {listOpen ? " · lista pública" : " · lista ainda privada"}
           </p>
+          {listOpen && (
+            <ShareWhatsAppButton
+              message={`🏐 A lista de presença do racha de ${dateLabel} tá aberta! Já são ${confirmados.length} confirmados. Dá uma olhada e confirma a sua:`}
+              path={`/racha/${id}/confirmar`}
+            />
+          )}
           {listOpen ? (
             <ActionForm
               action={setOfficialListOpen}

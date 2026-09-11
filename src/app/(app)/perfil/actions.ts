@@ -21,14 +21,10 @@ export async function updateProfileData(formData: FormData) {
     throw new Error("Nome e data de aniversário são obrigatórios.");
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const avatarUrl =
-    (user?.user_metadata?.avatar_url as string | undefined) ??
-    (user?.user_metadata?.picture as string | undefined) ??
-    null;
-
+  // avatar_url não entra aqui de propósito: é definido no cadastro (foto do
+  // Google) e pode ser trocado por um organizador em /admin/jogadores — se
+  // resincronizasse com o Google a cada save, apagaria a foto trocada pelo
+  // organizador.
   const { error } = await supabase
     .from("profiles")
     .update({
@@ -39,7 +35,6 @@ export async function updateProfileData(formData: FormData) {
       attendance_frequency: attendanceFrequency,
       has_vpa_shirt: hasVpaShirt,
       wants_tournaments: wantsTournaments,
-      avatar_url: avatarUrl,
     })
     .eq("id", profile.id);
 

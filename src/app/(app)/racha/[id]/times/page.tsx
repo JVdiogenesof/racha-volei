@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
-import { MoveTeamSelect } from "@/components/MoveTeamSelect";
-import { SwapMemberSelect } from "@/components/SwapMemberSelect";
+import { PlayerActionSelect } from "@/components/PlayerActionSelect";
+import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import { generateTeams, moveMember, swapMembers, recordMatchWin, undoLastMatchWin } from "./actions";
@@ -161,16 +161,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         </button>
                       </ActionForm>
                     )}
-                    <ActionForm action={recordMatchWin} successMessage={`+1 vitória pro Time ${team.teamNumber}!`}>
-                      <input type="hidden" name="eventId" value={id} />
-                      <input type="hidden" name="teamId" value={team.id} />
-                      <button
-                        type="submit"
-                        className="rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark"
-                      >
-                        +1 vitória
-                      </button>
-                    </ActionForm>
+                    <MatchWinButton
+                      action={recordMatchWin}
+                      eventId={id}
+                      teamId={team.id}
+                      teamNumber={team.teamNumber}
+                    />
                   </div>
                 )}
               </div>
@@ -185,21 +181,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
                       {profile.is_organizer && (
-                        <>
-                          <SwapMemberSelect
-                            action={swapMembers}
-                            eventId={id}
-                            teamMemberId={m.teamMemberId}
-                            otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
-                          />
-                          <MoveTeamSelect
-                            action={moveMember}
-                            eventId={id}
-                            teamMemberId={m.teamMemberId}
-                            currentTeamId={team.id}
-                            teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
-                          />
-                        </>
+                        <PlayerActionSelect
+                          moveAction={moveMember}
+                          swapAction={swapMembers}
+                          eventId={id}
+                          teamMemberId={m.teamMemberId}
+                          currentTeamId={team.id}
+                          teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
+                          otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
+                        />
                       )}
                     </div>
                   </li>

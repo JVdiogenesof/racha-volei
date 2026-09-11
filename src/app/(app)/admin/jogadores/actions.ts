@@ -27,6 +27,22 @@ export async function setOrganizerRatings(formData: FormData) {
   revalidatePath("/admin/jogadores");
 }
 
+export async function updatePlayerProfile(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const profileId = String(formData.get("profileId"));
+  const fullName = String(formData.get("fullName") ?? "").trim();
+
+  if (!fullName) throw new Error("O nome não pode ficar em branco.");
+
+  const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", profileId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/jogadores");
+  revalidatePath("/jogadores");
+  revalidatePath("/ranking");
+}
+
 export async function removeMember(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
