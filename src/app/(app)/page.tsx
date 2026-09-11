@@ -15,6 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
+import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 
 function relativeDate(dateStr: string) {
@@ -41,7 +42,7 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: proximoRacha }, { data: avisos }] = await Promise.all([
+  const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }] = await Promise.all([
     supabase
       .from("events")
       .select("id, date, time, location, official_list_open")
@@ -56,6 +57,7 @@ export default async function HomePage() {
       .select("id, title, body, image_url, created_at, profiles(full_name)")
       .order("created_at", { ascending: false })
       .limit(1),
+    supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
   ]);
 
   const { data: myAttendance } = proximoRacha
@@ -242,6 +244,8 @@ export default async function HomePage() {
           ))}
         </div>
       </section>
+
+      <BirthdaysCard profiles={birthdayProfiles ?? []} />
     </div>
   );
 }
