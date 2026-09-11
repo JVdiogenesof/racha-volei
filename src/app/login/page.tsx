@@ -1,10 +1,32 @@
+import { CalendarDays, Users, Award, Megaphone, type LucideIcon } from "lucide-react";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 import { Logo, LogoMark } from "@/components/Logo";
 
-const FEATURES = [
-  { title: "Confirmação de presença", desc: "Substitui a lista manual do zap." },
-  { title: "Times balanceados", desc: "Gerados automaticamente por nível." },
-  { title: "Avisos e MVP", desc: "Tudo do racha num só lugar." },
+const FEATURES: { title: string; desc: string; icon: LucideIcon; iconClass: string }[] = [
+  {
+    title: "Confirmação de presença",
+    desc: "Substitui a lista manual do zap.",
+    icon: CalendarDays,
+    iconClass: "bg-brand-purple/30 text-purple-200",
+  },
+  {
+    title: "Times balanceados",
+    desc: "Gerados automaticamente por nível.",
+    icon: Users,
+    iconClass: "bg-blue-500/25 text-blue-300",
+  },
+  {
+    title: "Ranking e MVP",
+    desc: "Veja quem mais brilha em quadra.",
+    icon: Award,
+    iconClass: "bg-yellow-500/25 text-yellow-300",
+  },
+  {
+    title: "Avisos e aniversários",
+    desc: "Tudo da comunidade num lugar só.",
+    icon: Megaphone,
+    iconClass: "bg-pink-500/25 text-pink-300",
+  },
 ];
 
 export default function LoginPage() {
@@ -19,19 +41,13 @@ export default function LoginPage() {
               "radial-gradient(600px circle at 15% 15%, rgba(124,58,237,0.35), transparent 60%), radial-gradient(500px circle at 85% 85%, rgba(124,58,237,0.25), transparent 60%)",
           }}
         />
-        <svg
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.png"
+          alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 -z-10 h-[420px] w-[420px] opacity-20"
-          viewBox="0 0 40 40"
-        >
-          <circle cx="20" cy="20" r="19" fill="none" stroke="white" strokeWidth="0.6" />
-          <path
-            d="M20 1c6 5 6 33 0 38M1 20h38M6 8c8 6 20 6 28 0M6 32c8-6 20-6 28 0"
-            stroke="white"
-            strokeWidth="0.5"
-            fill="none"
-          />
-        </svg>
+          className="pointer-events-none absolute -right-24 -top-24 -z-10 h-[420px] w-[420px] rotate-12 object-contain opacity-15"
+        />
 
         <Logo className="mb-10" markClassName="h-16 w-16" />
 
@@ -49,8 +65,8 @@ export default function LoginPage() {
         <ul className="mt-10 space-y-4">
           {FEATURES.map((f) => (
             <li key={f.title} className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-purple/25 text-purple-200 ring-1 ring-inset ring-purple-400/30">
-                ✓
+              <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${f.iconClass}`}>
+                <f.icon className="h-4 w-4" strokeWidth={2} />
               </span>
               <div>
                 <p className="font-medium text-white">{f.title}</p>
@@ -62,12 +78,20 @@ export default function LoginPage() {
       </div>
 
       <div className="relative flex flex-col items-center justify-center px-8 py-16">
-        <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-8 shadow-lg shadow-black/20">
-          <LogoMark className="h-10 w-10 lg:hidden" />
-          <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Acessar conta</h2>
-          <p className="mt-1 text-sm text-white/60">Entre com sua conta Google.</p>
-          <div className="mt-6">
-            <GoogleLoginButton />
+        <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 shadow-lg shadow-black/20">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt=""
+            className="pointer-events-none absolute -bottom-8 -right-8 h-40 w-40 rotate-[-8deg] object-contain opacity-20"
+          />
+          <div className="relative">
+            <LogoMark className="h-10 w-10 lg:hidden" />
+            <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Acessar conta</h2>
+            <p className="mt-1 text-sm text-white/60">Entre com sua conta Google.</p>
+            <div className="mt-6">
+              <GoogleLoginButton />
+            </div>
           </div>
         </div>
       </div>
