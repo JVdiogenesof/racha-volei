@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { QuickAccessRail } from "@/components/QuickAccessRail";
+import { RachaLevelBadge } from "@/components/RachaLevelBadge";
+import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 
 function relativeDate(dateStr: string) {
@@ -26,7 +28,7 @@ export default async function HomePage() {
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, official_list_open")
+      .select("id, date, time, location, status, official_list_open")
       .gte("date", today)
       .neq("status", "finished")
       .neq("status", "cancelled")
@@ -50,6 +52,9 @@ export default async function HomePage() {
         .maybeSingle()
     : { data: null };
 
+  const rachaLevel =
+    proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
+  const isInProgress = proximoRacha?.status === "in_progress";
   const myStatus = myAttendance?.status;
   const ultimoAviso = avisos?.[0] ?? null;
   const avisoAuthor = ultimoAviso
@@ -94,12 +99,20 @@ export default async function HomePage() {
             </span>
             <h2 className="font-semibold">Próximo racha</h2>
           </div>
-          {proximoRacha && myStatus === "confirmed" && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-400/15 px-3 py-1 text-xs font-medium text-green-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-              Confirmado
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {isInProgress && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-400/15 px-3 py-1 text-xs font-medium text-red-300">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-400" />
+                Rolando agora
+              </span>
+            )}
+            {proximoRacha && myStatus === "confirmed" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-green-400/15 px-3 py-1 text-xs font-medium text-green-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                Confirmado
+              </span>
+            )}
+          </div>
         </div>
 
         {proximoRacha ? (
@@ -124,6 +137,12 @@ export default async function HomePage() {
                   <MapPin className="h-4 w-4 shrink-0 text-white/40" strokeWidth={2} />
                   {proximoRacha.location}
                 </p>
+              )}
+              {rachaLevel !== null && (
+                <div className="flex items-center gap-2.5">
+                  <Star className="h-4 w-4 shrink-0 text-white/40" strokeWidth={2} />
+                  <RachaLevelBadge level={rachaLevel} />
+                </div>
               )}
             </div>
 

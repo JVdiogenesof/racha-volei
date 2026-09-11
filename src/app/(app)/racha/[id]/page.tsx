@@ -4,8 +4,10 @@ import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, type LucideIcon 
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
+import { getRachaLevel } from "@/lib/rachaLevel";
 import { ActionForm } from "@/components/ActionForm";
 import { ToastFromQuery } from "@/components/ToastFromQuery";
+import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { startEvent, finishEvent } from "./actions";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +46,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const isFinished = event.status === "finished";
   const isInProgress = event.status === "in_progress";
   const listOpen = event.official_list_open;
+  const rachaLevel = listOpen ? await getRachaLevel(supabase, id) : null;
   const myStatusLabel =
     myAttendance?.status === "confirmed"
       ? "confirmado"
@@ -77,6 +80,11 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             : `${interestedCount ?? 0} interessados`}{" "}
           · você está <strong>{myStatusLabel}</strong>
         </p>
+        {rachaLevel !== null && (
+          <div className="mt-2">
+            <RachaLevelBadge level={rachaLevel} />
+          </div>
+        )}
       </div>
 
       {profile.is_organizer && !isFinished && (

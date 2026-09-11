@@ -63,3 +63,12 @@ export function overallScore(scores: Record<SkillCategory, number>): number {
   const values = SKILL_CATEGORIES.map((c) => scores[c]);
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
+
+/** Classificação textual pro nível médio de um racha (média de overall dos confirmados). */
+export function levelLabel(overall: number): string {
+  if (overall < 1.5) return "Iniciante";
+  if (overall < 2.5) return "Casual";
+  if (overall < 3.5) return "Intermediário";
+  if (overall < 4.5) return "Avançado";
+  return "Elite";
+}
