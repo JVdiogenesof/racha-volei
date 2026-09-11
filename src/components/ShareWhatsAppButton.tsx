@@ -1,22 +1,24 @@
 "use client";
 
-import { MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { Share2, Check } from "lucide-react";
+import { useToast } from "./Toast";
 
-export function ShareWhatsAppButton({
-  message,
-  path,
-  className,
-}: {
-  /** Texto da mensagem, sem o link (o link é montado e anexado na hora do clique). */
-  message: string;
-  /** Caminho da página a compartilhar, ex: `/racha/123/confirmar`. */
-  path: string;
-  className?: string;
-}) {
+export function ShareWhatsAppButton({ text, className }: { text: string; className?: string }) {
+  const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
+
   function handleClick() {
-    const link = `${window.location.origin}${path}`;
-    const text = `${message}\n${link}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setCopied(true);
+        showToast("Copiado! Agora é só colar no grupo do zap.");
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        showToast("Não foi possível copiar. Tenta de novo.");
+      });
   }
 
   return (
@@ -28,7 +30,7 @@ export function ShareWhatsAppButton({
         "inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-sm font-medium text-green-300 hover:bg-green-500/20"
       }
     >
-      <MessageCircle className="h-4 w-4" strokeWidth={2} />
+      {copied ? <Check className="h-4 w-4" strokeWidth={2} /> : <Share2 className="h-4 w-4" strokeWidth={2} />}
       Compartilhar no WhatsApp
     </button>
   );

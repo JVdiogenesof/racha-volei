@@ -63,6 +63,15 @@ export default async function ConfirmarPresencaPage({
     return overallScore(scores);
   }
 
+  const shareText = [
+    `🏐 Lista de presença do racha de ${dateLabel} — confirmados (${confirmados.length}):`,
+    "",
+    ...confirmados.map((a, i) => {
+      const name = (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?";
+      return `${i + 1}. ${name}`;
+    }),
+  ].join("\n");
+
   const myStatus = myAttendance?.status;
   const statusLabel =
     myStatus === "confirmed"
@@ -136,12 +145,7 @@ export default async function ConfirmarPresencaPage({
             {confirmados.length} confirmados · {interessados.length} interessados
             {listOpen ? " · lista pública" : " · lista ainda privada"}
           </p>
-          {listOpen && (
-            <ShareWhatsAppButton
-              message={`🏐 A lista de presença do racha de ${dateLabel} tá aberta! Já são ${confirmados.length} confirmados. Dá uma olhada e confirma a sua:`}
-              path={`/racha/${id}/confirmar`}
-            />
-          )}
+          {listOpen && <ShareWhatsAppButton text={shareText} />}
           {listOpen ? (
             <ActionForm
               action={setOfficialListOpen}
