@@ -46,7 +46,7 @@ export function EventListItem({
               event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"
             }`}
           >
-            {event.official_list_open ? "Lista oficial aberta" : "Fase de interesse"}
+            {event.official_list_open ? "Lista de confirmados publicada" : "Fase de interesse"}
           </span>
         )}
         <span

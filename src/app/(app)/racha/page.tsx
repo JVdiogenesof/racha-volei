@@ -96,7 +96,7 @@ function EventRow({
               event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"
             }`}
           >
-            {event.official_list_open ? "Lista aberta" : "Interesse"}
+            {event.official_list_open ? "Lista de confirmados publicada" : "Interesse"}
           </span>
         )}
         <span
