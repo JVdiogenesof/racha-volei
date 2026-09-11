@@ -9,6 +9,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
 import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
+import { SetterBadge } from "@/components/SetterBadge";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
@@ -24,7 +25,7 @@ export default async function ConfirmarPresencaPage({
     supabase.from("events").select("id, date, status, official_list_open").eq("id", id).maybeSingle(),
     supabase
       .from("attendance")
-      .select("profile_id, status, profiles(full_name, avatar_url)")
+      .select("profile_id, status, profiles(full_name, avatar_url, is_setter)")
       .eq("event_id", id)
       .order("confirmed_at", { ascending: true }),
     supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -67,8 +68,9 @@ export default async function ConfirmarPresencaPage({
     `🏐 Lista de presença do racha de ${dateLabel} — confirmados (${confirmados.length}):`,
     "",
     ...confirmados.map((a, i) => {
-      const name = (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?";
-      return `${i + 1}. ${name}`;
+      const p = a.profiles as unknown as { full_name: string; is_setter: boolean } | null;
+      const name = p?.full_name ?? "?";
+      return `${i + 1}. ${p?.is_setter ? `*${name}* 🏐 (levantador)` : name}`;
     }),
   ].join("\n");
 
@@ -188,7 +190,7 @@ export default async function ConfirmarPresencaPage({
           </h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {confirmados.map((a) => {
-              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
               return (
                 <li
                   key={a.profile_id}
@@ -196,6 +198,7 @@ export default async function ConfirmarPresencaPage({
                 >
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                   <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                  {p?.is_setter && <SetterBadge />}
                   {profile.is_organizer && !eventFinished && !eventCancelled && (
                     <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
                       <input type="hidden" name="eventId" value={id} />
@@ -229,7 +232,7 @@ export default async function ConfirmarPresencaPage({
         <h2 className="font-semibold text-white">Interessados ({interessados.length})</h2>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {interessados.map((a) => {
-            const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+            const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
             const overall = overallFor(a.profile_id);
             return (
               <li
@@ -238,6 +241,7 @@ export default async function ConfirmarPresencaPage({
               >
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                 <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                {p?.is_setter && <SetterBadge />}
                 {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                 {profile.is_organizer && !eventFinished && !eventCancelled && (
                   <ActionForm action={promoteToConfirmed} successMessage={`${p?.full_name ?? "Jogador"} confirmado!`}>

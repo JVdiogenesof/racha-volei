@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
+import { SetterBadge } from "@/components/SetterBadge";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
@@ -173,12 +174,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
               <ul className="mt-3 space-y-2">
                 {team.members.map((m) => (
-                  <li key={m.teamMemberId} className="flex items-center justify-between text-sm">
-                    <span className="text-white">
-                      {m.isSetter && "🏐 "}
-                      {m.fullName}
+                  <li key={m.teamMemberId} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="flex min-w-0 items-center gap-1.5 text-white">
+                      <span className="truncate">{m.fullName}</span>
+                      {m.isSetter && <SetterBadge />}
                     </span>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
                       {profile.is_organizer && (
                         <PlayerActionSelect
