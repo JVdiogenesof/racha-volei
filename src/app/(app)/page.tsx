@@ -1,21 +1,10 @@
 import Link from "next/link";
-import {
-  CalendarDays,
-  Clock,
-  MapPin,
-  Megaphone,
-  ArrowRight,
-  ThumbsUp,
-  Sparkles,
-  ChevronRight,
-  Users,
-  Award,
-  History,
-} from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
+import { QuickAccessRail } from "@/components/QuickAccessRail";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 
 function relativeDate(dateStr: string) {
@@ -28,14 +17,6 @@ function relativeDate(dateStr: string) {
   if (diffDays < 7) return `há ${diffDays} dias`;
   return new Date(dateStr).toLocaleDateString("pt-BR");
 }
-
-const QUICK_LINKS = [
-  { href: "/racha", label: "Rachas", icon: CalendarDays },
-  { href: "/jogadores", label: "Jogadores", icon: Users },
-  { href: "/ranking", label: "Ranking", icon: Award },
-  { href: "/avisos", label: "Avisos", icon: Megaphone },
-  { href: "/historico", label: "Histórico", icon: History },
-];
 
 export default async function HomePage() {
   const profile = await requireProfile();
@@ -229,23 +210,9 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section>
-        <h2 className="mb-3 font-semibold">Acesso rápido</h2>
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
-          {QUICK_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-2 py-4 text-center transition hover:bg-white/10"
-            >
-              <link.icon className="h-5 w-5 text-purple-300" strokeWidth={2} />
-              <span className="text-xs text-white/80">{link.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       <BirthdaysCard profiles={birthdayProfiles ?? []} />
+
+      <QuickAccessRail />
     </div>
   );
 }
