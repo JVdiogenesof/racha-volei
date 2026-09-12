@@ -6,23 +6,29 @@ import { useToast } from "./Toast";
 
 const MOVE_PREFIX = "move:";
 const SWAP_PREFIX = "swap:";
+const REPLACE_PREFIX = "replace:";
 
 export function PlayerActionSelect({
   moveAction,
   swapAction,
+  replaceAction,
   eventId,
   teamMemberId,
   currentTeamId,
   teams,
   otherMembers,
+  unassignedConfirmed,
 }: {
   moveAction: (formData: FormData) => Promise<void> | void;
   swapAction: (formData: FormData) => Promise<void> | void;
+  replaceAction: (formData: FormData) => Promise<void> | void;
   eventId: string;
   teamMemberId: string;
   currentTeamId: string;
   teams: { id: string; teamNumber: number }[];
   otherMembers: { teamMemberId: string; fullName: string; teamNumber: number }[];
+  /** Confirmados que ainda não caíram em nenhum time (ex: entraram depois da geração). */
+  unassignedConfirmed: { profileId: string; fullName: string }[];
 }) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -51,6 +57,14 @@ export function PlayerActionSelect({
           formData.set("swapWithTeamMemberId", swapWithTeamMemberId);
           await swapAction(formData);
           showToast("Jogadores trocados de time!");
+        } else if (value.startsWith(REPLACE_PREFIX)) {
+          const newProfileId = value.slice(REPLACE_PREFIX.length);
+          const formData = new FormData();
+          formData.set("eventId", eventId);
+          formData.set("teamMemberId", teamMemberId);
+          formData.set("newProfileId", newProfileId);
+          await replaceAction(formData);
+          showToast("Jogador substituído no time!");
         }
         router.refresh();
       } catch (err) {
@@ -86,6 +100,15 @@ export function PlayerActionSelect({
           {otherMembers.map((m) => (
             <option key={m.teamMemberId} value={`${SWAP_PREFIX}${m.teamMemberId}`}>
               {m.fullName} (Time {m.teamNumber})
+            </option>
+          ))}
+        </optgroup>
+      )}
+      {unassignedConfirmed.length > 0 && (
+        <optgroup label="Substituir por (confirmado sem time)">
+          {unassignedConfirmed.map((p) => (
+            <option key={p.profileId} value={`${REPLACE_PREFIX}${p.profileId}`}>
+              {p.fullName}
             </option>
           ))}
         </optgroup>

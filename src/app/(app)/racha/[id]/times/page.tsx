@@ -9,14 +9,14 @@ import { SetterBadge } from "@/components/SetterBadge";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
-import { generateTeams, moveMember, swapMembers, recordMatchWin, undoLastMatchWin } from "./actions";
+import { generateTeams, moveMember, swapMembers, replaceMember, recordMatchWin, undoLastMatchWin } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: generation }] = await Promise.all([
+  const [{ data: event }, { data: generation }, { data: confirmedAttendance }] = await Promise.all([
     supabase.from("events").select("id, date, num_teams, official_list_open").eq("id", id).maybeSingle(),
     supabase
       .from("team_generations")
@@ -25,6 +25,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .order("generated_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("attendance")
+      .select("profile_id, profiles(full_name)")
+      .eq("event_id", id)
+      .eq("status", "confirmed"),
   ]);
   if (!event) notFound();
 
@@ -90,6 +95,16 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     t.members.map((m) => ({ teamMemberId: m.teamMemberId, fullName: m.fullName, teamNumber: t.teamNumber })),
   );
 
+  // Gente confirmada que entrou depois da geração dos times (ex: substituiu
+  // alguém que saiu) e por isso ainda não tem uma linha em team_members.
+  const assignedProfileIds = new Set(teams.flatMap((t) => t.members.map((m) => m.profileId)));
+  const unassignedConfirmed = (confirmedAttendance ?? [])
+    .filter((a) => !assignedProfileIds.has(a.profile_id))
+    .map((a) => ({
+      profileId: a.profile_id,
+      fullName: (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
+    }));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -119,6 +134,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
       </div>
+
+      {generation && profile.is_organizer && unassignedConfirmed.length > 0 && (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-300">
+          {unassignedConfirmed.map((p) => p.fullName).join(", ")}{" "}
+          {unassignedConfirmed.length === 1 ? "está confirmado(a)" : "estão confirmados(as)"} mas ainda{" "}
+          {unassignedConfirmed.length === 1 ? "não foi colocado(a)" : "não foram colocados(as)"} em nenhum time — use
+          &ldquo;Substituir por&rdquo; no lugar de quem saiu.
+        </p>
+      )}
 
       {!generation && !event.official_list_open && (
         <p className="text-sm text-white/60">
@@ -185,11 +209,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         <PlayerActionSelect
                           moveAction={moveMember}
                           swapAction={swapMembers}
+                          replaceAction={replaceMember}
                           eventId={id}
                           teamMemberId={m.teamMemberId}
                           currentTeamId={team.id}
                           teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
                           otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
+                          unassignedConfirmed={unassignedConfirmed}
                         />
                       )}
                     </div>

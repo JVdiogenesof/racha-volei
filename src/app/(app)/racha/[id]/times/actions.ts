@@ -126,6 +126,23 @@ export async function swapMembers(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export async function replaceMember(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const teamMemberId = String(formData.get("teamMemberId"));
+  const newProfileId = String(formData.get("newProfileId"));
+
+  // Cobre o caso de alguém sair da lista de confirmados depois dos times já
+  // gerados: quem entrou no lugar dela nunca teve uma linha em team_members,
+  // então não dava pra "trocar" com ela (swapMembers exige as duas linhas já
+  // existirem) — aqui só troca o dono do lugar que já existe no time.
+  const { error } = await supabase.from("team_members").update({ profile_id: newProfileId }).eq("id", teamMemberId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function recordMatchWin(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
