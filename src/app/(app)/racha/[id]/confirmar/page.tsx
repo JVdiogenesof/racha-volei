@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, ThumbsUp, Rocket, Undo2, ArrowLeftRight } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -9,6 +9,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
 import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
+import { InterestButton } from "@/components/InterestButton";
 import { SetterBadge } from "@/components/SetterBadge";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
@@ -22,7 +23,11 @@ export default async function ConfirmarPresencaPage({
   const supabase = await createClient();
 
   const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData] = await Promise.all([
-    supabase.from("events").select("id, date, status, official_list_open").eq("id", id).maybeSingle(),
+    supabase
+      .from("events")
+      .select("id, date, status, official_list_open, price_per_player")
+      .eq("id", id)
+      .maybeSingle(),
     supabase
       .from("attendance")
       .select("profile_id, status, profiles(full_name, avatar_url, is_setter)")
@@ -122,14 +127,11 @@ export default async function ConfirmarPresencaPage({
         </div>
       ) : (
         <div className="flex gap-3">
-          <ActionForm action={setAttendance} successMessage="Interesse registrado!">
-            <input type="hidden" name="eventId" value={id} />
-            <input type="hidden" name="status" value="interested" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark">
-              <ThumbsUp className="h-4 w-4" strokeWidth={2} />
-              Tenho interesse
-            </button>
-          </ActionForm>
+          <InterestButton
+            eventId={id}
+            price={event.price_per_player ? Number(event.price_per_player) : null}
+            action={setAttendance}
+          />
           <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
             <input type="hidden" name="eventId" value={id} />
             <input type="hidden" name="status" value="declined" />

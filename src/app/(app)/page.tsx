@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { ActionForm } from "@/components/ActionForm";
+import { InterestButton } from "@/components/InterestButton";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { getRachaLevel } from "@/lib/rachaLevel";
@@ -27,7 +27,7 @@ export default async function HomePage() {
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, status, official_list_open")
+      .select("id, date, time, location, status, official_list_open, price_per_player")
       .gte("date", today)
       .neq("status", "finished")
       .neq("status", "cancelled")
@@ -152,14 +152,11 @@ export default async function HomePage() {
                   Interesse registrado
                 </span>
               ) : (
-                <ActionForm action={setAttendance} successMessage="Interesse registrado!">
-                  <input type="hidden" name="eventId" value={proximoRacha.id} />
-                  <input type="hidden" name="status" value="interested" />
-                  <button className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark">
-                    <ThumbsUp className="h-4 w-4" strokeWidth={2} />
-                    Tenho interesse
-                  </button>
-                </ActionForm>
+                <InterestButton
+                  eventId={proximoRacha.id}
+                  price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
+                  action={setAttendance}
+                />
               )}
               <Link
                 href={`/racha/${proximoRacha.id}/confirmar`}
