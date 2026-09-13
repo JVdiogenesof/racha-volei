@@ -113,3 +113,26 @@ form[aria-busy="true"] button[type="submit"]::after {
     display: none;
   }
 }
+
+/* Transição ao trocar de tela (ver PageTransition). Desliza e some do lado
+   junto com um fade, em vez do conteúdo simplesmente trocar de uma vez. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-page-in {
+  animation: page-in 0.28s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in {
+    animation: none;
+  }
+}
