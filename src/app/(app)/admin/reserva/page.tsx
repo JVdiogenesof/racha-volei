@@ -5,7 +5,8 @@ import { ActionForm } from "@/components/ActionForm";
 import { DeleteReserveEntryButton } from "@/components/DeleteReserveEntryButton";
 import { InviteToEventForm } from "@/components/InviteToEventForm";
 import { EndGuestAccessButton } from "@/components/EndGuestAccessButton";
-import { toggleContacted, removeFromReserveList, inviteToEvent, endGuestAccess } from "./actions";
+import { MakePermanentButton } from "@/components/MakePermanentButton";
+import { toggleContacted, removeFromReserveList, inviteToEvent, endGuestAccess, makeGuestPermanent } from "./actions";
 
 export default async function AdminReservaPage() {
   await requireOrganizer();
@@ -64,6 +65,11 @@ export default async function AdminReservaPage() {
                       <UserCheck className="h-3.5 w-3.5" strokeWidth={2} />
                       Chamado(a) pro racha de {eventLabelById.get(guestEventId) ?? "..."}
                     </span>
+                    <MakePermanentButton
+                      profileId={r.auth_user_id}
+                      fullName={r.full_name}
+                      action={makeGuestPermanent}
+                    />
                     <EndGuestAccessButton
                       profileId={r.auth_user_id}
                       fullName={r.full_name}

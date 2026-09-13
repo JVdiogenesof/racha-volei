@@ -58,6 +58,30 @@ export async function inviteToEvent(formData: FormData) {
   revalidatePath("/admin/reserva");
 }
 
+export async function makeGuestPermanent(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const profileId = String(formData.get("profileId"));
+
+  // Vira membro de verdade: sai do modo "só esse racha" e entra igual todo
+  // mundo (vai precisar preencher a autoavaliação no próximo acesso, do
+  // mesmo jeito que qualquer aprovado sem nota ainda).
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "approved", guest_for_event_id: null, approved_by: organizer.id })
+    .eq("id", profileId)
+    .eq("status", "guest");
+  if (error) throw new Error(error.message);
+
+  // Não é mais "gente de fora disponível pra chamar" — já é do grupo.
+  await supabase.from("reserve_list").delete().eq("auth_user_id", profileId);
+
+  revalidatePath("/admin/reserva");
+  revalidatePath("/admin/solicitacoes");
+  revalidatePath("/jogadores");
+  revalidatePath("/ranking");
+}
+
 export async function endGuestAccess(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
