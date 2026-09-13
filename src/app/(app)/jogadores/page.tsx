@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
+import { getAttendanceStreaks } from "@/lib/streak";
 import { PlayerSearch } from "@/components/PlayerSearch";
 
 export default async function JogadoresPage() {
   await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: players }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
+  const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, is_setter")
@@ -17,6 +18,7 @@ export default async function JogadoresPage() {
       .order("full_name"),
     getAllRatings(supabase),
     getRatingWeights(supabase),
+    getAttendanceStreaks(supabase),
   ]);
 
   const rows = (players ?? [])
@@ -27,7 +29,7 @@ export default async function JogadoresPage() {
         weights.selfWeight,
         weights.organizerWeight,
       );
-      return { ...p, overall: overallScore(scores) };
+      return { ...p, overall: overallScore(scores), streak: streaks.get(p.id) };
     })
     .sort((a, b) => b.overall - a.overall);
 

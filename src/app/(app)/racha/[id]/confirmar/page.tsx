@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
+import { getAttendanceStreaks } from "@/lib/streak";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
@@ -25,7 +26,7 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData] = await Promise.all([
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks] = await Promise.all([
     supabase
       .from("events")
       .select("id, date, status, official_list_open, price_per_player, max_players")
@@ -40,6 +41,7 @@ export default async function ConfirmarPresencaPage({
     profile.is_organizer
       ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
       : Promise.resolve(null),
+    getAttendanceStreaks(supabase),
   ]);
 
   const { data: approvedProfiles } = profile.is_organizer
@@ -210,7 +212,7 @@ export default async function ConfirmarPresencaPage({
                   key={a.profile_id}
                   className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
                 >
-                  <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
+                  <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
                   <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
                   {p?.is_setter && <SetterBadge />}
                   {profile.is_organizer && !eventFinished && !eventCancelled && (

@@ -10,6 +10,7 @@ type Player = {
   avatar_url: string | null;
   is_setter: boolean;
   overall: number;
+  streak?: number;
 };
 
 export function PlayerSearch({ players }: { players: Player[] }) {
@@ -38,7 +39,7 @@ export function PlayerSearch({ players }: { players: Player[] }) {
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (
           <div key={p.id} className="flex items-center gap-4 rounded-xl border border-white/10 p-4">
-            <Avatar src={p.avatar_url} name={p.full_name} size="lg" />
+            <Avatar src={p.avatar_url} name={p.full_name} size="lg" streak={p.streak} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-white">{p.full_name}</p>
               {p.is_setter && <p className="text-xs text-white/60">🏐 Levantador(a)</p>}
