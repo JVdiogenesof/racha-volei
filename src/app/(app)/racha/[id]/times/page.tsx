@@ -9,7 +9,15 @@ import { SetterBadge } from "@/components/SetterBadge";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
-import { generateTeams, moveMember, swapMembers, replaceMember, recordMatchWin, undoLastMatchWin } from "./actions";
+import {
+  generateTeams,
+  moveMember,
+  swapMembers,
+  replaceMember,
+  removeFromTeam,
+  recordMatchWin,
+  undoLastMatchWin,
+} from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -105,6 +113,19 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       fullName: (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
     }));
 
+  // O caminho inverso: gente que já saiu da lista de confirmados mas ainda
+  // está presa num time (a geração de times não se atualiza sozinha quando
+  // alguém sai depois de gerada).
+  const confirmedProfileIds = new Set((confirmedAttendance ?? []).map((a) => a.profile_id));
+  const orphanedTeamMemberIds = new Set(
+    teams.flatMap((t) => t.members.filter((m) => !confirmedProfileIds.has(m.profileId)).map((m) => m.teamMemberId)),
+  );
+  const orphanedMembers = teams.flatMap((t) =>
+    t.members
+      .filter((m) => !confirmedProfileIds.has(m.profileId))
+      .map((m) => ({ fullName: m.fullName, teamNumber: t.teamNumber })),
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -134,6 +155,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
       </div>
+
+      {generation && profile.is_organizer && orphanedMembers.length > 0 && (
+        <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-300">
+          {orphanedMembers.map((p) => `${p.fullName} (Time ${p.teamNumber})`).join(", ")}{" "}
+          {orphanedMembers.length === 1 ? "não está mais confirmado(a)" : "não estão mais confirmados(as)"} mas ainda{" "}
+          {orphanedMembers.length === 1 ? "está" : "estão"} no time — use &ldquo;Substituir por&rdquo; (se já tiver
+          alguém pra entrar no lugar) ou &ldquo;Remover do time&rdquo;.
+        </p>
+      )}
 
       {generation && profile.is_organizer && unassignedConfirmed.length > 0 && (
         <p className="rounded-xl border border-amber-500/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-300">
@@ -202,6 +232,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <span className="flex min-w-0 items-center gap-1.5 text-white">
                       <span className="truncate">{m.fullName}</span>
                       {m.isSetter && <SetterBadge />}
+                      {orphanedTeamMemberIds.has(m.teamMemberId) && (
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
+                          não confirmado(a)
+                        </span>
+                      )}
                     </span>
                     <div className="flex shrink-0 items-center gap-1.5">
                       <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
@@ -210,9 +245,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                           moveAction={moveMember}
                           swapAction={swapMembers}
                           replaceAction={replaceMember}
+                          removeAction={removeFromTeam}
                           eventId={id}
                           teamMemberId={m.teamMemberId}
                           currentTeamId={team.id}
+                          fullName={m.fullName}
                           teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
                           otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
                           unassignedConfirmed={unassignedConfirmed}

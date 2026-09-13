@@ -143,6 +143,21 @@ export async function replaceMember(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export async function removeFromTeam(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const teamMemberId = String(formData.get("teamMemberId"));
+
+  // Cobre o caso de alguém sair da lista de confirmados depois dos times já
+  // gerados e ainda não ter ninguém pra colocar no lugar — aí não dá pra
+  // "substituir", só sobra tirar ela do time mesmo.
+  const { error } = await supabase.from("team_members").delete().eq("id", teamMemberId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function recordMatchWin(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();

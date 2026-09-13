@@ -7,14 +7,17 @@ import { useToast } from "./Toast";
 const MOVE_PREFIX = "move:";
 const SWAP_PREFIX = "swap:";
 const REPLACE_PREFIX = "replace:";
+const REMOVE_VALUE = "remove";
 
 export function PlayerActionSelect({
   moveAction,
   swapAction,
   replaceAction,
+  removeAction,
   eventId,
   teamMemberId,
   currentTeamId,
+  fullName,
   teams,
   otherMembers,
   unassignedConfirmed,
@@ -22,9 +25,11 @@ export function PlayerActionSelect({
   moveAction: (formData: FormData) => Promise<void> | void;
   swapAction: (formData: FormData) => Promise<void> | void;
   replaceAction: (formData: FormData) => Promise<void> | void;
+  removeAction: (formData: FormData) => Promise<void> | void;
   eventId: string;
   teamMemberId: string;
   currentTeamId: string;
+  fullName: string;
   teams: { id: string; teamNumber: number }[];
   otherMembers: { teamMemberId: string; fullName: string; teamNumber: number }[];
   /** Confirmados que ainda não caíram em nenhum time (ex: entraram depois da geração). */
@@ -65,6 +70,13 @@ export function PlayerActionSelect({
           formData.set("newProfileId", newProfileId);
           await replaceAction(formData);
           showToast("Jogador substituído no time!");
+        } else if (value === REMOVE_VALUE) {
+          if (!window.confirm(`Remover ${fullName} desse time? Ninguém entra no lugar.`)) return;
+          const formData = new FormData();
+          formData.set("eventId", eventId);
+          formData.set("teamMemberId", teamMemberId);
+          await removeAction(formData);
+          showToast("Jogador removido do time.");
         }
         router.refresh();
       } catch (err) {
@@ -113,6 +125,9 @@ export function PlayerActionSelect({
           ))}
         </optgroup>
       )}
+      <optgroup label="Remover">
+        <option value={REMOVE_VALUE}>Remover do time</option>
+      </optgroup>
     </select>
   );
 }
