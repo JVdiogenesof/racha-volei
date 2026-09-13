@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireOrganizer } from "@/lib/auth";
+import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 
 export async function setAttendance(formData: FormData) {
   const profile = await requireProfile();
@@ -33,8 +34,14 @@ export async function setAttendance(formData: FormData) {
   );
 
   if (error) throw new Error(error.message);
+
+  // Cancelou/só marcou interesse: se ela estava presa num time de uma geração
+  // anterior, tira ela de lá também, sem precisar o organizador notar depois.
+  await removeFromCurrentTeam(supabase, eventId, profile.id);
+
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
 }
 
 export async function promoteToConfirmed(formData: FormData) {
@@ -71,8 +78,11 @@ export async function demoteToInterested(formData: FormData) {
     .eq("profile_id", profileId);
 
   if (error) throw new Error(error.message);
+  await removeFromCurrentTeam(supabase, eventId, profileId);
+
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
 }
 
 export async function setOfficialListOpen(formData: FormData) {
@@ -102,6 +112,9 @@ export async function removeAttendance(formData: FormData) {
     .eq("profile_id", profileId);
 
   if (error) throw new Error(error.message);
+  await removeFromCurrentTeam(supabase, eventId, profileId);
+
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
 }
