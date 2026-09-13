@@ -7,6 +7,7 @@ import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
 import { AddToTeamSelect } from "@/components/AddToTeamSelect";
 import { SetterBadge } from "@/components/SetterBadge";
+import { Avatar } from "@/components/Avatar";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
@@ -47,7 +48,14 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     id: string;
     teamNumber: number;
     wins: number;
-    members: { teamMemberId: string; profileId: string; fullName: string; overall: number; isSetter: boolean }[];
+    members: {
+      teamMemberId: string;
+      profileId: string;
+      fullName: string;
+      avatarUrl: string | null;
+      overall: number;
+      isSetter: boolean;
+    }[];
   }[] = [];
 
   if (generation) {
@@ -63,7 +71,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       await Promise.all([
         supabase
           .from("team_members")
-          .select("id, team_id, profile_id, profiles(full_name, is_setter)")
+          .select("id, team_id, profile_id, profiles(full_name, avatar_url, is_setter)")
           .in("team_id", teamIds),
         getAllRatings(supabase),
         getRatingWeights(supabase),
@@ -82,7 +90,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       members: (memberRows ?? [])
         .filter((m) => m.team_id === t.id)
         .map((m) => {
-          const p = m.profiles as unknown as { full_name: string; is_setter: boolean } | null;
+          const p = m.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
           const scores = finalScoresForPlayer(
             selfByProfile.get(m.profile_id) ?? {},
             organizerByProfile.get(m.profile_id) ?? {},
@@ -93,6 +101,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             teamMemberId: m.id,
             profileId: m.profile_id,
             fullName: p?.full_name ?? "—",
+            avatarUrl: p?.avatar_url ?? null,
             overall: overallScore(scores),
             isSetter: p?.is_setter ?? false,
           };
@@ -228,11 +237,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
 
-              <ul className="mt-3 space-y-2">
+              <ul className="mt-3 space-y-2.5">
                 {team.members.map((m) => (
                   <li key={m.teamMemberId} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex min-w-0 items-center gap-1.5 text-white">
-                      <span className="truncate">{m.fullName}</span>
+                    <span className="flex min-w-0 items-center gap-2 text-white">
+                      <Avatar src={m.avatarUrl} name={m.fullName} size="sm" />
+                      <span className="min-w-0 truncate">{m.fullName}</span>
                       {m.isSetter && <SetterBadge />}
                       {orphanedTeamMemberIds.has(m.teamMemberId) && (
                         <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
