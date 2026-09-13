@@ -10,6 +10,7 @@ import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
 import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { InterestButton } from "@/components/InterestButton";
+import { CancelAttendanceButton } from "@/components/CancelAttendanceButton";
 import { SetterBadge } from "@/components/SetterBadge";
 import { CopyPixButton } from "@/components/CopyPixButton";
 import { PIX_KEY } from "@/lib/payment";
@@ -118,14 +119,11 @@ export default async function ConfirmarPresencaPage({
       ) : myStatus === "confirmed" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
           <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
-          <ActionForm action={setAttendance} successMessage="Você marcou que não vai mais." className="ml-auto shrink-0">
-            <input type="hidden" name="eventId" value={id} />
-            <input type="hidden" name="status" value="declined" />
-            <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10">
-              <X className="h-4 w-4" strokeWidth={2} />
-              Não vou mais poder ir
-            </button>
-          </ActionForm>
+          <CancelAttendanceButton
+            eventId={id}
+            action={setAttendance}
+            className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
+          />
         </div>
       ) : (
         <div className="flex gap-3">
