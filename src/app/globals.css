@@ -119,7 +119,7 @@ form[aria-busy="true"] button[type="submit"]::after {
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateX(14px);
+    transform: translateX(28px);
   }
   to {
     opacity: 1;
@@ -128,11 +128,35 @@ form[aria-busy="true"] button[type="submit"]::after {
 }
 
 .animate-page-in {
-  animation: page-in 0.28s ease-out;
+  animation: page-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-page-in {
+    animation: none;
+  }
+}
+
+/* Nome que aparece no ícone ativo da ilha de navegação (ver NavIsland). O
+   próprio botão já anima largura/cor via transition-all; isso só suaviza a
+   entrada do texto, que aparece de repente por ser montado/desmontado. */
+@keyframes nav-label-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-nav-label {
+  animation: nav-label-in 0.25s ease-out 0.05s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-nav-label {
     animation: none;
   }
 }

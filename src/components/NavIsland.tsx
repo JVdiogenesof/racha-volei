@@ -39,12 +39,14 @@ export function NavIsland({
               key={link.href}
               href={link.href}
               aria-label={link.label}
-              className={`relative flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full text-white/60 transition ${
+              className={`relative flex h-9 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full text-white/60 transition-all duration-300 ease-out ${
                 active ? "bg-brand-purple px-3.5 text-white" : "w-9 hover:bg-white/10 hover:text-white/80"
               }`}
             >
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {active && <span className="whitespace-nowrap text-xs font-semibold">{link.label}</span>}
+              {active && (
+                <span className="animate-nav-label whitespace-nowrap text-xs font-semibold">{link.label}</span>
+              )}
               {!active && badge > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
                   {badge > 9 ? "9+" : badge}
@@ -60,12 +62,12 @@ export function NavIsland({
             <Link
               href="/admin/solicitacoes"
               aria-label="Admin"
-              className={`flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full transition ${
+              className={`flex h-9 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full transition-all duration-300 ease-out ${
                 adminActive ? "bg-red-500/20 px-3.5 text-red-300" : "w-9 text-red-300/70 hover:bg-white/10 hover:text-red-300"
               }`}
             >
               <ShieldCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {adminActive && <span className="whitespace-nowrap text-xs font-semibold">Admin</span>}
+              {adminActive && <span className="animate-nav-label whitespace-nowrap text-xs font-semibold">Admin</span>}
             </Link>
           </>
         )}
