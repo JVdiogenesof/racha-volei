@@ -6,6 +6,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { balanceTeams, type PlayerInput } from "@/lib/balanceTeams";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function generateTeams(formData: FormData) {
   const organizer = await requireOrganizer();
@@ -14,7 +15,7 @@ export async function generateTeams(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("num_teams, official_list_open")
+    .select("date, num_teams, official_list_open")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
@@ -77,6 +78,13 @@ export async function generateTeams(formData: FormData) {
   if (membersError) throw new Error(membersError.message);
 
   await supabase.from("events").update({ status: "teams_generated" }).eq("id", eventId);
+
+  const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
+  await sendPushToProfiles(
+    supabase,
+    players.map((p) => p.profileId).filter((id) => id !== organizer.id),
+    { title: "Os times já estão prontos!", body: `Confira os times do racha de ${dateLabel}.`, url: `/racha/${eventId}/times` },
+  );
 
   revalidatePath(`/racha/${eventId}/times`);
 }

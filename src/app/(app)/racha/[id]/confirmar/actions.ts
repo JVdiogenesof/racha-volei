@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireOrganizer } from "@/lib/auth";
 import { removeFromCurrentTeam } from "@/lib/teamCleanup";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function setAttendance(formData: FormData) {
   const profile = await requireProfile();
@@ -86,13 +87,27 @@ export async function demoteToInterested(formData: FormData) {
 }
 
 export async function setOfficialListOpen(formData: FormData) {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
   const open = String(formData.get("open")) === "true";
 
   const { error } = await supabase.from("events").update({ official_list_open: open }).eq("id", eventId);
   if (error) throw new Error(error.message);
+
+  if (open) {
+    const [{ data: event }, { data: approvedProfiles }] = await Promise.all([
+      supabase.from("events").select("date").eq("id", eventId).maybeSingle(),
+      supabase.from("profiles").select("id").eq("status", "approved").neq("id", organizer.id),
+    ]);
+    const dateLabel = event ? new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR") : "";
+    await sendPushToProfiles(
+      supabase,
+      (approvedProfiles ?? []).map((p) => p.id),
+      { title: "Lista de confirmados publicada!", body: `Confira quem vai no racha de ${dateLabel}.`, url: `/racha/${eventId}/confirmar` },
+    );
+  }
+
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath("/racha");

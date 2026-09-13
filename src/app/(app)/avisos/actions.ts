@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function createAnnouncement(formData: FormData) {
   const organizer = await requireOrganizer();
@@ -30,6 +31,18 @@ export async function createAnnouncement(formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
+
+  const { data: approvedProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("status", "approved")
+    .neq("id", organizer.id);
+  await sendPushToProfiles(
+    supabase,
+    (approvedProfiles ?? []).map((p) => p.id),
+    { title: `Novo aviso: ${title}`, body, url: "/avisos" },
+  );
+
   revalidatePath("/avisos");
 }
 

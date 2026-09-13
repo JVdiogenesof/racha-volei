@@ -91,6 +91,7 @@ alter table mvp_votes enable row level security;
 alter table match_wins enable row level security;
 alter table ranking_adjustments enable row level security;
 alter table reserve_list enable row level security;
+alter table push_subscriptions enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -218,6 +219,16 @@ create policy "reserve_list_update" on reserve_list for update to authenticated
   with check (auth_user_id = auth.uid() or public.is_organizer());
 create policy "reserve_list_delete" on reserve_list for delete to authenticated
   using (public.is_organizer());
+
+-- push_subscriptions: leitura aberta (mesmo padrão de attendance/events/etc) --
+-- é o que permite, por exemplo, uma pessoa recém-cadastrada (ainda não
+-- organizadora) disparar o aviso de "novo cadastro pendente" pros
+-- organizadores. Só dono ou organizador cria/apaga uma inscrição.
+create policy "push_subscriptions_select" on push_subscriptions for select to authenticated using (true);
+create policy "push_subscriptions_insert" on push_subscriptions for insert to authenticated
+  with check (profile_id = auth.uid());
+create policy "push_subscriptions_delete" on push_subscriptions for delete to authenticated
+  using (profile_id = auth.uid() or public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos

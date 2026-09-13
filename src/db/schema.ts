@@ -221,6 +221,19 @@ export const reserveList = pgTable("reserve_list", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Uma linha por aparelho/navegador inscrito pra notificação push. Reinscrever
+// o mesmo aparelho sobrescreve a linha (unique em endpoint) -- não cresce por
+// notificação enviada, só por aparelho distinto, e se apagam sozinhas quando
+// o envio falha porque o aparelho não existe mais (ver src/lib/push.ts).
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull().unique(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {

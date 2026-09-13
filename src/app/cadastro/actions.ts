@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function submitCadastro(formData: FormData) {
   const supabase = await createClient();
@@ -50,6 +51,16 @@ export async function submitCadastro(formData: FormData) {
   // faltava completar esses dados) não deve ver a tela de "aguardando
   // aprovação" de novo — vai direto pro site.
   const { data: updated } = await supabase.from("profiles").select("status").eq("id", user.id).maybeSingle();
+
+  if (updated?.status === "pending") {
+    const { data: organizers } = await supabase.from("profiles").select("id").eq("is_organizer", true);
+    await sendPushToProfiles(supabase, (organizers ?? []).map((p) => p.id), {
+      title: "Novo cadastro pendente",
+      body: `${fullName} está esperando aprovação.`,
+      url: "/admin/solicitacoes",
+    });
+  }
+
   redirect(updated?.status === "approved" ? "/" : "/aguardando-aprovacao");
 }
 

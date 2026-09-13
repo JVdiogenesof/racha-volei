@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function createEvent(formData: FormData) {
   const organizer = await requireOrganizer();
@@ -38,6 +39,19 @@ export async function createEvent(formData: FormData) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  const { data: approvedProfiles } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("status", "approved")
+    .neq("id", organizer.id);
+  const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR");
+  await sendPushToProfiles(
+    supabase,
+    (approvedProfiles ?? []).map((p) => p.id),
+    { title: "Novo racha marcado!", body: `Racha de ${dateLabel}. Diga se você vai.`, url: `/racha/${data.id}` },
+  );
+
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
   redirect(`/racha/${data.id}?criado=1`);

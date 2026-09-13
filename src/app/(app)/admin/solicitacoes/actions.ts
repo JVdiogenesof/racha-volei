@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { sendPushToProfiles } from "@/lib/push";
 
 export async function approveProfile(formData: FormData) {
   const organizer = await requireOrganizer();
@@ -15,6 +16,13 @@ export async function approveProfile(formData: FormData) {
     .eq("id", profileId);
 
   if (error) throw new Error(error.message);
+
+  await sendPushToProfiles(supabase, [profileId], {
+    title: "Cadastro aprovado! 🏐",
+    body: "Bem-vindo(a) ao racha! Seu acesso já está liberado.",
+    url: "/",
+  });
+
   revalidatePath("/admin/solicitacoes");
 }
 

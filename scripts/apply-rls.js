@@ -29,6 +29,7 @@ const APP_TABLES = [
   "match_wins",
   "ranking_adjustments",
   "reserve_list",
+  "push_subscriptions",
 ];
 
 function loadEnvLocal() {
