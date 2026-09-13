@@ -1,6 +1,8 @@
+import { CalendarCheck, Trophy, Crown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
+import { getRankingCounts } from "@/lib/rankings";
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { SkillSlider } from "@/components/SkillSlider";
 import { ScoreBar } from "@/components/ScoreBar";
@@ -11,13 +13,20 @@ import { updateProfileData, updateSelfRatings } from "./actions";
 export default async function PerfilPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const [{ self, organizer }, weights] = await Promise.all([
+  const [{ self, organizer }, weights, rankingCounts] = await Promise.all([
     getPlayerRatings(supabase, profile.id),
     getRatingWeights(supabase),
+    getRankingCounts(supabase),
   ]);
 
   const finalScores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
   const overall = overallScore(finalScores);
+
+  const myStats = [
+    { label: "Presenças", value: rankingCounts.attendance.get(profile.id) ?? 0, icon: CalendarCheck },
+    { label: "Vezes MVP", value: rankingCounts.mvp.get(profile.id) ?? 0, icon: Trophy },
+    { label: "Vitórias", value: rankingCounts.wins.get(profile.id) ?? 0, icon: Crown },
+  ];
 
   return (
     <div className="space-y-10">
@@ -27,6 +36,19 @@ export default async function PerfilPage() {
           Sua nota final combina sua autoavaliação com a nota dos organizadores.
         </p>
       </div>
+
+      <section>
+        <h2 className="font-semibold text-white">Meu histórico</h2>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {myStats.map((s) => (
+            <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+              <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />
+              <p className="mt-2 text-xl font-bold text-white">{s.value}</p>
+              <p className="text-xs text-white/60">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="rounded-xl border border-white/10 p-6">
         <h2 className="font-semibold text-white">Nota final</h2>

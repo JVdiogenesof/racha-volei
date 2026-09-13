@@ -11,6 +11,8 @@ import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm"
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { InterestButton } from "@/components/InterestButton";
 import { SetterBadge } from "@/components/SetterBadge";
+import { CopyPixButton } from "@/components/CopyPixButton";
+import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
 export default async function ConfirmarPresencaPage({
@@ -140,6 +142,16 @@ export default async function ConfirmarPresencaPage({
               Não vou
             </button>
           </ActionForm>
+        </div>
+      )}
+
+      {!eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+          <p className="text-sm text-white/70">
+            💰 Pagamento de <strong>R$ {Number(event.price_per_player).toFixed(2)}</strong> via Pix:{" "}
+            <span className="font-medium text-white">{PIX_KEY}</span>
+          </p>
+          <CopyPixButton pixKey={PIX_KEY} className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/10" />
         </div>
       )}
 

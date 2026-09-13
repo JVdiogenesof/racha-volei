@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ThumbsUp, Loader2 } from "lucide-react";
 import { useToast } from "./Toast";
+import { PIX_KEY } from "@/lib/payment";
 
 export function InterestButton({
   eventId,
@@ -23,7 +24,7 @@ export function InterestButton({
   function handleClick() {
     if (price) {
       const confirmed = window.confirm(
-        `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} pra entrar na lista de confirmados.`,
+        `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} via Pix pra entrar na lista de confirmados.\n\nChave Pix: ${PIX_KEY}`,
       );
       if (!confirmed) return;
     }
