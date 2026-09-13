@@ -9,7 +9,7 @@ export default async function AdminRachasPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, num_teams, price_per_player, status, official_list_open")
+    .select("id, date, time, location, num_teams, price_per_player, max_players, status, official_list_open")
     .order("date", { ascending: false });
 
   return (
@@ -66,6 +66,17 @@ export default async function AdminRachasPage() {
             name="pricePerPlayer"
             step={0.5}
             min={0}
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-white">
+            Vagas de confirmados <span className="text-white/40">(opcional, sem limite se vazio)</span>
+          </label>
+          <input
+            type="number"
+            name="maxPlayers"
+            min={1}
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>

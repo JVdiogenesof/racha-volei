@@ -28,7 +28,7 @@ export default async function ConfirmarPresencaPage({
   const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, status, official_list_open, price_per_player")
+      .select("id, date, status, official_list_open, price_per_player, max_players")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -54,6 +54,7 @@ export default async function ConfirmarPresencaPage({
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
+  const isFull = event.max_players != null && confirmados.length >= event.max_players;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
   const addDirectOptions = (approvedProfiles ?? [])
@@ -130,6 +131,7 @@ export default async function ConfirmarPresencaPage({
           <InterestButton
             eventId={id}
             price={event.price_per_player ? Number(event.price_per_player) : null}
+            isFull={isFull}
             action={setAttendance}
           />
           <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">

@@ -117,6 +117,9 @@ export const events = pgTable("events", {
   location: text("location"),
   numTeams: integer("num_teams").notNull().default(2),
   pricePerPlayer: numeric("price_per_player", { precision: 8, scale: 2 }),
+  // Vagas de confirmados (opcional). Sem limite quando null — só usado pra
+  // avisar quem marcar interesse depois que a lista já estiver cheia.
+  maxPlayers: integer("max_players"),
   status: eventStatusEnum("status").notNull().default("open"),
   // Fase de interesse (false) vs lista de confirmados pública (true). Novos
   // rachas nascem em fase de interesse; o organizador monta a lista de

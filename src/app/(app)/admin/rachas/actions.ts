@@ -15,6 +15,8 @@ export async function createEvent(formData: FormData) {
   const numTeams = Number(formData.get("numTeams") ?? 2);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
+  const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
+  const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
 
   if (!date || numTeams < 1) {
     throw new Error("Data e número de times são obrigatórios.");
@@ -28,6 +30,7 @@ export async function createEvent(formData: FormData) {
       location,
       num_teams: numTeams,
       price_per_player: pricePerPlayer,
+      max_players: maxPlayers,
       created_by: organizer.id,
       official_list_open: false,
     })
@@ -51,6 +54,8 @@ export async function updateEvent(formData: FormData) {
   const numTeams = Number(formData.get("numTeams") ?? 2);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
+  const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
+  const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
 
   if (!date || numTeams < 1) {
     throw new Error("Data e número de times são obrigatórios.");
@@ -64,6 +69,7 @@ export async function updateEvent(formData: FormData) {
       location,
       num_teams: numTeams,
       price_per_player: pricePerPlayer,
+      max_players: maxPlayers,
     })
     .eq("id", eventId);
 

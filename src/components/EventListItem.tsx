@@ -15,6 +15,7 @@ type EventData = {
   location: string | null;
   num_teams: number;
   price_per_player: number | null;
+  max_players: number | null;
   status: string;
   official_list_open: boolean;
 };
@@ -124,6 +125,16 @@ export function EventListItem({
               step={0.5}
               min={0}
               defaultValue={event.price_per_player ?? ""}
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-white/60">Vagas de confirmados (opcional)</label>
+            <input
+              type="number"
+              name="maxPlayers"
+              min={1}
+              defaultValue={event.max_players ?? ""}
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>

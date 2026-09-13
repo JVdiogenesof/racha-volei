@@ -9,11 +9,14 @@ import { PIX_KEY } from "@/lib/payment";
 export function InterestButton({
   eventId,
   price,
+  isFull,
   action,
   className,
 }: {
   eventId: string;
   price: number | null;
+  /** Já tem gente confirmada suficiente pra esse racha (vagas configuradas). */
+  isFull?: boolean;
   action: (formData: FormData) => Promise<void> | void;
   className?: string;
 }) {
@@ -22,10 +25,19 @@ export function InterestButton({
   const { showToast } = useToast();
 
   function handleClick() {
+    const messages: string[] = [];
+    if (isFull) {
+      messages.push(
+        "A lista de confirmados já está cheia. Você só será chamado(a) se alguém desistir — mas mesmo assim vai entrar na lista de interessados agora.",
+      );
+    }
     if (price) {
-      const confirmed = window.confirm(
+      messages.push(
         `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} via Pix pra entrar na lista de confirmados.\n\nChave Pix: ${PIX_KEY}`,
       );
+    }
+    if (messages.length) {
+      const confirmed = window.confirm(messages.join("\n\n"));
       if (!confirmed) return;
     }
 

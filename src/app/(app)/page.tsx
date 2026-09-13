@@ -27,7 +27,7 @@ export default async function HomePage() {
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, status, official_list_open, price_per_player")
+      .select("id, date, time, location, status, official_list_open, price_per_player, max_players")
       .gte("date", today)
       .neq("status", "finished")
       .neq("status", "cancelled")
@@ -50,6 +50,16 @@ export default async function HomePage() {
         .eq("profile_id", profile.id)
         .maybeSingle()
     : { data: null };
+
+  const { count: confirmedCount } = proximoRacha
+    ? await supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", proximoRacha.id)
+        .eq("status", "confirmed")
+    : { count: null };
+  const isFull =
+    proximoRacha?.max_players != null && (confirmedCount ?? 0) >= proximoRacha.max_players;
 
   const rachaLevel =
     proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
@@ -155,6 +165,7 @@ export default async function HomePage() {
                 <InterestButton
                   eventId={proximoRacha.id}
                   price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
+                  isFull={isFull}
                   action={setAttendance}
                 />
               )}
