@@ -58,6 +58,50 @@ export async function inviteToEvent(formData: FormData) {
   revalidatePath("/admin/reserva");
 }
 
+export async function promoteReserveToMember(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const reserveEntryId = String(formData.get("reserveEntryId"));
+
+  const { data: entry } = await supabase
+    .from("reserve_list")
+    .select("auth_user_id, full_name, phone")
+    .eq("id", reserveEntryId)
+    .maybeSingle();
+  if (!entry) throw new Error("Pessoa não encontrada na lista de reserva.");
+
+  // Não existe (de propósito) uma permissão pra organizador inserir um
+  // perfil já como "approved" direto — só como "guest" (acesso de um racha
+  // só). Por isso insere como guest primeiro e promove na sequência; as duas
+  // operações já são permitidas separadamente.
+  const { error: insertError } = await supabase.from("profiles").upsert(
+    {
+      id: entry.auth_user_id,
+      full_name: entry.full_name,
+      phone: entry.phone,
+      status: "guest",
+      is_organizer: false,
+      guest_for_event_id: null,
+    },
+    { onConflict: "id" },
+  );
+  if (insertError) throw new Error(insertError.message);
+
+  const { error: promoteError } = await supabase
+    .from("profiles")
+    .update({ status: "approved", guest_for_event_id: null, approved_by: organizer.id })
+    .eq("id", entry.auth_user_id)
+    .eq("status", "guest");
+  if (promoteError) throw new Error(promoteError.message);
+
+  await supabase.from("reserve_list").delete().eq("id", reserveEntryId);
+
+  revalidatePath("/admin/reserva");
+  revalidatePath("/admin/solicitacoes");
+  revalidatePath("/jogadores");
+  revalidatePath("/ranking");
+}
+
 export async function makeGuestPermanent(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();

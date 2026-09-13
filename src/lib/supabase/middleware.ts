@@ -129,7 +129,27 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (profile?.status === "approved" && isOnboarding) {
+    const isCadastroPath = pathname.startsWith("/cadastro");
+    const isAguardandoPath = pathname.startsWith("/aguardando-aprovacao");
+    // Convidado promovido a membro permanente já tem perfil (status approved)
+    // mas pulou o formulário de cadastro — não preencheu aniversário/telefone/
+    // posição. Trata como onboarding pendente até completar, do mesmo jeito
+    // que a autoavaliação é exigida mais abaixo.
+    const profileIncomplete = profile?.status === "approved" && !profile.birthdate;
+
+    if (profile?.status === "approved" && isAguardandoPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+
+    if (profile?.status === "approved" && profileIncomplete && !isCadastroPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/cadastro";
+      return NextResponse.redirect(url);
+    }
+
+    if (profile?.status === "approved" && !profileIncomplete && isCadastroPath) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);

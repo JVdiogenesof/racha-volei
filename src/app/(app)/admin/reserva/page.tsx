@@ -6,7 +6,15 @@ import { DeleteReserveEntryButton } from "@/components/DeleteReserveEntryButton"
 import { InviteToEventForm } from "@/components/InviteToEventForm";
 import { EndGuestAccessButton } from "@/components/EndGuestAccessButton";
 import { MakePermanentButton } from "@/components/MakePermanentButton";
-import { toggleContacted, removeFromReserveList, inviteToEvent, endGuestAccess, makeGuestPermanent } from "./actions";
+import { PromoteReserveButton } from "@/components/PromoteReserveButton";
+import {
+  toggleContacted,
+  removeFromReserveList,
+  inviteToEvent,
+  endGuestAccess,
+  makeGuestPermanent,
+  promoteReserveToMember,
+} from "./actions";
 
 export default async function AdminReservaPage() {
   await requireOrganizer();
@@ -77,7 +85,14 @@ export default async function AdminReservaPage() {
                     />
                   </>
                 ) : (
-                  <InviteToEventForm action={inviteToEvent} reserveEntryId={r.id} events={eventOptions} />
+                  <>
+                    <InviteToEventForm action={inviteToEvent} reserveEntryId={r.id} events={eventOptions} />
+                    <PromoteReserveButton
+                      reserveEntryId={r.id}
+                      fullName={r.full_name}
+                      action={promoteReserveToMember}
+                    />
+                  </>
                 )}
                 <ActionForm
                   action={toggleContacted}

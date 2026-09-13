@@ -16,18 +16,20 @@ export default async function CadastroPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, birthdate, phone, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments")
+    .select("status, full_name, birthdate, phone, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments")
     .eq("id", user.id)
     .maybeSingle();
 
   const defaultName =
     profile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "";
+  const alreadyApproved = profile?.status === "approved";
 
   const memberForm = (
     <>
       <p className="mb-6 text-sm text-white/60">
-        Esses dados ajudam a organizar o racha. Depois de enviar, um organizador
-        precisa aprovar sua entrada.
+        {alreadyApproved
+          ? "Só faltam esses dados pra completar seu perfil."
+          : "Esses dados ajudam a organizar o racha. Depois de enviar, um organizador precisa aprovar sua entrada."}
       </p>
       <form action={submitCadastro} className="space-y-5">
         <div>

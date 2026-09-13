@@ -46,7 +46,11 @@ export async function submitCadastro(formData: FormData) {
   );
   if (error) throw new Error(error.message);
 
-  redirect("/aguardando-aprovacao");
+  // Quem já é aprovado (ex: convidado promovido a membro permanente que só
+  // faltava completar esses dados) não deve ver a tela de "aguardando
+  // aprovação" de novo — vai direto pro site.
+  const { data: updated } = await supabase.from("profiles").select("status").eq("id", user.id).maybeSingle();
+  redirect(updated?.status === "approved" ? "/" : "/aguardando-aprovacao");
 }
 
 export async function submitReserveSignup(formData: FormData) {
