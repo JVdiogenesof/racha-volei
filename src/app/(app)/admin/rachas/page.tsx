@@ -12,6 +12,17 @@ export default async function AdminRachasPage() {
     .select("id, date, time, location, num_teams, price_per_player, max_players, status, official_list_open")
     .order("date", { ascending: false });
 
+  // Pré-preenche o formulário com os dados do último racha criado, só
+  // avançando a data em 7 dias — pra não precisar redigitar tudo toda
+  // semana, só ajustar o que mudou.
+  const lastEvent = events?.[0] ?? null;
+  let suggestedDate = "";
+  if (lastEvent) {
+    const d = new Date(`${lastEvent.date}T00:00:00`);
+    d.setDate(d.getDate() + 7);
+    suggestedDate = d.toISOString().slice(0, 10);
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -30,28 +41,39 @@ export default async function AdminRachasPage() {
           <input
             type="date"
             name="date"
+            defaultValue={suggestedDate}
             required
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
+          {lastEvent && <p className="mt-1 text-xs text-white/40">Sugerido: uma semana depois do último racha.</p>}
         </div>
         <div>
           <label className="block text-sm font-medium text-white">
             Horário <span className="text-white/40">(opcional)</span>
           </label>
-          <input type="time" name="time" className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2" />
+          <input
+            type="time"
+            name="time"
+            defaultValue={lastEvent?.time?.slice(0, 5) ?? ""}
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-white">
             Local <span className="text-white/40">(opcional)</span>
           </label>
-          <input name="location" className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2" />
+          <input
+            name="location"
+            defaultValue={lastEvent?.location ?? ""}
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
+          />
         </div>
         <div>
           <label className="block text-sm font-medium text-white">Número de times</label>
           <input
             type="number"
             name="numTeams"
-            defaultValue={2}
+            defaultValue={lastEvent?.num_teams ?? 2}
             min={2}
             required
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
@@ -66,6 +88,7 @@ export default async function AdminRachasPage() {
             name="pricePerPlayer"
             step={0.5}
             min={0}
+            defaultValue={lastEvent?.price_per_player ?? ""}
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>
@@ -77,6 +100,7 @@ export default async function AdminRachasPage() {
             type="number"
             name="maxPlayers"
             min={1}
+            defaultValue={lastEvent?.max_players ?? ""}
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>

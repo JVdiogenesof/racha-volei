@@ -4,9 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
+import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
+
+function hoursAgoIso(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+function isRecent(dateStr: string, days: number) {
+  return Date.now() - new Date(dateStr).getTime() < days * 24 * 60 * 60 * 1000;
+}
 
 function relativeDate(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -61,6 +70,27 @@ export default async function HomePage() {
   const isFull =
     proximoRacha?.max_players != null && (confirmedCount ?? 0) >= proximoRacha.max_players;
 
+  const eventIdForPanel = proximoRacha?.id ?? "";
+  const fortyEightHoursAgo = hoursAgoIso(48);
+  const [{ count: pendingCount }, { count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
+    profile.is_organizer
+      ? await Promise.all([
+          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          supabase.from("reserve_list").select("id", { count: "exact", head: true }),
+          supabase
+            .from("attendance")
+            .select("id", { count: "exact", head: true })
+            .eq("event_id", eventIdForPanel)
+            .eq("status", "interested"),
+          supabase
+            .from("attendance")
+            .select("profile_id, profiles(full_name)")
+            .eq("event_id", eventIdForPanel)
+            .eq("status", "declined")
+            .gte("confirmed_at", fortyEightHoursAgo),
+        ])
+      : [{ count: 0 }, { count: 0 }, { count: 0 }, { data: [] }];
+
   const rachaLevel =
     proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
   const isInProgress = proximoRacha?.status === "in_progress";
@@ -69,9 +99,7 @@ export default async function HomePage() {
   const avisoAuthor = ultimoAviso
     ? (ultimoAviso.profiles as unknown as { full_name: string } | null)?.full_name
     : null;
-  const avisoIsNew = ultimoAviso
-    ? Date.now() - new Date(ultimoAviso.created_at).getTime() < 3 * 24 * 60 * 60 * 1000
-    : false;
+  const avisoIsNew = ultimoAviso ? isRecent(ultimoAviso.created_at, 3) : false;
   const avisoPreview =
     ultimoAviso && ultimoAviso.body.length > 100 ? `${ultimoAviso.body.slice(0, 100).trim()}…` : ultimoAviso?.body;
 
@@ -182,6 +210,23 @@ export default async function HomePage() {
           <p className="mt-4 border-t border-white/10 pt-4 text-sm text-white/50">Nenhum racha marcado ainda.</p>
         )}
       </section>
+
+      {profile.is_organizer && (
+        <OrganizerPanel
+          proximoRachaId={proximoRacha?.id ?? null}
+          interessadosCount={interessadosCount ?? 0}
+          vagasRestantes={
+            proximoRacha?.max_players != null
+              ? Math.max(0, proximoRacha.max_players - (confirmedCount ?? 0))
+              : null
+          }
+          pendingCount={pendingCount ?? 0}
+          reserveCount={reserveCount ?? 0}
+          recentDeclines={(declineRows ?? []).map((d) => ({
+            fullName: (d.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
+          }))}
+        />
+      )}
 
       <section>
         <div className="flex items-center justify-between">
