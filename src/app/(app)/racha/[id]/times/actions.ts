@@ -81,6 +81,21 @@ export async function generateTeams(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export async function addToTeam(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const teamId = String(formData.get("teamId"));
+  const profileId = String(formData.get("profileId"));
+
+  // Pra completar um time que ficou com menos gente (ex: alguém saiu e ainda
+  // não tinha substituto) sem precisar "substituir" ninguém que já está lá.
+  const { error } = await supabase.from("team_members").insert({ team_id: teamId, profile_id: profileId });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function moveMember(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

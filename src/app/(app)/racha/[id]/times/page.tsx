@@ -5,12 +5,14 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
+import { AddToTeamSelect } from "@/components/AddToTeamSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import {
   generateTeams,
+  addToTeam,
   moveMember,
   swapMembers,
   replaceMember,
@@ -259,6 +261,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   </li>
                 ))}
               </ul>
+
+              {profile.is_organizer && unassignedConfirmed.length > 0 && (
+                <div className="mt-3">
+                  <AddToTeamSelect
+                    action={addToTeam}
+                    eventId={id}
+                    teamId={team.id}
+                    players={unassignedConfirmed}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
