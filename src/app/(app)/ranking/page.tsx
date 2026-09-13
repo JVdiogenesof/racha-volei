@@ -49,7 +49,7 @@ export default async function RankingPage() {
         ranking={attendanceRanking}
       />
 
-      <Leaderboard title="Mais vezes MVP" icon={Trophy} unit="MVPs" ranking={mvpRanking} />
+      <Leaderboard title="Mais vezes Jogador Destaque" icon={Trophy} unit="vezes" ranking={mvpRanking} />
 
       <Leaderboard title="Mais vitórias" icon={Crown} unit="vitórias" ranking={winsRanking} />
     </div>

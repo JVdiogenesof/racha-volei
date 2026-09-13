@@ -7,7 +7,7 @@ import { adjustRanking, deleteRankingAdjustment } from "./actions";
 
 const METRIC_LABELS: Record<string, string> = {
   attendance: "presença",
-  mvp: "MVP",
+  mvp: "Jogador Destaque",
   wins: "vitória",
 };
 
@@ -30,7 +30,7 @@ export default async function AdminRankingPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Editar rankings</h1>
         <p className="mt-1 text-sm text-white/60">
-          Ajuste manualmente presenças, MVPs e vitórias de qualquer jogador pra corrigir algum problema.
+          Ajuste manualmente presenças, vezes destaque e vitórias de qualquer jogador pra corrigir algum problema.
         </p>
       </div>
 
@@ -40,7 +40,7 @@ export default async function AdminRankingPage() {
             <tr className="border-b border-white/10 text-left text-xs text-white/60">
               <th className="px-4 py-2.5">Jogador</th>
               <th className="px-4 py-2.5">Presenças</th>
-              <th className="px-4 py-2.5">MVPs</th>
+              <th className="px-4 py-2.5">Destaques</th>
               <th className="px-4 py-2.5">Vitórias</th>
             </tr>
           </thead>

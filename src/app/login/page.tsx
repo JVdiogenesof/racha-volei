@@ -16,7 +16,7 @@ const FEATURES: { title: string; desc: string; icon: LucideIcon; iconClass: stri
     iconClass: "bg-blue-500/25 text-blue-300",
   },
   {
-    title: "Ranking e MVP",
+    title: "Ranking e Jogador Destaque",
     desc: "Veja quem mais brilha em quadra.",
     icon: Award,
     iconClass: "bg-yellow-500/25 text-yellow-300",

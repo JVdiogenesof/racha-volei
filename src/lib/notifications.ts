@@ -101,7 +101,7 @@ export async function getNotifications(
       items.push({
         id: `mvp-${event.id}`,
         type: "mvp",
-        message: `Escolha o MVP do racha de ${dateLabel}`,
+        message: `Escolha o Jogador Destaque do racha de ${dateLabel}`,
         href: `/racha/${event.id}/mvp`,
       });
     }

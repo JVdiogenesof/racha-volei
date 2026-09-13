@@ -50,7 +50,7 @@ export default async function HistoricoPage() {
               <span className="text-xs text-white/40">{e.confirmedCount} jogadores</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-white/60">
-              <span>MVP: {e.mvp ?? "não escolhido"}</span>
+              <span>Jogador Destaque: {e.mvp ?? "não escolhido"}</span>
             </div>
           </Link>
         ))}

@@ -34,7 +34,7 @@ export default function PrivacidadePage() {
           <p className="mt-2">
             Os dados são usados exclusivamente para organizar os rachas do
             grupo: gerar times balanceados, controlar presença e pagamentos, e
-            exibir avisos e resultados de MVP aos membros aprovados do grupo.
+            exibir avisos e resultados de Jogador Destaque aos membros aprovados do grupo.
             Não vendemos nem compartilhamos seus dados com terceiros.
           </p>
         </section>

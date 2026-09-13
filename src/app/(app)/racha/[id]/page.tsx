@@ -91,13 +91,13 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             {isInProgress
-              ? "O racha está rolando. Termine o evento quando acabar pra liberar a escolha do MVP."
+              ? "O racha está rolando. Termine o evento quando acabar pra liberar a escolha do Jogador Destaque."
               : listOpen
                 ? "Quando a galera chegar na quadra, inicie o evento."
                 : "Publique a lista de confirmados (em \"Lista do racha\") antes de iniciar o evento."}
           </p>
           {isInProgress ? (
-            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora os organizadores podem escolher o MVP." className="ml-auto shrink-0">
+            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora os organizadores podem escolher o Jogador Destaque." className="ml-auto shrink-0">
               <input type="hidden" name="eventId" value={id} />
               <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
                 <StopCircle className="h-4 w-4" strokeWidth={2} />
@@ -132,7 +132,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         <HubCard
           href={`/racha/${id}/mvp`}
           icon={Trophy}
-          title="MVP"
+          title="Jogador Destaque"
           description={isFinished ? "Escolhido pelos organizadores." : "Libera depois que o racha terminar."}
         />
       </div>

@@ -12,7 +12,7 @@ export async function setMvp(formData: FormData) {
 
   const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
   if (event?.status !== "finished") {
-    throw new Error("Só dá pra escolher o MVP depois que o racha for finalizado.");
+    throw new Error("Só dá pra escolher o Jogador Destaque depois que o racha for finalizado.");
   }
 
   const { data: attendance } = await supabase
@@ -22,7 +22,7 @@ export async function setMvp(formData: FormData) {
     .eq("profile_id", profileId)
     .maybeSingle();
   if (attendance?.status !== "confirmed") {
-    throw new Error("O MVP precisa ser alguém confirmado nesse racha.");
+    throw new Error("O Jogador Destaque precisa ser alguém confirmado nesse racha.");
   }
 
   const { error } = await supabase.from("events").update({ mvp_profile_id: profileId }).eq("id", eventId);

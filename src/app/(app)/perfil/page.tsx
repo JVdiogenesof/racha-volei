@@ -24,7 +24,7 @@ export default async function PerfilPage() {
 
   const myStats = [
     { label: "Presenças", value: rankingCounts.attendance.get(profile.id) ?? 0, icon: CalendarCheck },
-    { label: "Vezes MVP", value: rankingCounts.mvp.get(profile.id) ?? 0, icon: Trophy },
+    { label: "Vezes destaque", value: rankingCounts.mvp.get(profile.id) ?? 0, icon: Trophy },
     { label: "Vitórias", value: rankingCounts.wins.get(profile.id) ?? 0, icon: Crown },
   ];
 

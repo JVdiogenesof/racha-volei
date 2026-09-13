@@ -24,7 +24,7 @@ export function RemoveMemberButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          `Remover ${fullName} do grupo? A pessoa perde o acesso ao site, mas o histórico dela (presenças, MVPs, vitórias) fica registrado.`,
+          `Remover ${fullName} do grupo? A pessoa perde o acesso ao site, mas o histórico dela (presenças, vezes destaque, vitórias) fica registrado.`,
         );
         if (!confirmed) return;
 
