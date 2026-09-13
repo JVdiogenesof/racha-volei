@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getAllRatings, getRatingWeights } from "@/lib/ratings";
+import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 
 /**
@@ -16,8 +16,9 @@ export async function getRachaLevel(supabase: SupabaseClient, eventId: string): 
 
   if (!confirmedAttendance?.length) return null;
 
+  const confirmedIds = confirmedAttendance.map((a) => a.profile_id);
   const [{ selfByProfile, organizerByProfile }, weights] = await Promise.all([
-    getAllRatings(supabase),
+    getRatingsFor(supabase, confirmedIds),
     getRatingWeights(supabase),
   ]);
 

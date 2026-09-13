@@ -46,6 +46,27 @@ export async function getAllRatings(supabase: SupabaseClient) {
   };
 }
 
+/**
+ * Igual getAllRatings, mas só busca as notas de quem está em profileIds —
+ * usa quando só precisa de um grupo pequeno (ex: confirmados de um racha),
+ * pra não trazer a tabela inteira de notas de todo mundo do app à toa.
+ */
+export async function getRatingsFor(supabase: SupabaseClient, profileIds: string[]) {
+  if (!profileIds.length) {
+    return { selfByProfile: new Map<string, RatingsByCategory>(), organizerByProfile: new Map<string, RatingsByCategory>() };
+  }
+
+  const [selfRes, organizerRes] = await Promise.all([
+    supabase.from("self_ratings").select("profile_id, category, value").in("profile_id", profileIds),
+    supabase.from("organizer_ratings").select("profile_id, category, value").in("profile_id", profileIds),
+  ]);
+
+  return {
+    selfByProfile: groupByProfile(selfRes.data),
+    organizerByProfile: groupByProfile(organizerRes.data),
+  };
+}
+
 export async function getPlayerRatings(supabase: SupabaseClient, profileId: string) {
   const [selfRes, organizerRes] = await Promise.all([
     supabase.from("self_ratings").select("category, value").eq("profile_id", profileId),

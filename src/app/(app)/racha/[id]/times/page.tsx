@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Trophy, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { getAllRatings, getRatingWeights } from "@/lib/ratings";
+import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
 import { AddToTeamSelect } from "@/components/AddToTeamSelect";
@@ -67,16 +67,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
     const teamIds = (teamRows ?? []).map((t) => t.id);
 
-    const [{ data: memberRows }, { selfByProfile, organizerByProfile }, weights, { data: winRows }] =
-      await Promise.all([
-        supabase
-          .from("team_members")
-          .select("id, team_id, profile_id, profiles(full_name, avatar_url, is_setter)")
-          .in("team_id", teamIds),
-        getAllRatings(supabase),
-        getRatingWeights(supabase),
-        supabase.from("match_wins").select("team_id").eq("event_id", id),
-      ]);
+    const { data: memberRows } = await supabase
+      .from("team_members")
+      .select("id, team_id, profile_id, profiles(full_name, avatar_url, is_setter)")
+      .in("team_id", teamIds);
+    const memberProfileIds = (memberRows ?? []).map((m) => m.profile_id);
+
+    const [{ selfByProfile, organizerByProfile }, weights, { data: winRows }] = await Promise.all([
+      getRatingsFor(supabase, memberProfileIds),
+      getRatingWeights(supabase),
+      supabase.from("match_wins").select("team_id").eq("event_id", id),
+    ]);
 
     const winsByTeam = new Map<string, number>();
     for (const w of winRows ?? []) {
