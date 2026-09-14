@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { Home, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, type LucideIcon } from "lucide-react";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -28,10 +29,18 @@ export function NavIsland({
 }) {
   const pathname = usePathname();
   const adminActive = isActiveHref(pathname, "/admin");
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // Sem isso, uma aba ativa com o rótulo expandido (ex: "Torneios VPA") pode
+  // nascer fora da área visível em telas estreitas -- centralizar o pill
+  // inteiro (justify-center) some com as pontas em vez de rolar até elas.
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [pathname]);
 
   return (
-    <nav className="flex justify-center overflow-x-auto border-t border-white/10 px-2 py-2.5">
-      <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1.5">
+    <nav className="flex justify-start overflow-x-auto border-t border-white/10 px-2 py-2.5 sm:justify-center">
+      <div className="mx-auto inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1.5">
         {LINKS.map((link) => {
           const active = isActiveHref(pathname, link.href);
           const badge = badgeByHref[link.href] ?? 0;
@@ -40,6 +49,7 @@ export function NavIsland({
               key={link.href}
               href={link.href}
               aria-label={link.label}
+              ref={active ? activeRef : undefined}
               className={`relative flex h-9 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full text-white/60 transition-all duration-300 ease-out ${
                 active ? "bg-brand-purple px-3.5 text-white" : "w-9 hover:bg-white/10 hover:text-white/80"
               }`}
@@ -63,6 +73,7 @@ export function NavIsland({
             <Link
               href="/admin/solicitacoes"
               aria-label="Admin"
+              ref={adminActive ? activeRef : undefined}
               className={`flex h-9 shrink-0 items-center justify-center gap-1.5 overflow-hidden rounded-full transition-all duration-300 ease-out ${
                 adminActive ? "bg-red-500/20 px-3.5 text-red-300" : "w-9 text-red-300/70 hover:bg-white/10 hover:text-red-300"
               }`}
