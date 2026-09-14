@@ -14,6 +14,7 @@ import { InterestButton } from "@/components/InterestButton";
 import { CancelAttendanceButton } from "@/components/CancelAttendanceButton";
 import { SetterBadge } from "@/components/SetterBadge";
 import { CopyPixButton } from "@/components/CopyPixButton";
+import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 
@@ -110,6 +111,14 @@ export default async function ConfirmarPresencaPage({
           Situação atual: <strong>{statusLabel}</strong>
         </p>
       </div>
+
+      {!eventFinished && !eventCancelled && (
+        <ConfirmedCounter
+          eventId={id}
+          maxPlayers={event.max_players}
+          initialConfirmedCount={confirmados.length}
+        />
+      )}
 
       {eventCancelled ? (
         <p className="rounded-xl border border-orange-500/30 bg-orange-500/15 px-4 py-4 text-sm text-orange-300">

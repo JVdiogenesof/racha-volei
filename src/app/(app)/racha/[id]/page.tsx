@@ -8,6 +8,7 @@ import { getRachaLevel } from "@/lib/rachaLevel";
 import { ActionForm } from "@/components/ActionForm";
 import { ToastFromQuery } from "@/components/ToastFromQuery";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
+import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { startEvent, finishEvent } from "./actions";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +20,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, num_teams, price_per_player, status, official_list_open")
+        .select("id, date, time, location, num_teams, price_per_player, status, official_list_open, max_players")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -83,6 +84,15 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         {rachaLevel !== null && (
           <div className="mt-2">
             <RachaLevelBadge level={rachaLevel} />
+          </div>
+        )}
+        {!isFinished && (
+          <div className="mt-3">
+            <ConfirmedCounter
+              eventId={id}
+              maxPlayers={event.max_players}
+              initialConfirmedCount={confirmedCount ?? 0}
+            />
           </div>
         )}
       </div>

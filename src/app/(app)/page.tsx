@@ -3,6 +3,7 @@ import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles,
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
+import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
@@ -201,6 +202,14 @@ export default async function HomePage() {
                   <RachaLevelBadge level={rachaLevel} />
                 </div>
               )}
+            </div>
+
+            <div className="mt-4">
+              <ConfirmedCounter
+                eventId={proximoRacha.id}
+                maxPlayers={proximoRacha.max_players}
+                initialConfirmedCount={confirmedCount ?? 0}
+              />
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-2">
