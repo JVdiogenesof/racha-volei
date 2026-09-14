@@ -238,6 +238,29 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Catálogo de frases de reação/provocação editável pelos organizadores.
+// "{alvo}" no texto é substituído pelo nome de quem recebeu a reação na hora
+// de exibir (ver src/lib/reactions.ts). Pequeno e só muda quando um
+// organizador edita -- não cresce com o uso.
+export const reactionTypes = pgTable("reaction_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  text: text("text").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdBy: uuid("created_by").notNull().references(() => profiles.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Log de quem mandou qual reação pra quem. Cresce com o uso, mas cada linha é
+// minúscula e reações com mais de REACTION_RETENTION_DAYS somem sozinhas (ver
+// src/lib/reactions.ts) -- nunca acumula de verdade.
+export const reactions = pgTable("reactions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fromProfileId: uuid("from_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  toProfileId: uuid("to_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  reactionTypeId: uuid("reaction_type_id").notNull().references(() => reactionTypes.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {

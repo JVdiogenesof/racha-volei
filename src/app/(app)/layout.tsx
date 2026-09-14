@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { NavBar } from "@/components/NavBar";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { EvolutionShortcut } from "@/components/EvolutionShortcut";
+import { ReactionsShortcut } from "@/components/ReactionsShortcut";
 import { Footer } from "@/components/Footer";
 import { BackButton } from "@/components/BackButton";
 import { PageTransition } from "@/components/PageTransition";
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <PageTransition>{children}</PageTransition>
       </main>
       <Footer />
+      <ReactionsShortcut />
       <EvolutionShortcut />
       <NotificationCenter />
     </>

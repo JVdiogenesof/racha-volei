@@ -30,6 +30,8 @@ const APP_TABLES = [
   "ranking_adjustments",
   "reserve_list",
   "push_subscriptions",
+  "reaction_types",
+  "reactions",
 ];
 
 function loadEnvLocal() {

@@ -92,6 +92,8 @@ alter table match_wins enable row level security;
 alter table ranking_adjustments enable row level security;
 alter table reserve_list enable row level security;
 alter table push_subscriptions enable row level security;
+alter table reaction_types enable row level security;
+alter table reactions enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -229,6 +231,26 @@ create policy "push_subscriptions_insert" on push_subscriptions for insert to au
   with check (profile_id = auth.uid());
 create policy "push_subscriptions_delete" on push_subscriptions for delete to authenticated
   using (profile_id = auth.uid() or public.is_organizer());
+
+-- reaction_types: leitura aberta (precisa aparecer no formulário de mandar
+-- reação); escrita separada em insert/update/delete (mesmo motivo de "events"
+-- acima) pra um organizador poder editar/apagar frase criada por outro.
+create policy "reaction_types_select" on reaction_types for select to authenticated using (true);
+create policy "reaction_types_insert" on reaction_types for insert to authenticated
+  with check (public.is_organizer() and created_by = auth.uid());
+create policy "reaction_types_update" on reaction_types for update to authenticated
+  using (public.is_organizer())
+  with check (public.is_organizer());
+create policy "reaction_types_delete" on reaction_types for delete to authenticated
+  using (public.is_organizer());
+
+-- reactions: feed público (leitura aberta); cada um só registra reação em
+-- nome de si mesmo; apaga quem mandou (desfazer) ou organizador (moderar).
+create policy "reactions_select" on reactions for select to authenticated using (true);
+create policy "reactions_insert" on reactions for insert to authenticated
+  with check (from_profile_id = auth.uid());
+create policy "reactions_delete" on reactions for delete to authenticated
+  using (from_profile_id = auth.uid() or public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos
