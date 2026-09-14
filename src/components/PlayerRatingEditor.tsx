@@ -5,17 +5,20 @@ import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { SkillSlider } from "@/components/SkillSlider";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveMemberButton } from "@/components/RemoveMemberButton";
+import { NicknameBadge } from "@/components/NicknameBadge";
 import { SKILL_CATEGORIES, SKILL_LABELS, type RatingsByCategory } from "@/lib/scoring";
 import { setOrganizerRatings, updatePlayerProfile, removeMember } from "@/app/(app)/admin/jogadores/actions";
 
 export function PlayerRatingEditor({
   profileId,
   fullName,
+  nicknameBadge,
   overall,
   organizerRatings,
 }: {
   profileId: string;
   fullName: string;
+  nicknameBadge: string | null;
   overall: number;
   organizerRatings: RatingsByCategory;
 }) {
@@ -31,6 +34,7 @@ export function PlayerRatingEditor({
         <span className="flex items-center gap-2 font-medium text-white">
           <SlidersHorizontal className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
           {fullName}
+          <NicknameBadge text={nicknameBadge} />
         </span>
         <span className="flex items-center gap-2 text-sm text-white/60">
           nota geral: <span className="font-semibold text-purple-300">{overall.toFixed(1)}</span>
@@ -53,6 +57,16 @@ export function PlayerRatingEditor({
               name="fullName"
               defaultValue={fullName}
               required
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-white/60">Insígnia (apelido divertido)</label>
+            <input
+              name="nicknameBadge"
+              defaultValue={nicknameBadge ?? ""}
+              maxLength={40}
+              placeholder="ex: só tenho ataque 🔥"
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 text-sm"
             />
           </div>

@@ -13,7 +13,7 @@ export default async function JogadoresPage() {
   const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, is_setter")
+      .select("id, full_name, avatar_url, is_setter, nickname_badge")
       .eq("status", "approved")
       .order("full_name"),
     getAllRatings(supabase),

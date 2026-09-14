@@ -13,7 +13,7 @@ export default async function AdminJogadoresPage() {
   const [{ data: players }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, nickname_badge")
       .eq("status", "approved")
       .order("full_name"),
     getAllRatings(supabase),
@@ -80,6 +80,7 @@ export default async function AdminJogadoresPage() {
               key={player.id}
               profileId={player.id}
               fullName={player.full_name}
+              nicknameBadge={player.nickname_badge}
               overall={overallScore(finalScores)}
               organizerRatings={organizer}
             />

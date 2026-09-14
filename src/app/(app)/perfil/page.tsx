@@ -10,6 +10,7 @@ import { ScoreBar } from "@/components/ScoreBar";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { PushOptIn } from "@/components/PushOptIn";
+import { NicknameBadge } from "@/components/NicknameBadge";
 import { ATTENDANCE_FREQUENCY_OPTIONS } from "@/lib/attendanceFrequency";
 import { updateProfileData, updateSelfRatings } from "./actions";
 
@@ -41,6 +42,7 @@ export default async function PerfilPage() {
           <p className="text-sm text-white/60">
             Sua nota final combina sua autoavaliação com a nota dos organizadores.
           </p>
+          <NicknameBadge text={profile.nickname_badge} className="mt-1.5" />
         </div>
       </div>
 
@@ -106,6 +108,19 @@ export default async function PerfilPage() {
               defaultValue={profile.phone ?? ""}
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-white">
+              Insígnia <span className="text-white/40">(apelido divertido, opcional)</span>
+            </label>
+            <input
+              name="nicknameBadge"
+              defaultValue={profile.nickname_badge ?? ""}
+              maxLength={40}
+              placeholder="ex: só tenho ataque 🔥"
+              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+            />
+            <p className="mt-1 text-xs text-white/40">Aparece do lado do seu nome na lista de jogadores.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-white">Posição que joga</label>

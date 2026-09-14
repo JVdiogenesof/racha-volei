@@ -12,6 +12,7 @@ export async function updateProfileData(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const birthdate = String(formData.get("birthdate") ?? "");
   const phone = String(formData.get("phone") ?? "").trim() || null;
+  const nicknameBadge = String(formData.get("nicknameBadge") ?? "").trim().slice(0, 40) || null;
   const isSetter = formData.get("position") === "setter";
   const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
@@ -31,6 +32,7 @@ export async function updateProfileData(formData: FormData) {
       full_name: fullName,
       birthdate,
       phone,
+      nickname_badge: nicknameBadge,
       is_setter: isSetter,
       attendance_frequency: attendanceFrequency,
       has_vpa_shirt: hasVpaShirt,
@@ -40,6 +42,7 @@ export async function updateProfileData(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/perfil");
+  revalidatePath("/jogadores");
 }
 
 export async function updateSelfRatings(formData: FormData) {

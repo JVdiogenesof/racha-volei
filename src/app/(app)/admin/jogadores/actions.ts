@@ -32,10 +32,14 @@ export async function updatePlayerProfile(formData: FormData) {
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
   const fullName = String(formData.get("fullName") ?? "").trim();
+  const nicknameBadge = String(formData.get("nicknameBadge") ?? "").trim().slice(0, 40) || null;
 
   if (!fullName) throw new Error("O nome não pode ficar em branco.");
 
-  const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", profileId);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ full_name: fullName, nickname_badge: nicknameBadge })
+    .eq("id", profileId);
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/jogadores");

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { Avatar } from "./Avatar";
+import { NicknameBadge } from "./NicknameBadge";
 
 type Player = {
   id: string;
@@ -11,6 +12,7 @@ type Player = {
   is_setter: boolean;
   overall: number;
   streak?: number;
+  nickname_badge?: string | null;
 };
 
 export function PlayerSearch({ players }: { players: Player[] }) {
@@ -42,7 +44,8 @@ export function PlayerSearch({ players }: { players: Player[] }) {
             <Avatar src={p.avatar_url} name={p.full_name} size="lg" streak={p.streak} />
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium text-white">{p.full_name}</p>
-              {p.is_setter && <p className="text-xs text-white/60">🏐 Levantador(a)</p>}
+              <NicknameBadge text={p.nickname_badge} className="mt-1" />
+              {p.is_setter && <p className="mt-1 text-xs text-white/60">🏐 Levantador(a)</p>}
               <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/10">
                 <div
                   className="h-1.5 rounded-full bg-brand-purple"

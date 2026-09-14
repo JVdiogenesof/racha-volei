@@ -62,6 +62,10 @@ export const profiles = pgTable("profiles", {
   birthdate: date("birthdate"),
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
+  // Apelido/insígnia divertida que o próprio jogador escolhe (ou que um
+  // organizador ajusta), tipo "só tenho ataque". Puramente decorativo, exibido
+  // ao lado do nome -- não entra em nenhum cálculo.
+  nicknameBadge: text("nickname_badge"),
   isSetter: boolean("is_setter").notNull().default(false),
   attendanceFrequency: attendanceFrequencyEnum("attendance_frequency"),
   hasVpaShirt: boolean("has_vpa_shirt").notNull().default(false),
