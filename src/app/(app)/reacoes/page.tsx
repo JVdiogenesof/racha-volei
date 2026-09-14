@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { pruneOldReactions, renderReactionText } from "@/lib/reactions";
 import { Avatar } from "@/components/Avatar";
-import { ActionForm } from "@/components/ActionForm";
+import { ReactionSender } from "@/components/ReactionSender";
 import { DeleteReactionButton } from "@/components/DeleteReactionButton";
 import { sendReaction, deleteReaction } from "./actions";
 
@@ -25,7 +25,7 @@ export default async function ReacoesPage() {
 
   const [{ data: reactionTypes }, { data: players }, { data: reactionRows }] = await Promise.all([
     supabase.from("reaction_types").select("id, text").eq("active", true).order("text"),
-    supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name"),
+    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").order("full_name"),
     supabase
       .from("reactions")
       .select(
@@ -43,6 +43,7 @@ export default async function ReacoesPage() {
       id: r.id,
       createdAt: r.created_at,
       fromProfileId: r.from_profile_id,
+      toProfileId: r.to_profile_id,
       fromName: from?.full_name ?? "?",
       fromAvatar: from?.avatar_url ?? null,
       toName: to?.full_name ?? "?",
@@ -50,6 +51,16 @@ export default async function ReacoesPage() {
       text: reactionType ? renderReactionText(reactionType.text, to?.full_name ?? "?") : "",
     };
   });
+
+  // Última reação recebida por jogador -- mostrada direto no card dele, sem
+  // precisar abrir o perfil. O feed já vem ordenado do mais recente pro mais
+  // velho, então a primeira ocorrência por jogador já é a mais recente.
+  const lastReceivedByProfile = new Map<string, { text: string; fromName: string; createdAt: string }>();
+  for (const r of feed) {
+    if (!lastReceivedByProfile.has(r.toProfileId)) {
+      lastReceivedByProfile.set(r.toProfileId, { text: r.text, fromName: r.fromName, createdAt: r.createdAt });
+    }
+  }
 
   return (
     <div>
@@ -61,55 +72,15 @@ export default async function ReacoesPage() {
         Provoque a galera! Manda uma reação pra alguém e ela aparece aqui pra todo mundo ver.
       </p>
 
-      <ActionForm
+      <ReactionSender
+        players={(players ?? []).map((p) => ({
+          ...p,
+          lastReceived: lastReceivedByProfile.get(p.id) ?? null,
+        }))}
+        reactionTypes={reactionTypes ?? []}
+        currentProfileId={profile.id}
         action={sendReaction}
-        successMessage="Reação enviada!"
-        resetOnSuccess
-        className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-white/10 p-6"
-      >
-        <div className="flex-1 min-w-[160px]">
-          <label className="block text-sm font-medium text-white">Pra quem?</label>
-          <select
-            name="toProfileId"
-            required
-            defaultValue=""
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          >
-            <option value="" disabled>
-              Escolha um jogador
-            </option>
-            {(players ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id === profile.id ? `${p.full_name} (você)` : p.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[220px]">
-          <label className="block text-sm font-medium text-white">Qual reação?</label>
-          <select
-            name="reactionTypeId"
-            required
-            defaultValue=""
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          >
-            <option value="" disabled>
-              Escolha uma reação
-            </option>
-            {(reactionTypes ?? []).map((rt) => (
-              <option key={rt.id} value={rt.id}>
-                {rt.text.replace("{alvo}", "___")}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark"
-        >
-          Mandar reação!
-        </button>
-      </ActionForm>
+      />
 
       <div className="mt-6 space-y-2">
         {!feed.length && (
