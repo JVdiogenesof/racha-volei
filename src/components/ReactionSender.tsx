@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { X, Loader2 } from "lucide-react";
 import { Avatar } from "./Avatar";
@@ -31,8 +31,15 @@ export function ReactionSender({
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { showToast } = useToast();
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const target = players.find((p) => p.id === targetId) ?? null;
+
+  // A grade de jogadores pode ser longa -- sem isso, quem clica lá em cima
+  // não percebe que o painel de escolher a reação apareceu mais embaixo.
+  useEffect(() => {
+    if (targetId) panelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [targetId]);
 
   function handleSend(reactionTypeId: string) {
     if (!target) return;
@@ -78,7 +85,7 @@ export function ReactionSender({
       </div>
 
       {target && (
-        <div className="mt-4 rounded-xl border border-brand-purple/40 bg-brand-purple/10 p-4">
+        <div ref={panelRef} className="mt-4 rounded-xl border border-brand-purple/40 bg-brand-purple/10 p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-white">
               Mandar reação pra <strong>{target.full_name}</strong>:

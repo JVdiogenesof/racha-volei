@@ -6,7 +6,10 @@ import { InterestButton } from "@/components/InterestButton";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
+import { ReactionsReceivedCard } from "@/components/ReactionsReceivedCard";
+import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { getRachaLevel } from "@/lib/rachaLevel";
+import { renderReactionText } from "@/lib/reactions";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 
 function hoursAgoIso(hours: number) {
@@ -50,6 +53,23 @@ export default async function HomePage() {
       .limit(1),
     supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
   ]);
+
+  const { data: receivedReactionRows } = await supabase
+    .from("reactions")
+    .select("reaction_types(text), from:profiles!reactions_from_profile_id_profiles_id_fk(full_name, avatar_url)")
+    .eq("to_profile_id", profile.id)
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const receivedReactions = (receivedReactionRows ?? []).map((r) => {
+    const from = r.from as unknown as { full_name: string; avatar_url: string | null } | null;
+    const reactionType = r.reaction_types as unknown as { text: string } | null;
+    return {
+      fromName: from?.full_name ?? "?",
+      fromAvatar: from?.avatar_url ?? null,
+      text: reactionType ? renderReactionText(reactionType.text, "você") : "",
+    };
+  });
 
   const { data: myAttendance } = proximoRacha
     ? await supabase
@@ -210,6 +230,13 @@ export default async function HomePage() {
           <p className="mt-4 border-t border-white/10 pt-4 text-sm text-white/50">Nenhum racha marcado ainda.</p>
         )}
       </section>
+
+      {(receivedReactions.length > 0 || !profile.nickname_badge) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ReactionsReceivedCard reactions={receivedReactions} />
+          {!profile.nickname_badge && <NicknamePromptCard />}
+        </div>
+      )}
 
       {profile.is_organizer && (
         <OrganizerPanel
