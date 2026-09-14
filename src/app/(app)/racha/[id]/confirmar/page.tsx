@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { getAttendanceStreaks } from "@/lib/streak";
+import { getConfirmedHighlights } from "@/lib/highlights";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
@@ -27,23 +28,25 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks] = await Promise.all([
-    supabase
-      .from("events")
-      .select("id, date, status, official_list_open, price_per_player, max_players")
-      .eq("id", id)
-      .maybeSingle(),
-    supabase
-      .from("attendance")
-      .select("profile_id, status, profiles(full_name, avatar_url, is_setter)")
-      .eq("event_id", id)
-      .order("confirmed_at", { ascending: true }),
-    supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
-    profile.is_organizer
-      ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
-      : Promise.resolve(null),
-    getAttendanceStreaks(supabase),
-  ]);
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("id, date, status, official_list_open, price_per_player, max_players")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("attendance")
+        .select("profile_id, status, profiles(full_name, avatar_url, is_setter)")
+        .eq("event_id", id)
+        .order("confirmed_at", { ascending: true }),
+      supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+      profile.is_organizer
+        ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
+        : Promise.resolve(null),
+      getAttendanceStreaks(supabase),
+      getConfirmedHighlights(supabase, id),
+    ]);
 
   const { data: approvedProfiles } = profile.is_organizer
     ? await supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name")
@@ -118,6 +121,56 @@ export default async function ConfirmarPresencaPage({
           maxPlayers={event.max_players}
           initialConfirmedCount={confirmados.length}
         />
+      )}
+
+      {!eventFinished && !eventCancelled && highlights.topOverall.length > 0 && (
+        <section className="rounded-xl border border-brand-purple/30 bg-gradient-to-br from-brand-purple/15 to-transparent p-4">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+            <Star className="h-4 w-4 text-purple-300" strokeWidth={2} />
+            Quem já confirmou
+          </h3>
+          <p className="mt-0.5 text-xs text-white/50">Alguns dos melhores já garantiram presença</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {highlights.topOverall.map((h) => (
+              <div
+                key={h.profileId}
+                className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+              >
+                <Avatar src={h.avatarUrl} name={h.fullName} size="sm" />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-white">{h.fullName}</p>
+                  <p className="flex items-center gap-1 text-xs text-white/50">
+                    <Star className="h-3 w-3 fill-current" strokeWidth={0} />
+                    {h.overall.toFixed(1)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {highlights.topSetters.length > 0 && (
+            <>
+              <p className="mt-3 text-xs font-medium text-white/60">Levantadores confirmados</p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {highlights.topSetters.map((h) => (
+                  <div
+                    key={h.profileId}
+                    className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
+                  >
+                    <Avatar src={h.avatarUrl} name={h.fullName} size="sm" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">{h.fullName}</p>
+                      <p className="flex items-center gap-1 text-xs text-white/50">
+                        <Star className="h-3 w-3 fill-current" strokeWidth={0} />
+                        {h.overall.toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
       )}
 
       {eventCancelled ? (

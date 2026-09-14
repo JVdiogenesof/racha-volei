@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
+import { RachaCapacityFields } from "@/components/RachaCapacityFields";
 import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 
 export default async function AdminRachasPage() {
@@ -68,17 +69,10 @@ export default async function AdminRachasPage() {
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-white">Número de times</label>
-          <input
-            type="number"
-            name="numTeams"
-            defaultValue={lastEvent?.num_teams ?? 2}
-            min={2}
-            required
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          />
-        </div>
+        <RachaCapacityFields
+          defaultNumTeams={lastEvent?.num_teams ?? 2}
+          defaultMaxPlayers={lastEvent?.max_players ?? null}
+        />
         <div>
           <label className="block text-sm font-medium text-white">
             Valor por jogador (R$) <span className="text-white/40">(opcional)</span>
@@ -89,18 +83,6 @@ export default async function AdminRachasPage() {
             step={0.5}
             min={0}
             defaultValue={lastEvent?.price_per_player ?? ""}
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-white">
-            Vagas de confirmados <span className="text-white/40">(opcional, sem limite se vazio)</span>
-          </label>
-          <input
-            type="number"
-            name="maxPlayers"
-            min={1}
-            defaultValue={lastEvent?.max_players ?? ""}
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>
