@@ -42,6 +42,7 @@ export async function updateProfileData(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/perfil");
+  revalidatePath("/perfil/dados");
   revalidatePath("/jogadores");
 }
 
@@ -62,6 +63,7 @@ export async function updateSelfRatings(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/perfil");
+  revalidatePath("/perfil/autoavaliacao");
 }
 
 export async function savePushSubscription(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) {
