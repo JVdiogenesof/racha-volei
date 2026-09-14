@@ -26,20 +26,13 @@ export function ConfirmedCounter({
   }, [eventId]);
 
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`attendance-count-${eventId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "attendance", filter: `event_id=eq.${eventId}` },
-        () => refresh(),
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [eventId, refresh]);
+    // Realtime (postgres_changes) exige que o token do usuário chegue até o
+    // websocket pra passar pela RLS — em teste ao vivo isso não disparou de
+    // forma confiável. Poll simples é mais robusto pra esse caso de uso (o
+    // número não precisa mudar no milissegundo exato em que alguém confirma).
+    const interval = setInterval(refresh, 10000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
   const vagasRestantes = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
   const isFull = vagasRestantes === 0;
