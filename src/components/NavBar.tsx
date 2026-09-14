@@ -15,6 +15,10 @@ type NavProfile = {
   guest_for_event_id: string | null;
 };
 
+function hoursAgoIso(hours: number) {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
 export async function NavBar() {
   const cached = await readProfileFromHeaders<NavProfile>();
   const supabase = await createClient();
@@ -56,7 +60,7 @@ export async function NavBar() {
     );
   }
 
-  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const threeDaysAgo = hoursAgoIso(72);
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ count: newAvisosCount }, { data: upcomingEvents }] = await Promise.all([
@@ -98,7 +102,7 @@ export async function NavBar() {
             className="flex items-center gap-2 text-sm text-white/80 hover:text-white"
           >
             <Avatar src={profile?.avatar_url} name={profile?.full_name ?? "?"} size="sm" />
-            <span className="hidden sm:inline">{profile?.full_name?.split(" ")[0] ?? "Perfil"}</span>
+            <span>Perfil</span>
           </Link>
           <form action={signOut}>
             <button className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium hover:bg-white/20">

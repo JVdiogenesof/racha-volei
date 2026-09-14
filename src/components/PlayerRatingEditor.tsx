@@ -1,23 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { SkillSlider } from "@/components/SkillSlider";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveMemberButton } from "@/components/RemoveMemberButton";
 import { NicknameBadge } from "@/components/NicknameBadge";
+import { Avatar } from "@/components/Avatar";
 import { SKILL_CATEGORIES, SKILL_LABELS, type RatingsByCategory } from "@/lib/scoring";
 import { setOrganizerRatings, updatePlayerProfile, removeMember } from "@/app/(app)/admin/jogadores/actions";
 
 export function PlayerRatingEditor({
   profileId,
   fullName,
+  avatarUrl,
   nicknameBadge,
   overall,
   organizerRatings,
 }: {
   profileId: string;
   fullName: string;
+  avatarUrl: string | null;
   nicknameBadge: string | null;
   overall: number;
   organizerRatings: RatingsByCategory;
@@ -32,7 +35,7 @@ export function PlayerRatingEditor({
         className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/5"
       >
         <span className="flex items-center gap-2 font-medium text-white">
-          <SlidersHorizontal className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
+          <Avatar src={avatarUrl} name={fullName} size="sm" />
           {fullName}
           <NicknameBadge text={nicknameBadge} />
         </span>
