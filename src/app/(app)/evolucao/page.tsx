@@ -17,7 +17,7 @@ export default async function EvolucaoPage() {
 
   const totalConfirmados = entries.filter((e) => e.status === "confirmed").length;
   const totalDestaques = entries.filter((e) => e.wasDestaque).length;
-  const totalVitorias = entries.filter((e) => e.teamWon).length;
+  const totalVitorias = entries.reduce((sum, e) => sum + e.teamWins, 0);
 
   return (
     <div>
@@ -72,10 +72,10 @@ export default async function EvolucaoPage() {
                   Destaque
                 </span>
               )}
-              {e.teamWon && (
+              {e.teamWins > 0 && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2.5 py-1 text-xs font-medium text-green-300">
                   <Crown className="h-3.5 w-3.5" strokeWidth={2} />
-                  Time venceu
+                  Time venceu{e.teamWins > 1 ? ` ${e.teamWins}x` : ""}
                 </span>
               )}
             </div>

@@ -6,7 +6,8 @@ export type EvolutionEntry = {
   location: string | null;
   status: "confirmed" | "interested" | "declined";
   wasDestaque: boolean;
-  teamWon: boolean;
+  /** Quantas vezes o time desse jogador venceu nesse racha (pode ser mais de uma). */
+  teamWins: number;
 };
 
 /**
@@ -41,7 +42,7 @@ export async function getPersonalEvolution(supabase: SupabaseClient, profileId: 
         location: event.location,
         status: a.status as EvolutionEntry["status"],
         wasDestaque: event.mvp_profile_id === profileId,
-        teamWon: false,
+        teamWins: 0,
       };
     })
     .filter((e): e is EvolutionEntry => e !== null)
@@ -79,12 +80,14 @@ export async function getPersonalEvolution(supabase: SupabaseClient, profileId: 
   }
 
   const { data: winRows } = await supabase.from("match_wins").select("event_id, team_id").in("event_id", eventIds);
-  const wonEventIds = new Set(
-    (winRows ?? []).filter((w) => myTeamIdByEvent.get(w.event_id) === w.team_id).map((w) => w.event_id),
-  );
+  const winsByEvent = new Map<string, number>();
+  for (const w of winRows ?? []) {
+    if (myTeamIdByEvent.get(w.event_id) !== w.team_id) continue;
+    winsByEvent.set(w.event_id, (winsByEvent.get(w.event_id) ?? 0) + 1);
+  }
 
   for (const entry of entries) {
-    entry.teamWon = wonEventIds.has(entry.eventId);
+    entry.teamWins = winsByEvent.get(entry.eventId) ?? 0;
   }
 
   return entries;
