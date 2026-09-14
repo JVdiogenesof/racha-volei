@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -10,7 +10,7 @@ export default async function RachaListPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, status, official_list_open")
+    .select("id, date, time, location, status, official_list_open, is_pre_torneio")
     .order("date", { ascending: false });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -66,6 +66,7 @@ function EventRow({
     location: string | null;
     status: string;
     official_list_open: boolean;
+    is_pre_torneio: boolean;
   };
 }) {
   return (
@@ -90,6 +91,12 @@ function EventRow({
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        {event.is_pre_torneio && (
+          <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
+            <Trophy className="h-3 w-3" strokeWidth={2} />
+            Pré-torneio
+          </span>
+        )}
         {event.status === "open" && (
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-medium ${

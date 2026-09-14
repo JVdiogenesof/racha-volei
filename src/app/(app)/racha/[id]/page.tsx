@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -20,7 +20,9 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, num_teams, price_per_player, status, official_list_open, max_players")
+        .select(
+          "id, date, time, location, num_teams, price_per_player, status, official_list_open, max_players, is_pre_torneio",
+        )
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -67,6 +69,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           {statusInfo && (
             <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusInfo.className}`}>
               {statusInfo.label}
+            </span>
+          )}
+          {event.is_pre_torneio && (
+            <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
+              <Award className="h-3 w-3" strokeWidth={2} />
+              Pré-torneio · time vencedor garante vaga
             </span>
           )}
         </div>

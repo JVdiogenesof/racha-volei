@@ -18,6 +18,7 @@ export async function createEvent(formData: FormData) {
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
   const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
+  const isPreTorneio = formData.get("isPreTorneio") === "on";
 
   if (!date || numTeams < 1) {
     throw new Error("Data e número de times são obrigatórios.");
@@ -32,6 +33,7 @@ export async function createEvent(formData: FormData) {
       num_teams: numTeams,
       price_per_player: pricePerPlayer,
       max_players: maxPlayers,
+      is_pre_torneio: isPreTorneio,
       created_by: organizer.id,
       official_list_open: false,
     })
@@ -70,6 +72,7 @@ export async function updateEvent(formData: FormData) {
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
   const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
+  const isPreTorneio = formData.get("isPreTorneio") === "on";
 
   if (!date || numTeams < 1) {
     throw new Error("Data e número de times são obrigatórios.");
@@ -84,6 +87,7 @@ export async function updateEvent(formData: FormData) {
       num_teams: numTeams,
       price_per_player: pricePerPlayer,
       max_players: maxPlayers,
+      is_pre_torneio: isPreTorneio,
     })
     .eq("id", eventId);
 

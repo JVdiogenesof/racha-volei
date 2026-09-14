@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, Users, Award, Megaphone, History, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Home, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, type LucideIcon } from "lucide-react";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "Início", icon: Home },
   { href: "/racha", label: "Rachas", icon: CalendarDays },
   { href: "/jogadores", label: "Jogadores", icon: Users },
   { href: "/ranking", label: "Ranking", icon: Award },
+  { href: "/torneios-vpa", label: "Torneios VPA", icon: Trophy },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/historico", label: "Histórico", icon: History },
 ];

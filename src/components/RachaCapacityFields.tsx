@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Trophy } from "lucide-react";
 
 const PLAYERS_PER_TEAM = 6;
+const PRE_TORNEIO_TEAMS = 4;
 
 export function RachaCapacityFields({
   defaultNumTeams,
@@ -19,6 +21,7 @@ export function RachaCapacityFields({
   // recalcular sozinho quando o número de times mudar -- assim ele pode
   // fugir do padrão de 6 por time sem a gente sobrescrever a escolha dele.
   const [maxPlayersTouched, setMaxPlayersTouched] = useState(defaultMaxPlayers != null);
+  const [isPreTorneio, setIsPreTorneio] = useState(false);
 
   return (
     <>
@@ -55,6 +58,33 @@ export function RachaCapacityFields({
         />
         <p className="mt-1 text-xs text-white/40">
           Aparece pra todo mundo na tela do racha (&ldquo;X confirmados de Y vagas&rdquo;). Apague pra deixar sem limite.
+        </p>
+      </div>
+      <div className="sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm text-white">
+          <input
+            type="checkbox"
+            name="isPreTorneio"
+            checked={isPreTorneio}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsPreTorneio(checked);
+              if (checked) {
+                setNumTeams(PRE_TORNEIO_TEAMS);
+                setMaxPlayersTouched(false);
+                setMaxPlayers(PRE_TORNEIO_TEAMS * PLAYERS_PER_TEAM);
+              }
+            }}
+            className="h-4 w-4 rounded border-white/15 text-amber-400 focus:ring-amber-400"
+          />
+          <span className="flex items-center gap-1.5">
+            <Trophy className="h-4 w-4 text-amber-400" strokeWidth={2} />
+            Racha especial (pré-torneio)
+          </span>
+        </label>
+        <p className="mt-1 text-xs text-white/40">
+          O time com mais vitórias garante vaga automática no Torneios VPA quando o racha for finalizado. Sugere 4
+          times / 24 vagas, mas dá pra ajustar.
         </p>
       </div>
     </>

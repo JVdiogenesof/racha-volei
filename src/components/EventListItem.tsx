@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, X } from "lucide-react";
+import { Pencil, X, Trophy } from "lucide-react";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { ActionForm } from "./ActionForm";
 import { DeleteEventButton } from "./DeleteEventButton";
@@ -18,6 +18,7 @@ type EventData = {
   max_players: number | null;
   status: string;
   official_list_open: boolean;
+  is_pre_torneio: boolean;
 };
 
 export function EventListItem({
@@ -41,6 +42,12 @@ export function EventListItem({
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           {event.location ? ` · ${event.location}` : ""}
         </Link>
+        {event.is_pre_torneio && (
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
+            <Trophy className="h-3 w-3" strokeWidth={2} />
+            Pré-torneio
+          </span>
+        )}
         {event.status === "open" && (
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
@@ -137,6 +144,17 @@ export function EventListItem({
               defaultValue={event.max_players ?? ""}
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="flex items-center gap-2 text-sm text-white">
+              <input
+                type="checkbox"
+                name="isPreTorneio"
+                defaultChecked={event.is_pre_torneio}
+                className="h-4 w-4 rounded border-white/15 text-amber-400 focus:ring-amber-400"
+              />
+              Racha especial (pré-torneio) — time com mais vitórias garante vaga no Torneios VPA
+            </label>
           </div>
           <div className="sm:col-span-2">
             <button

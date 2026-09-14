@@ -94,6 +94,7 @@ alter table reserve_list enable row level security;
 alter table push_subscriptions enable row level security;
 alter table reaction_types enable row level security;
 alter table reactions enable row level security;
+alter table tournament_reserved_players enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -251,6 +252,16 @@ create policy "reactions_insert" on reactions for insert to authenticated
   with check (from_profile_id = auth.uid());
 create policy "reactions_delete" on reactions for delete to authenticated
   using (from_profile_id = auth.uid() or public.is_organizer());
+
+-- tournament_reserved_players: leitura aberta (vira uma vitrine pública de
+-- quem já garantiu vaga no torneio); só organizador insere/apaga (finalizar
+-- um racha pré-torneio insere via SECURITY DEFINER da própria service role
+-- da action, que já roda como o organizador autenticado).
+create policy "tournament_reserved_players_select" on tournament_reserved_players for select to authenticated using (true);
+create policy "tournament_reserved_players_insert" on tournament_reserved_players for insert to authenticated
+  with check (public.is_organizer() and added_by = auth.uid());
+create policy "tournament_reserved_players_delete" on tournament_reserved_players for delete to authenticated
+  using (public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos

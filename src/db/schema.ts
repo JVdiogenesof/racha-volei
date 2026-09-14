@@ -133,6 +133,10 @@ export const events = pgTable("events", {
   // racha termina (sem votação, dois slots independentes).
   mvpProfileId: uuid("mvp_profile_id").references(() => profiles.id, { onDelete: "set null" }),
   mvpProfileId2: uuid("mvp_profile_id_2").references(() => profiles.id, { onDelete: "set null" }),
+  // Racha especial marcado pelo organizador: ao finalizar, o(s) time(s) com
+  // mais vitórias garantem vaga automática no próximo Torneio VPA (ver
+  // tournamentReservedPlayers).
+  isPreTorneio: boolean("is_pre_torneio").notNull().default(false),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -263,6 +267,20 @@ export const reactions = pgTable("reactions", {
   toProfileId: uuid("to_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   reactionTypeId: uuid("reaction_type_id").notNull().references(() => reactionTypes.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Quem já garantiu vaga no próximo Torneio VPA -- preenchido sozinho quando
+// um racha pré-torneio termina (time com mais vitórias) ou à mão por um
+// organizador. "Limpar lista" (ver /torneios-vpa) esvazia tudo pra começar
+// um novo ciclo de 45 dias.
+export const tournamentReservedPlayers = pgTable("tournament_reserved_players", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id, { onDelete: "cascade" }),
+  // Nulo quando adicionado manualmente por um organizador, em vez de vir de
+  // um racha pré-torneio.
+  sourceEventId: uuid("source_event_id").references(() => events.id, { onDelete: "set null" }),
+  addedBy: uuid("added_by").notNull().references(() => profiles.id),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const mvpVotes = pgTable(

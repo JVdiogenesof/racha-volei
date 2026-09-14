@@ -32,6 +32,7 @@ const APP_TABLES = [
   "push_subscriptions",
   "reaction_types",
   "reactions",
+  "tournament_reserved_players",
 ];
 
 function loadEnvLocal() {

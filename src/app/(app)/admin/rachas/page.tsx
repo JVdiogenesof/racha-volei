@@ -10,7 +10,9 @@ export default async function AdminRachasPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, num_teams, price_per_player, max_players, status, official_list_open")
+    .select(
+      "id, date, time, location, num_teams, price_per_player, max_players, status, official_list_open, is_pre_torneio",
+    )
     .order("date", { ascending: false });
 
   // Pré-preenche o formulário com os dados do último racha criado, só
