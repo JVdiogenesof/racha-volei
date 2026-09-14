@@ -5,15 +5,28 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
 
+const SLOT_COLUMN = { "1": "mvp_profile_id", "2": "mvp_profile_id_2" } as const;
+
 export async function setMvp(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
+  const slot = String(formData.get("slot") ?? "1") as "1" | "2";
+  const column = SLOT_COLUMN[slot];
 
-  const { data: event } = await supabase.from("events").select("status, date").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, date, mvp_profile_id, mvp_profile_id_2")
+    .eq("id", eventId)
+    .maybeSingle();
   if (event?.status !== "finished") {
     throw new Error("Só dá pra escolher o Jogador Destaque depois que o racha for finalizado.");
+  }
+
+  const otherSlotValue = slot === "1" ? event.mvp_profile_id_2 : event.mvp_profile_id;
+  if (otherSlotValue === profileId) {
+    throw new Error("Essa pessoa já foi escolhida como o outro Jogador Destaque desse racha.");
   }
 
   const { data: attendanceRows } = await supabase
@@ -25,7 +38,7 @@ export async function setMvp(formData: FormData) {
     throw new Error("O Jogador Destaque precisa ser alguém confirmado nesse racha.");
   }
 
-  const { error } = await supabase.from("events").update({ mvp_profile_id: profileId }).eq("id", eventId);
+  const { error } = await supabase.from("events").update({ [column]: profileId }).eq("id", eventId);
   if (error) throw new Error(error.message);
 
   const { data: destaqueProfile } = await supabase.from("profiles").select("full_name").eq("id", profileId).maybeSingle();
@@ -43,15 +56,19 @@ export async function setMvp(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/mvp`);
   revalidatePath("/ranking");
+  revalidatePath("/historico");
 }
 
 export async function clearMvp(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
+  const slot = String(formData.get("slot") ?? "1") as "1" | "2";
+  const column = SLOT_COLUMN[slot];
 
-  const { error } = await supabase.from("events").update({ mvp_profile_id: null }).eq("id", eventId);
+  const { error } = await supabase.from("events").update({ [column]: null }).eq("id", eventId);
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/mvp`);
   revalidatePath("/ranking");
+  revalidatePath("/historico");
 }

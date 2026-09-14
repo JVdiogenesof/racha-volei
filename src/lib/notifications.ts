@@ -36,7 +36,7 @@ export async function getNotifications(
       : Promise.resolve({ count: 0 }),
     supabase
       .from("events")
-      .select("id, date, status, official_list_open, mvp_profile_id")
+      .select("id, date, status, official_list_open, mvp_profile_id, mvp_profile_id_2")
       .gte("date", twoWeeksAgo)
       .order("date", { ascending: true }),
     supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
@@ -97,7 +97,7 @@ export async function getNotifications(
       });
     }
 
-    if (profile.is_organizer && event.status === "finished" && !event.mvp_profile_id) {
+    if (profile.is_organizer && event.status === "finished" && !event.mvp_profile_id && !event.mvp_profile_id_2) {
       items.push({
         id: `mvp-${event.id}`,
         type: "mvp",

@@ -1,4 +1,4 @@
-import { Phone, CheckCircle2, Circle, UserCheck } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, Circle, UserCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
@@ -25,7 +25,7 @@ export default async function AdminReservaPage() {
   const [{ data: rows }, { data: callableEvents }, { data: guestProfiles }] = await Promise.all([
     supabase
       .from("reserve_list")
-      .select("id, auth_user_id, full_name, phone, contacted, created_at")
+      .select("id, auth_user_id, full_name, phone, neighborhood, contacted, created_at")
       .order("created_at", { ascending: true }),
     supabase
       .from("events")
@@ -65,6 +65,12 @@ export default async function AdminReservaPage() {
                   <Phone className="h-3.5 w-3.5" strokeWidth={2} />
                   {r.phone}
                 </p>
+                {r.neighborhood && (
+                  <p className="mt-0.5 flex items-center gap-1.5 text-sm text-white/60">
+                    <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
+                    {r.neighborhood}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {guestEventId ? (

@@ -6,7 +6,7 @@ export async function getRankingCounts(supabase: SupabaseClient) {
   const [{ data: attendanceRows }, { data: mvpEvents }, { data: winRows }, { data: memberRows }, { data: adjustmentRows }] =
     await Promise.all([
       supabase.from("attendance").select("profile_id").eq("status", "confirmed"),
-      supabase.from("events").select("mvp_profile_id").not("mvp_profile_id", "is", null),
+      supabase.from("events").select("mvp_profile_id, mvp_profile_id_2"),
       supabase.from("match_wins").select("team_id"),
       supabase.from("team_members").select("team_id, profile_id"),
       supabase.from("ranking_adjustments").select("profile_id, metric, delta"),
@@ -19,8 +19,10 @@ export async function getRankingCounts(supabase: SupabaseClient) {
 
   const mvp = new Map<string, number>();
   for (const e of mvpEvents ?? []) {
-    if (!e.mvp_profile_id) continue;
-    mvp.set(e.mvp_profile_id, (mvp.get(e.mvp_profile_id) ?? 0) + 1);
+    for (const profileId of [e.mvp_profile_id, e.mvp_profile_id_2]) {
+      if (!profileId) continue;
+      mvp.set(profileId, (mvp.get(profileId) ?? 0) + 1);
+    }
   }
 
   const profileIdsByTeam = new Map<string, string[]>();

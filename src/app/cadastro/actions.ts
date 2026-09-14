@@ -76,13 +76,14 @@ export async function submitReserveSignup(formData: FormData) {
 
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const neighborhood = String(formData.get("neighborhood") ?? "").trim();
 
-  if (!fullName || !phone) {
-    throw new Error("Nome e telefone são obrigatórios.");
+  if (!fullName || !phone || !neighborhood) {
+    throw new Error("Nome, telefone e bairro são obrigatórios.");
   }
 
   const { error } = await supabase.from("reserve_list").upsert(
-    { auth_user_id: user.id, full_name: fullName, phone },
+    { auth_user_id: user.id, full_name: fullName, phone, neighborhood },
     { onConflict: "auth_user_id" },
   );
   if (error) throw new Error(error.message);

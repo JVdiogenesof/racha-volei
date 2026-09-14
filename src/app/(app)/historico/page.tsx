@@ -8,7 +8,9 @@ export default async function HistoricoPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, location, price_per_player, mvp_profile_id, profiles!events_mvp_profile_id_profiles_id_fk(full_name)")
+    .select(
+      "id, date, location, price_per_player, mvp_profile_id, mvp_profile_id_2, mvp1:profiles!events_mvp_profile_id_profiles_id_fk(full_name), mvp2:profiles!events_mvp_profile_id_2_profiles_id_fk(full_name)",
+    )
     .eq("status", "finished")
     .order("date", { ascending: false });
 
@@ -20,12 +22,14 @@ export default async function HistoricoPage() {
         .eq("event_id", event.id)
         .eq("status", "confirmed");
 
-      const mvp = (event.profiles as unknown as { full_name: string } | null)?.full_name ?? null;
+      const mvp1 = (event.mvp1 as unknown as { full_name: string } | null)?.full_name ?? null;
+      const mvp2 = (event.mvp2 as unknown as { full_name: string } | null)?.full_name ?? null;
+      const destaques = [mvp1, mvp2].filter((n): n is string => !!n);
 
       return {
         ...event,
         confirmedCount: confirmedCount ?? 0,
-        mvp,
+        destaques,
       };
     }),
   );
@@ -50,7 +54,9 @@ export default async function HistoricoPage() {
               <span className="text-xs text-white/40">{e.confirmedCount} jogadores</span>
             </div>
             <div className="mt-1 flex gap-4 text-xs text-white/60">
-              <span>Jogador Destaque: {e.mvp ?? "não escolhido"}</span>
+              <span>
+                {e.destaques.length ? `Destaque${e.destaques.length > 1 ? "s" : ""}: ${e.destaques.join(", ")}` : "Destaque: não escolhido"}
+              </span>
             </div>
           </Link>
         ))}

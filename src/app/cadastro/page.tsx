@@ -163,6 +163,19 @@ export default async function CadastroPage() {
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-white">Bairro</label>
+          <input
+            name="neighborhood"
+            required
+            placeholder="ex: Aldeota"
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+          />
+          <p className="mt-1 text-xs text-white/40">
+            Ajuda os organizadores a saber se dá pra te chamar rápido quando sobrar vaga.
+          </p>
+        </div>
+
         <button
           type="submit"
           className="w-full rounded-lg bg-brand-purple px-4 py-3 font-medium text-white transition hover:bg-brand-purple-dark"

@@ -14,7 +14,7 @@ export default async function ListaDeReservaPage() {
 
   const { data: entry } = await supabase
     .from("reserve_list")
-    .select("full_name, phone")
+    .select("full_name, phone, neighborhood")
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -29,8 +29,13 @@ export default async function ListaDeReservaPage() {
       </h1>
       <p className="mt-2 text-white/60">
         Você não faz parte do grupo fixo, mas ficou anotado(a) com o telefone{" "}
-        <strong className="text-white">{entry.phone}</strong>. Quando sobrar vaga de última
-        hora em algum racha, um organizador vai te chamar por lá.
+        <strong className="text-white">{entry.phone}</strong>
+        {entry.neighborhood ? (
+          <>
+            {" "}no bairro <strong className="text-white">{entry.neighborhood}</strong>
+          </>
+        ) : null}
+        . Quando sobrar vaga de última hora em algum racha, um organizador vai te chamar por lá.
       </p>
       <Link href="/cadastro" className="mt-6 text-sm font-medium text-purple-300 hover:underline">
         Editar meus dados

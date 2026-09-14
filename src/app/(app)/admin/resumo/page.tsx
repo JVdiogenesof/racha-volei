@@ -19,7 +19,7 @@ export default async function AdminResumoPage() {
   const [{ data: events }, { count: newMembersCount }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, mvp_profile_id")
+      .select("id, date, mvp_profile_id, mvp_profile_id_2")
       .gte("date", start)
       .lte("date", end)
       .order("date", { ascending: true }),
@@ -46,8 +46,10 @@ export default async function AdminResumoPage() {
 
   const destaqueByProfile = new Map<string, number>();
   for (const e of events ?? []) {
-    if (!e.mvp_profile_id) continue;
-    destaqueByProfile.set(e.mvp_profile_id, (destaqueByProfile.get(e.mvp_profile_id) ?? 0) + 1);
+    for (const profileId of [e.mvp_profile_id, e.mvp_profile_id_2]) {
+      if (!profileId) continue;
+      destaqueByProfile.set(profileId, (destaqueByProfile.get(profileId) ?? 0) + 1);
+    }
   }
 
   const totalConfirmados = [...confirmedByEvent.values()].reduce((sum, n) => sum + n, 0);

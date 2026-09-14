@@ -129,8 +129,10 @@ export const events = pgTable("events", {
   // rachas nascem em fase de interesse; o organizador monta a lista de
   // confirmados manualmente e só a publica quando estiver pronta.
   officialListOpen: boolean("official_list_open").notNull().default(true),
-  // MVP escolhido pelos organizadores depois que o racha termina (sem votação).
+  // Até dois "Jogadores Destaque" escolhidos pelos organizadores depois que o
+  // racha termina (sem votação, dois slots independentes).
   mvpProfileId: uuid("mvp_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  mvpProfileId2: uuid("mvp_profile_id_2").references(() => profiles.id, { onDelete: "set null" }),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -215,12 +217,14 @@ export const announcements = pgTable("announcements", {
 
 // Pessoas de fora do grupo fixo que topam ser chamadas quando sobra vaga
 // num racha. Fluxo separado do cadastro normal (sem aprovação, sem acesso
-// ao resto do site) -- só nome e telefone pros organizadores ligarem.
+// ao resto do site) -- nome, telefone e bairro (pra saber quem dá pra chamar
+// rápido numa emergência de última hora) pros organizadores ligarem.
 export const reserveList = pgTable("reserve_list", {
   id: uuid("id").primaryKey().defaultRandom(),
   authUserId: uuid("auth_user_id").notNull().unique(),
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
+  neighborhood: text("neighborhood"),
   contacted: boolean("contacted").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

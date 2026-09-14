@@ -27,7 +27,7 @@ export async function getPersonalEvolution(supabase: SupabaseClient, profileId: 
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, location, mvp_profile_id")
+    .select("id, date, location, mvp_profile_id, mvp_profile_id_2")
     .in("id", eventIds);
 
   const eventById = new Map((events ?? []).map((e) => [e.id, e]));
@@ -41,7 +41,7 @@ export async function getPersonalEvolution(supabase: SupabaseClient, profileId: 
         date: event.date,
         location: event.location,
         status: a.status as EvolutionEntry["status"],
-        wasDestaque: event.mvp_profile_id === profileId,
+        wasDestaque: event.mvp_profile_id === profileId || event.mvp_profile_id_2 === profileId,
         teamWins: 0,
       };
     })
