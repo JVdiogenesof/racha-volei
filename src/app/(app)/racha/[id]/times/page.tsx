@@ -14,6 +14,7 @@ import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
+import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import {
   generateTeams,
@@ -27,6 +28,7 @@ import {
   recordTournamentMatchScore,
   resetGroupStage,
   undoFinal,
+  simulateTeams,
 } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -210,6 +212,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
+      {profile.is_organizer && <SimulateTeamsButton eventId={id} action={simulateTeams} />}
+
       {generation && profile.is_organizer && orphanedMembers.length > 0 && (
         <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-300">
           {orphanedMembers.map((p) => `${p.fullName} (Time ${p.teamNumber})`).join(", ")}{" "}
@@ -230,7 +234,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
       {!generation && !event.official_list_open && (
         <p className="text-sm text-white/60">
-          Os times só podem ser gerados depois que a lista oficial do racha abrir.
+          Os times oficiais só podem ser gerados depois que a lista oficial do racha abrir
+          {profile.is_organizer ? ' — mas dá pra usar "Simular times" acima pra ter uma noção com quem já confirmou.' : "."}
         </p>
       )}
 

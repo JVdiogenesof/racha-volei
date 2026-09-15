@@ -116,6 +116,73 @@ export async function generateTeams(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export type SimulatedTeam = {
+  teamNumber: number;
+  sum: number;
+  members: { profileId: string; fullName: string; avatarUrl: string | null; overall: number; isSetter: boolean }[];
+};
+
+/**
+ * "E se a gente gerasse os times agora?" -- calcula o balanceamento com quem
+ * está confirmado nesse exato momento, sem gravar nada no banco (não cria
+ * team_generations/teams/team_members, não mexe no status do racha). Não
+ * exige lista oficial publicada nem racha iniciado -- é só uma prévia
+ * descartável pro organizador ter uma noção; fechar a prévia no navegador já
+ * "apaga" ela, porque nunca existiu de verdade em lugar nenhum.
+ */
+export async function simulateTeams(eventId: string): Promise<SimulatedTeam[]> {
+  await requireOrganizer();
+  const supabase = await createClient();
+
+  const { data: event } = await supabase.from("events").select("num_teams").eq("id", eventId).maybeSingle();
+  if (!event) throw new Error("Racha não encontrado.");
+
+  const { data: confirmed } = await supabase
+    .from("attendance")
+    .select("profile_id, profiles(full_name, avatar_url, is_setter)")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed");
+
+  if (!confirmed?.length) throw new Error("Nenhum jogador confirmado ainda pra simular.");
+
+  const [{ selfByProfile, organizerByProfile }, weights] = await Promise.all([
+    getAllRatings(supabase),
+    getRatingWeights(supabase),
+  ]);
+
+  const profileById = new Map(
+    confirmed.map((row) => [
+      row.profile_id,
+      row.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null,
+    ]),
+  );
+
+  const players: PlayerInput[] = confirmed.map((row) => {
+    const self = selfByProfile.get(row.profile_id) ?? {};
+    const organizer = organizerByProfile.get(row.profile_id) ?? {};
+    const scores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
+    const isSetter = profileById.get(row.profile_id)?.is_setter ?? false;
+    return { profileId: row.profile_id, overall: overallScore(scores), settingScore: scores.setting, isSetter };
+  });
+  const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
+
+  const result = balanceTeams(players, event.num_teams);
+
+  return result.map((t) => {
+    const members = t.memberProfileIds.map((profileId) => {
+      const p = profileById.get(profileId);
+      return {
+        profileId,
+        fullName: p?.full_name ?? "?",
+        avatarUrl: p?.avatar_url ?? null,
+        overall: overallByProfile.get(profileId) ?? 0,
+        isSetter: p?.is_setter ?? false,
+      };
+    });
+    return { teamNumber: t.teamNumber, sum: members.reduce((s, m) => s + m.overall, 0), members };
+  });
+}
+
 export async function addToTeam(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
