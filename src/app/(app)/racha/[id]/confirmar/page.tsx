@@ -129,7 +129,7 @@ export default async function ConfirmarPresencaPage({
             <Star className="h-4 w-4 text-purple-300" strokeWidth={2} />
             Quem já confirmou
           </h3>
-          <p className="mt-0.5 text-xs text-white/50">Alguns dos melhores já garantiram presença</p>
+          <p className="mt-0.5 text-xs text-white/50">Esses são alguns dos jogadores que já estão confirmados</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {highlights.topOverall.map((h) => (
               <div
@@ -137,13 +137,7 @@ export default async function ConfirmarPresencaPage({
                 className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
               >
                 <Avatar src={h.avatarUrl} name={h.fullName} size="sm" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">{h.fullName}</p>
-                  <p className="flex items-center gap-1 text-xs text-white/50">
-                    <Star className="h-3 w-3 fill-current" strokeWidth={0} />
-                    {h.overall.toFixed(1)}
-                  </p>
-                </div>
+                <p className="min-w-0 truncate text-sm font-medium text-white">{h.fullName}</p>
               </div>
             ))}
           </div>
@@ -158,13 +152,7 @@ export default async function ConfirmarPresencaPage({
                     className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2"
                   >
                     <Avatar src={h.avatarUrl} name={h.fullName} size="sm" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-white">{h.fullName}</p>
-                      <p className="flex items-center gap-1 text-xs text-white/50">
-                        <Star className="h-3 w-3 fill-current" strokeWidth={0} />
-                        {h.overall.toFixed(1)}
-                      </p>
-                    </div>
+                    <p className="min-w-0 truncate text-sm font-medium text-white">{h.fullName}</p>
                   </div>
                 ))}
               </div>
