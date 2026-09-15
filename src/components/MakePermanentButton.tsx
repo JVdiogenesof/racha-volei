@@ -24,7 +24,7 @@ export function MakePermanentButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          `Tornar ${fullName} um membro permanente do grupo?\n\nEla deixa de ter acesso só a esse racha e passa a ver o site igual todo mundo, precisando fazer a autoavaliação no próximo acesso.`,
+          `Tornar ${fullName} um membro permanente do grupo?\n\nEla deixa de ter acesso só a esse racha e passa a ver o site igual todo mundo.`,
         );
         if (!confirmed) return;
 

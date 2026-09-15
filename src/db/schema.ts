@@ -230,6 +230,16 @@ export const reserveList = pgTable("reserve_list", {
   phone: text("phone").notNull(),
   neighborhood: text("neighborhood"),
   contacted: boolean("contacted").notNull().default(false),
+  // Autoavaliação preenchida na hora da inscrição na reserva -- copiada pra
+  // self_ratings quando a pessoa ganha um perfil de verdade (convidada pra
+  // um racha ou promovida a permanente), já que ainda não existe profiles.id
+  // pra referenciar nesse momento.
+  selfAttack: numeric("self_attack", { precision: 3, scale: 2 }),
+  selfSetting: numeric("self_setting", { precision: 3, scale: 2 }),
+  selfServe: numeric("self_serve", { precision: 3, scale: 2 }),
+  selfReception: numeric("self_reception", { precision: 3, scale: 2 }),
+  selfDefense: numeric("self_defense", { precision: 3, scale: 2 }),
+  selfBlock: numeric("self_block", { precision: 3, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

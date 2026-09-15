@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 
 export type RankingEntry = {
@@ -25,8 +29,10 @@ export function Leaderboard({
   unit: string;
   ranking: RankingEntry[];
 }) {
+  const [showAll, setShowAll] = useState(false);
   const podium = ranking.slice(0, 3);
-  const rest = ranking.slice(3, 10);
+  const rest = showAll ? ranking.slice(3) : ranking.slice(3, 10);
+  const hasMore = ranking.length > 10;
   const podiumOrder = [podium[1], podium[0], podium[2]];
 
   return (
@@ -79,6 +85,26 @@ export function Leaderboard({
                 </li>
               ))}
             </ul>
+          )}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 py-2 text-sm font-medium text-white/70 hover:bg-white/5"
+            >
+              {showAll ? (
+                <>
+                  Ver menos
+                  <ChevronUp className="h-4 w-4" strokeWidth={2} />
+                </>
+              ) : (
+                <>
+                  Ver todo mundo ({ranking.length})
+                  <ChevronDown className="h-4 w-4" strokeWidth={2} />
+                </>
+              )}
+            </button>
           )}
         </>
       )}

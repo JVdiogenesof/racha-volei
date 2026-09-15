@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -10,6 +10,8 @@ import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { RemoveAttendanceButton } from "@/components/RemoveAttendanceButton";
 import { AddDirectToConfirmedForm } from "@/components/AddDirectToConfirmedForm";
+import { QuickInviteReserveForm } from "@/components/QuickInviteReserveForm";
+import { EndGuestAccessButton } from "@/components/EndGuestAccessButton";
 import { ShareWhatsAppButton } from "@/components/ShareWhatsAppButton";
 import { InterestButton } from "@/components/InterestButton";
 import { CancelAttendanceButton } from "@/components/CancelAttendanceButton";
@@ -18,6 +20,7 @@ import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
+import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -48,9 +51,18 @@ export default async function ConfirmarPresencaPage({
       getConfirmedHighlights(supabase, id),
     ]);
 
-  const { data: approvedProfiles } = profile.is_organizer
-    ? await supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name")
-    : { data: null };
+  const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
+    ? await Promise.all([
+        supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name"),
+        supabase.from("reserve_list").select("id, full_name").order("full_name"),
+        supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url, phone")
+          .eq("status", "guest")
+          .eq("guest_for_event_id", id)
+          .order("full_name"),
+      ])
+    : [{ data: null }, { data: null }, { data: null }];
 
   if (!event) notFound();
 
@@ -66,6 +78,8 @@ export default async function ConfirmarPresencaPage({
   const addDirectOptions = (approvedProfiles ?? [])
     .filter((p) => !confirmedIds.has(p.id))
     .map((p) => ({ id: p.id, fullName: p.full_name }));
+  const reserveOptions = (reserveEntries ?? []).map((p) => ({ id: p.id, fullName: p.full_name }));
+  const convidados = guestProfiles ?? [];
 
   function overallFor(profileId: string) {
     if (!ratingsData) return null;
@@ -246,6 +260,49 @@ export default async function ConfirmarPresencaPage({
 
       {profile.is_organizer && !eventFinished && !eventCancelled && (
         <AddDirectToConfirmedForm action={promoteToConfirmed} eventId={id} players={addDirectOptions} />
+      )}
+
+      {profile.is_organizer && !eventFinished && !eventCancelled && (
+        <QuickInviteReserveForm action={inviteToEvent} eventId={id} people={reserveOptions} />
+      )}
+
+      {profile.is_organizer && convidados.length > 0 && (
+        <section>
+          <h2 className="font-semibold text-white">Convidados ({convidados.length})</h2>
+          <p className="mt-1 text-xs text-white/40">
+            Chamados(as) da lista de reserva pra esse racha — ainda não estão na lista de confirmados.
+          </p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {convidados.map((g) => (
+              <li key={g.id} className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5">
+                <Avatar src={g.avatar_url} name={g.full_name} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-white">{g.full_name}</p>
+                  {g.phone && (
+                    <p className="mt-0.5 flex items-center gap-1 text-xs text-white/40">
+                      <Phone className="h-3 w-3" strokeWidth={2} />
+                      {g.phone}
+                    </p>
+                  )}
+                </div>
+                {!eventFinished && !eventCancelled && (
+                  <ActionForm action={promoteToConfirmed} successMessage={`${g.full_name} confirmado(a)!`}>
+                    <input type="hidden" name="eventId" value={id} />
+                    <input type="hidden" name="profileId" value={g.id} />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1 rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark"
+                    >
+                      <Check className="h-3 w-3" strokeWidth={2} />
+                      Confirmar
+                    </button>
+                  </ActionForm>
+                )}
+                <EndGuestAccessButton profileId={g.id} fullName={g.full_name} action={endGuestAccess} />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {canSeeConfirmados && (

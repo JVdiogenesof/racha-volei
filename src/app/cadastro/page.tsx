@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ATTENDANCE_FREQUENCY_OPTIONS } from "@/lib/attendanceFrequency";
+import { SKILL_CATEGORIES, SKILL_LABELS } from "@/lib/scoring";
+import { getPlayerRatings } from "@/lib/ratings";
+import { SkillSlider } from "@/components/SkillSlider";
 import { CadastroTabs } from "@/components/CadastroTabs";
 import { submitCadastro, submitReserveSignup } from "./actions";
 
@@ -23,6 +26,7 @@ export default async function CadastroPage() {
   const defaultName =
     profile?.full_name ?? (user.user_metadata?.full_name as string | undefined) ?? "";
   const alreadyApproved = profile?.status === "approved";
+  const { self: selfRatings } = await getPlayerRatings(supabase, user.id);
 
   const memberForm = (
     <>
@@ -126,6 +130,20 @@ export default async function CadastroPage() {
           Pretendo participar de torneios e amistosos
         </label>
 
+        <div className="space-y-4 border-t border-white/10 pt-5">
+          <div>
+            <p className="text-sm font-medium text-white">Sua autoavaliação</p>
+            <p className="mt-0.5 text-xs text-white/50">
+              Avalie seu próprio nível em cada habilidade (0 a 5). Isso ajuda a gerar times mais
+              equilibrados. Seja honesto — sua nota final também depende da avaliação dos
+              organizadores.
+            </p>
+          </div>
+          {SKILL_CATEGORIES.map((c) => (
+            <SkillSlider key={c} name={c} label={SKILL_LABELS[c]} defaultValue={selfRatings[c] ?? 2.5} />
+          ))}
+        </div>
+
         <button
           type="submit"
           className="w-full rounded-lg bg-brand-purple px-4 py-3 font-medium text-white transition hover:bg-brand-purple-dark"
@@ -174,6 +192,19 @@ export default async function CadastroPage() {
           <p className="mt-1 text-xs text-white/40">
             Ajuda os organizadores a saber se dá pra te chamar rápido quando sobrar vaga.
           </p>
+        </div>
+
+        <div className="space-y-4 border-t border-white/10 pt-5">
+          <div>
+            <p className="text-sm font-medium text-white">Sua autoavaliação</p>
+            <p className="mt-0.5 text-xs text-white/50">
+              Avalie seu próprio nível em cada habilidade (0 a 5). Ajuda os organizadores a montar
+              times equilibrados quando você for chamado(a).
+            </p>
+          </div>
+          {SKILL_CATEGORIES.map((c) => (
+            <SkillSlider key={c} name={c} label={SKILL_LABELS[c]} defaultValue={2.5} />
+          ))}
         </div>
 
         <button

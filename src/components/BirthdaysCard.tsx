@@ -7,6 +7,8 @@ const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "long" });
 export function BirthdaysCard({ profiles }: { profiles: BirthdayProfile[] }) {
   const entries = birthdaysThisMonth(profiles);
   const monthName = MONTH_LABEL.format(new Date());
+  const today = entries.filter((p) => p.isToday);
+  const restOfMonth = entries.filter((p) => !p.isToday);
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -17,9 +19,29 @@ export function BirthdaysCard({ profiles }: { profiles: BirthdayProfile[] }) {
         </h2>
       </div>
 
-      {entries.length ? (
+      {today.length > 0 && (
         <ul className="mt-4 space-y-3">
-          {entries.map((p) => (
+          {today.map((p) => (
+            <li
+              key={p.id}
+              className="flex items-center gap-3 rounded-xl border border-brand-purple/40 bg-gradient-to-r from-brand-purple/25 to-transparent px-3 py-3"
+            >
+              <Avatar src={p.avatar_url} name={p.full_name} size="lg" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-white">{p.full_name}</p>
+                <p className="flex items-center gap-1 text-xs font-medium text-purple-200">
+                  <PartyPopper className="h-3.5 w-3.5" strokeWidth={2} />
+                  Aniversário é hoje! 🎉
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {restOfMonth.length > 0 ? (
+        <ul className={`space-y-3 ${today.length > 0 ? "mt-3" : "mt-4"}`}>
+          {restOfMonth.map((p) => (
             <li key={p.id} className="flex items-center gap-3 text-sm">
               <Avatar src={p.avatar_url} name={p.full_name} size="sm" />
               <span className="flex-1 truncate text-white">{p.full_name}</span>
@@ -34,7 +56,7 @@ export function BirthdaysCard({ profiles }: { profiles: BirthdayProfile[] }) {
           ))}
         </ul>
       ) : (
-        <p className="mt-3 text-sm text-white/50">Ninguém faz aniversário esse mês.</p>
+        !today.length && <p className="mt-3 text-sm text-white/50">Ninguém faz aniversário esse mês.</p>
       )}
     </section>
   );

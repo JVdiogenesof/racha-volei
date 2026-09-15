@@ -11,6 +11,7 @@ export type BirthdayEntry = {
   avatar_url: string | null;
   day: number;
   isThisWeek: boolean;
+  isToday: boolean;
 };
 
 /**
@@ -45,5 +46,6 @@ export function birthdaysThisMonth(profiles: BirthdayProfile[], today = new Date
       avatar_url: p.avatar_url,
       day: p.day,
       isThisWeek: p.daysUntil <= 6,
+      isToday: p.daysUntil === 0,
     }));
 }

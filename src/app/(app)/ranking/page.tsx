@@ -42,16 +42,16 @@ export default async function RankingPage() {
         <p className="mt-1 text-sm text-white/60">Quem mais aparece e quem mais brilha nos rachas.</p>
       </div>
 
+      <Leaderboard title="Mais vitórias" icon={Crown} unit="vitórias" ranking={winsRanking} />
+
+      <Leaderboard title="Mais vezes Jogador Destaque" icon={Trophy} unit="vezes" ranking={mvpRanking} />
+
       <Leaderboard
         title="Mais presença"
         icon={CalendarCheck}
         unit="presenças"
         ranking={attendanceRanking}
       />
-
-      <Leaderboard title="Mais vezes Jogador Destaque" icon={Trophy} unit="vezes" ranking={mvpRanking} />
-
-      <Leaderboard title="Mais vitórias" icon={Crown} unit="vitórias" ranking={winsRanking} />
     </div>
   );
 }

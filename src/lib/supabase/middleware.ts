@@ -5,8 +5,6 @@ import { PROFILE_COLUMNS, USER_ID_HEADER, PROFILE_HEADER } from "./session-heade
 const PUBLIC_PATHS = ["/login", "/auth/callback", "/privacidade"];
 const ONBOARDING_PATHS = ["/cadastro", "/aguardando-aprovacao"];
 const RESERVE_PATH = "/lista-de-reserva";
-const SELF_RATING_PATH = "/autoavaliacao";
-const HAS_SELF_RATING_COOKIE = "has_self_rating";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -159,38 +157,6 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
-    }
-
-    const isSelfRatingPath = pathname.startsWith(SELF_RATING_PATH);
-
-    if (profile?.status === "approved") {
-      // Uma vez preenchida, a autoavaliação nunca deixa de existir — então dá
-      // pra guardar isso num cookie e parar de bater no banco a cada
-      // navegação só pra confirmar de novo o que já sabíamos.
-      let hasSelfRating = request.cookies.get(HAS_SELF_RATING_COOKIE)?.value === "1";
-
-      if (!hasSelfRating) {
-        const { count } = await supabase
-          .from("self_ratings")
-          .select("id", { count: "exact", head: true })
-          .eq("profile_id", user.id);
-        hasSelfRating = (count ?? 0) > 0;
-        if (hasSelfRating) {
-          response.cookies.set(HAS_SELF_RATING_COOKIE, "1", { maxAge: 60 * 60 * 24 * 365, path: "/" });
-        }
-      }
-
-      if (!hasSelfRating && !isSelfRatingPath) {
-        const url = request.nextUrl.clone();
-        url.pathname = SELF_RATING_PATH;
-        return NextResponse.redirect(url);
-      }
-
-      if (hasSelfRating && isSelfRatingPath) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/";
-        return NextResponse.redirect(url);
-      }
     }
   }
 

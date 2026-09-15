@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sendPushToProfiles } from "@/lib/push";
+import { SKILL_CATEGORIES } from "@/lib/scoring";
 
 export async function submitCadastro(formData: FormData) {
   const supabase = await createClient();
@@ -47,6 +48,16 @@ export async function submitCadastro(formData: FormData) {
   );
   if (error) throw new Error(error.message);
 
+  const ratingRows = SKILL_CATEGORIES.map((category) => ({
+    profile_id: user.id,
+    category,
+    value: Number(formData.get(category) ?? 2.5),
+  }));
+  const { error: ratingsError } = await supabase
+    .from("self_ratings")
+    .upsert(ratingRows, { onConflict: "profile_id,category" });
+  if (ratingsError) throw new Error(ratingsError.message);
+
   // Quem já é aprovado (ex: convidado promovido a membro permanente que só
   // faltava completar esses dados) não deve ver a tela de "aguardando
   // aprovação" de novo — vai direto pro site.
@@ -82,8 +93,23 @@ export async function submitReserveSignup(formData: FormData) {
     throw new Error("Nome, telefone e bairro são obrigatórios.");
   }
 
+  const ratingByCategory = Object.fromEntries(
+    SKILL_CATEGORIES.map((category) => [category, Number(formData.get(category) ?? 2.5)]),
+  );
+
   const { error } = await supabase.from("reserve_list").upsert(
-    { auth_user_id: user.id, full_name: fullName, phone, neighborhood },
+    {
+      auth_user_id: user.id,
+      full_name: fullName,
+      phone,
+      neighborhood,
+      self_attack: ratingByCategory.attack,
+      self_setting: ratingByCategory.setting,
+      self_serve: ratingByCategory.serve,
+      self_reception: ratingByCategory.reception,
+      self_defense: ratingByCategory.defense,
+      self_block: ratingByCategory.block,
+    },
     { onConflict: "auth_user_id" },
   );
   if (error) throw new Error(error.message);

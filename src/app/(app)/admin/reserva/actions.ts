@@ -1,8 +1,42 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { SKILL_CATEGORIES } from "@/lib/scoring";
+
+type ReserveRatings = {
+  self_attack: number | string | null;
+  self_setting: number | string | null;
+  self_serve: number | string | null;
+  self_reception: number | string | null;
+  self_defense: number | string | null;
+  self_block: number | string | null;
+};
+
+/**
+ * Copia a autoavaliação preenchida na inscrição da reserva pra self_ratings
+ * assim que a pessoa ganha uma linha de verdade em profiles (convidada pra
+ * um racha ou promovida a permanente) -- antes disso não tinha profile_id
+ * pra guardar em self_ratings.
+ */
+async function copyReserveRatingsToProfile(supabase: SupabaseClient, profileId: string, entry: ReserveRatings) {
+  const columnByCategory: Record<(typeof SKILL_CATEGORIES)[number], number | string | null> = {
+    attack: entry.self_attack,
+    setting: entry.self_setting,
+    serve: entry.self_serve,
+    reception: entry.self_reception,
+    defense: entry.self_defense,
+    block: entry.self_block,
+  };
+  const rows = SKILL_CATEGORIES.map((category) => ({
+    profile_id: profileId,
+    category,
+    value: Number(columnByCategory[category] ?? 2.5),
+  }));
+  await supabase.from("self_ratings").upsert(rows, { onConflict: "profile_id,category" });
+}
 
 export async function toggleContacted(formData: FormData) {
   await requireOrganizer();
@@ -37,7 +71,7 @@ export async function inviteToEvent(formData: FormData) {
 
   const { data: entry } = await supabase
     .from("reserve_list")
-    .select("auth_user_id, full_name, phone")
+    .select("auth_user_id, full_name, phone, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
     .eq("id", reserveEntryId)
     .maybeSingle();
   if (!entry) throw new Error("Pessoa não encontrada na lista de reserva.");
@@ -54,8 +88,10 @@ export async function inviteToEvent(formData: FormData) {
     { onConflict: "id" },
   );
   if (error) throw new Error(error.message);
+  await copyReserveRatingsToProfile(supabase, entry.auth_user_id, entry);
 
   revalidatePath("/admin/reserva");
+  revalidatePath(`/racha/${eventId}/confirmar`);
 }
 
 export async function promoteReserveToMember(formData: FormData) {
@@ -65,7 +101,7 @@ export async function promoteReserveToMember(formData: FormData) {
 
   const { data: entry } = await supabase
     .from("reserve_list")
-    .select("auth_user_id, full_name, phone")
+    .select("auth_user_id, full_name, phone, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
     .eq("id", reserveEntryId)
     .maybeSingle();
   if (!entry) throw new Error("Pessoa não encontrada na lista de reserva.");
@@ -93,6 +129,7 @@ export async function promoteReserveToMember(formData: FormData) {
     .eq("id", entry.auth_user_id)
     .eq("status", "guest");
   if (promoteError) throw new Error(promoteError.message);
+  await copyReserveRatingsToProfile(supabase, entry.auth_user_id, entry);
 
   await supabase.from("reserve_list").delete().eq("id", reserveEntryId);
 
@@ -108,8 +145,9 @@ export async function makeGuestPermanent(formData: FormData) {
   const profileId = String(formData.get("profileId"));
 
   // Vira membro de verdade: sai do modo "só esse racha" e entra igual todo
-  // mundo (vai precisar preencher a autoavaliação no próximo acesso, do
-  // mesmo jeito que qualquer aprovado sem nota ainda).
+  // mundo. A autoavaliação já veio da inscrição na reserva (copiada em
+  // inviteToEvent) -- só falta completar aniversário/telefone/posição, que o
+  // middleware já resolve mandando pra /cadastro sozinho.
   const { error } = await supabase
     .from("profiles")
     .update({ status: "approved", guest_for_event_id: null, approved_by: organizer.id })
