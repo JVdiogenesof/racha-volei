@@ -352,7 +352,7 @@ export async function recordTournamentMatchScore(formData: FormData) {
 
   const { data: match, error: matchError } = await supabase
     .from("tournament_matches")
-    .select("id, stage")
+    .select("id, stage, team_a_id, team_b_id")
     .eq("id", matchId)
     .maybeSingle();
   if (matchError) throw new Error(matchError.message);
@@ -364,6 +364,16 @@ export async function recordTournamentMatchScore(formData: FormData) {
     .eq("id", matchId);
   if (error) throw new Error(error.message);
 
+  // Cada confronto vencido conta pro ranking de vitórias igual um racha
+  // normal (recordMatchWin manual) -- apaga o que já tinha sido creditado
+  // aqui antes, cobrindo o caso de corrigir um placar já lançado.
+  await supabase.from("match_wins").delete().eq("match_id", matchId);
+  const winnerTeamId = scoreA > scoreB ? match.team_a_id : match.team_b_id;
+  const { error: winError } = await supabase
+    .from("match_wins")
+    .insert({ event_id: eventId, team_id: winnerTeamId, recorded_by: organizer.id, match_id: matchId });
+  if (winError) throw new Error(winError.message);
+
   if (match.stage === "group") {
     await maybeCreateFinal(supabase, eventId);
   } else if (match.stage === "final") {
@@ -372,6 +382,7 @@ export async function recordTournamentMatchScore(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath("/ranking");
 }
 
 /**
@@ -408,6 +419,7 @@ export async function resetGroupStage(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath("/ranking");
 }
 
 /**
@@ -442,4 +454,5 @@ export async function undoFinal(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath("/ranking");
 }

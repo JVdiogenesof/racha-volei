@@ -199,6 +199,10 @@ export const matchWins = pgTable("match_wins", {
   teamId: uuid("team_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
   recordedBy: uuid("recorded_by").notNull().references(() => profiles.id),
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  // Só preenchido quando a vitória vem de um confronto estruturado de racha
+  // pré-torneio (grupo/final/3º lugar) -- deixa corrigir/desfazer o placar
+  // sem duplicar ou deixar vitória errada presa no ranking.
+  matchId: uuid("match_id").references(() => tournamentMatches.id, { onDelete: "cascade" }),
 });
 
 export const tournamentMatchStageEnum = pgEnum("tournament_match_stage", ["group", "final", "third_place"]);
