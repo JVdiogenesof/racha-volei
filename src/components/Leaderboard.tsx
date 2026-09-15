@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 
@@ -20,12 +19,12 @@ const MEDAL_BADGE = [
 
 export function Leaderboard({
   title,
-  icon: Icon,
+  icon,
   unit,
   ranking,
 }: {
   title: string;
-  icon: LucideIcon;
+  icon: ReactNode;
   unit: string;
   ranking: RankingEntry[];
 }) {
@@ -38,7 +37,7 @@ export function Leaderboard({
   return (
     <section className="rounded-xl border border-white/10 p-6">
       <div className="flex items-center gap-2 text-white">
-        <Icon className="h-5 w-5 text-purple-300" strokeWidth={2} />
+        {icon}
         <h2 className="font-semibold">{title}</h2>
       </div>
 
