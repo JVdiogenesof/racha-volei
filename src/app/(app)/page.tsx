@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
+import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { ReactionsReceivedCard } from "@/components/ReactionsReceivedCard";
@@ -37,23 +38,56 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }] = await Promise.all([
-    supabase
-      .from("events")
-      .select("id, date, time, location, status, official_list_open, price_per_player, max_players")
-      .gte("date", today)
-      .neq("status", "finished")
-      .neq("status", "cancelled")
-      .order("date", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("announcements")
-      .select("id, title, body, image_url, created_at, profiles(full_name)")
-      .order("created_at", { ascending: false })
-      .limit(1),
-    supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
-  ]);
+  const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("id, date, time, location, status, official_list_open, price_per_player, max_players")
+        .gte("date", today)
+        .neq("status", "finished")
+        .neq("status", "cancelled")
+        .order("date", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("announcements")
+        .select("id, title, body, image_url, created_at, profiles(full_name)")
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
+      // Card do time campeão do pré-torneio -- some sozinho 48h depois da
+      // final ser decidida (ver hoursAgoIso acima).
+      supabase
+        .from("tournament_matches")
+        .select("team_a_id, team_b_id, score_a, score_b, events(date)")
+        .eq("stage", "final")
+        .not("score_a", "is", null)
+        .not("score_b", "is", null)
+        .gte("played_at", hoursAgoIso(48))
+        .order("played_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+  let recentChampion: { eventDateLabel: string; teamNumber: number; players: { fullName: string; avatarUrl: string | null }[] } | null = null;
+  if (recentFinal) {
+    const championTeamId = recentFinal.score_a! > recentFinal.score_b! ? recentFinal.team_a_id : recentFinal.team_b_id;
+    const [{ data: championTeam }, { data: memberRows }] = await Promise.all([
+      supabase.from("teams").select("team_number").eq("id", championTeamId).maybeSingle(),
+      supabase.from("team_members").select("profiles(full_name, avatar_url)").eq("team_id", championTeamId),
+    ]);
+    const event = recentFinal.events as unknown as { date: string } | null;
+    if (championTeam && event) {
+      recentChampion = {
+        eventDateLabel: new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR"),
+        teamNumber: championTeam.team_number,
+        players: (memberRows ?? []).map((m) => {
+          const p = m.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+          return { fullName: p?.full_name ?? "?", avatarUrl: p?.avatar_url ?? null };
+        }),
+      };
+    }
+  }
 
   const { data: receivedReactionRows } = await supabase
     .from("reactions")
@@ -250,6 +284,14 @@ export default async function HomePage() {
           <p className="mt-4 border-t border-white/10 pt-4 text-sm text-white/50">Nenhum racha marcado ainda.</p>
         )}
       </section>
+
+      {recentChampion && (
+        <RecentTournamentChampionCard
+          eventDateLabel={recentChampion.eventDateLabel}
+          teamNumber={recentChampion.teamNumber}
+          players={recentChampion.players}
+        />
+      )}
 
       {(receivedReactions.length > 0 || !profile.nickname_badge) && (
         <div className="grid gap-3 sm:grid-cols-2">
