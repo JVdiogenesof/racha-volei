@@ -2,7 +2,8 @@
 
 Site para organizar o racha de vôlei: cadastro com aprovação, autoavaliação de
 habilidade, geração automática de times balanceados, confirmação de presença,
-controle de pagamento, avisos e votação de MVP.
+controle de pagamento, avisos, ranking, Jogador Destaque e reserva de vaga
+pro Torneio VPA.
 
 Stack: Next.js (App Router) + TypeScript + Tailwind + Supabase (auth, banco de
 dados e storage) + Drizzle (schema do banco).
