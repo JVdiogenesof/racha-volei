@@ -69,11 +69,10 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     }[];
   }[] = [];
 
-  let groupMatches: { id: string; teamAId: string; teamBId: string; scoreA: number | null; scoreB: number | null }[] =
-    [];
-  let finalMatch:
-    | { id: string; teamAId: string; teamBId: string; scoreA: number | null; scoreB: number | null }
-    | null = null;
+  type MatchLite = { id: string; teamAId: string; teamBId: string; scoreA: number | null; scoreB: number | null };
+  let groupMatches: MatchLite[] = [];
+  let finalMatch: MatchLite | null = null;
+  let thirdPlaceMatch: MatchLite | null = null;
   let standings: ReturnType<typeof computeStandings> = [];
 
   if (generation) {
@@ -142,6 +141,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       });
       groupMatches = (matchRows ?? []).filter((m) => m.stage === "group").map(toMatch);
       finalMatch = (matchRows ?? []).filter((m) => m.stage === "final").map(toMatch)[0] ?? null;
+      thirdPlaceMatch = (matchRows ?? []).filter((m) => m.stage === "third_place").map(toMatch)[0] ?? null;
 
       standings = computeStandings(
         teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber })),
@@ -416,6 +416,37 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"}
                     scoreA={finalMatch.scoreA}
                     scoreB={finalMatch.scoreB}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+
+          {thirdPlaceMatch && (
+            <section className="rounded-xl border border-white/10 p-4">
+              <h2 className="font-semibold text-white">Disputa de 3º lugar</h2>
+              <p className="mt-0.5 text-xs text-white/40">Opcional — só se der tempo depois da final.</p>
+
+              {thirdPlaceMatch.scoreA != null && thirdPlaceMatch.scoreB != null && (
+                <p className="mt-2 text-sm text-white/70">
+                  🥉{" "}
+                  {thirdPlaceMatch.scoreA > thirdPlaceMatch.scoreB
+                    ? teamLabelById.get(thirdPlaceMatch.teamAId)
+                    : teamLabelById.get(thirdPlaceMatch.teamBId)}{" "}
+                  ficou em 3º lugar.
+                </p>
+              )}
+
+              {profile.is_organizer && (
+                <div className="mt-3">
+                  <TournamentMatchScoreForm
+                    action={recordTournamentMatchScore}
+                    eventId={id}
+                    matchId={thirdPlaceMatch.id}
+                    teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"}
+                    teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"}
+                    scoreA={thirdPlaceMatch.scoreA}
+                    scoreB={thirdPlaceMatch.scoreB}
                   />
                 </div>
               )}

@@ -250,8 +250,11 @@ export async function undoLastMatchWin(formData: FormData) {
 
 /**
  * Depois que todo mundo jogou a fase de grupos (todos os confrontos "group"
- * com placar), calcula a classificação e cria o confronto da final com o
- * 1º e o 2º colocado -- só se a final ainda não existir.
+ * com placar), calcula a classificação e cria o confronto da final (1º x 2º
+ * colocado) e, se tiver 4 times ou mais, a disputa de 3º lugar (3º x 4º) --
+ * cada um só se ainda não existir. A disputa de 3º lugar é opcional pro
+ * organizador jogar ("se der tempo"), então não bloqueia nada se ficar sem
+ * placar.
  */
 async function maybeCreateFinal(supabase: SupabaseClient, eventId: string) {
   const { data: groupMatches } = await supabase
@@ -262,26 +265,33 @@ async function maybeCreateFinal(supabase: SupabaseClient, eventId: string) {
   if (!groupMatches?.length) return;
   if (!groupMatches.every((m) => m.score_a != null && m.score_b != null)) return;
 
-  const { data: existingFinal } = await supabase
-    .from("tournament_matches")
-    .select("id")
-    .eq("event_id", eventId)
-    .eq("stage", "final")
-    .maybeSingle();
-  if (existingFinal) return;
-
   const teamIds = [...new Set(groupMatches.flatMap((m) => [m.team_a_id, m.team_b_id]))];
   const { data: teamRows } = await supabase.from("teams").select("id, team_number").in("id", teamIds);
   const standings = computeStandings(
     (teamRows ?? []).map((t) => ({ id: t.id, teamNumber: t.team_number })),
     groupMatches.map((m) => ({ teamAId: m.team_a_id, teamBId: m.team_b_id, scoreA: m.score_a, scoreB: m.score_b })),
   );
-  const [first, second] = standings;
+  const [first, second, third, fourth] = standings;
   if (!first || !second) return;
 
-  const { error } = await supabase
+  const { data: existingRows } = await supabase
     .from("tournament_matches")
-    .insert({ event_id: eventId, team_a_id: first.teamId, team_b_id: second.teamId, stage: "final" });
+    .select("stage")
+    .eq("event_id", eventId)
+    .in("stage", ["final", "third_place"]);
+  const hasFinal = (existingRows ?? []).some((m) => m.stage === "final");
+  const hasThirdPlace = (existingRows ?? []).some((m) => m.stage === "third_place");
+
+  const toInsert: { event_id: string; team_a_id: string; team_b_id: string; stage: "final" | "third_place" }[] = [];
+  if (!hasFinal) {
+    toInsert.push({ event_id: eventId, team_a_id: first.teamId, team_b_id: second.teamId, stage: "final" });
+  }
+  if (!hasThirdPlace && third && fourth) {
+    toInsert.push({ event_id: eventId, team_a_id: third.teamId, team_b_id: fourth.teamId, stage: "third_place" });
+  }
+  if (!toInsert.length) return;
+
+  const { error } = await supabase.from("tournament_matches").insert(toInsert);
   if (error) throw new Error(error.message);
 }
 
@@ -356,7 +366,7 @@ export async function recordTournamentMatchScore(formData: FormData) {
 
   if (match.stage === "group") {
     await maybeCreateFinal(supabase, eventId);
-  } else {
+  } else if (match.stage === "final") {
     await reserveChampionTeam(supabase, eventId, matchId, organizer.id);
   }
 
@@ -401,10 +411,11 @@ export async function resetGroupStage(formData: FormData) {
 }
 
 /**
- * Desfaz só a final (mantém os placares de grupo). Se ela já tinha placar,
- * desfaz também a reserva de vaga que veio desse racha -- reserva manual ou
- * vinda de outro pré-torneio não é tocada. Na próxima vez que um placar de
- * grupo for salvo, maybeCreateFinal recria a final com o 1º/2º corretos.
+ * Desfaz a final e a disputa de 3º lugar (mantém os placares de grupo). Se a
+ * final já tinha placar, desfaz também a reserva de vaga que veio desse
+ * racha -- reserva manual ou vinda de outro pré-torneio não é tocada. Na
+ * próxima vez que um placar de grupo for salvo, maybeCreateFinal recria os
+ * dois confrontos com a classificação corrigida.
  */
 export async function undoFinal(formData: FormData) {
   await requireOrganizer();
@@ -417,13 +428,16 @@ export async function undoFinal(formData: FormData) {
     .eq("event_id", eventId)
     .eq("stage", "final")
     .maybeSingle();
-  if (!final) return;
 
-  if (final.score_a != null && final.score_b != null) {
+  if (final?.score_a != null && final?.score_b != null) {
     await supabase.from("tournament_reserved_players").delete().eq("source_event_id", eventId);
   }
 
-  const { error } = await supabase.from("tournament_matches").delete().eq("id", final.id);
+  const { error } = await supabase
+    .from("tournament_matches")
+    .delete()
+    .eq("event_id", eventId)
+    .in("stage", ["final", "third_place"]);
   if (error) throw new Error(error.message);
 
   revalidatePath(`/racha/${eventId}/times`);

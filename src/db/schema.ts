@@ -201,7 +201,7 @@ export const matchWins = pgTable("match_wins", {
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const tournamentMatchStageEnum = pgEnum("tournament_match_stage", ["group", "final"]);
+export const tournamentMatchStageEnum = pgEnum("tournament_match_stage", ["group", "final", "third_place"]);
 
 // Confrontos da fase de grupos (todos contra todos) e da final de um racha
 // pré-torneio -- placar nulo até o organizador lançar o resultado. Só usada

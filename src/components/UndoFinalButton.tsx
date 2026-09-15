@@ -22,7 +22,7 @@ export function UndoFinalButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          "Desfazer a final? Os placares de grupo continuam intactos. Se a final já tinha resultado, as vagas do Torneio VPA reservadas a partir desse racha também são desfeitas.",
+          "Desfazer a final e a disputa de 3º lugar? Os placares de grupo continuam intactos. Se a final já tinha resultado, as vagas do Torneio VPA reservadas a partir desse racha também são desfeitas.",
         );
         if (!confirmed) return;
 
@@ -31,7 +31,7 @@ export function UndoFinalButton({
         startTransition(async () => {
           try {
             await action(formData);
-            showToast("Final desfeita.");
+            showToast("Final e disputa de 3º lugar desfeitas.");
             router.refresh();
           } catch (err) {
             showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
