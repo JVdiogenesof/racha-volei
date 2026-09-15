@@ -92,10 +92,12 @@ export default async function HomePage() {
     proximoRacha?.max_players != null && (confirmedCount ?? 0) >= proximoRacha.max_players;
 
   const eventIdForPanel = proximoRacha?.id ?? "";
-  // O aviso de cancelamento é só pra quem desistiu em cima da hora (dia do racha
-  // ou véspera) -- por isso a janela conta pra trás a partir da data/horário do
-  // racha, não a partir de agora, senão alguém que cancela com semanas de
-  // antecedência dispara o aviso do mesmo jeito.
+  // O aviso de cancelamento é só pra quem já estava confirmado e saiu da lista
+  // em cima da hora (dia do racha ou véspera) -- por isso a janela conta pra
+  // trás a partir da data/horário do racha, não a partir de agora, senão
+  // alguém que cancela com semanas de antecedência dispara o aviso do mesmo
+  // jeito. Marcar "não vou" sem nunca ter confirmado não é "cancelamento" (ver
+  // cancelled_at em setAttendance).
   const declineWindowStart = proximoRacha
     ? new Date(
         new Date(`${proximoRacha.date}T${proximoRacha.time ?? "00:00"}`).getTime() - 48 * 60 * 60 * 1000,
@@ -116,7 +118,8 @@ export default async function HomePage() {
             .select("profile_id, profiles(full_name)")
             .eq("event_id", eventIdForPanel)
             .eq("status", "declined")
-            .gte("confirmed_at", declineWindowStart),
+            .not("cancelled_at", "is", null)
+            .gte("cancelled_at", declineWindowStart),
         ])
       : [{ count: 0 }, { count: 0 }, { count: 0 }, { data: [] }];
 

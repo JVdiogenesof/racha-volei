@@ -24,12 +24,29 @@ export async function setAttendance(formData: FormData) {
     throw new Error("Esse racha foi cancelado, não dá mais pra responder.");
   }
 
+  const { data: previous } = await supabase
+    .from("attendance")
+    .select("status, cancelled_at")
+    .eq("event_id", eventId)
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+
+  // Só é "cancelamento" de verdade quem tava confirmado e saiu da lista --
+  // marcar "não vou" sem nunca ter confirmado é resposta normal, não alarme.
+  const wasConfirmedCancel = previous?.status === "confirmed" && status === "declined";
+  const cancelledAt = wasConfirmedCancel
+    ? new Date().toISOString()
+    : status === "interested"
+      ? null
+      : (previous?.cancelled_at ?? null);
+
   const { error } = await supabase.from("attendance").upsert(
     {
       event_id: eventId,
       profile_id: profile.id,
       status,
       confirmed_at: new Date().toISOString(),
+      cancelled_at: cancelledAt,
     },
     { onConflict: "event_id,profile_id" },
   );
@@ -57,6 +74,7 @@ export async function promoteToConfirmed(formData: FormData) {
       profile_id: profileId,
       status: "confirmed",
       confirmed_at: new Date().toISOString(),
+      cancelled_at: null,
     },
     { onConflict: "event_id,profile_id" },
   );

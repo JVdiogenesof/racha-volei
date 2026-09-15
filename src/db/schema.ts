@@ -149,6 +149,10 @@ export const attendance = pgTable(
     profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     status: attendanceStatusEnum("status").notNull(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }).notNull().defaultNow(),
+    // Só preenchido quando a pessoa estava confirmada e saiu da lista -- marcar
+    // "não vou" sem nunca ter confirmado não conta como cancelamento pro aviso
+    // do organizador.
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
   },
   (t) => [unique().on(t.eventId, t.profileId)],
 );
