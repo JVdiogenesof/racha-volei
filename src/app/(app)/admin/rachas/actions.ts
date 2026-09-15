@@ -56,6 +56,7 @@ export async function createEvent(formData: FormData) {
 
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
+  revalidatePath("/");
   redirect(`/racha/${data.id}?criado=1`);
 }
 
@@ -95,6 +96,7 @@ export async function updateEvent(formData: FormData) {
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
 }
 
 export async function markAsPreTorneio(formData: FormData) {
@@ -110,6 +112,7 @@ export async function markAsPreTorneio(formData: FormData) {
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
 }
 
 export async function cancelEvent(formData: FormData) {
@@ -123,6 +126,7 @@ export async function cancelEvent(formData: FormData) {
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
   revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
 }
 
 export async function deleteEvent(formData: FormData) {
@@ -135,4 +139,5 @@ export async function deleteEvent(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
+  revalidatePath("/");
 }
