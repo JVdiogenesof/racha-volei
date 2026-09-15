@@ -4,12 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
+import { computeStandings } from "@/lib/torneioStandings";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
 import { AddToTeamSelect } from "@/components/AddToTeamSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { Avatar } from "@/components/Avatar";
 import { MatchWinButton } from "@/components/MatchWinButton";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
+import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
+import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
+import { UndoFinalButton } from "@/components/UndoFinalButton";
 import { ActionForm } from "@/components/ActionForm";
 import {
   generateTeams,
@@ -20,6 +24,9 @@ import {
   removeFromTeam,
   recordMatchWin,
   undoLastMatchWin,
+  recordTournamentMatchScore,
+  resetGroupStage,
+  undoFinal,
 } from "./actions";
 
 export default async function TimesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +35,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const supabase = await createClient();
 
   const [{ data: event }, { data: generation }, { data: confirmedAttendance }] = await Promise.all([
-    supabase.from("events").select("id, date, num_teams, official_list_open").eq("id", id).maybeSingle(),
+    supabase
+      .from("events")
+      .select("id, date, num_teams, official_list_open, is_pre_torneio")
+      .eq("id", id)
+      .maybeSingle(),
     supabase
       .from("team_generations")
       .select("id, generated_at")
@@ -57,6 +68,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       isSetter: boolean;
     }[];
   }[] = [];
+
+  let groupMatches: { id: string; teamAId: string; teamBId: string; scoreA: number | null; scoreB: number | null }[] =
+    [];
+  let finalMatch:
+    | { id: string; teamAId: string; teamBId: string; scoreA: number | null; scoreB: number | null }
+    | null = null;
+  let standings: ReturnType<typeof computeStandings> = [];
 
   if (generation) {
     const { data: teamRows } = await supabase
@@ -108,7 +126,31 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           };
         }),
     }));
+
+    if (event.is_pre_torneio) {
+      const { data: matchRows } = await supabase
+        .from("tournament_matches")
+        .select("id, stage, team_a_id, team_b_id, score_a, score_b")
+        .eq("event_id", id);
+
+      const toMatch = (m: NonNullable<typeof matchRows>[number]) => ({
+        id: m.id,
+        teamAId: m.team_a_id,
+        teamBId: m.team_b_id,
+        scoreA: m.score_a,
+        scoreB: m.score_b,
+      });
+      groupMatches = (matchRows ?? []).filter((m) => m.stage === "group").map(toMatch);
+      finalMatch = (matchRows ?? []).filter((m) => m.stage === "final").map(toMatch)[0] ?? null;
+
+      standings = computeStandings(
+        teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber })),
+        groupMatches,
+      );
+    }
   }
+
+  const teamLabelById = new Map(teams.map((t) => [t.id, `Time ${t.teamNumber}`]));
 
   const eventDateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
   const allMembersFlat = teams.flatMap((t) =>
@@ -208,35 +250,37 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 <span className="text-xs text-white/40">soma: {sum.toFixed(1)}</span>
               </div>
 
-              <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
-                <Trophy className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
-                <span className="text-sm font-medium text-white">
-                  {team.wins} {team.wins === 1 ? "vitória" : "vitórias"}
-                </span>
-                {profile.is_organizer && (
-                  <div className="ml-auto flex items-center gap-1.5">
-                    {team.wins > 0 && (
-                      <ActionForm action={undoLastMatchWin} successMessage="Vitória desfeita.">
-                        <input type="hidden" name="eventId" value={id} />
-                        <input type="hidden" name="teamId" value={team.id} />
-                        <button
-                          type="submit"
-                          aria-label="Desfazer última vitória"
-                          className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
-                        >
-                          <Undo2 className="h-3.5 w-3.5" strokeWidth={2} />
-                        </button>
-                      </ActionForm>
-                    )}
-                    <MatchWinButton
-                      action={recordMatchWin}
-                      eventId={id}
-                      teamId={team.id}
-                      teamNumber={team.teamNumber}
-                    />
-                  </div>
-                )}
-              </div>
+              {!event.is_pre_torneio && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
+                  <Trophy className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
+                  <span className="text-sm font-medium text-white">
+                    {team.wins} {team.wins === 1 ? "vitória" : "vitórias"}
+                  </span>
+                  {profile.is_organizer && (
+                    <div className="ml-auto flex items-center gap-1.5">
+                      {team.wins > 0 && (
+                        <ActionForm action={undoLastMatchWin} successMessage="Vitória desfeita.">
+                          <input type="hidden" name="eventId" value={id} />
+                          <input type="hidden" name="teamId" value={team.id} />
+                          <button
+                            type="submit"
+                            aria-label="Desfazer última vitória"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
+                          >
+                            <Undo2 className="h-3.5 w-3.5" strokeWidth={2} />
+                          </button>
+                        </ActionForm>
+                      )}
+                      <MatchWinButton
+                        action={recordMatchWin}
+                        eventId={id}
+                        teamId={team.id}
+                        teamNumber={team.teamNumber}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <ul className="mt-3 space-y-2.5">
                 {team.members.map((m) => (
@@ -287,6 +331,98 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           );
         })}
       </div>
+
+      {generation && event.is_pre_torneio && (
+        <div className="space-y-6">
+          <section className="rounded-xl border border-white/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold text-white">Fase de grupos</h2>
+              {profile.is_organizer && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
+            </div>
+
+            {standings.length > 0 && (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-white/40">
+                      <th className="pb-2 font-medium">Time</th>
+                      <th className="pb-2 font-medium">V</th>
+                      <th className="pb-2 font-medium">Saldo</th>
+                      <th className="pb-2 font-medium">Pontos feitos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {standings.map((s, i) => (
+                      <tr key={s.teamId} className="text-white">
+                        <td className="py-1.5">
+                          {i < 2 && <span className="mr-1 text-amber-400">🏐</span>}
+                          Time {s.teamNumber}
+                        </td>
+                        <td className="py-1.5">{s.wins}</td>
+                        <td className="py-1.5">
+                          {s.balance > 0 ? "+" : ""}
+                          {s.balance}
+                        </td>
+                        <td className="py-1.5">{s.pointsFor}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {profile.is_organizer && (
+              <div className="mt-4 space-y-2">
+                {groupMatches.map((m) => (
+                  <TournamentMatchScoreForm
+                    key={m.id}
+                    action={recordTournamentMatchScore}
+                    eventId={id}
+                    matchId={m.id}
+                    teamALabel={teamLabelById.get(m.teamAId) ?? "?"}
+                    teamBLabel={teamLabelById.get(m.teamBId) ?? "?"}
+                    scoreA={m.scoreA}
+                    scoreB={m.scoreB}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {finalMatch && (
+            <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="flex items-center gap-1.5 font-semibold text-white">
+                  <Trophy className="h-4 w-4 text-amber-400" strokeWidth={2} />
+                  Final
+                </h2>
+                {profile.is_organizer && <UndoFinalButton eventId={id} action={undoFinal} />}
+              </div>
+
+              {finalMatch.scoreA != null && finalMatch.scoreB != null && (
+                <p className="mt-2 text-sm text-amber-300">
+                  🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)}{" "}
+                  é campeão — vagas garantidas no Torneio VPA!
+                </p>
+              )}
+
+              {profile.is_organizer && (
+                <div className="mt-3">
+                  <TournamentMatchScoreForm
+                    action={recordTournamentMatchScore}
+                    eventId={id}
+                    matchId={finalMatch.id}
+                    teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"}
+                    teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"}
+                    scoreA={finalMatch.scoreA}
+                    scoreB={finalMatch.scoreB}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }

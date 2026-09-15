@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
 import { RachaCapacityFields } from "@/components/RachaCapacityFields";
-import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
+import { createEvent, updateEvent, markAsPreTorneio, cancelEvent, deleteEvent } from "./actions";
 
 export default async function AdminRachasPage() {
   await requireOrganizer();
@@ -106,6 +106,7 @@ export default async function AdminRachasPage() {
               key={e.id}
               event={e}
               updateEvent={updateEvent}
+              markAsPreTorneio={markAsPreTorneio}
               cancelEvent={cancelEvent}
               deleteEvent={deleteEvent}
             />

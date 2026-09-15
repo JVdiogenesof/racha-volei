@@ -201,6 +201,22 @@ export const matchWins = pgTable("match_wins", {
   recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const tournamentMatchStageEnum = pgEnum("tournament_match_stage", ["group", "final"]);
+
+// Confrontos da fase de grupos (todos contra todos) e da final de um racha
+// pré-torneio -- placar nulo até o organizador lançar o resultado. Só usada
+// pra racha pré-torneio; racha normal continua com match_wins.
+export const tournamentMatches = pgTable("tournament_matches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  teamAId: uuid("team_a_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  teamBId: uuid("team_b_id").notNull().references(() => teams.id, { onDelete: "cascade" }),
+  stage: tournamentMatchStageEnum("stage").notNull(),
+  scoreA: integer("score_a"),
+  scoreB: integer("score_b"),
+  playedAt: timestamp("played_at", { withTimezone: true }),
+});
+
 // Correção manual de um dos rankings (presença/MVP/vitórias) feita por um
 // organizador. Somada em cima do valor calculado — não substitui o cálculo,
 // só ajusta pra corrigir casos que fugiram do fluxo normal do site.

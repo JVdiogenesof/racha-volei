@@ -95,6 +95,7 @@ alter table push_subscriptions enable row level security;
 alter table reaction_types enable row level security;
 alter table reactions enable row level security;
 alter table tournament_reserved_players enable row level security;
+alter table tournament_matches enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -262,6 +263,14 @@ create policy "tournament_reserved_players_insert" on tournament_reserved_player
   with check (public.is_organizer() and added_by = auth.uid());
 create policy "tournament_reserved_players_delete" on tournament_reserved_players for delete to authenticated
   using (public.is_organizer());
+
+-- tournament_matches: confrontos da fase de grupos/final de um racha
+-- pré-torneio -- leitura aberta (alimenta a classificação pra todo mundo);
+-- só organizador lança/edita/apaga placar.
+create policy "tournament_matches_select" on tournament_matches for select to authenticated using (true);
+create policy "tournament_matches_write" on tournament_matches for all to authenticated
+  using (public.is_organizer())
+  with check (public.is_organizer());
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos

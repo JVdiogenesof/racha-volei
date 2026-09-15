@@ -24,11 +24,13 @@ type EventData = {
 export function EventListItem({
   event,
   updateEvent,
+  markAsPreTorneio,
   cancelEvent,
   deleteEvent,
 }: {
   event: EventData;
   updateEvent: (formData: FormData) => Promise<void>;
+  markAsPreTorneio: (formData: FormData) => Promise<void>;
   cancelEvent: (formData: FormData) => Promise<void>;
   deleteEvent: (formData: FormData) => Promise<void>;
 }) {
@@ -72,6 +74,19 @@ export function EventListItem({
         >
           {editing ? <X className="h-4 w-4" strokeWidth={2} /> : <Pencil className="h-4 w-4" strokeWidth={2} />}
         </button>
+        {!event.is_pre_torneio && event.status !== "finished" && event.status !== "cancelled" && (
+          <ActionForm action={markAsPreTorneio} successMessage="Racha transformado em pré-torneio!">
+            <input type="hidden" name="eventId" value={event.id} />
+            <button
+              type="submit"
+              aria-label="Transformar em pré-torneio"
+              title="Transformar em pré-torneio"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/15 text-amber-400 hover:bg-amber-500/20"
+            >
+              <Trophy className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </ActionForm>
+        )}
         {event.status !== "cancelled" && <CancelEventButton eventId={event.id} action={cancelEvent} />}
         <DeleteEventButton eventId={event.id} action={deleteEvent} />
       </div>
@@ -153,7 +168,7 @@ export function EventListItem({
                 defaultChecked={event.is_pre_torneio}
                 className="h-4 w-4 rounded border-white/15 text-amber-400 focus:ring-amber-400"
               />
-              Racha especial (pré-torneio) — time com mais vitórias garante vaga no Torneios VPA
+              Racha especial (pré-torneio) — fase de grupos + final, time campeão garante vaga no Torneios VPA
             </label>
           </div>
           <div className="sm:col-span-2">

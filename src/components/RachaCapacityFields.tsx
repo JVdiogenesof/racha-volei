@@ -83,8 +83,8 @@ export function RachaCapacityFields({
           </span>
         </label>
         <p className="mt-1 text-xs text-white/40">
-          O time com mais vitórias garante vaga automática no Torneios VPA quando o racha for finalizado. Sugere 4
-          times / 24 vagas, mas dá pra ajustar.
+          Fase de grupos (todos os times contra todos) seguida de uma final entre os 2 primeiros colocados — o time
+          campeão garante vaga automática no Torneios VPA. Sugere 4 times / 24 vagas, mas dá pra ajustar.
         </p>
       </div>
     </>

@@ -97,6 +97,21 @@ export async function updateEvent(formData: FormData) {
   revalidatePath(`/racha/${eventId}`);
 }
 
+export async function markAsPreTorneio(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+
+  // Só liga a flag -- número de times e vagas ficam do jeito que o
+  // organizador já configurou, ajustáveis à parte pelo formulário de edição.
+  const { error } = await supabase.from("events").update({ is_pre_torneio: true }).eq("id", eventId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/rachas");
+  revalidatePath("/racha");
+  revalidatePath(`/racha/${eventId}`);
+}
+
 export async function cancelEvent(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
