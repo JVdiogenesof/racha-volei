@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { Plus, MapPin, Trophy } from "lucide-react";
+import { Plus, MapPin, Trophy, Map as MapIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
+
+const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
+const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
+
+function isNrSportTraining(location: string | null) {
+  return !!location && location.toLowerCase().includes("nr sport");
+}
 
 export default async function RachaListPage() {
   const profile = await requireProfile();
@@ -69,28 +76,50 @@ function EventRow({
     is_pre_torneio: boolean;
   };
 }) {
+  const isArena = isNrSportTraining(event.location);
+
   return (
-    <Link
-      href={`/racha/${event.id}`}
-      className="flex items-center justify-between rounded-lg border border-white/10 px-4 py-3 hover:bg-white/5"
-    >
-      <div>
-        <p className="font-medium text-white">
-          {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
-            weekday: "long",
-            day: "2-digit",
-            month: "2-digit",
-          })}
-          {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
-        </p>
-        {event.location && (
-          <p className="mt-0.5 flex items-center gap-1 text-xs text-white/60">
-            <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
-            {event.location}
-          </p>
+    <div className="relative flex items-center justify-between rounded-lg border border-white/10 px-4 py-3 hover:bg-white/5">
+      <Link href={`/racha/${event.id}`} className="absolute inset-0 rounded-lg" aria-label="Ver racha" />
+      <div className="flex min-w-0 items-center gap-3">
+        {isArena && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/nr-sport-training-logo.jpg"
+            alt="Logo da arena NR Sport Training"
+            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/15"
+          />
         )}
+        <div className="min-w-0">
+          <p className="font-medium text-white">
+            {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
+              weekday: "long",
+              day: "2-digit",
+              month: "2-digit",
+            })}
+            {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
+          </p>
+          {event.location && (
+            <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-white/60">
+              <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+              <span className="truncate">{event.location}</span>
+              {isArena && (
+                <a
+                  href={NR_SPORT_TRAINING_MAPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Ver no Google Maps"
+                  aria-label="Ver localização no Google Maps"
+                  className="relative z-10 shrink-0 rounded p-0.5 text-white/40 hover:text-purple-300"
+                >
+                  <MapIcon className="h-3.5 w-3.5" strokeWidth={2} />
+                </a>
+              )}
+            </p>
+          )}
+        </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="relative flex shrink-0 items-center gap-2">
         {event.is_pre_torneio && (
           <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />
@@ -114,6 +143,6 @@ function EventRow({
           {EVENT_STATUS_LABELS[event.status]?.label ?? event.status}
         </span>
       </div>
-    </Link>
+    </div>
   );
 }
