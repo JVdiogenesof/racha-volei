@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function ConfirmedCounter({
   eventId,
-  maxPlayers,
+  maxPlayers: initialMaxPlayers,
   initialConfirmedCount,
 }: {
   eventId: string;
@@ -14,15 +14,20 @@ export function ConfirmedCounter({
   initialConfirmedCount: number;
 }) {
   const [count, setCount] = useState(initialConfirmedCount);
+  const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
-    const { count: fresh } = await supabase
-      .from("attendance")
-      .select("id", { count: "exact", head: true })
-      .eq("event_id", eventId)
-      .eq("status", "confirmed");
+    const [{ count: fresh }, { data: eventRow }] = await Promise.all([
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "confirmed"),
+      supabase.from("events").select("max_players").eq("id", eventId).maybeSingle(),
+    ]);
     if (fresh != null) setCount(fresh);
+    if (eventRow) setMaxPlayers(eventRow.max_players);
   }, [eventId]);
 
   useEffect(() => {
