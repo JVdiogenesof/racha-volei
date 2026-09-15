@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
-/* Identidade visual: roxo + azul marinho, tema escuro (logo Vôlei Por Amor). */
+/* Identidade visual: roxo + azul marinho, tema escuro (logo Vôlei Por Amor).
+   Fundo em degradê roxo claro -> roxo escuro, inspirado na arte nova do
+   Vidal, aplicado globalmente via essa mesma variável --background que já
+   era usada em todo o site (nenhuma outra mudança de layout/função). */
 :root {
-  --background: #101534;
+  --background: radial-gradient(130% 85% at 12% -12%, #7c3aed66, transparent 55%),
+    radial-gradient(110% 90% at 105% 8%, #a78bfa4d, transparent 50%),
+    radial-gradient(120% 100% at 90% 115%, #4c1d9973, transparent 60%),
+    linear-gradient(165deg, #2e1a6b 0%, #1a1050 38%, #100a30 68%, #0a0d24 100%);
   --foreground: #f4f3fb;
   --brand-purple: #6d28d9;
   --brand-purple-dark: #4c1d95;
@@ -23,6 +29,7 @@
 
 body {
   background: var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
