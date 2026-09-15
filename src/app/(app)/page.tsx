@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -42,7 +42,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, status, official_list_open, price_per_player, max_players")
+        .select("id, date, time, location, status, official_list_open, price_per_player, max_players, is_pre_torneio")
         .gte("date", today)
         .neq("status", "finished")
         .neq("status", "cancelled")
@@ -194,13 +194,34 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <section
+        className={
+          proximoRacha?.is_pre_torneio
+            ? "rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-5"
+            : "rounded-2xl border border-white/10 bg-white/5 p-5"
+        }
+      >
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-purple/25 text-purple-200">
-              <CalendarDays className="h-4.5 w-4.5" strokeWidth={2} />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              className={
+                proximoRacha?.is_pre_torneio
+                  ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400"
+                  : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-purple/25 text-purple-200"
+              }
+            >
+              {proximoRacha?.is_pre_torneio ? (
+                <Trophy className="h-4.5 w-4.5" strokeWidth={2} />
+              ) : (
+                <CalendarDays className="h-4.5 w-4.5" strokeWidth={2} />
+              )}
             </span>
             <h2 className="font-semibold">Próximo racha</h2>
+            {proximoRacha?.is_pre_torneio && (
+              <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
+                Pré-torneio
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {isInProgress && (
