@@ -92,7 +92,15 @@ export default async function HomePage() {
     proximoRacha?.max_players != null && (confirmedCount ?? 0) >= proximoRacha.max_players;
 
   const eventIdForPanel = proximoRacha?.id ?? "";
-  const fortyEightHoursAgo = hoursAgoIso(48);
+  // O aviso de cancelamento é só pra quem desistiu em cima da hora (dia do racha
+  // ou véspera) -- por isso a janela conta pra trás a partir da data/horário do
+  // racha, não a partir de agora, senão alguém que cancela com semanas de
+  // antecedência dispara o aviso do mesmo jeito.
+  const declineWindowStart = proximoRacha
+    ? new Date(
+        new Date(`${proximoRacha.date}T${proximoRacha.time ?? "00:00"}`).getTime() - 48 * 60 * 60 * 1000,
+      ).toISOString()
+    : hoursAgoIso(48);
   const [{ count: pendingCount }, { count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
     profile.is_organizer
       ? await Promise.all([
@@ -108,7 +116,7 @@ export default async function HomePage() {
             .select("profile_id, profiles(full_name)")
             .eq("event_id", eventIdForPanel)
             .eq("status", "declined")
-            .gte("confirmed_at", fortyEightHoursAgo),
+            .gte("confirmed_at", declineWindowStart),
         ])
       : [{ count: 0 }, { count: 0 }, { count: 0 }, { data: [] }];
 
