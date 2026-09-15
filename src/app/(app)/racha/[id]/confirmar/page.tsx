@@ -93,6 +93,10 @@ export default async function ConfirmarPresencaPage({
     return overallScore(scores);
   }
 
+  const confirmadosOrdenados = ratingsData
+    ? [...confirmados].sort((a, b) => (overallFor(b.profile_id) ?? 0) - (overallFor(a.profile_id) ?? 0))
+    : confirmados;
+
   const shareText = [
     `🏐 Lista de presença do racha de ${dateLabel} — confirmados (${confirmados.length}):`,
     "",
@@ -312,8 +316,9 @@ export default async function ConfirmarPresencaPage({
             {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-white/40">(ainda privado)</span>}
           </h2>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {confirmados.map((a) => {
+            {confirmadosOrdenados.map((a) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
+              const overall = overallFor(a.profile_id);
               return (
                 <li
                   key={a.profile_id}
@@ -322,6 +327,7 @@ export default async function ConfirmarPresencaPage({
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
                   <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
                   {p?.is_setter && <SetterBadge />}
+                  {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                   {profile.is_organizer && !eventFinished && !eventCancelled && (
                     <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
                       <input type="hidden" name="eventId" value={id} />
