@@ -93,7 +93,7 @@ export function PlayerActionSelect({
       onChange={handleChange}
       disabled={isPending}
       aria-label="Mover ou trocar jogador"
-      className="rounded border border-white/15 bg-transparent text-xs text-white/60 disabled:opacity-50"
+      className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-transparent px-2 text-xs text-white/60 disabled:opacity-50"
     >
       <option value="" disabled>
         Mover / trocar...

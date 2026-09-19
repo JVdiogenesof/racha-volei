@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="animate-toast-in pointer-events-auto flex items-center gap-2 rounded-full bg-brand-navy px-4 py-2.5 text-sm font-medium text-white shadow-lg"
+            className="animate-toast-in pointer-events-auto flex max-w-full items-center gap-2 rounded-2xl bg-brand-navy px-4 py-2.5 text-sm font-medium text-white shadow-lg"
           >
             <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" strokeWidth={2} />
             {t.message}

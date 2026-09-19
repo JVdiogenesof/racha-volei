@@ -27,7 +27,7 @@ export function AddDirectToConfirmedForm({
         name="profileId"
         defaultValue=""
         required
-        className="rounded-lg border border-white/15 px-2 py-1.5 text-sm"
+        className="min-h-11 w-full min-w-0 rounded-lg border border-white/15 px-2 py-1.5 text-sm sm:w-60"
       >
         <option value="" disabled>
           Escolher jogador...

@@ -35,7 +35,7 @@ export function Leaderboard({
   const podiumOrder = [podium[1], podium[0], podium[2]];
 
   return (
-    <section className="rounded-xl border border-white/10 p-6">
+    <section className="min-w-0 rounded-xl border border-white/10 p-4 sm:p-6">
       <div className="flex items-center gap-2 text-white">
         {icon}
         <h2 className="font-semibold">{title}</h2>
@@ -45,20 +45,20 @@ export function Leaderboard({
         <p className="mt-4 text-sm text-white/60">Ainda não tem dados suficientes.</p>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-3 items-end gap-3">
+          <div className="mt-6 grid grid-cols-3 items-end gap-2 sm:gap-3">
             {podiumOrder.map((entry, slot) => {
               if (!entry) return <div key={slot} />;
               const place = podium.indexOf(entry);
               const isFirst = place === 0;
               return (
-                <div key={entry.profileId} className="flex flex-col items-center text-center">
+                <div key={entry.profileId} className="flex min-w-0 flex-col items-center text-center">
                   <span
                     className={`mb-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${MEDAL_BADGE[place]}`}
                   >
                     {place + 1}º
                   </span>
                   <Avatar src={entry.avatarUrl} name={entry.fullName} size={isFirst ? "lg" : "md"} />
-                  <p className="mt-2 w-full truncate text-sm font-medium text-white">
+                  <p className="mt-2 w-full break-words text-sm font-medium text-white">
                     {entry.fullName}
                   </p>
                   <p className="text-xs text-white/60">
@@ -72,11 +72,11 @@ export function Leaderboard({
           {rest.length > 0 && (
             <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
               {rest.map((entry, i) => (
-                <li key={entry.profileId} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <span className="flex items-center gap-3">
+                <li key={entry.profileId} className="flex min-w-0 items-center justify-between gap-2 py-2.5 text-sm">
+                  <span className="flex min-w-0 items-center gap-2">
                     <span className="w-6 shrink-0 text-center text-white/40">{i + 4}º</span>
                     <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
-                    <span className="text-white">{entry.fullName}</span>
+                    <span className="min-w-0 break-words text-white">{entry.fullName}</span>
                   </span>
                   <span className="shrink-0 text-white/60">
                     {entry.count} {unit}

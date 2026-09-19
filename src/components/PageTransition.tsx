@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
-    <div key={pathname} className="animate-page-in">
+    <div key={pathname} className="animate-page-in min-w-0">
       {children}
     </div>
   );

@@ -16,13 +16,13 @@ export function InviteToEventForm({
   }
 
   return (
-    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex items-center gap-2">
+    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
       <input type="hidden" name="reserveEntryId" value={reserveEntryId} />
       <select
         name="eventId"
         defaultValue=""
         required
-        className="rounded-lg border border-white/15 px-2 py-1.5 text-xs"
+        className="min-h-11 w-full min-w-0 rounded-lg border border-white/15 px-2 py-1.5 text-sm sm:w-60"
       >
         <option value="" disabled>
           Chamar pra...
@@ -35,7 +35,7 @@ export function InviteToEventForm({
       </select>
       <button
         type="submit"
-        className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-purple-dark"
+        className="min-h-11 rounded-lg bg-brand-purple px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-purple-dark"
       >
         Chamar
       </button>

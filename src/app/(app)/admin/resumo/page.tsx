@@ -78,7 +78,7 @@ export default async function AdminResumoPage() {
       </h1>
       <p className="mt-1 text-sm capitalize text-white/60">{monthLabel}</p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
             <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />
@@ -89,7 +89,7 @@ export default async function AdminResumoPage() {
       </div>
 
       <div className="mt-6 space-y-3">
-        <div className="flex items-center justify-between rounded-lg border border-white/10 px-4 py-3">
+        <div className="flex flex-col gap-2 rounded-lg border border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="flex items-center gap-2 text-sm text-white/70">
             <Users2 className="h-4 w-4 text-purple-300" strokeWidth={2} />
             Quem mais compareceu
@@ -98,7 +98,7 @@ export default async function AdminResumoPage() {
             {topAttendeeId ? `${nameById.get(topAttendeeId)} (${attendanceByProfile.get(topAttendeeId)})` : "—"}
           </span>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-white/10 px-4 py-3">
+        <div className="flex flex-col gap-2 rounded-lg border border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="flex items-center gap-2 text-sm text-white/70">
             <Trophy className="h-4 w-4 text-purple-300" strokeWidth={2} />
             Mais vezes Jogador Destaque

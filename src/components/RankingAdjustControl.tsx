@@ -43,7 +43,7 @@ export function RankingAdjustControl({
         disabled={isPending}
         onClick={() => adjust(-1)}
         aria-label="Diminuir"
-        className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-white/60 hover:bg-white/5 disabled:opacity-50"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 hover:bg-white/5 disabled:opacity-50"
       >
         <Minus className="h-3 w-3" strokeWidth={2} />
       </button>
@@ -55,7 +55,7 @@ export function RankingAdjustControl({
         disabled={isPending}
         onClick={() => adjust(1)}
         aria-label="Aumentar"
-        className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-white/60 hover:bg-white/5 disabled:opacity-50"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 text-white/60 hover:bg-white/5 disabled:opacity-50"
       >
         <Plus className="h-3 w-3" strokeWidth={2} />
       </button>

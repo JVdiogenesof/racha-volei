@@ -25,35 +25,42 @@ export function TournamentMatchScoreForm({
     <ActionForm
       action={action}
       successMessage={played ? "Placar atualizado!" : "Placar salvo!"}
-      className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
+      className="grid min-w-0 gap-3 rounded-lg border border-white/10 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
     >
       <input type="hidden" name="eventId" value={eventId} />
       <input type="hidden" name="matchId" value={matchId} />
-      <span className="min-w-0 flex-1 truncate text-sm text-white">
-        {teamALabel} <span className="text-white/40">×</span> {teamBLabel}
-      </span>
-      <input
-        type="number"
-        name="scoreA"
-        min={0}
-        required
-        defaultValue={scoreA ?? ""}
-        aria-label={`Placar de ${teamALabel}`}
-        className="w-16 rounded-lg border border-white/15 px-2 py-1.5 text-center text-sm"
-      />
-      <span className="text-white/40">x</span>
-      <input
-        type="number"
-        name="scoreB"
-        min={0}
-        required
-        defaultValue={scoreB ?? ""}
-        aria-label={`Placar de ${teamBLabel}`}
-        className="w-16 rounded-lg border border-white/15 px-2 py-1.5 text-center text-sm"
-      />
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
+        <label className="min-w-0 text-center text-sm font-medium text-white">
+          <span className="mb-2 block break-words">{teamALabel}</span>
+          <input
+            type="number"
+            name="scoreA"
+            min={0}
+            required
+            defaultValue={scoreA ?? ""}
+            aria-label={`Placar de ${teamALabel}`}
+            inputMode="numeric"
+            className="mx-auto block min-h-11 w-full max-w-24 rounded-lg border border-white/15 px-2 py-2 text-center text-base"
+          />
+        </label>
+        <span className="pb-3 text-white/40" aria-label="contra">×</span>
+        <label className="min-w-0 text-center text-sm font-medium text-white">
+          <span className="mb-2 block break-words">{teamBLabel}</span>
+          <input
+            type="number"
+            name="scoreB"
+            min={0}
+            required
+            defaultValue={scoreB ?? ""}
+            aria-label={`Placar de ${teamBLabel}`}
+            inputMode="numeric"
+            className="mx-auto block min-h-11 w-full max-w-24 rounded-lg border border-white/15 px-2 py-2 text-center text-base"
+          />
+        </label>
+      </div>
       <button
         type="submit"
-        className="rounded-lg bg-brand-purple px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-purple-dark"
+        className="min-h-11 rounded-lg bg-brand-purple px-3 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
       >
         {played ? "Atualizar placar" : "Salvar placar"}
       </button>

@@ -278,7 +278,7 @@ export default async function ConfirmarPresencaPage({
           </p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {convidados.map((g) => (
-              <li key={g.id} className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5">
+              <li key={g.id} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5">
                 <Avatar src={g.avatar_url} name={g.full_name} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm text-white">{g.full_name}</p>
@@ -322,10 +322,10 @@ export default async function ConfirmarPresencaPage({
               return (
                 <li
                   key={a.profile_id}
-                  className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
+                  className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
                 >
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
-                  <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
                   {p?.is_setter && <SetterBadge />}
                   {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                   {profile.is_organizer && !eventFinished && !eventCancelled && (
@@ -366,10 +366,10 @@ export default async function ConfirmarPresencaPage({
             return (
               <li
                 key={a.profile_id}
-                className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
+                className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
               >
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                <span className="flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
                 {p?.is_setter && <SetterBadge />}
                 {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                 {profile.is_organizer && !eventFinished && !eventCancelled && (

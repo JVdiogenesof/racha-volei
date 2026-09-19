@@ -40,7 +40,7 @@ export function EventListItem({
   return (
     <div className="rounded-lg border border-white/10">
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-        <Link href={`/racha/${event.id}`} className="min-w-0 flex-1 truncate font-medium text-white hover:underline">
+        <Link href={`/racha/${event.id}`} className="w-full min-w-0 break-words font-medium text-white hover:underline sm:w-auto sm:flex-1">
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           {event.location ? ` · ${event.location}` : ""}
         </Link>

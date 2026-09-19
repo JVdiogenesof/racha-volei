@@ -28,10 +28,23 @@
 }
 
 body {
+  min-width: 0;
   background: var(--background);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  /* Long names, links and native form controls must fit their mobile container. */
+  body {
+    overflow-wrap: anywhere;
+  }
+
+  input, select, textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 /* Feedback de clique: todo elemento clicável "aperta" visualmente ao ser tocado. */
@@ -126,11 +139,11 @@ form[aria-busy="true"] button[type="submit"]::after {
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateX(28px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 

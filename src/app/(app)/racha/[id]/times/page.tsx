@@ -249,7 +249,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         {teams.map((team) => {
           const sum = team.members.reduce((s, m) => s + m.overall, 0);
           return (
-            <div key={team.id} className="rounded-xl border border-white/10 p-4">
+            <div key={team.id} className="min-w-0 rounded-xl border border-white/10 p-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
                 <span className="text-xs text-white/40">soma: {sum.toFixed(1)}</span>
@@ -289,10 +289,10 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
               <ul className="mt-3 space-y-2.5">
                 {team.members.map((m) => (
-                  <li key={m.teamMemberId} className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex min-w-0 items-center gap-2 text-white">
+                  <li key={m.teamMemberId} className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-white">
                       <Avatar src={m.avatarUrl} name={m.fullName} size="sm" />
-                      <span className="min-w-0 truncate">{m.fullName}</span>
+                      <span className="min-w-0 flex-1 break-words">{m.fullName}</span>
                       {m.isSetter && <SetterBadge />}
                       {orphanedTeamMemberIds.has(m.teamMemberId) && (
                         <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
@@ -300,8 +300,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         </span>
                       )}
                     </span>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
+                    <div className={`flex min-w-0 items-center gap-1.5 ${profile.is_organizer ? "w-full" : "shrink-0"}`}>
+                      <span className="shrink-0 text-xs text-white/40">{m.overall.toFixed(1)}</span>
                       {profile.is_organizer && (
                         <PlayerActionSelect
                           moveAction={moveMember}
@@ -347,7 +347,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
             {standings.length > 0 && (
               <div className="mt-3 overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full table-fixed text-sm">
                   <thead>
                     <tr className="text-left text-xs text-white/40">
                       <th className="pb-2 font-medium">Time</th>

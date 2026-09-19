@@ -32,14 +32,14 @@ export function PlayerRatingEditor({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/5"
+        className="flex w-full min-w-0 cursor-pointer flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/5"
       >
-        <span className="flex items-center gap-2 font-medium text-white">
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2 font-medium text-white">
           <Avatar src={avatarUrl} name={fullName} size="sm" />
-          {fullName}
+          <span className="min-w-0 flex-1 break-words">{fullName}</span>
           <NicknameBadge text={nicknameBadge} />
         </span>
-        <span className="flex items-center gap-2 text-sm text-white/60">
+        <span className="flex w-full items-center justify-end gap-2 text-sm text-white/60 sm:w-auto">
           nota geral: <span className="font-semibold text-purple-300">{overall.toFixed(1)}</span>
           <ChevronDown
             className={`h-4 w-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`}

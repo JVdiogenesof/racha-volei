@@ -40,10 +40,10 @@ export function PlayerSearch({ players }: { players: Player[] }) {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (
-          <div key={p.id} className="flex items-center gap-4 rounded-xl border border-white/10 p-4">
+          <div key={p.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 p-4">
             <Avatar src={p.avatar_url} name={p.full_name} size="lg" streak={p.streak} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-white">{p.full_name}</p>
+              <p className="break-words font-medium text-white">{p.full_name}</p>
               <NicknameBadge text={p.nickname_badge} className="mt-1" />
               {p.is_setter && <p className="mt-1 text-xs text-white/60">🏐 Levantador(a)</p>}
               <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/10">

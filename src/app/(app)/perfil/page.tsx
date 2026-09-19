@@ -43,7 +43,7 @@ export default async function PerfilPage() {
 
       <section>
         <h2 className="font-semibold text-white">Meu histórico</h2>
-        <div className="mt-3 grid grid-cols-3 gap-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
           {myStats.map((s) => (
             <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />

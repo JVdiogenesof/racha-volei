@@ -34,55 +34,49 @@ export default async function AdminRankingPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/10">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/10 text-left text-xs text-white/60">
-              <th className="px-4 py-2.5">Jogador</th>
-              <th className="px-4 py-2.5">Presenças</th>
-              <th className="px-4 py-2.5">Destaques</th>
-              <th className="px-4 py-2.5">Vitórias</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/10">
+      <div className="rounded-xl border border-white/10">
+          <div aria-hidden="true" className="hidden grid-cols-4 gap-3 border-b border-white/10 px-4 py-2.5 text-xs font-semibold text-white/60 sm:grid">
+            <span>Jogador</span><span>Presenças</span><span>Destaques</span><span>Vitórias</span>
+          </div>
+          <ul aria-label="Ajustes de ranking por jogador" className="divide-y divide-white/10">
             {(profiles ?? []).map((p) => (
-              <tr key={p.id}>
-                <td className="px-4 py-2.5 font-medium text-white">{p.full_name}</td>
-                <td className="px-4 py-2.5">
+              <li key={p.id} className="grid min-w-0 gap-3 px-4 py-4 text-sm sm:grid-cols-4 sm:items-center">
+                <p className="min-w-0 break-words font-medium text-white">{p.full_name}</p>
+                <div className="flex items-center justify-between gap-2 sm:block" role="group" aria-label={`Presenças de ${p.full_name}`}>
+                  <span className="text-xs text-white/60 sm:hidden">Presenças</span>
                   <RankingAdjustControl
                     profileId={p.id}
                     metric="attendance"
                     value={counts.attendance.get(p.id) ?? 0}
                     action={adjustRanking}
                   />
-                </td>
-                <td className="px-4 py-2.5">
+                </div>
+                <div className="flex items-center justify-between gap-2 sm:block" role="group" aria-label={`Destaques de ${p.full_name}`}>
+                  <span className="text-xs text-white/60 sm:hidden">Destaques</span>
                   <RankingAdjustControl
                     profileId={p.id}
                     metric="mvp"
                     value={counts.mvp.get(p.id) ?? 0}
                     action={adjustRanking}
                   />
-                </td>
-                <td className="px-4 py-2.5">
+                </div>
+                <div className="flex items-center justify-between gap-2 sm:block" role="group" aria-label={`Vitórias de ${p.full_name}`}>
+                  <span className="text-xs text-white/60 sm:hidden">Vitórias</span>
                   <RankingAdjustControl
                     profileId={p.id}
                     metric="wins"
                     value={counts.wins.get(p.id) ?? 0}
                     action={adjustRanking}
                   />
-                </td>
-              </tr>
+                </div>
+              </li>
             ))}
             {!profiles?.length && (
-              <tr>
-                <td className="px-4 py-4 text-sm text-white/60" colSpan={4}>
+              <li className="px-4 py-4 text-sm text-white/60">
                   Nenhum jogador aprovado ainda.
-                </td>
-              </tr>
+              </li>
             )}
-          </tbody>
-        </table>
+          </ul>
       </div>
 
       <section>

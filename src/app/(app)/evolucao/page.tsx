@@ -27,7 +27,7 @@ export default async function EvolucaoPage() {
       </h1>
       <p className="mt-1 text-sm text-white/60">Seu histórico racha a racha.</p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
           <CalendarCheck className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />
           <p className="mt-2 text-xl font-bold text-white">{totalConfirmados}</p>
