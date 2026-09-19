@@ -7,6 +7,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { balanceTeams, type PlayerInput } from "@/lib/balanceTeams";
+import { varySimulatedTeams } from "@/lib/teamSimulation";
 import { generateRoundRobinPairs, computeStandings } from "@/lib/torneioStandings";
 import { sendPushToProfiles } from "@/lib/push";
 
@@ -130,7 +131,7 @@ export type SimulatedTeam = {
  * descartável pro organizador ter uma noção; fechar a prévia no navegador já
  * "apaga" ela, porque nunca existiu de verdade em lugar nenhum.
  */
-export async function simulateTeams(eventId: string): Promise<SimulatedTeam[]> {
+export async function simulateTeams(eventId: string, previousSignature?: string): Promise<SimulatedTeam[]> {
   await requireOrganizer();
   const supabase = await createClient();
 
@@ -166,7 +167,7 @@ export async function simulateTeams(eventId: string): Promise<SimulatedTeam[]> {
   });
   const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
 
-  const result = balanceTeams(players, event.num_teams);
+  const result = varySimulatedTeams(balanceTeams(players, event.num_teams), players, previousSignature);
 
   return result.map((t) => {
     const members = t.memberProfileIds.map((profileId) => {
