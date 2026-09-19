@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Trophy, Undo2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -197,6 +198,14 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               eventDateLabel={eventDateLabel}
               teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
             />
+          )}
+          {finalMatch?.scoreA != null && finalMatch.scoreB != null && (
+            <Link
+              href={`/racha/${id}/resultado`}
+              className="inline-flex min-h-10 items-center rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm font-medium text-amber-300 hover:bg-amber-400/20"
+            >
+              Ver resultado final
+            </Link>
           )}
           {profile.is_organizer && event.official_list_open && (
             <ActionForm

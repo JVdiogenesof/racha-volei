@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, Crown, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -16,7 +16,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { count: confirmedCount }, { count: interestedCount }, { data: myAttendance }] =
+  const [{ data: event }, { count: confirmedCount }, { count: interestedCount }, { data: myAttendance }, { data: finalMatch }] =
     await Promise.all([
       supabase
         .from("events")
@@ -40,6 +40,14 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         .select("status")
         .eq("event_id", id)
         .eq("profile_id", profile.id)
+        .maybeSingle(),
+      supabase
+        .from("tournament_matches")
+        .select("id")
+        .eq("event_id", id)
+        .eq("stage", "final")
+        .not("score_a", "is", null)
+        .not("score_b", "is", null)
         .maybeSingle(),
     ]);
 
@@ -147,6 +155,14 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           title="Times"
           description={listOpen ? "Veja ou gere os times balanceados." : "Libera depois que a lista de confirmados for publicada."}
         />
+        {event.is_pre_torneio && finalMatch && (
+          <HubCard
+            href={`/racha/${id}/resultado`}
+            icon={Crown}
+            title="Resultado final"
+            description="Veja o campeão, o vice, o 3º e o 4º lugar."
+          />
+        )}
         <HubCard
           href={`/racha/${id}/mvp`}
           icon={Trophy}
