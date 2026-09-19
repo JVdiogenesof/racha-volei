@@ -42,7 +42,7 @@ export async function NavBar() {
 
   if (profile?.status === "guest") {
     return (
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-navy text-white">
+      <header className="app-header-background sticky top-0 z-20 border-b border-white/10 text-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link href={`/racha/${profile.guest_for_event_id}`}>
             <Logo markClassName="h-10 w-10" />
@@ -91,7 +91,7 @@ export async function NavBar() {
   };
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-brand-navy text-white">
+    <header className="app-header-background sticky top-0 z-20 border-b border-white/10 text-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/">
           <Logo markClassName="h-10 w-10" />

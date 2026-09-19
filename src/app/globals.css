@@ -35,6 +35,12 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+/* Mantém o cabeçalho integrado ao mesmo degradê da área principal. */
+.app-header-background {
+  background: var(--background);
+  background-attachment: fixed;
+}
+
 @layer base {
   /* Long names, links and native form controls must fit their mobile container. */
   body {
