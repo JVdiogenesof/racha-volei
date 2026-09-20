@@ -4,8 +4,8 @@
   "description": "Organização do racha de vôlei: presença, times e avisos do grupo.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#101534",
+  "background_color": "#241457",
+  "theme_color": "#241457",
   "orientation": "portrait",
   "icons": [
     {

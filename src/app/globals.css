@@ -14,6 +14,8 @@
   --brand-purple-dark: #4c1d95;
   --brand-navy: #101534;
   --brand-navy-light: #1b2260;
+  --app-top-color: #241457;
+  --app-header-background: linear-gradient(165deg, #2e1a6b 0%, #241457 58%, #1a1049 100%);
 }
 
 @theme inline {
@@ -27,6 +29,11 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  background-color: var(--app-top-color);
+  color-scheme: dark;
+}
+
 body {
   min-width: 0;
   background: var(--background);
@@ -37,8 +44,8 @@ body {
 
 /* Mantém o cabeçalho integrado ao mesmo degradê da área principal. */
 .app-header-background {
-  background: var(--background);
-  background-attachment: fixed;
+  background: var(--app-header-background);
+  padding-top: env(safe-area-inset-top);
 }
 
 @layer base {
