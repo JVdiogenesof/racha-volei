@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { PROFILE_COLUMNS, USER_ID_HEADER, PROFILE_HEADER } from "./session-headers";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/privacidade"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/privacidade", "/manifest.json"];
 const ONBOARDING_PATHS = ["/cadastro", "/aguardando-aprovacao"];
 const RESERVE_PATH = "/lista-de-reserva";
 
