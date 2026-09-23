@@ -9,6 +9,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { ToastFromQuery } from "@/components/ToastFromQuery";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
+import { EventProgress } from "@/components/EventProgress";
 import { startEvent, finishEvent } from "./actions";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -112,6 +113,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
+
+      <EventProgress
+        status={event.status}
+        officialListOpen={event.official_list_open}
+        hasFinalResult={Boolean(finalMatch)}
+      />
 
       {profile.is_organizer && !isFinished && (
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">

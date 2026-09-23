@@ -6,6 +6,7 @@ import { signOut } from "@/app/(app)/actions";
 import { Logo } from "@/components/Logo";
 import { Avatar } from "@/components/Avatar";
 import { NavIsland } from "@/components/NavIsland";
+import { CompactAppHeader } from "@/components/CompactAppHeader";
 
 type NavProfile = {
   full_name: string;
@@ -91,8 +92,9 @@ export async function NavBar() {
   };
 
   return (
-    <header className="app-header-background sticky top-0 z-20 border-b border-white/10 text-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+    <CompactAppHeader
+      topBar={
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/">
           <Logo markClassName="h-10 w-10" />
         </Link>
@@ -110,8 +112,9 @@ export async function NavBar() {
             </button>
           </form>
         </div>
-      </div>
-      <NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} />
-    </header>
+        </div>
+      }
+      navigation={<NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} />}
+    />
   );
 }
