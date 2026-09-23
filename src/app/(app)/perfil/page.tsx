@@ -8,6 +8,8 @@ import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } fr
 import { ScoreBar } from "@/components/ScoreBar";
 import { Avatar } from "@/components/Avatar";
 import { NicknameBadge } from "@/components/NicknameBadge";
+import { AchievementGallery } from "@/components/AchievementGallery";
+import { getPlayerAchievements } from "@/lib/achievements";
 
 export default async function PerfilPage() {
   const profile = await requireProfile();
@@ -21,12 +23,23 @@ export default async function PerfilPage() {
 
   const finalScores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
   const overall = overallScore(finalScores);
+  const attendanceCount = rankingCounts.attendance.get(profile.id) ?? 0;
+  const mvpCount = rankingCounts.mvp.get(profile.id) ?? 0;
+  const winsCount = rankingCounts.wins.get(profile.id) ?? 0;
+  const streak = streaks.get(profile.id) ?? 0;
 
   const myStats = [
-    { label: "Presenças", value: rankingCounts.attendance.get(profile.id) ?? 0, icon: CalendarCheck },
-    { label: "Vezes destaque", value: rankingCounts.mvp.get(profile.id) ?? 0, icon: Trophy },
-    { label: "Vitórias", value: rankingCounts.wins.get(profile.id) ?? 0, icon: Crown },
+    { label: "Presenças", value: attendanceCount, icon: CalendarCheck },
+    { label: "Vezes destaque", value: mvpCount, icon: Trophy },
+    { label: "Vitórias", value: winsCount, icon: Crown },
   ];
+  const achievements = getPlayerAchievements({
+    attendance: attendanceCount,
+    wins: winsCount,
+    mvp: mvpCount,
+    streak,
+    isSetter: profile.is_setter,
+  });
 
   return (
     <div className="space-y-10">
@@ -53,6 +66,8 @@ export default async function PerfilPage() {
           ))}
         </div>
       </section>
+
+      <AchievementGallery achievements={achievements} />
 
       <section className="rounded-xl border border-white/10 p-6">
         <h2 className="font-semibold text-white">Nota final</h2>

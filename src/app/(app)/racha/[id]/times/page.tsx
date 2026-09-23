@@ -17,6 +17,7 @@ import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
 import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
+import { VictoryTeamCard } from "@/components/VictoryTeamCard";
 import {
   generateTeams,
   addToTeam,
@@ -258,7 +259,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         {teams.map((team) => {
           const sum = team.members.reduce((s, m) => s + m.overall, 0);
           return (
-            <div key={team.id} className="min-w-0 rounded-xl border border-white/10 p-4">
+            <VictoryTeamCard key={team.id} teamId={team.id}>
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
                 <span className="text-xs text-white/40">soma: {sum.toFixed(1)}</span>
@@ -341,7 +342,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   />
                 </div>
               )}
-            </div>
+            </VictoryTeamCard>
           );
         })}
       </div>

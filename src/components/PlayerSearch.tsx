@@ -13,6 +13,8 @@ type Player = {
   overall: number;
   streak?: number;
   nickname_badge?: string | null;
+  achievements: { id: string; title: string; emoji: string }[];
+  achievementCount: number;
 };
 
 export function PlayerSearch({ players }: { players: Player[] }) {
@@ -46,6 +48,24 @@ export function PlayerSearch({ players }: { players: Player[] }) {
               <p className="break-words font-medium text-white">{p.full_name}</p>
               <NicknameBadge text={p.nickname_badge} className="mt-1" />
               {p.is_setter && <p className="mt-1 text-xs text-white/60">🏐 Levantador(a)</p>}
+              {p.achievements.length > 0 && (
+                <div className="mt-2 flex flex-wrap items-center gap-1" aria-label={`${p.achievementCount} conquistas`}>
+                  {p.achievements.map((achievement) => (
+                    <span
+                      key={achievement.id}
+                      title={achievement.title}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-300/15 bg-amber-300/10 text-sm"
+                    >
+                      {achievement.emoji}
+                    </span>
+                  ))}
+                  {p.achievementCount > p.achievements.length && (
+                    <span className="text-[10px] font-semibold text-white/40">
+                      +{p.achievementCount - p.achievements.length}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="mt-1.5 h-1.5 w-full rounded-full bg-white/10">
                 <div
                   className="h-1.5 rounded-full bg-brand-purple"

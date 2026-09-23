@@ -4,13 +4,15 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { getAttendanceStreaks } from "@/lib/streak";
+import { getRankingCounts } from "@/lib/rankings";
+import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { PlayerSearch } from "@/components/PlayerSearch";
 
 export default async function JogadoresPage() {
   await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks] = await Promise.all([
+  const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks, rankingCounts] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, is_setter, nickname_badge")
@@ -19,6 +21,7 @@ export default async function JogadoresPage() {
     getAllRatings(supabase),
     getRatingWeights(supabase),
     getAttendanceStreaks(supabase),
+    getRankingCounts(supabase),
   ]);
 
   const rows = (players ?? [])
@@ -29,7 +32,20 @@ export default async function JogadoresPage() {
         weights.selfWeight,
         weights.organizerWeight,
       );
-      return { ...p, overall: overallScore(scores), streak: streaks.get(p.id) };
+      const achievementStats = {
+        attendance: rankingCounts.attendance.get(p.id) ?? 0,
+        wins: rankingCounts.wins.get(p.id) ?? 0,
+        mvp: rankingCounts.mvp.get(p.id) ?? 0,
+        streak: streaks.get(p.id) ?? 0,
+        isSetter: p.is_setter,
+      };
+      return {
+        ...p,
+        overall: overallScore(scores),
+        streak: achievementStats.streak,
+        achievements: getFeaturedAchievements(achievementStats),
+        achievementCount: getPlayerAchievements(achievementStats).filter((achievement) => achievement.unlocked).length,
+      };
     })
     .sort((a, b) => b.overall - a.overall);
 

@@ -3,6 +3,7 @@
 import { useState, useTransition, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
+import { TEAM_VICTORY_EVENT } from "./VictoryTeamCard";
 
 const PARTICLE_COUNT = 8;
 const PARTICLES = Array.from({ length: PARTICLE_COUNT }, (_, i) => i);
@@ -31,6 +32,7 @@ export function MatchWinButton({
         formData.set("teamId", teamId);
         await action(formData);
         showToast(`+1 vitória pro Time ${teamNumber}!`);
+        window.dispatchEvent(new CustomEvent(TEAM_VICTORY_EVENT, { detail: { teamId } }));
         setCelebrating(true);
         setTimeout(() => setCelebrating(false), 700);
         router.refresh();
@@ -64,7 +66,7 @@ export function MatchWinButton({
         disabled={isPending}
         className="rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark disabled:opacity-50"
       >
-        +1 vitória
+        {celebrating ? "Vitória!" : "+1 vitória"}
       </button>
     </span>
   );
