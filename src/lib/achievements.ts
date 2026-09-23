@@ -50,7 +50,12 @@ export function getPlayerAchievements(stats: AchievementStats): Achievement[] {
   return DEFINITIONS.map((definition) => {
     const current = Math.max(0, definition.value(stats));
     return {
-      ...definition,
+      id: definition.id,
+      title: definition.title,
+      description: definition.description,
+      emoji: definition.emoji,
+      target: definition.target,
+      tier: definition.tier,
       current,
       unlocked: current >= definition.target,
     };
