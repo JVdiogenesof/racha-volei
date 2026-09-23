@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { NicknameBadge } from "./NicknameBadge";
+import { AchievementDetailsModal } from "./AchievementDetailsModal";
+import type { Achievement } from "@/lib/achievements";
 
 type Player = {
   id: string;
@@ -13,12 +15,13 @@ type Player = {
   overall: number;
   streak?: number;
   nickname_badge?: string | null;
-  achievements: { id: string; title: string; emoji: string }[];
+  achievements: Achievement[];
   achievementCount: number;
 };
 
 export function PlayerSearch({ players }: { players: Player[] }) {
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<{ achievement: Achievement; ownerName: string } | null>(null);
 
   const filtered = players.filter((p) =>
     p.full_name.toLowerCase().includes(query.trim().toLowerCase()),
@@ -51,13 +54,16 @@ export function PlayerSearch({ players }: { players: Player[] }) {
               {p.achievements.length > 0 && (
                 <div className="mt-2 flex flex-wrap items-center gap-1" aria-label={`${p.achievementCount} conquistas`}>
                   {p.achievements.map((achievement) => (
-                    <span
+                    <button
+                      type="button"
                       key={achievement.id}
                       title={achievement.title}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-300/15 bg-amber-300/10 text-sm"
+                      onClick={() => setSelected({ achievement, ownerName: p.full_name })}
+                      aria-label={`Ver conquista ${achievement.title} de ${p.full_name}`}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-amber-300/15 bg-amber-300/10 text-sm hover:border-amber-200/35 hover:bg-amber-300/20"
                     >
                       {achievement.emoji}
-                    </span>
+                    </button>
                   ))}
                   {p.achievementCount > p.achievements.length && (
                     <span className="text-[10px] font-semibold text-white/40">
@@ -84,6 +90,13 @@ export function PlayerSearch({ players }: { players: Player[] }) {
           </p>
         )}
       </div>
+      {selected && (
+        <AchievementDetailsModal
+          achievement={selected.achievement}
+          ownerName={selected.ownerName}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }

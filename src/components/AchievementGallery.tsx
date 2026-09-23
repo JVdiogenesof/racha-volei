@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Lock, Sparkles } from "lucide-react";
 import type { Achievement } from "@/lib/achievements";
+import { AchievementDetailsModal } from "@/components/AchievementDetailsModal";
 
 const TIER_CLASSES: Record<Achievement["tier"], string> = {
   bronze: "border-orange-300/20 bg-orange-400/8",
@@ -9,6 +13,7 @@ const TIER_CLASSES: Record<Achievement["tier"], string> = {
 };
 
 export function AchievementGallery({ achievements }: { achievements: Achievement[] }) {
+  const [selected, setSelected] = useState<Achievement | null>(null);
   const unlockedCount = achievements.filter((achievement) => achievement.unlocked).length;
   const ordered = [...achievements].sort(
     (a, b) => Number(b.unlocked) - Number(a.unlocked) || b.current / b.target - a.current / a.target,
@@ -33,9 +38,12 @@ export function AchievementGallery({ achievements }: { achievements: Achievement
         {ordered.map((achievement) => {
           const progress = Math.min(100, (achievement.current / achievement.target) * 100);
           return (
-            <article
+            <button
+              type="button"
               key={achievement.id}
-              className={`achievement-card relative overflow-hidden rounded-2xl border p-4 ${
+              onClick={() => setSelected(achievement)}
+              aria-label={`Ver conquista ${achievement.title}`}
+              className={`achievement-card relative overflow-hidden rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-white/25 ${
                 achievement.unlocked ? TIER_CLASSES[achievement.tier] : "border-white/8 bg-white/[0.025] opacity-65"
               }`}
             >
@@ -63,10 +71,14 @@ export function AchievementGallery({ achievements }: { achievements: Achievement
                   />
                 </div>
               </div>
-            </article>
+              <span className="relative mt-3 block text-[10px] font-semibold uppercase tracking-wide text-purple-300/75">
+                Toque para ver detalhes
+              </span>
+            </button>
           );
         })}
       </div>
+      {selected && <AchievementDetailsModal achievement={selected} onClose={() => setSelected(null)} />}
     </section>
   );
 }
