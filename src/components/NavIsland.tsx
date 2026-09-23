@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Swords, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, type LucideIcon } from "lucide-react";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "Início", icon: Home },
+  { href: "/reacoes", label: "Reações", icon: Swords },
   { href: "/racha", label: "Rachas", icon: CalendarDays },
   { href: "/jogadores", label: "Jogadores", icon: Users },
   { href: "/ranking", label: "Ranking", icon: Award },

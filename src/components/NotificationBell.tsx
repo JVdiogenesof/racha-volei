@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Swords, TrendingUp } from "lucide-react";
+import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -66,8 +66,8 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
         aria-label="Atalhos pessoais"
         className="flex items-center gap-1 rounded-full border border-white/15 bg-brand-navy/90 p-1.5 shadow-2xl shadow-black/40 backdrop-blur-xl"
       >
-        <IslandLink href="/reacoes" label="Reações" active={pathname.startsWith("/reacoes")}>
-          <Swords className="h-5 w-5" strokeWidth={2} />
+        <IslandLink href="/" label="Início" active={pathname === "/"}>
+          <Home className="h-5 w-5" strokeWidth={2} />
         </IslandLink>
         <IslandLink href="/evolucao" label="Minha evolução" active={pathname.startsWith("/evolucao")}>
           <TrendingUp className="h-5 w-5" strokeWidth={2} />
