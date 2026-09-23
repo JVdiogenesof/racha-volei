@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, Crown, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, Crown, Share2, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -169,6 +169,14 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             icon={Crown}
             title="Resultado final"
             description="Veja o campeão, o vice, o 3º e o 4º lugar."
+          />
+        )}
+        {isFinished && (
+          <HubCard
+            href={`/racha/${id}/resumo`}
+            icon={Share2}
+            title="Resumo do racha"
+            description="Veja quem mais venceu e compartilhe a arte do evento."
           />
         )}
         <HubCard
