@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Swords, TrendingUp } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -16,11 +17,12 @@ const ICONS: Record<NotificationType, typeof Bell> = {
 
 export function NotificationBell({ items }: { items: NotificationItem[] }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-5 right-5 z-30">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2">
       {open && (
-        <div className="absolute bottom-16 right-0 w-80 max-w-[85vw] overflow-hidden rounded-xl border border-white/10 bg-brand-navy-light shadow-xl">
+        <div className="animate-toast-in absolute bottom-[calc(100%+0.75rem)] left-1/2 w-80 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-brand-navy-light shadow-2xl shadow-black/40">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="font-semibold text-white">Notificações</p>
             <button
@@ -60,19 +62,56 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Notificações"
-        className="relative flex h-14 w-14 items-center justify-center rounded-full bg-brand-purple text-white shadow-lg hover:bg-brand-purple-dark"
+      <nav
+        aria-label="Atalhos pessoais"
+        className="flex items-center gap-1 rounded-full border border-white/15 bg-brand-navy/90 p-1.5 shadow-2xl shadow-black/40 backdrop-blur-xl"
       >
-        <Bell className="h-6 w-6" strokeWidth={2} />
-        {items.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
-            {items.length > 9 ? "9+" : items.length}
-          </span>
-        )}
-      </button>
+        <IslandLink href="/reacoes" label="Reações" active={pathname.startsWith("/reacoes")}>
+          <Swords className="h-5 w-5" strokeWidth={2} />
+        </IslandLink>
+        <IslandLink href="/evolucao" label="Minha evolução" active={pathname.startsWith("/evolucao")}>
+          <TrendingUp className="h-5 w-5" strokeWidth={2} />
+        </IslandLink>
+        <span aria-hidden className="mx-0.5 h-6 w-px bg-white/15" />
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-label="Notificações"
+          aria-expanded={open}
+          className={`relative flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-brand-purple-dark ${open ? "bg-brand-purple" : "bg-white/5"}`}
+        >
+          <Bell className="h-5 w-5" strokeWidth={2} />
+          {items.length > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-brand-navy">
+              {items.length > 9 ? "9+" : items.length}
+            </span>
+          )}
+        </button>
+      </nav>
     </div>
+  );
+}
+
+function IslandLink({
+  href,
+  label,
+  active,
+  children,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      title={label}
+      aria-current={active ? "page" : undefined}
+      className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-brand-purple-dark ${active ? "bg-brand-purple" : "bg-white/5"}`}
+    >
+      {children}
+    </Link>
   );
 }
