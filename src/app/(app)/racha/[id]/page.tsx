@@ -118,6 +118,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         status={event.status}
         officialListOpen={event.official_list_open}
         hasFinalResult={Boolean(finalMatch)}
+        isPreTournament={event.is_pre_torneio}
       />
 
       {profile.is_organizer && !isFinished && (

@@ -1,24 +1,29 @@
-import { Heart, ClipboardCheck, Users, Play, Trophy, Check, type LucideIcon } from "lucide-react";
+import { Heart, ClipboardCheck, Users, Play, Trophy, Flag, Check, type LucideIcon } from "lucide-react";
 
-const STEPS: { label: string; icon: LucideIcon }[] = [
+const BASE_STEPS: { label: string; icon: LucideIcon }[] = [
   { label: "Interesse", icon: Heart },
   { label: "Confirmados", icon: ClipboardCheck },
   { label: "Times", icon: Users },
   { label: "Jogos", icon: Play },
-  { label: "Final", icon: Trophy },
 ];
 
 export function EventProgress({
   status,
   officialListOpen,
   hasFinalResult,
+  isPreTournament,
 }: {
   status: string;
   officialListOpen: boolean;
   hasFinalResult: boolean;
+  isPreTournament: boolean;
 }) {
+  const steps = [
+    ...BASE_STEPS,
+    isPreTournament ? { label: "Final", icon: Trophy } : { label: "Encerrado", icon: Flag },
+  ];
   const currentStep =
-    status === "finished" || hasFinalResult
+    status === "finished" || (isPreTournament && hasFinalResult)
       ? 4
       : status === "in_progress"
         ? 3
@@ -34,11 +39,11 @@ export function EventProgress({
         <div className="absolute left-[10%] right-[10%] top-4 h-0.5 bg-white/10" aria-hidden="true">
           <span
             className="block h-full bg-gradient-to-r from-brand-purple to-purple-300 transition-[width] duration-500"
-            style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+            style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
           />
         </div>
         <ol className="relative grid grid-cols-5 gap-1">
-          {STEPS.map((step, index) => {
+          {steps.map((step, index) => {
             const complete = index < currentStep;
             const active = index === currentStep;
             const Icon = complete ? Check : step.icon;
