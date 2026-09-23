@@ -18,6 +18,7 @@ import { CancelAttendanceButton } from "@/components/CancelAttendanceButton";
 import { SetterBadge } from "@/components/SetterBadge";
 import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
+import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
@@ -260,6 +261,10 @@ export default async function ConfirmarPresencaPage({
             </ActionForm>
           )}
         </div>
+      )}
+
+      {profile.is_organizer && listOpen && !eventCancelled && confirmados.length > 0 && (
+        <ShareConfirmedListArtButton eventId={id} eventDate={event.date} />
       )}
 
       {profile.is_organizer && !eventFinished && !eventCancelled && (
