@@ -37,6 +37,15 @@ export async function generateTeams(formData: FormData) {
         'Já tem placar lançado na fase de grupos desse pré-torneio. Use "Reiniciar fase de grupos" antes de gerar os times de novo.',
       );
     }
+  } else {
+    const { count: confrontationCount } = await supabase
+      .from("match_wins")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", eventId)
+      .not("loser_team_id", "is", null);
+    if (confrontationCount) {
+      throw new Error("Desfaça os confrontos registrados antes de gerar novos times.");
+    }
   }
 
   const { data: confirmed } = await supabase
@@ -276,44 +285,100 @@ export async function removeFromTeam(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
-export async function recordMatchWin(formData: FormData) {
+export async function recordNormalMatch(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
-  const teamId = String(formData.get("teamId"));
+  const teamAId = String(formData.get("teamAId"));
+  const teamBId = String(formData.get("teamBId"));
+  const winnerTeamId = String(formData.get("winnerTeamId"));
+
+  if (!eventId || !teamAId || !teamBId || !winnerTeamId) {
+    throw new Error("Escolha os dois times e depois informe o vencedor.");
+  }
+  if (teamAId === teamBId) throw new Error("Escolha dois times diferentes.");
+  if (winnerTeamId !== teamAId && winnerTeamId !== teamBId) {
+    throw new Error("O vencedor precisa ser um dos times do confronto.");
+  }
+
+  const [{ data: event }, { data: generation }] = await Promise.all([
+    supabase.from("events").select("is_pre_torneio").eq("id", eventId).maybeSingle(),
+    supabase
+      .from("team_generations")
+      .select("id")
+      .eq("event_id", eventId)
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (!event) throw new Error("Racha não encontrado.");
+  if (event.is_pre_torneio) throw new Error("Esse registro de confronto é exclusivo de rachas normais.");
+  if (!generation) throw new Error("Gere os times antes de registrar um confronto.");
+
+  const { data: selectedTeams } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("generation_id", generation.id)
+    .in("id", [teamAId, teamBId]);
+  if (selectedTeams?.length !== 2) throw new Error("Escolha dois times da geração atual.");
+
+  const loserTeamId = winnerTeamId === teamAId ? teamBId : teamAId;
+  const { data: memberRows, error: memberError } = await supabase
+    .from("team_members")
+    .select("team_id, profile_id")
+    .in("team_id", [winnerTeamId, loserTeamId]);
+  if (memberError) throw new Error(memberError.message);
+
+  const winningProfileIds = (memberRows ?? [])
+    .filter((member) => member.team_id === winnerTeamId)
+    .map((member) => member.profile_id);
+  const losingProfileIds = (memberRows ?? [])
+    .filter((member) => member.team_id === loserTeamId)
+    .map((member) => member.profile_id);
+  if (!winningProfileIds.length || !losingProfileIds.length) {
+    throw new Error("Os dois times precisam ter jogadores antes do confronto.");
+  }
 
   const { error } = await supabase.from("match_wins").insert({
     event_id: eventId,
-    team_id: teamId,
+    team_id: winnerTeamId,
+    loser_team_id: loserTeamId,
+    winning_profile_ids: winningProfileIds,
+    losing_profile_ids: losingProfileIds,
     recorded_by: organizer.id,
   });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/ranking");
+  revalidatePath("/jogadores");
+  revalidatePath("/perfil");
 }
 
-export async function undoLastMatchWin(formData: FormData) {
+export async function undoNormalMatch(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
-  const teamId = String(formData.get("teamId"));
+  const matchWinId = String(formData.get("matchWinId"));
 
-  const { data: last } = await supabase
+  const { data: confrontation } = await supabase
     .from("match_wins")
-    .select("id")
+    .select("id, loser_team_id, events(is_pre_torneio)")
+    .eq("id", matchWinId)
     .eq("event_id", eventId)
-    .eq("team_id", teamId)
-    .order("recorded_at", { ascending: false })
-    .limit(1)
     .maybeSingle();
 
-  if (last) {
-    const { error } = await supabase.from("match_wins").delete().eq("id", last.id);
-    if (error) throw new Error(error.message);
+  const event = confrontation?.events as unknown as { is_pre_torneio: boolean } | null;
+  if (!confrontation?.loser_team_id || event?.is_pre_torneio) {
+    throw new Error("Confronto normal não encontrado.");
   }
+
+  const { error } = await supabase.from("match_wins").delete().eq("id", confrontation.id);
+  if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/ranking");
+  revalidatePath("/jogadores");
+  revalidatePath("/perfil");
 }
 
 /**

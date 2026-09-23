@@ -200,9 +200,9 @@ create policy "mvp_votes_insert" on mvp_votes for insert to authenticated
 -- match_wins: leitura aberta (alimenta o ranking de vitórias); só organizador registra/apaga.
 create policy "match_wins_select" on match_wins for select to authenticated using (true);
 create policy "match_wins_insert" on match_wins for insert to authenticated
-  with check (public.is_organizer() and recorded_by = auth.uid());
+  with check ((select public.is_organizer()) and recorded_by = (select auth.uid()));
 create policy "match_wins_delete" on match_wins for delete to authenticated
-  using (public.is_organizer());
+  using ((select public.is_organizer()));
 
 -- ranking_adjustments: leitura aberta (soma no cálculo do ranking pra todo mundo);
 -- só organizador cria/apaga ajuste manual.

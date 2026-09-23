@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Trophy, Undo2 } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
@@ -10,7 +10,7 @@ import { PlayerActionSelect } from "@/components/PlayerActionSelect";
 import { AddToTeamSelect } from "@/components/AddToTeamSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { Avatar } from "@/components/Avatar";
-import { MatchWinButton } from "@/components/MatchWinButton";
+import { NormalMatchRecorder } from "@/components/NormalMatchRecorder";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
@@ -25,8 +25,8 @@ import {
   swapMembers,
   replaceMember,
   removeFromTeam,
-  recordMatchWin,
-  undoLastMatchWin,
+  recordNormalMatch,
+  undoNormalMatch,
   recordTournamentMatchScore,
   resetGroupStage,
   undoFinal,
@@ -63,6 +63,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     id: string;
     teamNumber: number;
     wins: number;
+    losses: number;
     members: {
       teamMemberId: string;
       profileId: string;
@@ -78,6 +79,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   let finalMatch: MatchLite | null = null;
   let thirdPlaceMatch: MatchLite | null = null;
   let standings: ReturnType<typeof computeStandings> = [];
+  let normalConfrontations: { id: string; winnerTeamId: string; loserTeamId: string }[] = [];
 
   if (generation) {
     const { data: teamRows } = await supabase
@@ -97,18 +99,31 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     const [{ selfByProfile, organizerByProfile }, weights, { data: winRows }] = await Promise.all([
       getRatingsFor(supabase, memberProfileIds),
       getRatingWeights(supabase),
-      supabase.from("match_wins").select("team_id").eq("event_id", id),
+      supabase
+        .from("match_wins")
+        .select("id, team_id, loser_team_id, recorded_at")
+        .eq("event_id", id)
+        .order("recorded_at", { ascending: false }),
     ]);
 
     const winsByTeam = new Map<string, number>();
+    const lossesByTeam = new Map<string, number>();
     for (const w of winRows ?? []) {
       winsByTeam.set(w.team_id, (winsByTeam.get(w.team_id) ?? 0) + 1);
+      if (w.loser_team_id) lossesByTeam.set(w.loser_team_id, (lossesByTeam.get(w.loser_team_id) ?? 0) + 1);
+    }
+
+    if (!event.is_pre_torneio) {
+      normalConfrontations = (winRows ?? [])
+        .filter((win): win is typeof win & { loser_team_id: string } => Boolean(win.loser_team_id))
+        .map((win) => ({ id: win.id, winnerTeamId: win.team_id, loserTeamId: win.loser_team_id }));
     }
 
     teams = (teamRows ?? []).map((t) => ({
       id: t.id,
       teamNumber: t.team_number,
       wins: winsByTeam.get(t.id) ?? 0,
+      losses: lossesByTeam.get(t.id) ?? 0,
       members: (memberRows ?? [])
         .filter((m) => m.team_id === t.id)
         .map((m) => {
@@ -269,31 +284,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
                   <Trophy className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
                   <span className="text-sm font-medium text-white">
-                    {team.wins} {team.wins === 1 ? "vitória" : "vitórias"}
+                    {team.wins}V · {team.losses}D
                   </span>
-                  {profile.is_organizer && (
-                    <div className="ml-auto flex items-center gap-1.5">
-                      {team.wins > 0 && (
-                        <ActionForm action={undoLastMatchWin} successMessage="Vitória desfeita.">
-                          <input type="hidden" name="eventId" value={id} />
-                          <input type="hidden" name="teamId" value={team.id} />
-                          <button
-                            type="submit"
-                            aria-label="Desfazer última vitória"
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
-                          >
-                            <Undo2 className="h-3.5 w-3.5" strokeWidth={2} />
-                          </button>
-                        </ActionForm>
-                      )}
-                      <MatchWinButton
-                        action={recordMatchWin}
-                        eventId={id}
-                        teamId={team.id}
-                        teamNumber={team.teamNumber}
-                      />
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -346,6 +338,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           );
         })}
       </div>
+
+      {generation && !event.is_pre_torneio && (
+        <NormalMatchRecorder
+          eventId={id}
+          teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))}
+          confrontations={normalConfrontations}
+          isOrganizer={profile.is_organizer}
+          recordAction={recordNormalMatch}
+          undoAction={undoNormalMatch}
+        />
+      )}
 
       {generation && event.is_pre_torneio && (
         <div className="space-y-6">

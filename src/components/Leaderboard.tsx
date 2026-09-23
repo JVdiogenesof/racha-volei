@@ -9,6 +9,8 @@ export type RankingEntry = {
   count: number;
   fullName: string;
   avatarUrl: string | null;
+  displayValue?: string;
+  detail?: string;
 };
 
 const MEDAL_BADGE = [
@@ -62,8 +64,9 @@ export function Leaderboard({
                     {entry.fullName}
                   </p>
                   <p className="text-xs text-white/60">
-                    {entry.count} {unit}
+                    {entry.displayValue ?? `${entry.count} ${unit}`}
                   </p>
+                  {entry.detail && <p className="mt-0.5 text-[10px] text-white/40">{entry.detail}</p>}
                 </div>
               );
             })}
@@ -79,7 +82,8 @@ export function Leaderboard({
                     <span className="min-w-0 break-words text-white">{entry.fullName}</span>
                   </span>
                   <span className="shrink-0 text-white/60">
-                    {entry.count} {unit}
+                    {entry.displayValue ?? `${entry.count} ${unit}`}
+                    {entry.detail && <span className="ml-1 text-xs text-white/35">· {entry.detail}</span>}
                   </span>
                 </li>
               ))}

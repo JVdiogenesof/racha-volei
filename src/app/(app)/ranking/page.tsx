@@ -1,4 +1,4 @@
-import { CalendarCheck, Trophy, Crown } from "lucide-react";
+import { CalendarCheck, Trophy, Crown, Percent } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts } from "@/lib/rankings";
@@ -34,6 +34,24 @@ export default async function RankingPage() {
   const attendanceRanking = buildRanking(counts.attendance);
   const mvpRanking = buildRanking(counts.mvp);
   const winsRanking = buildRanking(counts.wins);
+  const performanceRanking: RankingEntry[] = [...counts.performance.entries()]
+    .flatMap(([profileId, stats]) => {
+      const profile = profileById.get(profileId);
+      if (!profile || !stats.matches) return [];
+      return [{
+        profileId,
+        count: stats.percentage,
+        fullName: profile.full_name,
+        avatarUrl: profile.avatar_url,
+        displayValue: `${stats.percentage}%`,
+        detail: `${stats.wins}V · ${stats.losses}D`,
+      }];
+    })
+    .sort(
+      (a, b) =>
+        b.count - a.count ||
+        (counts.performance.get(b.profileId)?.wins ?? 0) - (counts.performance.get(a.profileId)?.wins ?? 0),
+    );
 
   return (
     <div className="space-y-8">
@@ -41,6 +59,13 @@ export default async function RankingPage() {
         <h1 className="text-2xl font-bold text-white">Ranking</h1>
         <p className="mt-1 text-sm text-white/60">Quem mais aparece e quem mais brilha nos rachas.</p>
       </div>
+
+      <Leaderboard
+        title="Melhor aproveitamento"
+        icon={<Percent className="h-5 w-5 text-purple-300" strokeWidth={2} />}
+        unit="de aproveitamento"
+        ranking={performanceRanking}
+      />
 
       <Leaderboard
         title="Mais vitórias"

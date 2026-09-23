@@ -17,6 +17,7 @@ type Player = {
   nickname_badge?: string | null;
   achievements: Achievement[];
   achievementCount: number;
+  performance: { wins: number; losses: number; matches: number; percentage: number } | null;
 };
 
 export function PlayerSearch({ players }: { players: Player[] }) {
@@ -46,7 +47,17 @@ export function PlayerSearch({ players }: { players: Player[] }) {
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((p) => (
           <div key={p.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 p-4">
-            <Avatar src={p.avatar_url} name={p.full_name} size="lg" streak={p.streak} />
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <Avatar src={p.avatar_url} name={p.full_name} size="lg" streak={p.streak} />
+              {p.performance && (
+                <span
+                  className="rounded-full border border-purple-300/20 bg-purple-400/10 px-2 py-0.5 text-[10px] font-bold text-purple-200"
+                  title={`${p.performance.wins} vitórias e ${p.performance.losses} derrotas em rachas normais`}
+                >
+                  {p.performance.percentage}%
+                </span>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <p className="break-words font-medium text-white">{p.full_name}</p>
               <NicknameBadge text={p.nickname_badge} className="mt-1" />

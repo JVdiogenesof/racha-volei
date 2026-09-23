@@ -1,4 +1,4 @@
-import { CalendarCheck, Trophy, Crown } from "lucide-react";
+import { CalendarCheck, Trophy, Crown, Percent } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
@@ -26,12 +26,18 @@ export default async function PerfilPage() {
   const attendanceCount = rankingCounts.attendance.get(profile.id) ?? 0;
   const mvpCount = rankingCounts.mvp.get(profile.id) ?? 0;
   const winsCount = rankingCounts.wins.get(profile.id) ?? 0;
+  const performance = rankingCounts.performance.get(profile.id);
   const streak = streaks.get(profile.id) ?? 0;
 
   const myStats = [
     { label: "Presenças", value: attendanceCount, icon: CalendarCheck },
     { label: "Vezes destaque", value: mvpCount, icon: Trophy },
     { label: "Vitórias", value: winsCount, icon: Crown },
+    {
+      label: performance ? `${performance.wins}V · ${performance.losses}D` : "Sem confrontos",
+      value: performance ? `${performance.percentage}%` : "—",
+      icon: Percent,
+    },
   ];
   const achievements = getPlayerAchievements({
     attendance: attendanceCount,
@@ -56,7 +62,7 @@ export default async function PerfilPage() {
 
       <section>
         <h2 className="font-semibold text-white">Meu histórico</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {myStats.map((s) => (
             <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />

@@ -42,6 +42,7 @@ export default async function JogadoresPage() {
       return {
         ...p,
         overall: overallScore(scores),
+        performance: rankingCounts.performance.get(p.id) ?? null,
         streak: achievementStats.streak,
         achievements: getFeaturedAchievements(achievementStats),
         achievementCount: getPlayerAchievements(achievementStats).filter((achievement) => achievement.unlocked).length,

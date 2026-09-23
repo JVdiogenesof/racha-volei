@@ -203,6 +203,12 @@ export const matchWins = pgTable("match_wins", {
   // pré-torneio (grupo/final/3º lugar) -- deixa corrigir/desfazer o placar
   // sem duplicar ou deixar vitória errada presa no ranking.
   matchId: uuid("match_id").references(() => tournamentMatches.id, { onDelete: "cascade" }),
+  // Nos confrontos de racha normal, guarda também o time derrotado e uma
+  // fotografia dos integrantes dos dois times naquele momento. Os arrays
+  // impedem que uma troca posterior de jogador reescreva o histórico pessoal.
+  loserTeamId: uuid("loser_team_id").references(() => teams.id, { onDelete: "cascade" }),
+  winningProfileIds: uuid("winning_profile_ids").array(),
+  losingProfileIds: uuid("losing_profile_ids").array(),
 });
 
 export const tournamentMatchStageEnum = pgEnum("tournament_match_stage", ["group", "final", "third_place"]);
