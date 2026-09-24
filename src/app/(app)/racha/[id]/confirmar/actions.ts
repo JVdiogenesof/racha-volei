@@ -132,6 +132,33 @@ export async function setOfficialListOpen(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function setPaymentStatus(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+  const paidValue = String(formData.get("paid"));
+
+  if (paidValue !== "true" && paidValue !== "false") {
+    throw new Error("Situação de pagamento inválida.");
+  }
+
+  const paid = paidValue === "true";
+  const { error } = await supabase.from("payments").upsert(
+    {
+      event_id: eventId,
+      profile_id: profileId,
+      paid,
+      paid_at: paid ? new Date().toISOString() : null,
+      marked_by: paid ? organizer.id : null,
+    },
+    { onConflict: "event_id,profile_id" },
+  );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+}
+
 export async function removeAttendance(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -20,7 +20,7 @@ import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
 import { PIX_KEY } from "@/lib/payment";
-import { setAttendance, setOfficialListOpen, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
+import { setAttendance, setOfficialListOpen, setPaymentStatus, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 
 export default async function ConfirmarPresencaPage({
@@ -32,7 +32,7 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights] =
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }] =
     await Promise.all([
       supabase
         .from("events")
@@ -50,6 +50,9 @@ export default async function ConfirmarPresencaPage({
         : Promise.resolve(null),
       getAttendanceStreaks(supabase),
       getConfirmedHighlights(supabase, id),
+      profile.is_organizer
+        ? supabase.from("payments").select("profile_id, paid").eq("event_id", id)
+        : Promise.resolve({ data: null }),
     ]);
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
@@ -81,6 +84,8 @@ export default async function ConfirmarPresencaPage({
     .map((p) => ({ id: p.id, fullName: p.full_name }));
   const reserveOptions = (reserveEntries ?? []).map((p) => ({ id: p.id, fullName: p.full_name }));
   const convidados = guestProfiles ?? [];
+  const paidProfileIds = new Set((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => payment.profile_id));
+  const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
 
   function overallFor(profileId: string) {
     if (!ratingsData) return null;
@@ -316,14 +321,28 @@ export default async function ConfirmarPresencaPage({
 
       {canSeeConfirmados && (
         <section>
-          <h2 className="font-semibold text-white">
-            Confirmados ({confirmados.length})
-            {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-white/40">(ainda privado)</span>}
-          </h2>
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="font-semibold text-white">
+              Confirmados ({confirmados.length})
+              {!listOpen && profile.is_organizer && <span className="ml-2 text-xs font-normal text-white/40">(ainda privado)</span>}
+            </h2>
+            {profile.is_organizer && (
+              <p className="text-xs text-white/50">
+                <span className="font-semibold text-green-300">{paidConfirmedCount} pagos</span>
+                {" · "}{confirmados.length - paidConfirmedCount} pendentes
+              </p>
+            )}
+          </div>
+          {profile.is_organizer && confirmados.length > 0 && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-white/40">
+              <CircleDollarSign className="h-3.5 w-3.5 text-green-300" /> Toque no dinheiro para marcar ou desmarcar o pagamento.
+            </p>
+          )}
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {confirmadosOrdenados.map((a) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
               const overall = overallFor(a.profile_id);
+              const hasPaid = paidProfileIds.has(a.profile_id);
               return (
                 <li
                   key={a.profile_id}
@@ -333,6 +352,29 @@ export default async function ConfirmarPresencaPage({
                   <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
                   {p?.is_setter && <SetterBadge />}
                   {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
+                  {profile.is_organizer && (
+                    <ActionForm
+                      action={setPaymentStatus}
+                      successMessage={hasPaid ? `${p?.full_name ?? "Jogador"}: pagamento desmarcado.` : `${p?.full_name ?? "Jogador"}: pagamento confirmado!`}
+                      className="shrink-0"
+                    >
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="profileId" value={a.profile_id} />
+                      <input type="hidden" name="paid" value={hasPaid ? "false" : "true"} />
+                      <button
+                        type="submit"
+                        aria-label={hasPaid ? `Desmarcar pagamento de ${p?.full_name ?? "jogador"}` : `Marcar pagamento de ${p?.full_name ?? "jogador"}`}
+                        title={hasPaid ? "Pago — clique para desmarcar" : "Pendente — clique para marcar como pago"}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
+                          hasPaid
+                            ? "border-green-400/40 bg-green-500/20 text-green-300 shadow-sm shadow-green-950/40"
+                            : "border-white/10 bg-white/5 text-white/35 hover:border-green-400/30 hover:bg-green-500/10 hover:text-green-300"
+                        }`}
+                      >
+                        <CircleDollarSign className="h-4.5 w-4.5" strokeWidth={hasPaid ? 2.5 : 2} />
+                      </button>
+                    </ActionForm>
+                  )}
                   {profile.is_organizer && !eventFinished && !eventCancelled && (
                     <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
                       <input type="hidden" name="eventId" value={id} />
