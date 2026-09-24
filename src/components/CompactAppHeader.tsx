@@ -21,12 +21,15 @@ export function CompactAppHeader({
   navigation: ReactNode;
 }) {
   const [compact, setCompact] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let frame = 0;
 
     const update = () => {
       frame = 0;
+      const pageHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(pageHeight > 0 ? Math.min(100, (Math.max(0, window.scrollY) / pageHeight) * 100) : 0);
       setCompact((current) => {
         const scrollY = Math.max(0, window.scrollY);
         const next = current
@@ -50,15 +53,10 @@ export function CompactAppHeader({
 
   return (
     <CompactHeaderContext.Provider value={compact}>
-      <header className="app-header-background sticky top-0 z-20 border-b border-white/10 text-white [overflow-anchor:none]">
-        <div
-          className={`grid transition-[grid-template-rows,opacity] duration-300 sm:grid-rows-[1fr] sm:opacity-100 ${
-            compact ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"
-          }`}
-        >
-          <div className="min-h-0 overflow-hidden">{topBar}</div>
-        </div>
+      <header className={`app-header-background sticky top-0 z-20 border-b text-white shadow-xl shadow-black/10 backdrop-blur-xl [overflow-anchor:none] transition-colors duration-300 ${compact ? "border-white/15" : "border-white/10"}`}>
+        <div>{topBar}</div>
         {navigation}
+        <span aria-hidden="true" className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-300 transition-[width] duration-150" style={{ width: `${progress}%` }} />
       </header>
     </CompactHeaderContext.Provider>
   );

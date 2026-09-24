@@ -44,8 +44,20 @@ body {
 
 /* Mantém o cabeçalho integrado ao mesmo degradê da área principal. */
 .app-header-background {
-  background: var(--app-header-background);
+  background:
+    radial-gradient(90% 170% at 12% -45%, rgba(167, 139, 250, 0.3), transparent 62%),
+    radial-gradient(75% 180% at 95% -60%, rgba(59, 130, 246, 0.18), transparent 65%),
+    linear-gradient(165deg, rgba(46, 26, 107, 0.96) 0%, rgba(36, 20, 87, 0.97) 58%, rgba(26, 16, 73, 0.98) 100%);
   padding-top: env(safe-area-inset-top);
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @layer base {

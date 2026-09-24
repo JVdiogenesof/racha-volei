@@ -4,9 +4,9 @@ import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 import { signOut } from "@/app/(app)/actions";
 import { Logo } from "@/components/Logo";
-import { Avatar } from "@/components/Avatar";
 import { NavIsland } from "@/components/NavIsland";
 import { CompactAppHeader } from "@/components/CompactAppHeader";
+import { HeaderTopBar, type HeaderEventSummary } from "@/components/HeaderTopBar";
 
 type NavProfile = {
   full_name: string;
@@ -69,14 +69,15 @@ export async function NavBar() {
       .from("announcements")
       .select("id", { count: "exact", head: true })
       .gte("created_at", threeDaysAgo),
-    supabase.from("events").select("id").gte("date", today).neq("status", "finished"),
+    supabase.from("events").select("id, date, time").gte("date", today).neq("status", "finished").order("date", { ascending: true }).order("time", { ascending: true }),
   ]);
 
   let pendingConfirmCount = 0;
+  let nextEvent: HeaderEventSummary | null = null;
   if (upcomingEvents?.length) {
     const { data: myAttendance } = await supabase
       .from("attendance")
-      .select("event_id")
+      .select("event_id, status")
       .eq("profile_id", userId)
       .in(
         "event_id",
@@ -84,6 +85,14 @@ export async function NavBar() {
       );
     const respondedIds = new Set((myAttendance ?? []).map((a) => a.event_id));
     pendingConfirmCount = upcomingEvents.filter((e) => !respondedIds.has(e.id)).length;
+    const nearest = upcomingEvents[0];
+    const attendance = (myAttendance ?? []).find((item) => item.event_id === nearest.id);
+    nextEvent = {
+      id: nearest.id,
+      dateLabel: new Date(`${nearest.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(".", ""),
+      time: nearest.time,
+      attendanceStatus: (attendance?.status as HeaderEventSummary["attendanceStatus"]) ?? null,
+    };
   }
 
   const badgeByHref: Record<string, number> = {
@@ -94,25 +103,7 @@ export async function NavBar() {
   return (
     <CompactAppHeader
       topBar={
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <Link href="/">
-          <Logo markClassName="h-10 w-10" />
-        </Link>
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/perfil"
-            className="flex items-center gap-2 text-sm text-white/80 hover:text-white"
-          >
-            <Avatar src={profile?.avatar_url} name={profile?.full_name ?? "?"} size="sm" />
-            <span>Perfil</span>
-          </Link>
-          <form action={signOut}>
-            <button className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium hover:bg-white/20">
-              Sair
-            </button>
-          </form>
-        </div>
-        </div>
+        <HeaderTopBar fullName={profile?.full_name ?? "Atleta VPA"} avatarUrl={profile?.avatar_url ?? null} isOrganizer={profile?.is_organizer ?? false} nextEvent={nextEvent} signOutAction={signOut} />
       }
       navigation={<NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} />}
     />
