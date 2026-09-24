@@ -3,20 +3,12 @@
 import { useState } from "react";
 import { Download, Loader2, Share2 } from "lucide-react";
 import { useToast } from "@/components/Toast";
+import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
 async function fetchSummaryImage(eventId: string) {
   const response = await fetch(`/racha/${eventId}/resumo/imagem`, { cache: "no-store" });
-  if (!response.ok) throw new Error("Não foi possível gerar a arte.");
+  if (!response.ok) throw new Error((await response.text()) || "Não foi possível gerar a arte.");
   return response.blob();
-}
-
-function downloadBlob(blob: Blob, eventDate: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `resumo-racha-${eventDate}.png`;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
 
 export function ShareRachaSummaryButton({ eventId, eventDate }: { eventId: string; eventDate: string }) {
@@ -27,21 +19,14 @@ export function ShareRachaSummaryButton({ eventId, eventDate }: { eventId: strin
     setBusyAction("share");
     try {
       const blob = await fetchSummaryImage(eventId);
-      const file = new File([blob], `resumo-racha-${eventDate}.png`, { type: "image/png" });
-      const shareData = {
+      const result = await shareImageOrSave({
+        blob,
+        filename: `resumo-racha-${eventDate}.png`,
         title: "Resumo do racha",
         text: "Confira quem mandou bem no racha! 🏐",
-        files: [file],
-      };
-
-      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-        await navigator.share(shareData);
-      } else {
-        downloadBlob(blob, eventDate);
-        showToast("Arte baixada! Agora é só enviar ou postar.");
-      }
+      });
+      if (result === "saved") showToast("A arte foi salva no aparelho. Agora é só enviar ou postar.");
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
       showToast(error instanceof Error ? error.message : "Não foi possível compartilhar a arte.");
     } finally {
       setBusyAction(null);
@@ -51,8 +36,8 @@ export function ShareRachaSummaryButton({ eventId, eventDate }: { eventId: strin
   async function handleDownload() {
     setBusyAction("download");
     try {
-      downloadBlob(await fetchSummaryImage(eventId), eventDate);
-      showToast("Arte baixada com sucesso!");
+      saveImageBlob(await fetchSummaryImage(eventId), `resumo-racha-${eventDate}.png`);
+      showToast("Arte salva no aparelho!");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Não foi possível baixar a arte.");
     } finally {
@@ -78,7 +63,7 @@ export function ShareRachaSummaryButton({ eventId, eventDate }: { eventId: strin
         className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 py-3 font-semibold text-white hover:bg-white/10 disabled:opacity-60"
       >
         {busyAction === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-        Baixar imagem
+        Salvar na galeria
       </button>
     </div>
   );

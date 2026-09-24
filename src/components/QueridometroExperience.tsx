@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Heart, History, Loader2, LockKeyhole, RotateCcw, Share2, Sparkles, Users, X } from "lucide-react";
+import { CheckCircle2, Download, Heart, History, Loader2, LockKeyhole, RotateCcw, Share2, Sparkles, Users, X } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { useToast } from "./Toast";
+import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
 type ReactionType = {
   key: string;
@@ -41,15 +42,6 @@ async function fetchResultArt(weekStart: string) {
   return response.blob();
 }
 
-function downloadBlob(blob: Blob, weekStart: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `queridometro-vpa-${weekStart}.png`;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
 export function QueridometroExperience({
   weekStart,
   weekLabel,
@@ -83,7 +75,7 @@ export function QueridometroExperience({
 }) {
   const [tab, setTab] = useState<Tab>("evaluate");
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
-  const [shareBusy, setShareBusy] = useState(false);
+  const [artBusy, setArtBusy] = useState<"share" | "save" | null>(null);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const { showToast } = useToast();
@@ -128,21 +120,27 @@ export function QueridometroExperience({
   }
 
   async function shareResult() {
-    setShareBusy(true);
+    setArtBusy("share");
     try {
       const blob = await fetchResultArt(weekStart);
-      const file = new File([blob], `queridometro-vpa-${weekStart}.png`, { type: "image/png" });
-      const shareData = { title: "Meu Queridômetro VPA", text: "Meu resultado no Queridômetro VPA da semana! 💜", files: [file] };
-      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) await navigator.share(shareData);
-      else {
-        downloadBlob(blob, weekStart);
-        showToast("Arte baixada! Agora é só compartilhar.");
-      }
+      const result = await shareImageOrSave({ blob, filename: `queridometro-vpa-${weekStart}.png`, title: "Meu Queridômetro VPA", text: "Meu resultado no Queridômetro VPA da semana! 💜" });
+      if (result === "saved") showToast("Arte salva no aparelho! Agora é só compartilhar.");
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
       showToast(error instanceof Error ? error.message : "Não foi possível gerar a arte.");
     } finally {
-      setShareBusy(false);
+      setArtBusy(null);
+    }
+  }
+
+  async function saveResult() {
+    setArtBusy("save");
+    try {
+      saveImageBlob(await fetchResultArt(weekStart), `queridometro-vpa-${weekStart}.png`);
+      showToast("Arte salva no aparelho!");
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Não foi possível salvar a arte.");
+    } finally {
+      setArtBusy(null);
     }
   }
 
@@ -215,7 +213,7 @@ export function QueridometroExperience({
             <div className="space-y-4">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div><h2 className="text-xl font-black text-white">Meu resultado</h2><p className="mt-1 text-sm text-white/50">Você recebeu {totalReceived} {totalReceived === 1 ? "reação" : "reações"} nesta semana.</p></div>
-                {totalReceived > 0 && <button type="button" onClick={shareResult} disabled={shareBusy} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-purple px-4 py-2 text-sm font-bold text-white hover:bg-brand-purple-dark disabled:opacity-60">{shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />} Compartilhar resultado</button>}
+                {totalReceived > 0 && <div className="flex flex-wrap gap-2"><button type="button" onClick={shareResult} disabled={artBusy !== null} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-purple px-4 py-2 text-sm font-bold text-white hover:bg-brand-purple-dark disabled:opacity-60">{artBusy === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />} Compartilhar resultado</button><button type="button" onClick={saveResult} disabled={artBusy !== null} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-60">{artBusy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Salvar na galeria</button></div>}
               </div>
               {myResults.length ? <div className="grid gap-3 sm:grid-cols-2">{myResults.map((result, index) => <div key={result.key} className={`queridometro-reveal rounded-2xl border p-4 ${index === 0 ? "border-purple-300/30 bg-gradient-to-br from-brand-purple/20 to-transparent" : "border-white/10 bg-white/[0.035]"}`} style={{ animationDelay: `${index * 70}ms` }}><div className="flex items-center gap-3"><span className="text-4xl">{result.emoji}</span><div className="min-w-0 flex-1"><p className="font-bold text-white">{result.label}</p><p className="text-xs text-white/45">{result.description}</p></div><span className="text-2xl font-black text-purple-200">{result.total}</span></div></div>)}</div> : <EmptyResult />}
               {previousWeek && weeklyDifference !== null && <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xs font-bold uppercase tracking-wider text-white/45">Comparação com a semana anterior</p><div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2"><p className={`text-sm font-bold ${weeklyDifference > 0 ? "text-green-300" : weeklyDifference < 0 ? "text-amber-300" : "text-white/65"}`}>{weeklyDifference > 0 ? "+" : ""}{weeklyDifference} reações</p><p className="text-sm text-white/55">Anterior: {previousWeek.myTop ? `${previousWeek.myTop.emoji} ${previousWeek.myTop.label}` : "sem resultado"}</p></div></div>}

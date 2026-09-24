@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Heart, Loader2, Share2 } from "lucide-react";
 import { useToast } from "./Toast";
+import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
 type FeaturedAchievement = { title: string; emoji: string };
 
@@ -41,15 +42,6 @@ async function fetchCardImage() {
   return response.blob();
 }
 
-function downloadBlob(blob: Blob) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "meu-cartao-volei-por-amor.png";
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
 function rankLabel(position: number | null) {
   return position ? `#${position}` : "—";
 }
@@ -70,21 +62,14 @@ export function SharePlayerCard({
     setBusyAction("share");
     try {
       const blob = await fetchCardImage();
-      const file = new File([blob], "meu-cartao-volei-por-amor.png", { type: "image/png" });
-      const shareData = {
+      const result = await shareImageOrSave({
+        blob,
+        filename: "meu-cartao-volei-por-amor.png",
         title: "Meu cartão Vôlei Por Amor",
         text: "Meu cartão no Vôlei Por Amor! 🏐💜",
-        files: [file],
-      };
-
-      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-        await navigator.share(shareData);
-      } else {
-        downloadBlob(blob);
-        showToast("Cartão baixado! Agora é só compartilhar.");
-      }
+      });
+      if (result === "saved") showToast("Cartão salvo no aparelho! Agora é só compartilhar.");
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
       showToast(error instanceof Error ? error.message : "Não foi possível compartilhar seu cartão.");
     } finally {
       setBusyAction(null);
@@ -94,8 +79,8 @@ export function SharePlayerCard({
   async function handleDownload() {
     setBusyAction("download");
     try {
-      downloadBlob(await fetchCardImage());
-      showToast("Seu cartão foi baixado!");
+      saveImageBlob(await fetchCardImage(), "meu-cartao-volei-por-amor.png");
+      showToast("Seu cartão foi salvo no aparelho!");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Não foi possível baixar seu cartão.");
     } finally {
@@ -170,7 +155,7 @@ export function SharePlayerCard({
         </button>
         <button type="button" onClick={handleDownload} disabled={busyAction !== null} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-60">
           {busyAction === "download" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          Baixar imagem
+          Salvar na galeria
         </button>
       </div>
     </section>

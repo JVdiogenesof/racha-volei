@@ -130,7 +130,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
         <div style={{ display: "flex", alignItems: "center", marginTop: "34px", marginBottom: "18px" }}>
           <span style={{ fontSize: "28px" }}>🏆</span>
-          <span style={{ marginLeft: "12px", fontSize: "25px", fontWeight: 800 }}>Quem mais venceu na noite</span>
+          <span style={{ marginLeft: "12px", fontSize: "25px", fontWeight: 800 }}>Quem mais venceu no racha</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignContent: "flex-start" }}>
