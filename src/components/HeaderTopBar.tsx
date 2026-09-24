@@ -22,6 +22,7 @@ export type HeaderEventSummary = {
   id: string;
   dateLabel: string;
   time: string | null;
+  startsAt: string;
   attendanceStatus: "confirmed" | "interested" | "declined" | null;
 };
 
@@ -51,6 +52,21 @@ const STATUS_STYLE = {
   declined: { label: "Não vou", dot: "bg-white/35", ring: "ring-white/20" },
 };
 
+function formatCountdown(startsAt: string, now: number | null) {
+  if (now === null) return "Calculando...";
+  const difference = new Date(startsAt).getTime() - now;
+  if (difference <= 0) return "Racha em andamento";
+
+  const totalMinutes = Math.ceil(difference / 60_000);
+  const days = Math.floor(totalMinutes / 1_440);
+  const hours = Math.floor((totalMinutes % 1_440) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) return `Faltam ${days}d ${hours}h`;
+  if (hours > 0) return `Faltam ${hours}h ${minutes}min`;
+  return `Faltam ${minutes}min`;
+}
+
 export function HeaderTopBar({
   fullName,
   avatarUrl,
@@ -69,10 +85,21 @@ export function HeaderTopBar({
   const pathname = usePathname();
   const compact = useCompactHeader();
   const [open, setOpen] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const heading = pageHeading(previewPath ?? pathname);
   const firstName = fullName.trim().split(/\s+/)[0] || "Atleta";
   const eventStatus = nextEvent?.attendanceStatus ? STATUS_STYLE[nextEvent.attendanceStatus] : null;
+  const countdown = nextEvent ? formatCountdown(nextEvent.startsAt, now) : null;
+
+  useEffect(() => {
+    const update = window.setInterval(() => setNow(Date.now()), 30_000);
+    const initial = window.setTimeout(() => setNow(Date.now()), 0);
+    return () => {
+      window.clearInterval(update);
+      window.clearTimeout(initial);
+    };
+  }, []);
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -106,7 +133,10 @@ export function HeaderTopBar({
 
       <div className="min-w-0 flex-1">
         <p className={`truncate font-semibold text-white transition-all duration-300 ${compact ? "text-sm" : "text-base sm:text-lg"}`}>{heading.title}</p>
-        <p className={`truncate text-[10px] font-medium uppercase tracking-[0.14em] text-purple-200/65 transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "mt-1 max-h-4 opacity-100"}`}>{heading.eyebrow}</p>
+        <p className={`truncate text-[10px] font-medium uppercase tracking-[0.12em] text-purple-200/70 transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "mt-1 max-h-4 opacity-100"}`}>
+          <span className="md:hidden">{countdown ?? heading.eyebrow}</span>
+          <span className="hidden md:inline">{heading.eyebrow}</span>
+        </p>
       </div>
 
       {nextEvent && (
@@ -116,7 +146,7 @@ export function HeaderTopBar({
         >
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-purple-400/15 text-purple-200"><CalendarDays className="h-4 w-4" /></span>
           <span className="min-w-0 leading-tight">
-            <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">Próximo racha</span>
+            <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">Próximo racha{countdown ? ` · ${countdown}` : ""}</span>
             <span className="mt-0.5 block truncate text-xs font-semibold text-white/90">{nextEvent.dateLabel}{nextEvent.time ? ` · ${nextEvent.time.slice(0, 5)}` : ""}</span>
           </span>
           {eventStatus && <span title={eventStatus.label} className={`h-2 w-2 shrink-0 rounded-full ${eventStatus.dot}`} />}
@@ -129,9 +159,9 @@ export function HeaderTopBar({
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-haspopup="menu"
-          className={`flex items-center rounded-2xl border border-white/10 bg-white/[0.08] text-left shadow-lg shadow-black/10 transition hover:border-white/20 hover:bg-white/[0.13] ${compact ? "gap-1 p-1" : "gap-2 p-1 pr-2.5"}`}
+          className={`flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-left leading-none shadow-lg shadow-black/10 transition hover:border-white/20 hover:bg-white/[0.13] max-sm:h-11 max-sm:w-11 max-sm:p-0 ${compact ? "gap-1 sm:p-1" : "gap-2 sm:p-1 sm:pr-2.5"}`}
         >
-          <span className={`rounded-full ring-2 ${eventStatus?.ring ?? "ring-purple-300/25"}`}><Avatar src={avatarUrl} name={fullName} size="sm" /></span>
+          <span className={`flex items-center justify-center rounded-full ring-2 ${eventStatus?.ring ?? "ring-purple-300/25"}`}><Avatar src={avatarUrl} name={fullName} size="sm" /></span>
           <span className="hidden min-w-0 leading-tight sm:block">
             <span className="block max-w-24 truncate text-xs font-semibold">{firstName}</span>
             <span className="mt-0.5 flex items-center gap-1 text-[9px] font-medium text-white/50">{isOrganizer ? <><ShieldCheck className="h-2.5 w-2.5 text-amber-300" /> Organizador</> : "Atleta VPA"}</span>

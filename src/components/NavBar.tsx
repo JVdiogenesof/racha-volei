@@ -91,6 +91,7 @@ export async function NavBar() {
       id: nearest.id,
       dateLabel: new Date(`${nearest.date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" }).replace(".", ""),
       time: nearest.time,
+      startsAt: `${nearest.date}T${nearest.time ?? "23:59:00"}-03:00`,
       attendanceStatus: (attendance?.status as HeaderEventSummary["attendanceStatus"]) ?? null,
     };
   }
