@@ -3,51 +3,56 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { sendPushToProfiles } from "@/lib/push";
-import { renderReactionText } from "@/lib/reactions";
+import { getEligibleQueridometroProfiles, getQueridometroPeriod } from "@/lib/queridometro";
 
-export async function sendReaction(formData: FormData) {
+export async function setWeeklyReaction(formData: FormData) {
   const profile = await requireProfile();
   const supabase = await createClient();
   const toProfileId = String(formData.get("toProfileId") ?? "");
-  const reactionTypeId = String(formData.get("reactionTypeId") ?? "");
+  const reactionKey = String(formData.get("reactionKey") ?? "");
+  const period = getQueridometroPeriod();
 
-  if (!toProfileId || !reactionTypeId) {
-    throw new Error("Escolha quem vai receber e qual reação mandar.");
-  }
+  if (!period.votingOpen) throw new Error("A votação encerrou. Hoje é dia de ver o resultado!");
+  if (!toProfileId || !reactionKey) throw new Error("Escolha uma pessoa e uma reação.");
+  if (toProfileId === profile.id) throw new Error("Você não pode reagir a si mesmo.");
 
-  const [{ data: target }, { data: reactionType }] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", toProfileId).maybeSingle(),
-    supabase.from("reaction_types").select("text, active").eq("id", reactionTypeId).maybeSingle(),
+  const [eligibleProfiles, { data: reactionType }] = await Promise.all([
+    getEligibleQueridometroProfiles(supabase),
+    supabase.from("queridometro_reaction_types").select("key, active").eq("key", reactionKey).maybeSingle(),
   ]);
-  if (!target) throw new Error("Jogador não encontrado.");
-  if (!reactionType?.active) throw new Error("Essa reação não está mais disponível.");
-
-  const { error } = await supabase.from("reactions").insert({
-    from_profile_id: profile.id,
-    to_profile_id: toProfileId,
-    reaction_type_id: reactionTypeId,
-  });
-  if (error) throw new Error(error.message);
-
-  if (toProfileId !== profile.id) {
-    await sendPushToProfiles(supabase, [toProfileId], {
-      title: "Você recebeu uma reação! 🎭",
-      body: `${profile.full_name} ${renderReactionText(reactionType.text, target.full_name)}`,
-      url: "/reacoes",
-    });
+  const eligibleIds = new Set(eligibleProfiles.map((item) => item.id));
+  if (!eligibleIds.has(profile.id) || !eligibleIds.has(toProfileId)) {
+    throw new Error("O Queridômetro desta semana é para quem participou dos rachas recentes.");
   }
+  if (!reactionType?.active) throw new Error("Essa reação não está disponível.");
 
+  const { error } = await supabase.from("queridometro_votes").upsert(
+    {
+      week_start: period.weekStart,
+      from_profile_id: profile.id,
+      to_profile_id: toProfileId,
+      reaction_key: reactionKey,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "week_start,from_profile_id,to_profile_id" },
+  );
+  if (error) throw new Error(error.message);
   revalidatePath("/reacoes");
 }
 
-export async function deleteReaction(formData: FormData) {
-  await requireProfile();
+export async function clearWeeklyReaction(formData: FormData) {
+  const profile = await requireProfile();
   const supabase = await createClient();
-  const reactionId = String(formData.get("reactionId"));
+  const toProfileId = String(formData.get("toProfileId") ?? "");
+  const period = getQueridometroPeriod();
 
-  // RLS já garante que só quem mandou ou um organizador consegue apagar.
-  const { error } = await supabase.from("reactions").delete().eq("id", reactionId);
+  if (!period.votingOpen) throw new Error("A votação desta semana já encerrou.");
+  const { error } = await supabase
+    .from("queridometro_votes")
+    .delete()
+    .eq("week_start", period.weekStart)
+    .eq("from_profile_id", profile.id)
+    .eq("to_profile_id", toProfileId);
   if (error) throw new Error(error.message);
   revalidatePath("/reacoes");
 }

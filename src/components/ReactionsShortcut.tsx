@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Swords } from "lucide-react";
+import { HeartHandshake } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
@@ -28,11 +28,11 @@ export async function ReactionsShortcut() {
   return (
     <Link
       href="/reacoes"
-      aria-label="Reações"
-      title="Reações"
+      aria-label="Queridômetro VPA"
+      title="Queridômetro VPA"
       className="fixed bottom-24 left-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-purple text-white shadow-lg hover:bg-brand-purple-dark"
     >
-      <Swords className="h-6 w-6" strokeWidth={2} />
+      <HeartHandshake className="h-6 w-6" strokeWidth={2} />
     </Link>
   );
 }

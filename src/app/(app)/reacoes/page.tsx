@@ -1,108 +1,133 @@
-import { Swords } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { pruneOldReactions, renderReactionText } from "@/lib/reactions";
-import { Avatar } from "@/components/Avatar";
-import { ReactionSender } from "@/components/ReactionSender";
-import { DeleteReactionButton } from "@/components/DeleteReactionButton";
-import { sendReaction, deleteReaction } from "./actions";
+import {
+  formatQueridometroWeek,
+  getEligibleQueridometroProfiles,
+  getQueridometroPeriod,
+  normalizeQueridometroResults,
+  type QueridometroResultRow,
+  type QueridometroType,
+} from "@/lib/queridometro";
+import { QueridometroExperience } from "@/components/QueridometroExperience";
+import { clearWeeklyReaction, setWeeklyReaction } from "./actions";
 
-function relativeDate(dateStr: string) {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const diffHours = Math.floor(diffMs / (60 * 60 * 1000));
-  if (diffHours < 1) return "agora há pouco";
-  if (diffHours < 24) return `há ${diffHours}h`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return "há 1 dia";
-  return `há ${diffDays} dias`;
+type Player = { id: string; fullName: string; avatarUrl: string | null };
+
+function playerResult(rows: QueridometroResultRow[], profileId: string, types: Map<string, QueridometroType>) {
+  return rows
+    .filter((row) => row.to_profile_id === profileId)
+    .flatMap((row) => {
+      const type = types.get(row.reaction_key);
+      return type ? [{ key: type.key, emoji: type.emoji, label: type.label, description: type.description, total: row.total }] : [];
+    })
+    .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label, "pt-BR"));
+}
+
+function groupLeaders(rows: QueridometroResultRow[], playerById: Map<string, Player>) {
+  const totals = new Map<string, number>();
+  for (const row of rows) totals.set(row.to_profile_id, (totals.get(row.to_profile_id) ?? 0) + row.total);
+  return [...totals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .flatMap(([profileId]) => {
+      const player = playerById.get(profileId);
+      return player ? [player.fullName] : [];
+    });
 }
 
 export default async function ReacoesPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const period = getQueridometroPeriod();
 
-  await pruneOldReactions(supabase);
-
-  const [{ data: reactionTypes }, { data: players }, { data: reactionRows }] = await Promise.all([
-    supabase.from("reaction_types").select("id, text").eq("active", true).order("text"),
-    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").order("full_name"),
-    supabase
-      .from("reactions")
-      .select(
-        "id, created_at, from_profile_id, to_profile_id, reaction_types(text), from:profiles!reactions_from_profile_id_profiles_id_fk(full_name, avatar_url), to:profiles!reactions_to_profile_id_profiles_id_fk(full_name, avatar_url)",
-      )
-      .order("created_at", { ascending: false })
-      .limit(50),
+  const [
+    { data: typeRows },
+    { data: allProfileRows },
+    eligibleRows,
+    { data: ownVoteRows },
+    { data: currentResultData },
+    { data: connectionData },
+    { data: weekRows },
+  ] = await Promise.all([
+    supabase.from("queridometro_reaction_types").select("key, emoji, label, description, connection_label, active, sort_order").order("sort_order"),
+    supabase.from("profiles").select("id, full_name, avatar_url"),
+    getEligibleQueridometroProfiles(supabase),
+    supabase.from("queridometro_votes").select("to_profile_id, reaction_key").eq("week_start", period.weekStart).eq("from_profile_id", profile.id),
+    supabase.rpc("get_queridometro_results", { p_week_start: period.weekStart }),
+    supabase.rpc("get_my_queridometro_connections", { p_week_start: period.weekStart }),
+    supabase.rpc("get_queridometro_weeks"),
   ]);
 
-  const feed = (reactionRows ?? []).map((r) => {
-    const from = r.from as unknown as { full_name: string; avatar_url: string | null } | null;
-    const to = r.to as unknown as { full_name: string; avatar_url: string | null } | null;
-    const reactionType = r.reaction_types as unknown as { text: string } | null;
+  const types = (typeRows ?? []) as QueridometroType[];
+  const typeByKey = new Map(types.map((type) => [type.key, type]));
+  const allPlayers: Player[] = (allProfileRows ?? []).map((item) => ({ id: item.id, fullName: item.full_name, avatarUrl: item.avatar_url }));
+  const playerById = new Map(allPlayers.map((player) => [player.id, player]));
+  const eligibleIds = new Set(eligibleRows.map((item) => item.id));
+  const eligibleToVote = eligibleIds.has(profile.id);
+  const targets: Player[] = eligibleRows
+    .filter((item) => item.id !== profile.id)
+    .map((item) => ({ id: item.id, fullName: item.full_name, avatarUrl: item.avatar_url }));
+  const votes = Object.fromEntries((ownVoteRows ?? []).map((vote) => [vote.to_profile_id, vote.reaction_key]));
+  const currentResults = normalizeQueridometroResults(currentResultData);
+  const myResults = playerResult(currentResults, profile.id, typeByKey);
+
+  const highlights = types.flatMap((type) => {
+    const rows = currentResults.filter((row) => row.reaction_key === type.key);
+    const highest = Math.max(0, ...rows.map((row) => row.total));
+    if (!highest) return [];
+    const players = rows
+      .filter((row) => row.total === highest)
+      .flatMap((row) => {
+        const player = playerById.get(row.to_profile_id);
+        return player ? [player] : [];
+      });
+    return [{ key: type.key, emoji: type.emoji, label: type.label, description: type.description, total: highest, players }];
+  });
+
+  const connections = ((connectionData ?? []) as { other_profile_id: string; reaction_key: string; connection_label: string }[]).flatMap((row) => {
+    const other = playerById.get(row.other_profile_id);
+    const type = typeByKey.get(row.reaction_key);
+    return other && type ? [{ profile: other, emoji: type.emoji, label: row.connection_label }] : [];
+  });
+
+  const revealedWeeks = ((weekRows ?? []) as { week_start: string; total_votes: number | string }[])
+    .filter((week) => week.week_start !== period.weekStart)
+    .slice(0, 8);
+  const historyResults = await Promise.all(
+    revealedWeeks.map(async (week) => {
+      const { data } = await supabase.rpc("get_queridometro_results", { p_week_start: week.week_start });
+      return normalizeQueridometroResults(data);
+    }),
+  );
+  const history = revealedWeeks.map((week, index) => {
+    const results = historyResults[index];
+    const mine = playerResult(results, profile.id, typeByKey);
     return {
-      id: r.id,
-      createdAt: r.created_at,
-      fromProfileId: r.from_profile_id,
-      toProfileId: r.to_profile_id,
-      fromName: from?.full_name ?? "?",
-      fromAvatar: from?.avatar_url ?? null,
-      toName: to?.full_name ?? "?",
-      toAvatar: to?.avatar_url ?? null,
-      text: reactionType ? renderReactionText(reactionType.text, to?.full_name ?? "?") : "",
+      weekStart: week.week_start,
+      label: formatQueridometroWeek(week.week_start),
+      totalVotes: Number(week.total_votes),
+      myTotal: mine.reduce((sum, item) => sum + item.total, 0),
+      myTop: mine[0] ?? null,
+      leaders: groupLeaders(results, playerById),
     };
   });
 
-  // Última reação recebida por jogador -- mostrada direto no card dele, sem
-  // precisar abrir o perfil. O feed já vem ordenado do mais recente pro mais
-  // velho, então a primeira ocorrência por jogador já é a mais recente.
-  const lastReceivedByProfile = new Map<string, { text: string; fromName: string; createdAt: string }>();
-  for (const r of feed) {
-    if (!lastReceivedByProfile.has(r.toProfileId)) {
-      lastReceivedByProfile.set(r.toProfileId, { text: r.text, fromName: r.fromName, createdAt: r.createdAt });
-    }
-  }
-
   return (
-    <div>
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
-        <Swords className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Reações
-      </h1>
-      <p className="mt-1 text-sm text-white/60">
-        Provoque a galera! Manda uma reação pra alguém e ela aparece aqui pra todo mundo ver.
-      </p>
-
-      <ReactionSender
-        players={(players ?? []).map((p) => ({
-          ...p,
-          lastReceived: lastReceivedByProfile.get(p.id) ?? null,
-        }))}
-        reactionTypes={reactionTypes ?? []}
-        currentProfileId={profile.id}
-        action={sendReaction}
-      />
-
-      <div className="mt-6 space-y-2">
-        {!feed.length && (
-          <p className="text-sm text-white/60">Ninguém mandou reação ainda. Seja o primeiro!</p>
-        )}
-        {feed.map((r) => (
-          <div
-            key={r.id}
-            className="flex items-center gap-3 rounded-lg border border-white/10 px-4 py-3"
-          >
-            <Avatar src={r.fromAvatar} name={r.fromName} size="sm" />
-            <div className="min-w-0 flex-1 text-sm text-white">
-              <span className="font-medium">{r.fromName}</span> {r.text}
-              <p className="mt-0.5 text-xs text-white/40">{relativeDate(r.createdAt)}</p>
-            </div>
-            <Avatar src={r.toAvatar} name={r.toName} size="sm" />
-            {(r.fromProfileId === profile.id || profile.is_organizer) && (
-              <DeleteReactionButton reactionId={r.id} action={deleteReaction} />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+    <QueridometroExperience
+      weekStart={period.weekStart}
+      weekLabel={formatQueridometroWeek(period.weekStart)}
+      votingOpen={period.votingOpen}
+      revealAvailable={period.revealAvailable}
+      eligibleToVote={eligibleToVote}
+      players={targets}
+      reactionTypes={types.filter((type) => type.active).map(({ key, emoji, label, description }) => ({ key, emoji, label, description }))}
+      votes={votes}
+      myResults={myResults}
+      highlights={highlights}
+      connections={connections}
+      history={history}
+      setReactionAction={setWeeklyReaction}
+      clearReactionAction={clearWeeklyReaction}
+    />
   );
 }
