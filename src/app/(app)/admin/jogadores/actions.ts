@@ -72,6 +72,28 @@ export async function removeMember(formData: FormData) {
   revalidatePath("/ranking");
 }
 
+export async function restoreMember(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const profileId = String(formData.get("profileId"));
+
+  const { data: restored, error } = await supabase
+    .from("profiles")
+    .update({ status: "approved" })
+    .eq("id", profileId)
+    .eq("status", "removed")
+    .select("id")
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  if (!restored) throw new Error("Essa pessoa não está mais na lista de removidos.");
+
+  revalidatePath("/admin/jogadores");
+  revalidatePath("/jogadores");
+  revalidatePath("/ranking");
+  revalidatePath("/");
+}
+
 export async function setRatingWeights(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();
