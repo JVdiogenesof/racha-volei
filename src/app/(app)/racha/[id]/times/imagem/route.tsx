@@ -112,10 +112,14 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const teamIds = (teamRows ?? []).map((team) => team.id);
   if (!teamIds.length) return new Response("Nenhum time encontrado", { status: 409 });
 
-  const { data: memberRows, error: memberError } = await supabase.from("team_members").select("team_id, profile_id, profiles(full_name, avatar_url, is_setter)").in("team_id", teamIds);
-  if (memberError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
+  const [{ data: memberRows, error: memberError }, { data: confirmedRows, error: confirmedError }] = await Promise.all([
+    supabase.from("team_members").select("team_id, profile_id, profiles(full_name, avatar_url, is_setter)").in("team_id", teamIds),
+    supabase.from("attendance").select("profile_id").eq("event_id", id).eq("status", "confirmed"),
+  ]);
+  if (memberError || confirmedError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
 
-  const players = await embedAvatarUrls((memberRows ?? []).map((row) => {
+  const confirmedIds = new Set((confirmedRows ?? []).map((row) => row.profile_id));
+  const players = await embedAvatarUrls((memberRows ?? []).filter((row) => confirmedIds.has(row.profile_id)).map((row) => {
     const profile = row.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
     return { id: row.profile_id, teamId: row.team_id, fullName: profile?.full_name ?? "Jogador", avatarUrl: profile?.avatar_url ?? null, isSetter: profile?.is_setter ?? false };
   }));
