@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { formatQueridometroWeek, normalizeQueridometroResults, type QueridometroType } from "@/lib/queridometro";
+import { imageUrlToDataUrl } from "@/lib/serverImageData";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
     });
   const total = myResults.reduce((sum, item) => sum + item.total, 0);
   const logoUrl = new URL("/logo.png", request.url).toString();
+  const avatarDataUrl = await imageUrlToDataUrl(profile.avatar_url);
 
   return new ImageResponse(
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", padding: "70px 66px 58px", color: "white", backgroundImage: "radial-gradient(circle at 8% 5%, rgba(216,180,254,.4), transparent 28%), radial-gradient(circle at 100% 76%, rgba(124,58,237,.55), transparent 35%), linear-gradient(155deg, #5b21b6 0%, #2b125c 48%, #13092f 100%)", fontFamily: "sans-serif" }}>
@@ -71,9 +73,9 @@ export async function GET(request: Request) {
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "58px" }}>
         <div style={{ width: "262px", height: "262px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(196,181,253,.16)", border: "8px solid rgba(255,255,255,.86)", boxShadow: "0 0 0 16px rgba(196,181,253,.12)" }}>
-          {profile.avatar_url ? (
+          {avatarDataUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={profile.avatar_url} alt="" width={246} height={246} style={{ borderRadius: "999px", objectFit: "cover" }} />
+            <img src={avatarDataUrl} alt="" width={246} height={246} style={{ borderRadius: "999px", objectFit: "cover" }} />
           ) : <span style={{ fontSize: "68px", fontWeight: 900 }}>{initials(profile.full_name)}</span>}
         </div>
         <span style={{ marginTop: "30px", maxWidth: "900px", textAlign: "center", fontSize: "55px", fontWeight: 900 }}>{profile.full_name}</span>

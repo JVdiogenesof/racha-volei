@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, ImageIcon, Loader2, Share2 } from "lucide-react";
 import { useToast } from "./Toast";
+import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
 async function fetchConfirmedListImage(eventId: string) {
   const response = await fetch(`/racha/${eventId}/confirmar/imagem`, { cache: "no-store" });
@@ -13,15 +14,6 @@ async function fetchConfirmedListImage(eventId: string) {
   return response.blob();
 }
 
-function downloadBlob(blob: Blob, eventDate: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `confirmados-racha-${eventDate}.png`;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-}
-
 export function ShareConfirmedListArtButton({ eventId, eventDate }: { eventId: string; eventDate: string }) {
   const [busyAction, setBusyAction] = useState<"share" | "download" | null>(null);
   const { showToast } = useToast();
@@ -30,21 +22,14 @@ export function ShareConfirmedListArtButton({ eventId, eventDate }: { eventId: s
     setBusyAction("share");
     try {
       const blob = await fetchConfirmedListImage(eventId);
-      const file = new File([blob], `confirmados-racha-${eventDate}.png`, { type: "image/png" });
-      const shareData = {
+      const result = await shareImageOrSave({
+        blob,
+        filename: `confirmados-racha-${eventDate}.png`,
         title: "Lista de confirmados",
         text: "Lista confirmada pro próximo racha! 🏐",
-        files: [file],
-      };
-
-      if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
-        await navigator.share(shareData);
-      } else {
-        downloadBlob(blob, eventDate);
-        showToast("Arte baixada! Agora é só postar nos Stories.");
-      }
+      });
+      if (result === "saved") showToast("Arte salva no aparelho! Agora é só postar nos Stories.");
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
       showToast(error instanceof Error ? error.message : "Não foi possível compartilhar a arte.");
     } finally {
       setBusyAction(null);
@@ -54,8 +39,8 @@ export function ShareConfirmedListArtButton({ eventId, eventDate }: { eventId: s
   async function handleDownload() {
     setBusyAction("download");
     try {
-      downloadBlob(await fetchConfirmedListImage(eventId), eventDate);
-      showToast("Arte dos confirmados baixada!");
+      saveImageBlob(await fetchConfirmedListImage(eventId), `confirmados-racha-${eventDate}.png`);
+      showToast("Arte dos confirmados salva no aparelho!");
     } catch (error) {
       showToast(error instanceof Error ? error.message : "Não foi possível baixar a arte.");
     } finally {

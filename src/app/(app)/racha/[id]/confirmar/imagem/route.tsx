@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
+import { embedAvatarUrls } from "@/lib/serverImageData";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     };
   });
 
-  const displayedPlayers = players.slice(0, 30);
+  const displayedPlayers = await embedAvatarUrls(players.slice(0, 30));
   const hiddenPlayers = Math.max(0, players.length - displayedPlayers.length);
   const date = new Date(`${event.date}T00:00:00`);
   const weekday = date.toLocaleDateString("pt-BR", { weekday: "long" });

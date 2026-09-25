@@ -12,6 +12,7 @@ import { SetterBadge } from "@/components/SetterBadge";
 import { Avatar } from "@/components/Avatar";
 import { NormalMatchRecorder } from "@/components/NormalMatchRecorder";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
+import { ShareTeamsArtButton } from "@/components/ShareTeamsArtButton";
 import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
@@ -210,10 +211,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {generation && (
-            <ExportTeamsButton
-              eventDateLabel={eventDateLabel}
-              teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
-            />
+            <>
+              <ShareTeamsArtButton eventId={id} eventDate={event.date} />
+              <ExportTeamsButton
+                eventDateLabel={eventDateLabel}
+                teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
+              />
+            </>
           )}
           {finalMatch?.scoreA != null && finalMatch.scoreB != null && (
             <Link

@@ -4,6 +4,7 @@ import { getRankingCounts } from "@/lib/rankings";
 import { getAttendanceStreaks } from "@/lib/streak";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
+import { imageUrlToDataUrl } from "@/lib/serverImageData";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export async function GET(request: Request) {
     (approvedProfiles ?? []).map((item) => item.id),
   );
   const logoUrl = new URL("/logo.png", request.url).toString();
+  const avatarDataUrl = await imageUrlToDataUrl(profile.avatar_url);
 
   const stats = [
     { label: "PRESENÇAS", value: String(attendance), rank: rankings.attendance },
@@ -107,9 +109,9 @@ export async function GET(request: Request) {
             <svg viewBox="0 0 512 512" width="430" height="390" style={{ position: "absolute", inset: 0, filter: "drop-shadow(0 0 26px rgba(196,181,253,.36))" }}>
               <path d="M256 466S44 337 44 177C44 91 113 45 181 45c37 0 63 13 75 27 12-14 38-27 75-27 68 0 137 46 137 132 0 160-212 289-212 289Z" fill="rgba(124,58,237,.28)" stroke="#c4b5fd" strokeWidth="17" />
             </svg>
-            {profile.avatar_url ? (
+            {avatarDataUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.avatar_url} alt="" width={244} height={244} style={{ position: "relative", marginTop: "-38px", borderRadius: "999px", objectFit: "cover", border: "9px solid rgba(255,255,255,.92)" }} />
+              <img src={avatarDataUrl} alt="" width={244} height={244} style={{ position: "relative", marginTop: "-38px", borderRadius: "999px", objectFit: "cover", border: "9px solid rgba(255,255,255,.92)" }} />
             ) : (
               <span style={{ position: "relative", width: "244px", height: "244px", marginTop: "-38px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "#7c3aed", border: "9px solid rgba(255,255,255,.92)", fontSize: "64px", fontWeight: 900 }}>
                 {initials(profile.full_name)}

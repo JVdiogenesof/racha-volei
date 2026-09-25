@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getEventSummary } from "@/lib/eventSummary";
+import { embedAvatarUrls } from "@/lib/serverImageData";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     month: "long",
     year: "numeric",
   });
-  const displayedPlayers = summary.players.slice(0, 24);
+  const displayedPlayers = await embedAvatarUrls(summary.players.slice(0, 24));
   const hiddenPlayers = Math.max(0, summary.players.length - displayedPlayers.length);
   return new ImageResponse(
     (
