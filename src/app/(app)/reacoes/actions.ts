@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireMember } from "@/lib/auth";
 import { getEligibleQueridometroProfiles, getQueridometroPeriod } from "@/lib/queridometro";
 
 export async function setWeeklyReaction(formData: FormData) {
-  const profile = await requireProfile();
+  const profile = await requireMember();
   const supabase = await createClient();
   const toProfileId = String(formData.get("toProfileId") ?? "");
   const reactionKey = String(formData.get("reactionKey") ?? "");
@@ -41,7 +41,7 @@ export async function setWeeklyReaction(formData: FormData) {
 }
 
 export async function clearWeeklyReaction(formData: FormData) {
-  const profile = await requireProfile();
+  const profile = await requireMember();
   const supabase = await createClient();
   const toProfileId = String(formData.get("toProfileId") ?? "");
   const period = getQueridometroPeriod();

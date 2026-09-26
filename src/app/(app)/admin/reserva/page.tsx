@@ -25,7 +25,7 @@ export default async function AdminReservaPage() {
   const [{ data: rows }, { data: callableEvents }, { data: guestProfiles }] = await Promise.all([
     supabase
       .from("reserve_list")
-      .select("id, auth_user_id, full_name, phone, neighborhood, contacted, created_at")
+      .select("id, auth_user_id, full_name, phone, neighborhood, player_level, contacted, created_at")
       .order("created_at", { ascending: true }),
     supabase
       .from("events")
@@ -48,9 +48,8 @@ export default async function AdminReservaPage() {
       <div>
         <h1 className="text-2xl font-bold text-white">Lista de reserva</h1>
         <p className="mt-1 text-sm text-white/60">
-          Pessoas de fora do grupo que topam ser chamadas quando sobrar vaga de última hora num
-          racha. Quem é chamado(a) ganha acesso ao site só pra esse racha, e volta pra reserva
-          automaticamente depois que ele terminar.
+          Visitantes que já podem conhecer o app, mas só participam quando você os chama para um
+          racha. Depois do evento, voltam automaticamente ao modo de visualização.
         </p>
       </div>
 
@@ -70,6 +69,11 @@ export default async function AdminReservaPage() {
                     <MapPin className="h-3.5 w-3.5" strokeWidth={2} />
                     {r.neighborhood}
                   </p>
+                )}
+                {r.player_level && (
+                  <span className="mt-2 inline-flex rounded-full border border-purple-300/20 bg-purple-400/10 px-2.5 py-1 text-xs font-medium text-purple-200">
+                    {r.player_level === "beginner" ? "Iniciante" : r.player_level === "intermediate" ? "Intermediário" : "Avançado"}
+                  </span>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2">

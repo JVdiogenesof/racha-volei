@@ -11,12 +11,13 @@ const TABS = [
   { href: "/perfil/notificacoes", label: "Notificações", icon: Bell },
 ];
 
-export function PerfilTabs() {
+export function PerfilTabs({ readOnly = false }: { readOnly?: boolean }) {
   const pathname = usePathname();
+  const visibleTabs = readOnly ? TABS.filter((tab) => tab.href === "/perfil") : TABS;
 
   return (
     <nav aria-label="Perfil" className="mb-6 grid grid-cols-2 gap-1 border-b border-white/10 sm:flex sm:flex-wrap">
-      {TABS.map((tab) => {
+      {visibleTabs.map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link

@@ -53,6 +53,19 @@ export default async function PerfilDadosPage() {
           <p className="mt-1 text-xs text-white/40">Aparece do lado do seu nome na lista de jogadores.</p>
         </div>
         <div>
+          <label className="block text-sm font-medium text-white">Nível</label>
+          <select
+            name="playerLevel"
+            defaultValue={profile.player_level ?? "intermediate"}
+            required
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+          >
+            <option value="beginner">Iniciante</option>
+            <option value="intermediate">Intermediário</option>
+            <option value="advanced">Avançado</option>
+          </select>
+        </div>
+        <div>
           <label className="block text-sm font-medium text-white">Posição que joga</label>
           <div className="mt-2 flex gap-4 text-sm text-white">
             <label className="flex items-center gap-2">

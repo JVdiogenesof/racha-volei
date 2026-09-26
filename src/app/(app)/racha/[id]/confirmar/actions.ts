@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile, requireOrganizer } from "@/lib/auth";
+import { requireEventParticipant, requireOrganizer } from "@/lib/auth";
 import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 import { sendPushToProfiles } from "@/lib/push";
 
 export async function setAttendance(formData: FormData) {
-  const profile = await requireProfile();
-  const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
+  const profile = await requireEventParticipant(eventId);
+  const supabase = await createClient();
   const status = String(formData.get("status")) as "declined" | "interested";
 
   if (status !== "interested" && status !== "declined") {

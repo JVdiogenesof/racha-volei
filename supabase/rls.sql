@@ -13,10 +13,10 @@ alter table reserve_list
   add constraint reserve_list_auth_user_id_fk
   foreign key (auth_user_id) references auth.users (id) on delete cascade;
 
--- Acesso temporário de convidado: se o racha for apagado, o acesso some junto.
+-- O perfil continua como visitante quando o racha do convite é apagado.
 alter table profiles
   add constraint profiles_guest_for_event_id_fk
-  foreign key (guest_for_event_id) references events (id) on delete cascade;
+  foreign key (guest_for_event_id) references events (id) on delete set null;
 
 -- Função auxiliar: true se o usuário logado é organizador.
 -- SECURITY DEFINER + search_path fixo evita recursão de RLS ao consultar "profiles"
@@ -48,7 +48,15 @@ begin
       or new.is_organizer is distinct from old.is_organizer
       or new.approved_by is distinct from old.approved_by)
      and auth.uid() is not null
-     and not public.is_organizer() then
+     and not public.is_organizer()
+     and not (
+       old.id = auth.uid()
+       and old.status = 'guest'
+       and new.status = 'visitor'
+       and new.guest_for_event_id is null
+       and new.approved_by is null
+       and new.is_organizer = old.is_organizer
+     ) then
     raise exception 'Somente organizadores podem alterar status/aprovação/permissão de organizador.';
   end if;
   return new;
@@ -65,11 +73,62 @@ security definer
 set search_path = public
 stable
 as $$
-  -- "guest" (acesso temporário de fora do grupo pra 1 racha) também conta
-  -- como aprovado aqui, senão essa pessoa não consegue ver o nome/avatar dos
-  -- outros jogadores confirmados no racha que ela foi chamada pra jogar.
-  select coalesce((select status = 'approved' or status = 'guest' from profiles where id = auth.uid()), false);
+  -- pending/visitor enxergam o app em modo vitrine; guest também enxerga tudo,
+  -- mas as políticas de escrita só liberam o racha para o qual foi chamado.
+  select coalesce((select status in ('approved', 'guest', 'pending', 'visitor') from profiles where id = auth.uid()), false);
 $$;
+
+create or replace function public.is_full_member()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((select status = 'approved' from profiles where id = auth.uid()), false);
+$$;
+
+create or replace function public.can_edit_own_profile()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((select status in ('pending', 'approved') from profiles where id = auth.uid()), false);
+$$;
+
+create or replace function public.can_participate_in_event(target_event_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((
+    select status = 'approved' or (status = 'guest' and guest_for_event_id = target_event_id)
+    from profiles where id = auth.uid()
+  ), false);
+$$;
+
+create or replace function public.expire_my_guest_access()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update profiles p
+  set status = 'visitor', guest_for_event_id = null, approved_by = null
+  where p.id = auth.uid() and p.status = 'guest'
+    and not exists (
+      select 1 from events e where e.id = p.guest_for_event_id
+        and e.status not in ('finished', 'cancelled')
+    );
+end;
+$$;
+
+grant execute on function public.expire_my_guest_access() to authenticated;
 
 drop trigger if exists trg_guard_profile_privileged_columns on profiles;
 create trigger trg_guard_profile_privileged_columns
@@ -107,6 +166,9 @@ create policy "profiles_select" on profiles for select to authenticated
 create policy "profiles_insert_self" on profiles for insert to authenticated
   with check (id = auth.uid() and status = 'pending' and is_organizer = false and approved_by is null);
 
+create policy "profiles_insert_visitor_self" on profiles for insert to authenticated
+  with check (id = auth.uid() and status = 'visitor' and is_organizer = false and approved_by is null and guest_for_event_id is null);
+
 -- organizador cria um perfil "guest" pra alguém de fora que ele chamou da
 -- lista de reserva pra jogar um racha específico.
 create policy "profiles_insert_guest_by_organizer" on profiles for insert to authenticated
@@ -115,8 +177,8 @@ create policy "profiles_insert_guest_by_organizer" on profiles for insert to aut
 -- edição: a própria pessoa (campos privilegiados são bloqueados pelo trigger acima)
 -- ou qualquer organizador editando qualquer perfil.
 create policy "profiles_update" on profiles for update to authenticated
-  using (id = auth.uid() or public.is_organizer())
-  with check (id = auth.uid() or public.is_organizer());
+  using (public.is_organizer() or (id = auth.uid() and public.can_edit_own_profile()))
+  with check (public.is_organizer() or (id = auth.uid() and public.can_edit_own_profile()));
 
 -- apagar perfil só é permitido pra "guest" (acesso expirado se apaga sozinho,
 -- ou organizador encerra na mão) -- nunca apaga membro de verdade por aqui.
@@ -126,8 +188,8 @@ create policy "profiles_delete_guest" on profiles for delete to authenticated
 -- self_ratings: transparência total pra leitura; só o próprio dono escreve.
 create policy "self_ratings_select" on self_ratings for select to authenticated using (true);
 create policy "self_ratings_write" on self_ratings for all to authenticated
-  using (profile_id = auth.uid())
-  with check (profile_id = auth.uid());
+  using ((profile_id = auth.uid() and public.can_edit_own_profile()) or public.is_organizer())
+  with check ((profile_id = auth.uid() and public.can_edit_own_profile()) or public.is_organizer());
 
 -- organizer_ratings: transparência total pra leitura; só organizador escreve.
 create policy "organizer_ratings_select" on organizer_ratings for select to authenticated using (true);
@@ -161,8 +223,8 @@ create policy "events_delete" on events for delete to authenticated
 -- cada um confirma/desmarca a própria presença; organizador pode mexer em qualquer uma.
 create policy "attendance_select" on attendance for select to authenticated using (true);
 create policy "attendance_write" on attendance for all to authenticated
-  using (profile_id = auth.uid() or public.is_organizer())
-  with check (profile_id = auth.uid() or public.is_organizer());
+  using (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)))
+  with check (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)));
 
 -- payments: leitura aberta ao grupo; só organizador marca pagamento.
 create policy "payments_select" on payments for select to authenticated using (true);
@@ -197,7 +259,7 @@ create policy "announcements_write" on announcements for all to authenticated
 -- só pra favorecer alguém após ver o placar parcial).
 create policy "mvp_votes_select" on mvp_votes for select to authenticated using (true);
 create policy "mvp_votes_insert" on mvp_votes for insert to authenticated
-  with check (voter_profile_id = auth.uid());
+  with check (voter_profile_id = auth.uid() and public.can_participate_in_event(event_id));
 
 -- match_wins: leitura aberta (alimenta o ranking de vitórias); só organizador registra/apaga.
 create policy "match_wins_select" on match_wins for select to authenticated using (true);
@@ -232,9 +294,9 @@ create policy "reserve_list_delete" on reserve_list for delete to authenticated
 -- organizadores. Só dono ou organizador cria/apaga uma inscrição.
 create policy "push_subscriptions_select" on push_subscriptions for select to authenticated using (true);
 create policy "push_subscriptions_insert" on push_subscriptions for insert to authenticated
-  with check (profile_id = auth.uid());
+  with check (profile_id = auth.uid() and public.is_full_member());
 create policy "push_subscriptions_delete" on push_subscriptions for delete to authenticated
-  using (profile_id = auth.uid() or public.is_organizer());
+  using ((profile_id = auth.uid() and public.is_full_member()) or public.is_organizer());
 
 -- reaction_types: leitura aberta (precisa aparecer no formulário de mandar
 -- reação); escrita separada em insert/update/delete (mesmo motivo de "events"
@@ -252,9 +314,9 @@ create policy "reaction_types_delete" on reaction_types for delete to authentica
 -- nome de si mesmo; apaga quem mandou (desfazer) ou organizador (moderar).
 create policy "reactions_select" on reactions for select to authenticated using (true);
 create policy "reactions_insert" on reactions for insert to authenticated
-  with check (from_profile_id = auth.uid());
+  with check (from_profile_id = auth.uid() and public.is_full_member());
 create policy "reactions_delete" on reactions for delete to authenticated
-  using (from_profile_id = auth.uid() or public.is_organizer());
+  using ((from_profile_id = auth.uid() and public.is_full_member()) or public.is_organizer());
 
 -- Queridômetro: as opções são públicas pro grupo e moderadas por organizador.
 -- Cada pessoa lê apenas os votos que enviou. Resultados recebidos saem por
@@ -267,15 +329,17 @@ create policy "queridometro_votes_select_own" on queridometro_votes
   for select to authenticated using (from_profile_id = auth.uid());
 create policy "queridometro_votes_insert_own" on queridometro_votes
   for insert to authenticated with check (
-    from_profile_id = auth.uid() and from_profile_id <> to_profile_id
+    public.is_full_member()
+    and from_profile_id = auth.uid() and from_profile_id <> to_profile_id
     and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
     and extract(dow from timezone('America/Fortaleza', now())) <> 0
     and exists (select 1 from profiles p where p.id = to_profile_id and p.status = 'approved')
     and exists (select 1 from queridometro_reaction_types t where t.key = reaction_key and t.active)
   );
 create policy "queridometro_votes_update_own" on queridometro_votes
-  for update to authenticated using (from_profile_id = auth.uid()) with check (
-    from_profile_id = auth.uid() and from_profile_id <> to_profile_id
+  for update to authenticated using (from_profile_id = auth.uid() and public.is_full_member()) with check (
+    public.is_full_member()
+    and from_profile_id = auth.uid() and from_profile_id <> to_profile_id
     and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
     and extract(dow from timezone('America/Fortaleza', now())) <> 0
     and exists (select 1 from profiles p where p.id = to_profile_id and p.status = 'approved')
@@ -283,7 +347,7 @@ create policy "queridometro_votes_update_own" on queridometro_votes
   );
 create policy "queridometro_votes_delete_own" on queridometro_votes
   for delete to authenticated using (
-    from_profile_id = auth.uid()
+    public.is_full_member() and from_profile_id = auth.uid()
     and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
     and extract(dow from timezone('America/Fortaleza', now())) <> 0
   );

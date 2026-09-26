@@ -71,6 +71,7 @@ export function HeaderTopBar({
   fullName,
   avatarUrl,
   isOrganizer,
+  isVisitor = false,
   nextEvent,
   signOutAction,
   previewPath,
@@ -78,6 +79,7 @@ export function HeaderTopBar({
   fullName: string;
   avatarUrl: string | null;
   isOrganizer: boolean;
+  isVisitor?: boolean;
   nextEvent: HeaderEventSummary | null;
   signOutAction?: () => Promise<void>;
   previewPath?: string;
@@ -164,7 +166,7 @@ export function HeaderTopBar({
           <span className={`flex items-center justify-center rounded-full ring-2 ${eventStatus?.ring ?? "ring-purple-300/25"}`}><Avatar src={avatarUrl} name={fullName} size="sm" /></span>
           <span className="hidden min-w-0 leading-tight sm:block">
             <span className="block max-w-24 truncate text-xs font-semibold">{firstName}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-[9px] font-medium text-white/50">{isOrganizer ? <><ShieldCheck className="h-2.5 w-2.5 text-amber-300" /> Organizador</> : "Atleta VPA"}</span>
+            <span className="mt-0.5 flex items-center gap-1 text-[9px] font-medium text-white/50">{isOrganizer ? <><ShieldCheck className="h-2.5 w-2.5 text-amber-300" /> Organizador</> : isVisitor ? "Visitante VPA" : "Atleta VPA"}</span>
           </span>
           <ChevronDown className={`hidden h-3.5 w-3.5 text-white/45 transition-transform sm:block ${open ? "rotate-180" : ""}`} />
         </button>

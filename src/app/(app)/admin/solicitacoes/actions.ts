@@ -13,7 +13,8 @@ export async function approveProfile(formData: FormData) {
   const { error } = await supabase
     .from("profiles")
     .update({ status: "approved", approved_by: organizer.id })
-    .eq("id", profileId);
+    .eq("id", profileId)
+    .eq("status", "pending");
 
   if (error) throw new Error(error.message);
 
@@ -34,7 +35,8 @@ export async function rejectProfile(formData: FormData) {
   const { error } = await supabase
     .from("profiles")
     .update({ status: "rejected", approved_by: organizer.id })
-    .eq("id", profileId);
+    .eq("id", profileId)
+    .eq("status", "pending");
 
   if (error) throw new Error(error.message);
   revalidatePath("/admin/solicitacoes");

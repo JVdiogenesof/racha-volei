@@ -19,7 +19,7 @@ export default async function CadastroPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("status, full_name, birthdate, phone, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments")
+    .select("status, full_name, birthdate, phone, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, player_level")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -33,7 +33,7 @@ export default async function CadastroPage() {
       <p className="mb-6 text-sm text-white/60">
         {alreadyApproved
           ? "Só faltam esses dados pra completar seu perfil."
-          : "Esses dados ajudam a organizar o racha. Depois de enviar, um organizador precisa aprovar sua entrada."}
+          : "Esses dados ajudam a organizar o racha. Depois de enviar, você já poderá conhecer o app no modo visitante enquanto aguarda a liberação."}
       </p>
       <form action={submitCadastro} className="space-y-5">
         <div>
@@ -67,6 +67,21 @@ export default async function CadastroPage() {
             placeholder="(85) 90000-0000"
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-white">Qual é o seu nível?</label>
+          <select
+            name="playerLevel"
+            defaultValue={profile?.player_level ?? ""}
+            required
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+          >
+            <option value="" disabled>Selecione seu nível</option>
+            <option value="beginner">Iniciante</option>
+            <option value="intermediate">Intermediário</option>
+            <option value="advanced">Avançado</option>
+          </select>
         </div>
 
         <div>
@@ -157,8 +172,8 @@ export default async function CadastroPage() {
   const reserveForm = (
     <>
       <p className="mb-6 text-sm text-white/60">
-        Não faz parte do grupo fixo, mas topa ser chamado(a) quando sobrar vaga de última hora
-        num racha? Deixa seu nome e telefone aqui.
+        Não faz parte do grupo fixo? Cadastre-se para conhecer todo o app no modo visitante. Você
+        fica na reserva e, quando for chamado(a), poderá participar daquele racha.
       </p>
       <form action={submitReserveSignup} className="space-y-5">
         <div>
@@ -179,6 +194,21 @@ export default async function CadastroPage() {
             placeholder="(85) 90000-0000"
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-white">Qual é o seu nível?</label>
+          <select
+            name="playerLevel"
+            defaultValue=""
+            required
+            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
+          >
+            <option value="" disabled>Selecione seu nível</option>
+            <option value="beginner">Iniciante</option>
+            <option value="intermediate">Intermediário</option>
+            <option value="advanced">Avançado</option>
+          </select>
         </div>
 
         <div>
@@ -211,7 +241,7 @@ export default async function CadastroPage() {
           type="submit"
           className="w-full rounded-lg bg-brand-purple px-4 py-3 font-medium text-white transition hover:bg-brand-purple-dark"
         >
-          Entrar na lista de reserva
+          Conhecer o app e entrar na reserva
         </button>
       </form>
     </>

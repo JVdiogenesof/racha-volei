@@ -74,9 +74,9 @@ export async function updateSession(request: NextRequest) {
       return response;
     }
 
-    // Acesso temporário: só enxerga o racha pro qual foi chamado, e só
-    // enquanto esse racha não tiver terminado/sido cancelado. Quando expira,
-    // o próprio perfil temporário é apagado e a pessoa volta pra lista de reserva.
+    // O convidado continua podendo passear pelo app inteiro. Enquanto o racha
+    // do convite está ativo, as regras do banco liberam ações somente nele.
+    // Quando termina, volta automaticamente ao modo visitante e permanece na reserva.
     if (profile?.status === "guest") {
       const { data: guestEvent } = await supabase
         .from("events")
@@ -87,23 +87,8 @@ export async function updateSession(request: NextRequest) {
       const eventActive = guestEvent && guestEvent.status !== "finished" && guestEvent.status !== "cancelled";
 
       if (!eventActive) {
-        await supabase.from("profiles").delete().eq("id", user.id);
-        if (!isReservePath) {
-          const url = request.nextUrl.clone();
-          url.pathname = RESERVE_PATH;
-          return NextResponse.redirect(url);
-        }
-        return response;
+        await supabase.rpc("expire_my_guest_access");
       }
-
-      const allowedPrefix = `/racha/${profile.guest_for_event_id}`;
-      if (!pathname.startsWith(allowedPrefix)) {
-        const url = request.nextUrl.clone();
-        url.pathname = allowedPrefix;
-        return NextResponse.redirect(url);
-      }
-
-      return response;
     }
 
     if (profile && isReservePath) {
@@ -119,7 +104,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (
-      (profile?.status === "pending" || profile?.status === "rejected" || profile?.status === "removed") &&
+      (profile?.status === "rejected" || profile?.status === "removed") &&
       !isOnboarding
     ) {
       const url = request.nextUrl.clone();
@@ -129,13 +114,29 @@ export async function updateSession(request: NextRequest) {
 
     const isCadastroPath = pathname.startsWith("/cadastro");
     const isAguardandoPath = pathname.startsWith("/aguardando-aprovacao");
+    const isVisitorProfileAction =
+      pathname.startsWith("/perfil/dados") ||
+      pathname.startsWith("/perfil/autoavaliacao") ||
+      pathname.startsWith("/perfil/notificacoes");
+
+    if (
+      (profile?.status === "pending" || profile?.status === "visitor" || profile?.status === "guest") &&
+      isVisitorProfileAction
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/perfil";
+      return NextResponse.redirect(url);
+    }
     // Convidado promovido a membro permanente já tem perfil (status approved)
     // mas pulou o formulário de cadastro — não preencheu aniversário/telefone/
     // posição. Trata como onboarding pendente até completar, do mesmo jeito
     // que a autoavaliação é exigida mais abaixo.
     const profileIncomplete = profile?.status === "approved" && !profile.birthdate;
 
-    if (profile?.status === "approved" && isAguardandoPath) {
+    if (
+      (profile?.status === "approved" || profile?.status === "pending" || profile?.status === "visitor") &&
+      isAguardandoPath
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
@@ -148,6 +149,12 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (profile?.status === "approved" && !profileIncomplete && isCadastroPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+
+    if ((profile?.status === "pending" || profile?.status === "visitor") && isCadastroPath) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);

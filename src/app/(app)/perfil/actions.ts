@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireMember } from "@/lib/auth";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 
 export async function updateProfileData(formData: FormData) {
-  const profile = await requireProfile();
+  const profile = await requireMember();
   const supabase = await createClient();
 
   const fullName = String(formData.get("fullName") ?? "").trim();
@@ -17,9 +17,10 @@ export async function updateProfileData(formData: FormData) {
   const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
+  const playerLevel = String(formData.get("playerLevel") ?? "");
 
-  if (!fullName || !birthdate) {
-    throw new Error("Nome e data de aniversário são obrigatórios.");
+  if (!fullName || !birthdate || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
+    throw new Error("Nome, data de aniversário e nível são obrigatórios.");
   }
 
   // avatar_url não entra aqui de propósito: é definido no cadastro (foto do
@@ -37,6 +38,7 @@ export async function updateProfileData(formData: FormData) {
       attendance_frequency: attendanceFrequency,
       has_vpa_shirt: hasVpaShirt,
       wants_tournaments: wantsTournaments,
+      player_level: playerLevel,
     })
     .eq("id", profile.id);
 
@@ -47,7 +49,7 @@ export async function updateProfileData(formData: FormData) {
 }
 
 export async function updateSelfRatings(formData: FormData) {
-  const profile = await requireProfile();
+  const profile = await requireMember();
   const supabase = await createClient();
 
   const rows = SKILL_CATEGORIES.map((category) => ({
@@ -67,7 +69,7 @@ export async function updateSelfRatings(formData: FormData) {
 }
 
 export async function savePushSubscription(subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) {
-  const profile = await requireProfile();
+  const profile = await requireMember();
   const supabase = await createClient();
 
   const { error } = await supabase.from("push_subscriptions").upsert(
@@ -84,7 +86,7 @@ export async function savePushSubscription(subscription: { endpoint: string; key
 }
 
 export async function deletePushSubscription(endpoint: string) {
-  await requireProfile();
+  await requireMember();
   const supabase = await createClient();
 
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);

@@ -63,7 +63,8 @@ export default async function ReacoesPage() {
   const allPlayers: Player[] = (allProfileRows ?? []).map((item) => ({ id: item.id, fullName: item.full_name, avatarUrl: item.avatar_url }));
   const playerById = new Map(allPlayers.map((player) => [player.id, player]));
   const eligibleIds = new Set(eligibleRows.map((item) => item.id));
-  const eligibleToVote = eligibleIds.has(profile.id);
+  const readOnly = profile.status !== "approved";
+  const eligibleToVote = !readOnly && eligibleIds.has(profile.id);
   const targets: Player[] = eligibleRows
     .filter((item) => item.id !== profile.id)
     .map((item) => ({ id: item.id, fullName: item.full_name, avatarUrl: item.avatar_url }));
@@ -119,6 +120,7 @@ export default async function ReacoesPage() {
       votingOpen={period.votingOpen}
       revealAvailable={period.revealAvailable}
       eligibleToVote={eligibleToVote}
+      readOnly={readOnly}
       players={targets}
       reactionTypes={types.filter((type) => type.active).map(({ key, emoji, label, description }) => ({ key, emoji, label, description }))}
       votes={votes}

@@ -14,9 +14,29 @@ export interface CurrentProfile {
   attendance_frequency: "weekly" | "biweekly" | "monthly" | null;
   has_vpa_shirt: boolean;
   wants_tournaments: boolean;
+  player_level: "beginner" | "intermediate" | "advanced" | null;
   is_organizer: boolean;
-  status: "pending" | "approved" | "rejected" | "removed" | "guest";
+  status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor";
   guest_for_event_id: string | null;
+}
+
+export async function requireMember(): Promise<CurrentProfile> {
+  const profile = await requireProfile();
+  if (profile.status !== "approved") {
+    throw new Error("Essa ação é liberada para membros do VPA.");
+  }
+  return profile;
+}
+
+export async function requireEventParticipant(eventId: string): Promise<CurrentProfile> {
+  const profile = await requireProfile();
+  const canParticipate =
+    profile.status === "approved" ||
+    (profile.status === "guest" && profile.guest_for_event_id === eventId);
+  if (!canParticipate) {
+    throw new Error("Você está no modo visitante. Um organizador precisa chamar você para este racha.");
+  }
+  return profile;
 }
 
 export async function requireProfile(): Promise<CurrentProfile> {

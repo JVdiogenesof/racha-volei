@@ -114,8 +114,13 @@ export default async function ConfirmarPresencaPage({
   ].join("\n");
 
   const myStatus = myAttendance?.status;
+  const canRespond =
+    profile.status === "approved" ||
+    (profile.status === "guest" && profile.guest_for_event_id === id);
   const statusLabel =
-    myStatus === "confirmed"
+    !canRespond
+      ? "Modo visitante"
+      : myStatus === "confirmed"
       ? "Confirmado"
       : myStatus === "interested"
         ? "Interesse marcado"
@@ -185,7 +190,11 @@ export default async function ConfirmarPresencaPage({
         </section>
       )}
 
-      {eventCancelled ? (
+      {!canRespond && !eventFinished && !eventCancelled ? (
+        <p className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-4 py-4 text-sm text-amber-100">
+          Você pode acompanhar a lista. Para responder ou entrar neste racha, aguarde o convite de um organizador.
+        </p>
+      ) : eventCancelled ? (
         <p className="rounded-xl border border-orange-500/30 bg-orange-500/15 px-4 py-4 text-sm text-orange-300">
           Esse racha foi cancelado — não dá mais pra responder.
         </p>
@@ -221,7 +230,7 @@ export default async function ConfirmarPresencaPage({
         </div>
       )}
 
-      {!eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
+      {canRespond && !eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             💰 Pagamento de <strong>R$ {Number(event.price_per_player).toFixed(2)}</strong> via Pix:{" "}

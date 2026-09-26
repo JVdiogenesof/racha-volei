@@ -48,6 +48,7 @@ export function QueridometroExperience({
   votingOpen,
   revealAvailable,
   eligibleToVote,
+  readOnly,
   players,
   reactionTypes,
   votes,
@@ -63,6 +64,7 @@ export function QueridometroExperience({
   votingOpen: boolean;
   revealAvailable: boolean;
   eligibleToVote: boolean;
+  readOnly: boolean;
   players: Player[];
   reactionTypes: ReactionType[];
   votes: Record<string, string>;
@@ -173,7 +175,9 @@ export function QueridometroExperience({
 
       {tab === "evaluate" && (
         <section>
-          {!votingOpen ? (
+          {readOnly ? (
+            <LockedMessage title="Queridômetro em modo de visualização" text="Você pode acompanhar os destaques e o histórico. As escolhas ficam disponíveis quando seu acesso de membro for liberado." />
+          ) : !votingOpen ? (
             <LockedMessage title="A votação desta semana encerrou" text="Hoje é dia de descobrir os resultados. A próxima rodada abre na segunda-feira." />
           ) : !eligibleToVote ? (
             <LockedMessage title="Participe de um racha para votar" text="O Queridômetro fica disponível para quem participou de pelo menos um racha nos últimos 30 dias." />

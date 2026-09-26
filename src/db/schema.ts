@@ -26,6 +26,7 @@ export const skillCategoryEnum = pgEnum("skill_category", [
 
 export const profileStatusEnum = pgEnum("profile_status", [
   "pending",
+  "visitor",
   "approved",
   "rejected",
   "removed",
@@ -58,6 +59,12 @@ export const attendanceFrequencyEnum = pgEnum("attendance_frequency", [
   "monthly",
 ]);
 
+export const playerLevelEnum = pgEnum("player_level", [
+  "beginner",
+  "intermediate",
+  "advanced",
+]);
+
 // Estende auth.users do Supabase (id compartilhado com o usuário autenticado).
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -73,6 +80,7 @@ export const profiles = pgTable("profiles", {
   attendanceFrequency: attendanceFrequencyEnum("attendance_frequency"),
   hasVpaShirt: boolean("has_vpa_shirt").notNull().default(false),
   wantsTournaments: boolean("wants_tournaments").notNull().default(false),
+  playerLevel: playerLevelEnum("player_level"),
   isOrganizer: boolean("is_organizer").notNull().default(false),
   status: profileStatusEnum("status").notNull().default("pending"),
   approvedBy: uuid("approved_by"),
@@ -262,6 +270,7 @@ export const reserveList = pgTable("reserve_list", {
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
   neighborhood: text("neighborhood"),
+  playerLevel: playerLevelEnum("player_level"),
   contacted: boolean("contacted").notNull().default(false),
   // Autoavaliação preenchida na hora da inscrição na reserva -- copiada pra
   // self_ratings quando a pessoa ganha um perfil de verdade (convidada pra

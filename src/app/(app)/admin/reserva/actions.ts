@@ -7,6 +7,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 
 type ReserveRatings = {
+  player_level: "beginner" | "intermediate" | "advanced" | null;
   self_attack: number | string | null;
   self_setting: number | string | null;
   self_serve: number | string | null;
@@ -71,7 +72,7 @@ export async function inviteToEvent(formData: FormData) {
 
   const { data: entry } = await supabase
     .from("reserve_list")
-    .select("auth_user_id, full_name, phone, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
+    .select("auth_user_id, full_name, phone, player_level, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
     .eq("id", reserveEntryId)
     .maybeSingle();
   if (!entry) throw new Error("Pessoa não encontrada na lista de reserva.");
@@ -81,6 +82,7 @@ export async function inviteToEvent(formData: FormData) {
       id: entry.auth_user_id,
       full_name: entry.full_name,
       phone: entry.phone,
+      player_level: entry.player_level,
       status: "guest",
       is_organizer: false,
       guest_for_event_id: eventId,
@@ -101,21 +103,19 @@ export async function promoteReserveToMember(formData: FormData) {
 
   const { data: entry } = await supabase
     .from("reserve_list")
-    .select("auth_user_id, full_name, phone, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
+    .select("auth_user_id, full_name, phone, player_level, self_attack, self_setting, self_serve, self_reception, self_defense, self_block")
     .eq("id", reserveEntryId)
     .maybeSingle();
   if (!entry) throw new Error("Pessoa não encontrada na lista de reserva.");
 
-  // Não existe (de propósito) uma permissão pra organizador inserir um
-  // perfil já como "approved" direto — só como "guest" (acesso de um racha
-  // só). Por isso insere como guest primeiro e promove na sequência; as duas
-  // operações já são permitidas separadamente.
+  // Garante compatibilidade com inscrições antigas que ainda não tinham perfil.
   const { error: insertError } = await supabase.from("profiles").upsert(
     {
       id: entry.auth_user_id,
       full_name: entry.full_name,
       phone: entry.phone,
-      status: "guest",
+      player_level: entry.player_level,
+      status: "visitor",
       is_organizer: false,
       guest_for_event_id: null,
     },
@@ -127,7 +127,7 @@ export async function promoteReserveToMember(formData: FormData) {
     .from("profiles")
     .update({ status: "approved", guest_for_event_id: null, approved_by: organizer.id })
     .eq("id", entry.auth_user_id)
-    .eq("status", "guest");
+    .in("status", ["visitor", "guest"]);
   if (promoteError) throw new Error(promoteError.message);
   await copyReserveRatingsToProfile(supabase, entry.auth_user_id, entry);
 
@@ -169,7 +169,11 @@ export async function endGuestAccess(formData: FormData) {
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
-  const { error } = await supabase.from("profiles").delete().eq("id", profileId).eq("status", "guest");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ status: "visitor", guest_for_event_id: null, approved_by: null })
+    .eq("id", profileId)
+    .eq("status", "guest");
   if (error) throw new Error(error.message);
   revalidatePath("/admin/reserva");
 }

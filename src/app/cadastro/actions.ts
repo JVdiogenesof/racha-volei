@@ -22,9 +22,10 @@ export async function submitCadastro(formData: FormData) {
   const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
+  const playerLevel = String(formData.get("playerLevel") ?? "");
 
-  if (!fullName || !birthdate) {
-    throw new Error("Nome e data de aniversário são obrigatórios.");
+  if (!fullName || !birthdate || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
+    throw new Error("Nome, data de aniversário e nível são obrigatórios.");
   }
 
   const avatarUrl =
@@ -42,6 +43,7 @@ export async function submitCadastro(formData: FormData) {
       attendance_frequency: attendanceFrequency,
       has_vpa_shirt: hasVpaShirt,
       wants_tournaments: wantsTournaments,
+      player_level: playerLevel,
       avatar_url: avatarUrl,
     },
     { onConflict: "id" },
@@ -72,7 +74,7 @@ export async function submitCadastro(formData: FormData) {
     });
   }
 
-  redirect(updated?.status === "approved" ? "/" : "/aguardando-aprovacao");
+  redirect("/");
 }
 
 export async function submitReserveSignup(formData: FormData) {
@@ -88,14 +90,34 @@ export async function submitReserveSignup(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   const neighborhood = String(formData.get("neighborhood") ?? "").trim();
+  const playerLevel = String(formData.get("playerLevel") ?? "");
 
-  if (!fullName || !phone || !neighborhood) {
-    throw new Error("Nome, telefone e bairro são obrigatórios.");
+  if (!fullName || !phone || !neighborhood || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
+    throw new Error("Nome, telefone, bairro e nível são obrigatórios.");
   }
 
   const ratingByCategory = Object.fromEntries(
     SKILL_CATEGORIES.map((category) => [category, Number(formData.get(category) ?? 2.5)]),
   );
+
+  const avatarUrl =
+    (user.user_metadata?.avatar_url as string | undefined) ??
+    (user.user_metadata?.picture as string | undefined) ??
+    null;
+
+  const { error: profileError } = await supabase.from("profiles").upsert(
+    {
+      id: user.id,
+      full_name: fullName,
+      phone,
+      avatar_url: avatarUrl,
+      player_level: playerLevel,
+      status: "visitor",
+      is_organizer: false,
+    },
+    { onConflict: "id" },
+  );
+  if (profileError) throw new Error(profileError.message);
 
   const { error } = await supabase.from("reserve_list").upsert(
     {
@@ -103,6 +125,7 @@ export async function submitReserveSignup(formData: FormData) {
       full_name: fullName,
       phone,
       neighborhood,
+      player_level: playerLevel,
       self_attack: ratingByCategory.attack,
       self_setting: ratingByCategory.setting,
       self_serve: ratingByCategory.serve,
@@ -114,5 +137,12 @@ export async function submitReserveSignup(formData: FormData) {
   );
   if (error) throw new Error(error.message);
 
-  redirect("/lista-de-reserva");
+  const { data: organizers } = await supabase.from("profiles").select("id").eq("is_organizer", true);
+  await sendPushToProfiles(supabase, (organizers ?? []).map((p) => p.id), {
+    title: "Novo visitante na reserva",
+    body: `${fullName} entrou para conhecer o app e está disponível para ser chamado(a).`,
+    url: "/admin/reserva",
+  });
+
+  redirect("/");
 }

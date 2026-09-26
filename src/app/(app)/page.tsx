@@ -145,6 +145,9 @@ export default async function HomePage() {
     proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
   const isInProgress = proximoRacha?.status === "in_progress";
   const myStatus = myAttendance?.status;
+  const canRespondToNextEvent =
+    profile.status === "approved" ||
+    (profile.status === "guest" && profile.guest_for_event_id === proximoRacha?.id);
   const ultimoAviso = avisos?.[0] ?? null;
   const avisoAuthor = ultimoAviso
     ? (ultimoAviso.profiles as unknown as { full_name: string } | null)?.full_name
@@ -257,7 +260,16 @@ export default async function HomePage() {
               </div>
 
               <div className="mt-auto pt-4">
-                {myStatus === "confirmed" ? (
+                {!canRespondToNextEvent ? (
+                  <Link
+                    href={`/racha/${proximoRacha.id}/confirmar`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300/25 bg-amber-400/10 px-5 py-3.5 font-bold text-amber-100 hover:bg-amber-400/15"
+                  >
+                    <Users className="h-4 w-4" strokeWidth={2} />
+                    Acompanhar como visitante
+                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  </Link>
+                ) : myStatus === "confirmed" ? (
                   <Link
                     href={`/racha/${proximoRacha.id}`}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 py-3.5 font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
