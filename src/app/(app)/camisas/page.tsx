@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -11,6 +12,9 @@ import { cancelShirtOrder, saveShirtOrder } from "./actions";
 type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; created_at: string };
 
 export default async function CamisasPage() {
+  const shirtsLaunched = process.env.NEXT_PUBLIC_SHIRTS_LAUNCHED === "true";
+  if (!shirtsLaunched) redirect("/");
+
   const profile = await requireProfile();
   const supabase = await createClient();
   const { data } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, created_at").eq("profile_id", profile.id).order("created_at");
