@@ -73,9 +73,9 @@ security definer
 set search_path = public
 stable
 as $$
-  -- pending/visitor enxergam o app em modo vitrine; guest também enxerga tudo,
+  -- visitor enxerga o app em modo vitrine; guest também enxerga tudo,
   -- mas as políticas de escrita só liberam o racha para o qual foi chamado.
-  select coalesce((select status in ('approved', 'guest', 'pending', 'visitor') from profiles where id = auth.uid()), false);
+  select coalesce((select status in ('approved', 'guest', 'visitor') from profiles where id = auth.uid()), false);
 $$;
 
 create or replace function public.is_full_member()
@@ -95,7 +95,7 @@ security definer
 set search_path = public
 stable
 as $$
-  select coalesce((select status in ('pending', 'approved') from profiles where id = auth.uid()), false);
+  select coalesce((select status = 'approved' from profiles where id = auth.uid()), false);
 $$;
 
 create or replace function public.can_participate_in_event(target_event_id uuid)
@@ -161,10 +161,6 @@ alter table tournament_matches enable row level security;
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
   using (id = auth.uid() or public.is_approved());
-
--- cadastro inicial: só a própria linha, sempre como pending/não-organizador.
-create policy "profiles_insert_self" on profiles for insert to authenticated
-  with check (id = auth.uid() and status = 'pending' and is_organizer = false and approved_by is null);
 
 create policy "profiles_insert_visitor_self" on profiles for insert to authenticated
   with check (id = auth.uid() and status = 'visitor' and is_organizer = false and approved_by is null and guest_for_event_id is null);

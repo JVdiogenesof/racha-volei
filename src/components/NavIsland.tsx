@@ -67,7 +67,7 @@ export function NavIsland({
           <>
             <span className="mx-1 h-5 w-px shrink-0 bg-white/15" />
             <Link
-              href="/admin/solicitacoes"
+              href="/admin/reserva"
               aria-label="Admin"
               aria-current={adminActive ? "page" : undefined}
               className={`flex shrink-0 items-center justify-center transition-all duration-300 ease-out sm:h-9 sm:min-h-0 sm:flex-row sm:gap-1.5 sm:rounded-full sm:py-0 ${compact ? "h-9 gap-1 rounded-full px-2" : "h-11 flex-col gap-0.5 rounded-xl px-2.5 sm:h-9 sm:flex-row"} ${

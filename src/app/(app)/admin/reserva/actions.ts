@@ -18,9 +18,8 @@ type ReserveRatings = {
 
 /**
  * Copia a autoavaliação preenchida na inscrição da reserva pra self_ratings
- * assim que a pessoa ganha uma linha de verdade em profiles (convidada pra
- * um racha ou promovida a permanente) -- antes disso não tinha profile_id
- * pra guardar em self_ratings.
+ * quando a pessoa é chamada ou recebe acesso completo. O cadastro unificado
+ * já cria o perfil visitante, mas mantém as notas na reserva até a liberação.
  */
 async function copyReserveRatingsToProfile(supabase: SupabaseClient, profileId: string, entry: ReserveRatings) {
   const columnByCategory: Record<(typeof SKILL_CATEGORIES)[number], number | string | null> = {
@@ -36,7 +35,8 @@ async function copyReserveRatingsToProfile(supabase: SupabaseClient, profileId: 
     category,
     value: Number(columnByCategory[category] ?? 2.5),
   }));
-  await supabase.from("self_ratings").upsert(rows, { onConflict: "profile_id,category" });
+  const { error } = await supabase.from("self_ratings").upsert(rows, { onConflict: "profile_id,category" });
+  if (error) throw new Error(error.message);
 }
 
 export async function toggleContacted(formData: FormData) {
@@ -134,7 +134,6 @@ export async function promoteReserveToMember(formData: FormData) {
   await supabase.from("reserve_list").delete().eq("id", reserveEntryId);
 
   revalidatePath("/admin/reserva");
-  revalidatePath("/admin/solicitacoes");
   revalidatePath("/jogadores");
   revalidatePath("/ranking");
 }
@@ -144,10 +143,7 @@ export async function makeGuestPermanent(formData: FormData) {
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
-  // Vira membro de verdade: sai do modo "só esse racha" e entra igual todo
-  // mundo. A autoavaliação já veio da inscrição na reserva (copiada em
-  // inviteToEvent) -- só falta completar aniversário/telefone/posição, que o
-  // middleware já resolve mandando pra /cadastro sozinho.
+  // Sai do modo de convite específico e recebe acesso completo ao app.
   const { error } = await supabase
     .from("profiles")
     .update({ status: "approved", guest_for_event_id: null, approved_by: organizer.id })
@@ -159,7 +155,6 @@ export async function makeGuestPermanent(formData: FormData) {
   await supabase.from("reserve_list").delete().eq("auth_user_id", profileId);
 
   revalidatePath("/admin/reserva");
-  revalidatePath("/admin/solicitacoes");
   revalidatePath("/jogadores");
   revalidatePath("/ranking");
 }

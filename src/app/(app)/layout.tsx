@@ -9,7 +9,7 @@ import { requireProfile } from "@/lib/auth";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const profile = await requireProfile();
-  const isVisitor = profile.status === "visitor" || profile.status === "pending" || profile.status === "guest";
+  const isVisitor = profile.status === "visitor" || profile.status === "guest";
   return (
     <>
       <NavBar />

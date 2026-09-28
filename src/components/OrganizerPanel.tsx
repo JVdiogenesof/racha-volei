@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { ShieldCheck, UserPlus, Inbox, Phone, AlertTriangle } from "lucide-react";
+import { ShieldCheck, UserPlus, Phone, AlertTriangle } from "lucide-react";
 
 export function OrganizerPanel({
   proximoRachaId,
   interessadosCount,
   vagasRestantes,
-  pendingCount,
   reserveCount,
   recentDeclines,
 }: {
   proximoRachaId: string | null;
   interessadosCount: number;
   vagasRestantes: number | null;
-  pendingCount: number;
   reserveCount: number;
   recentDeclines: { fullName: string }[];
 }) {
@@ -23,7 +21,7 @@ export function OrganizerPanel({
         Painel do organizador
       </h2>
 
-      <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
         <Link
           href={proximoRachaId ? `/racha/${proximoRachaId}/confirmar` : "/racha"}
           className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center hover:bg-white/10"
@@ -45,17 +43,6 @@ export function OrganizerPanel({
         </Link>
 
         <Link
-          href="/admin/solicitacoes"
-          className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center hover:bg-white/10"
-        >
-          <div className="flex items-center justify-center gap-1">
-            <Inbox className="h-3.5 w-3.5 text-purple-300" strokeWidth={2} />
-            <p className="text-xl font-bold text-white">{pendingCount}</p>
-          </div>
-          <p className="mt-0.5 text-xs text-white/60">Cadastros pendentes</p>
-        </Link>
-
-        <Link
           href="/admin/reserva"
           className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center hover:bg-white/10"
         >
@@ -63,7 +50,7 @@ export function OrganizerPanel({
             <Phone className="h-3.5 w-3.5 text-purple-300" strokeWidth={2} />
             <p className="text-xl font-bold text-white">{reserveCount}</p>
           </div>
-          <p className="mt-0.5 text-xs text-white/60">Na reserva</p>
+          <p className="mt-0.5 text-xs text-white/60">Cadastros na reserva</p>
         </Link>
       </div>
 

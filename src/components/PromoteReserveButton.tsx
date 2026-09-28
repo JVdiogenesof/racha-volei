@@ -24,7 +24,7 @@ export function PromoteReserveButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          `Tornar ${fullName} membro permanente do grupo?\n\nEla passa a ver o site igual todo mundo (sem precisar chamar pra um racha específico primeiro) e sai da lista de reserva.`,
+          `Autorizar o acesso completo de ${fullName}?\n\nA pessoa passa a participar de todos os rachas, votar e usar todas as funções do app.`,
         );
         if (!confirmed) return;
 
@@ -33,7 +33,7 @@ export function PromoteReserveButton({
         startTransition(async () => {
           try {
             await action(formData);
-            showToast(`${fullName} agora é membro permanente!`);
+            showToast(`${fullName} agora tem acesso completo!`);
             router.refresh();
           } catch (err) {
             showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
@@ -47,7 +47,7 @@ export function PromoteReserveButton({
       ) : (
         <UserPlus className="h-3.5 w-3.5" strokeWidth={2} />
       )}
-      Tornar membro permanente
+      Autorizar acesso completo
     </button>
   );
 }

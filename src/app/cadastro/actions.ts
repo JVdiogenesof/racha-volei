@@ -5,142 +5,113 @@ import { createClient } from "@/lib/supabase/server";
 import { sendPushToProfiles } from "@/lib/push";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 
-export async function submitCadastro(formData: FormData) {
+const PLAYER_LEVELS = ["beginner", "intermediate", "advanced"] as const;
+const ATTENDANCE_FREQUENCIES = ["weekly", "biweekly", "monthly"] as const;
+
+export async function submitSignup(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   const fullName = String(formData.get("fullName") ?? "").trim();
   const birthdate = String(formData.get("birthdate") ?? "");
-  const phone = String(formData.get("phone") ?? "").trim() || null;
-  const isSetter = formData.get("position") === "setter";
+  const phone = String(formData.get("phone") ?? "").trim();
+  const neighborhood = String(formData.get("neighborhood") ?? "").trim();
+  const playerLevel = String(formData.get("playerLevel") ?? "");
   const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
+  const howHeard = String(formData.get("howHeard") ?? "").trim();
+  const knownPeople = String(formData.get("knownPeople") ?? "").trim();
+  const officialAnswer = String(formData.get("wantsOfficialMembership") ?? "");
+  const isSetter = formData.get("position") === "setter";
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
-  const playerLevel = String(formData.get("playerLevel") ?? "");
 
-  if (!fullName || !birthdate || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
-    throw new Error("Nome, data de aniversário e nível são obrigatórios.");
+  if (!fullName || !birthdate || !phone || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
+    throw new Error("Preencha nome, aniversário, telefone e nível.");
   }
+  if (!ATTENDANCE_FREQUENCIES.includes(attendanceFrequency as (typeof ATTENDANCE_FREQUENCIES)[number])) {
+    throw new Error("Frequência inválida.");
+  }
+
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .maybeSingle();
 
   const avatarUrl =
     (user.user_metadata?.avatar_url as string | undefined) ??
     (user.user_metadata?.picture as string | undefined) ??
     null;
+  const profileData = {
+    full_name: fullName,
+    birthdate,
+    phone,
+    is_setter: isSetter,
+    attendance_frequency: attendanceFrequency,
+    has_vpa_shirt: hasVpaShirt,
+    wants_tournaments: wantsTournaments,
+    player_level: playerLevel,
+    avatar_url: avatarUrl,
+  };
 
-  const { error } = await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      full_name: fullName,
-      birthdate,
-      phone,
-      is_setter: isSetter,
-      attendance_frequency: attendanceFrequency,
-      has_vpa_shirt: hasVpaShirt,
-      wants_tournaments: wantsTournaments,
-      player_level: playerLevel,
-      avatar_url: avatarUrl,
-    },
-    { onConflict: "id" },
-  );
-  if (error) throw new Error(error.message);
+  // Um membro promovido pela reserva pode cair aqui apenas para completar
+  // dados antigos. Ele não volta para a lista nem perde a aprovação.
+  if (existingProfile?.status === "approved") {
+    const { error: profileError } = await supabase.from("profiles").update(profileData).eq("id", user.id);
+    if (profileError) throw new Error(profileError.message);
 
-  const ratingRows = SKILL_CATEGORIES.map((category) => ({
-    profile_id: user.id,
-    category,
-    value: Number(formData.get(category) ?? 2.5),
-  }));
-  const { error: ratingsError } = await supabase
-    .from("self_ratings")
-    .upsert(ratingRows, { onConflict: "profile_id,category" });
-  if (ratingsError) throw new Error(ratingsError.message);
-
-  // Quem já é aprovado (ex: convidado promovido a membro permanente que só
-  // faltava completar esses dados) não deve ver a tela de "aguardando
-  // aprovação" de novo — vai direto pro site.
-  const { data: updated } = await supabase.from("profiles").select("status").eq("id", user.id).maybeSingle();
-
-  if (updated?.status === "pending") {
-    const { data: organizers } = await supabase.from("profiles").select("id").eq("is_organizer", true);
-    await sendPushToProfiles(supabase, (organizers ?? []).map((p) => p.id), {
-      title: "Novo cadastro pendente",
-      body: `${fullName} está esperando aprovação.`,
-      url: "/admin/solicitacoes",
-    });
+    const ratingRows = SKILL_CATEGORIES.map((category) => ({
+      profile_id: user.id,
+      category,
+      value: Number(formData.get(category) ?? 2.5),
+    }));
+    const { error: ratingsError } = await supabase
+      .from("self_ratings")
+      .upsert(ratingRows, { onConflict: "profile_id,category" });
+    if (ratingsError) throw new Error(ratingsError.message);
+    redirect("/");
   }
 
-  redirect("/");
-}
+  if (existingProfile) redirect("/");
 
-export async function submitReserveSignup(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const fullName = String(formData.get("fullName") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const neighborhood = String(formData.get("neighborhood") ?? "").trim();
-  const playerLevel = String(formData.get("playerLevel") ?? "");
-
-  if (!fullName || !phone || !neighborhood || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
-    throw new Error("Nome, telefone, bairro e nível são obrigatórios.");
+  if (!neighborhood || !howHeard || !knownPeople || !["yes", "no"].includes(officialAnswer)) {
+    throw new Error("Preencha bairro, como conheceu o VPA, quem conhece e o interesse em ser membro.");
   }
 
   const ratingByCategory = Object.fromEntries(
     SKILL_CATEGORIES.map((category) => [category, Number(formData.get(category) ?? 2.5)]),
   );
 
-  const avatarUrl =
-    (user.user_metadata?.avatar_url as string | undefined) ??
-    (user.user_metadata?.picture as string | undefined) ??
-    null;
-
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    {
-      id: user.id,
-      full_name: fullName,
-      phone,
-      avatar_url: avatarUrl,
-      player_level: playerLevel,
-      status: "visitor",
-      is_organizer: false,
-    },
-    { onConflict: "id" },
-  );
-  if (profileError) throw new Error(profileError.message);
-
-  const { error } = await supabase.from("reserve_list").upsert(
-    {
-      auth_user_id: user.id,
-      full_name: fullName,
-      phone,
-      neighborhood,
-      player_level: playerLevel,
-      self_attack: ratingByCategory.attack,
-      self_setting: ratingByCategory.setting,
-      self_serve: ratingByCategory.serve,
-      self_reception: ratingByCategory.reception,
-      self_defense: ratingByCategory.defense,
-      self_block: ratingByCategory.block,
-    },
-    { onConflict: "auth_user_id" },
-  );
+  const { error } = await supabase.rpc("register_newcomer", {
+    p_full_name: fullName,
+    p_birthdate: birthdate,
+    p_phone: phone,
+    p_neighborhood: neighborhood,
+    p_player_level: playerLevel,
+    p_is_setter: isSetter,
+    p_attendance_frequency: attendanceFrequency,
+    p_has_vpa_shirt: hasVpaShirt,
+    p_wants_tournaments: wantsTournaments,
+    p_avatar_url: avatarUrl,
+    p_how_heard: howHeard,
+    p_known_people: knownPeople,
+    p_wants_official_membership: officialAnswer === "yes",
+    p_self_attack: ratingByCategory.attack,
+    p_self_setting: ratingByCategory.setting,
+    p_self_serve: ratingByCategory.serve,
+    p_self_reception: ratingByCategory.reception,
+    p_self_defense: ratingByCategory.defense,
+    p_self_block: ratingByCategory.block,
+  });
   if (error) throw new Error(error.message);
 
   const { data: organizers } = await supabase.from("profiles").select("id").eq("is_organizer", true);
-  await sendPushToProfiles(supabase, (organizers ?? []).map((p) => p.id), {
-    title: "Novo visitante na reserva",
-    body: `${fullName} entrou para conhecer o app e está disponível para ser chamado(a).`,
+  await sendPushToProfiles(supabase, (organizers ?? []).map((profile) => profile.id), {
+    title: "Novo cadastro na lista geral",
+    body: `${fullName} entrou para conhecer o VPA.`,
     url: "/admin/reserva",
   });
 

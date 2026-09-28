@@ -87,8 +87,10 @@ export default function LoginPage() {
           />
           <div className="relative">
             <LogoMark className="h-10 w-10 lg:hidden" />
-            <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Acessar conta</h2>
-            <p className="mt-1 text-sm text-white/60">Entre com sua conta Google.</p>
+            <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Entrada única do VPA</h2>
+            <p className="mt-1 text-sm leading-5 text-white/60">
+              Membros e visitantes entram pelo mesmo lugar. Se for sua primeira vez, você preencherá um cadastro rápido.
+            </p>
             <div className="mt-6">
               <GoogleLoginButton />
             </div>

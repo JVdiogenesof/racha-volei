@@ -120,7 +120,7 @@ export async function updateSession(request: NextRequest) {
       pathname.startsWith("/perfil/notificacoes");
 
     if (
-      (profile?.status === "pending" || profile?.status === "visitor" || profile?.status === "guest") &&
+      (profile?.status === "visitor" || profile?.status === "guest") &&
       isVisitorProfileAction
     ) {
       const url = request.nextUrl.clone();
@@ -134,7 +134,7 @@ export async function updateSession(request: NextRequest) {
     const profileIncomplete = profile?.status === "approved" && !profile.birthdate;
 
     if (
-      (profile?.status === "approved" || profile?.status === "pending" || profile?.status === "visitor") &&
+      (profile?.status === "approved" || profile?.status === "visitor") &&
       isAguardandoPath
     ) {
       const url = request.nextUrl.clone();
@@ -154,7 +154,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if ((profile?.status === "pending" || profile?.status === "visitor") && isCadastroPath) {
+    if (profile?.status === "visitor" && isCadastroPath) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);

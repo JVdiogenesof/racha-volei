@@ -24,7 +24,7 @@ export function MakePermanentButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          `Tornar ${fullName} um membro permanente do grupo?\n\nEla deixa de ter acesso só a esse racha e passa a ver o site igual todo mundo.`,
+          `Autorizar o acesso completo de ${fullName}?\n\nA pessoa deixa de ser convidada de um único racha e passa a usar todas as funções do app.`,
         );
         if (!confirmed) return;
 
@@ -33,7 +33,7 @@ export function MakePermanentButton({
         startTransition(async () => {
           try {
             await action(formData);
-            showToast(`${fullName} agora é membro permanente!`);
+            showToast(`${fullName} agora tem acesso completo!`);
             router.refresh();
           } catch (err) {
             showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
@@ -47,7 +47,7 @@ export function MakePermanentButton({
       ) : (
         <UserPlus className="h-3.5 w-3.5" strokeWidth={2} />
       )}
-      Tornar acesso permanente
+      Autorizar acesso completo
     </button>
   );
 }

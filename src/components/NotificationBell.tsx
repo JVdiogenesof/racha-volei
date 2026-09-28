@@ -3,11 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, UserPlus, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
+import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
-  admin_pending: UserPlus,
   confirm: CalendarCheck,
   teams: Users2,
   mvp: Trophy,

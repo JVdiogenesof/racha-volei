@@ -121,10 +121,9 @@ export default async function HomePage() {
         new Date(`${proximoRacha.date}T${proximoRacha.time ?? "00:00"}`).getTime() - 48 * 60 * 60 * 1000,
       ).toISOString()
     : hoursAgoIso(48);
-  const [{ count: pendingCount }, { count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
+  const [{ count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
     profile.is_organizer
       ? await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending"),
           supabase.from("reserve_list").select("id", { count: "exact", head: true }),
           supabase
             .from("attendance")
@@ -139,7 +138,7 @@ export default async function HomePage() {
             .not("cancelled_at", "is", null)
             .gte("cancelled_at", declineWindowStart),
         ])
-      : [{ count: 0 }, { count: 0 }, { count: 0 }, { data: [] }];
+      : [{ count: 0 }, { count: 0 }, { data: [] }];
 
   const rachaLevel =
     proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
@@ -351,7 +350,7 @@ export default async function HomePage() {
           </div>
           <ChevronRight className="h-5 w-5 shrink-0 text-white/35" />
         </Link>
-        {!profile.nickname_badge && <NicknamePromptCard />}
+        {profile.status === "approved" && !profile.nickname_badge && <NicknamePromptCard />}
       </div>
 
       {profile.is_organizer && (
@@ -363,7 +362,6 @@ export default async function HomePage() {
               ? Math.max(0, proximoRacha.max_players - (confirmedCount ?? 0))
               : null
           }
-          pendingCount={pendingCount ?? 0}
           reserveCount={reserveCount ?? 0}
           recentDeclines={(declineRows ?? []).map((d) => ({
             fullName: (d.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",

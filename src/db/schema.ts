@@ -260,10 +260,8 @@ export const announcements = pgTable("announcements", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Pessoas de fora do grupo fixo que topam ser chamadas quando sobra vaga
-// num racha. Fluxo separado do cadastro normal (sem aprovação, sem acesso
-// ao resto do site) -- nome, telefone e bairro (pra saber quem dá pra chamar
-// rápido numa emergência de última hora) pros organizadores ligarem.
+// Lista geral de toda pessoa nova. Ela conhece o app como visitante até um
+// organizador liberar o acesso completo ou chamá-la para um racha específico.
 export const reserveList = pgTable("reserve_list", {
   id: uuid("id").primaryKey().defaultRandom(),
   authUserId: uuid("auth_user_id").notNull().unique(),
@@ -271,6 +269,9 @@ export const reserveList = pgTable("reserve_list", {
   phone: text("phone").notNull(),
   neighborhood: text("neighborhood"),
   playerLevel: playerLevelEnum("player_level"),
+  howHeard: text("how_heard"),
+  knownPeople: text("known_people"),
+  wantsOfficialMembership: boolean("wants_official_membership"),
   contacted: boolean("contacted").notNull().default(false),
   // Autoavaliação preenchida na hora da inscrição na reserva -- copiada pra
   // self_ratings quando a pessoa ganha um perfil de verdade (convidada pra

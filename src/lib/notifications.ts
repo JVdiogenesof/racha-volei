@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type NotificationType = "admin_pending" | "confirm" | "teams" | "mvp" | "publish_list" | "avisos";
+export type NotificationType = "confirm" | "teams" | "mvp" | "publish_list" | "avisos";
 
 export type NotificationItem = {
   id: string;
@@ -30,10 +30,7 @@ export async function getNotifications(
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [{ count: pendingCount }, { data: events }, { count: newAvisosCount }] = await Promise.all([
-    profile.is_organizer
-      ? supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "pending")
-      : Promise.resolve({ count: 0 }),
+  const [{ data: events }, { count: newAvisosCount }] = await Promise.all([
     supabase
       .from("events")
       .select("id, date, status, official_list_open, mvp_profile_id, mvp_profile_id_2")
@@ -41,18 +38,6 @@ export async function getNotifications(
       .order("date", { ascending: true }),
     supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
   ]);
-
-  if (pendingCount) {
-    items.push({
-      id: "admin-pending",
-      type: "admin_pending",
-      message:
-        pendingCount === 1
-          ? "1 solicitação de cadastro esperando aprovação"
-          : `${pendingCount} solicitações de cadastro esperando aprovação`,
-      href: "/admin/solicitacoes",
-    });
-  }
 
   const eventIds = (events ?? []).map((e) => e.id);
 
