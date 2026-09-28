@@ -157,6 +157,7 @@ alter table queridometro_reaction_types enable row level security;
 alter table queridometro_votes enable row level security;
 alter table tournament_reserved_players enable row level security;
 alter table tournament_matches enable row level security;
+alter table shirt_orders enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -365,6 +366,33 @@ create policy "tournament_matches_select" on tournament_matches for select to au
 create policy "tournament_matches_write" on tournament_matches for all to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+
+-- Pedidos das camisas: cada membro vê e altera o próprio pedido enquanto ele
+-- está pendente. Organizadores veem tudo e são os únicos que marcam pagamento.
+create policy "shirt_orders_select" on shirt_orders for select to authenticated
+  using (profile_id = auth.uid() or public.is_organizer());
+create policy "shirt_orders_insert_own" on shirt_orders for insert to authenticated
+  with check (
+    profile_id = auth.uid() and public.is_full_member()
+    and paid = false and paid_at is null and marked_by is null
+  );
+create policy "shirt_orders_update_own_or_organizer" on shirt_orders for update to authenticated
+  using (
+    public.is_organizer()
+    or (profile_id = auth.uid() and public.is_full_member() and paid = false)
+  )
+  with check (
+    public.is_organizer()
+    or (
+      profile_id = auth.uid() and public.is_full_member()
+      and paid = false and paid_at is null and marked_by is null
+    )
+  );
+create policy "shirt_orders_delete_own_or_organizer" on shirt_orders for delete to authenticated
+  using (
+    public.is_organizer()
+    or (profile_id = auth.uid() and public.is_full_member() and paid = false)
+  );
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos
