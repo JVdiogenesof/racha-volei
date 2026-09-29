@@ -1,7 +1,7 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { createDecipheriv } from "node:crypto";
-import { requireShirtAccess } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,13 +36,13 @@ function responseHeaders(size: number) {
 }
 
 export async function HEAD() {
-  await requireShirtAccess();
+  await requireProfile();
   const file = await stat(VIDEO_PATH);
   return new Response(null, { status: 200, headers: responseHeaders(file.size - 28) });
 }
 
 export async function GET(request: Request) {
-  await requireShirtAccess();
+  await requireProfile();
   const [video, file] = await Promise.all([readPrivateVideo(), stat(VIDEO_PATH)]);
   const videoSize = file.size - 28;
   const range = request.headers.get("range");

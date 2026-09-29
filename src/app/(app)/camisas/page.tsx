@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireShirtAccess } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
 import { SHIRT_MODELS, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
 import { CancelShirtOrderButton } from "@/components/CancelShirtOrderButton";
@@ -11,7 +11,7 @@ import { cancelShirtOrder, saveShirtOrder } from "./actions";
 type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; created_at: string };
 
 export default async function CamisasPage() {
-  const profile = await requireShirtAccess();
+  const profile = await requireProfile();
   const supabase = await createClient();
   const { data } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, created_at").eq("profile_id", profile.id).order("created_at");
   const orders = (data ?? []) as Order[];

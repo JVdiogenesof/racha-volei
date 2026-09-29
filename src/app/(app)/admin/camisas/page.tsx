@@ -1,6 +1,6 @@
 import { CheckCircle2, Clock3, PackageCheck, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireShirtAccess } from "@/lib/auth";
+import { requireOrganizer } from "@/lib/auth";
 import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
@@ -12,7 +12,7 @@ type OrderRow = {
 };
 
 export default async function AdminCamisasPage() {
-  await requireShirtAccess();
+  await requireOrganizer();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("shirt_orders")
