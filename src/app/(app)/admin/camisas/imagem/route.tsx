@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const orders = (data ?? []) as unknown as PaidOrder[];
   const totalUnits = orders.reduce((sum, order) => sum + order.quantity, 0);
   const displayed = orders.slice(0, 28);
-  const collectionUrl = new URL("/camisas/colecao-vpa.jpg", request.url).toString();
+  const collectionUrl = new URL("/camisas/colecao-vpa-v2.jpg", request.url).toString();
   const logoUrl = new URL("/logo.png", request.url).toString();
 
   return new ImageResponse(

@@ -21,7 +21,7 @@ export default async function CamisasPage() {
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-[#1b0b38] shadow-2xl shadow-purple-950/25">
         <div className="relative aspect-square sm:aspect-[16/10] lg:aspect-[16/8]">
-          <Image src="/camisas/colecao-vpa.jpg" alt="Coleção VPA com os modelos de manga e regata, vistos de frente e de costas" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
+          <Image src="/camisas/colecao-vpa-v2.webp" alt="Coleção VPA com os modelos de manga e regata, vistos de frente e de costas" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#100620] via-transparent to-black/10" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/35 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur"><Sparkles className="h-3.5 w-3.5" />Nova coleção</span>

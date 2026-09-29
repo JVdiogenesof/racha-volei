@@ -1,12 +1,12 @@
 export const SHIRT_MODELS = {
   tank: {
     label: "Regata",
-    image: "/camisas/regata-vpa.jpg",
+    image: "/camisas/regata-vpa-v2.webp",
     description: "Leve, esportiva e pronta para a quadra.",
   },
   sleeve: {
     label: "Com manga",
-    image: "/camisas/manga-vpa.jpg",
+    image: "/camisas/manga-vpa-v2.webp",
     description: "Modelo tradicional com acabamento nas mangas.",
   },
 } as const;
