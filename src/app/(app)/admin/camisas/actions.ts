@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizer } from "@/lib/auth";
+import { requireShirtAccess } from "@/lib/auth";
 
 export async function setShirtOrderPaid(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireShirtAccess();
   const supabase = await createClient();
   const orderId = String(formData.get("orderId") ?? "");
   const paid = String(formData.get("paid")) === "true";

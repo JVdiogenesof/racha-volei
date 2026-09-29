@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HeartHandshake, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, type LucideIcon } from "lucide-react";
+import { HeartHandshake, CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, Shirt, type LucideIcon } from "lucide-react";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -11,6 +11,7 @@ const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/jogadores", label: "Jogadores", icon: Users },
   { href: "/ranking", label: "Ranking", icon: Award },
   { href: "/torneios-vpa", label: "Torneios VPA", icon: Trophy },
+  { href: "/camisas", label: "Camisas VPA", icon: Shirt },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/historico", label: "Histórico", icon: History },
 ];
@@ -23,10 +24,12 @@ function isActiveHref(pathname: string, href: string) {
 export function NavIsland({
   badgeByHref,
   isOrganizer,
+  canViewShirts = false,
   activeHrefOverride,
 }: {
   badgeByHref: Record<string, number>;
   isOrganizer: boolean;
+  canViewShirts?: boolean;
   activeHrefOverride?: string;
 }) {
   const routePathname = usePathname();
@@ -39,7 +42,7 @@ export function NavIsland({
       <div
         className={`no-scrollbar mx-auto flex w-full max-w-full items-center gap-1 overflow-x-auto border border-white/10 bg-black/10 p-1 transition-all duration-300 sm:w-auto sm:max-w-none sm:overflow-visible sm:rounded-full sm:p-1.5 ${compact ? "rounded-full" : "rounded-2xl"}`}
       >
-        {LINKS.map((link) => {
+        {LINKS.filter((link) => link.href !== "/camisas" || canViewShirts).map((link) => {
           const active = isActiveHref(pathname, link.href);
           const badge = badgeByHref[link.href] ?? 0;
           return (

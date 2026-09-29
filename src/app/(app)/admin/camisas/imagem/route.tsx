@@ -1,3 +1,4 @@
+import { canAccessShirts } from "@/lib/shirt-access";
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Não autorizado", { status: 401 });
   const { data: profile } = await supabase.from("profiles").select("is_organizer").eq("id", user.id).maybeSingle();
-  if (!profile?.is_organizer) return new Response("Apenas organizadores podem gerar esta arte", { status: 403 });
+  if (!profile?.is_organizer || !canAccessShirts(user.id)) return new Response("Acesso restrito durante o pré-lançamento", { status: 403 });
 
   const { data, error } = await supabase
     .from("shirt_orders")

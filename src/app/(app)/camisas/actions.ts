@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireMember } from "@/lib/auth";
+import { requireShirtAccess } from "@/lib/auth";
 import { SHIRT_MODELS, SHIRT_SIZES, type ShirtModel } from "@/lib/shirts";
 
 export type ShirtOrderState = { status: "idle" | "success" | "error"; message: string };
@@ -11,7 +11,7 @@ export async function saveShirtOrder(
   _previousState: ShirtOrderState,
   formData: FormData,
 ): Promise<ShirtOrderState> {
-  const profile = await requireMember();
+  const profile = await requireShirtAccess();
   const supabase = await createClient();
   const model = String(formData.get("model") ?? "") as ShirtModel;
   const shirtName = String(formData.get("shirtName") ?? "").trim();
@@ -55,7 +55,7 @@ export async function saveShirtOrder(
 }
 
 export async function cancelShirtOrder(formData: FormData) {
-  const profile = await requireMember();
+  const profile = await requireShirtAccess();
   const supabase = await createClient();
   const orderId = String(formData.get("orderId") ?? "");
   const { error } = await supabase

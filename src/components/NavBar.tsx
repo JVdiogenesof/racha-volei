@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 import { signOut } from "@/app/(app)/actions";
+import { canAccessShirts } from "@/lib/shirt-access";
 import { NavIsland } from "@/components/NavIsland";
 import { CompactAppHeader } from "@/components/CompactAppHeader";
 import { HeaderTopBar, type HeaderEventSummary } from "@/components/HeaderTopBar";
@@ -86,7 +87,7 @@ export async function NavBar() {
       topBar={
         <HeaderTopBar fullName={profile?.full_name ?? "Atleta VPA"} avatarUrl={profile?.avatar_url ?? null} isOrganizer={profile?.is_organizer ?? false} isVisitor={profile?.status !== "approved"} nextEvent={nextEvent} signOutAction={signOut} />
       }
-      navigation={<NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} />}
+      navigation={<NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} canViewShirts={!!profile?.is_organizer && canAccessShirts(userId)} />}
     />
   );
 }

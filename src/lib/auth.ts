@@ -1,3 +1,4 @@
+import { canAccessShirts } from "@/lib/shirt-access";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
@@ -66,5 +67,11 @@ export async function requireProfile(): Promise<CurrentProfile> {
 export async function requireOrganizer(): Promise<CurrentProfile> {
   const profile = await requireProfile();
   if (!profile.is_organizer) redirect("/");
+  return profile;
+}
+
+export async function requireShirtAccess(): Promise<CurrentProfile> {
+  const profile = await requireOrganizer();
+  if (!canAccessShirts(profile.id)) redirect("/");
   return profile;
 }

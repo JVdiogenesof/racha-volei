@@ -14,12 +14,12 @@ const TABS = [
   { href: "/admin/reacoes", label: "Queridômetro", icon: HeartHandshake },
 ];
 
-export function AdminTabs() {
+export function AdminTabs({ canViewShirts = false }: { canViewShirts?: boolean }) {
   const pathname = usePathname();
 
   return (
     <nav aria-label="Administração" className="mb-6 grid grid-cols-2 gap-1 border-b border-white/10 sm:flex sm:flex-wrap">
-      {TABS.map((tab) => {
+      {TABS.filter((tab) => tab.href !== "/admin/camisas" || canViewShirts).map((tab) => {
         const active = pathname === tab.href;
         return (
           <Link
