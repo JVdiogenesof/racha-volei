@@ -6,23 +6,25 @@ export function SkillSlider({
   name,
   label,
   defaultValue,
+  inputId,
 }: {
   name: string;
   label: string;
   defaultValue: number;
+  inputId?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
 
   return (
     <div>
       <div className="flex items-center justify-between text-sm">
-        <label htmlFor={name} className="font-medium text-white">
+        <label htmlFor={inputId ?? name} className="font-medium text-white">
           {label}
         </label>
         <span className="font-semibold text-purple-300">{value.toFixed(1)}</span>
       </div>
       <input
-        id={name}
+        id={inputId ?? name}
         name={name}
         type="range"
         min={0}

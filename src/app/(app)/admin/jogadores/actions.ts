@@ -10,11 +10,19 @@ export async function setOrganizerRatings(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
+  const eventId = String(formData.get("eventId") ?? "");
+
+  const values = Object.fromEntries(
+    SKILL_CATEGORIES.map((category) => [category, Number(formData.get(category) ?? 2.5)]),
+  );
+  if (Object.values(values).some((value) => !Number.isFinite(value) || value < 0 || value > 5)) {
+    throw new Error("As notas precisam estar entre 0 e 5.");
+  }
 
   const rows = SKILL_CATEGORIES.map((category) => ({
     profile_id: profileId,
     category,
-    value: Number(formData.get(category) ?? 2.5),
+    value: values[category],
     rated_by: organizer.id,
     updated_at: new Date().toISOString(),
   }));
@@ -25,6 +33,10 @@ export async function setOrganizerRatings(formData: FormData) {
 
   if (error) throw new Error(error.message);
   revalidatePath("/admin/jogadores");
+  if (eventId) {
+    revalidatePath(`/racha/${eventId}/confirmar`);
+    revalidatePath(`/racha/${eventId}/times`);
+  }
 }
 
 export async function updatePlayerProfile(formData: FormData) {

@@ -19,6 +19,7 @@ import { SetterBadge } from "@/components/SetterBadge";
 import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
+import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
@@ -116,6 +117,17 @@ export default async function ConfirmarPresencaPage({
       weights.organizerWeight,
     );
     return overallScore(scores);
+  }
+
+  function ratingDetailsFor(profileId: string) {
+    if (!ratingsData) return { provisional: false, initialRatings: {} };
+    const [{ selfByProfile, organizerByProfile }] = ratingsData;
+    const organizerRatings = organizerByProfile.get(profileId) ?? {};
+    const provisional = Object.keys(organizerRatings).length === 0;
+    return {
+      provisional,
+      initialRatings: provisional ? (selfByProfile.get(profileId) ?? {}) : organizerRatings,
+    };
   }
 
   const confirmadosOrdenados = ratingsData
@@ -392,6 +404,8 @@ export default async function ConfirmarPresencaPage({
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
               const isSetter = isSetterForEvent(a);
+              const ratingDetails = ratingDetailsFor(a.profile_id);
+              const hasProvisionalGuestRating = a.uses_newcomer_spot && ratingDetails.provisional;
               return (
                 <li
                   key={a.profile_id}
@@ -408,14 +422,28 @@ export default async function ConfirmarPresencaPage({
                           </span>
                         )}
                         {isSetter && <SetterBadge />}
+                        {hasProvisionalGuestRating && (
+                          <span className="inline-flex rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-amber-200">
+                            NOTA PROVISÓRIA
+                          </span>
+                        )}
                       </div>
                     </div>
                     {overall !== null && (
-                      <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/55">
+                      <span className={`shrink-0 rounded-full border px-2 py-1 text-[11px] font-semibold ${hasProvisionalGuestRating ? "border-amber-300/20 bg-amber-400/10 text-amber-200" : "border-white/10 bg-white/5 text-white/55"}`}>
                         Nota {overall.toFixed(1)}
                       </span>
                     )}
                   </div>
+                  {profile.is_organizer && a.uses_newcomer_spot && (
+                    <GuestRatingEditor
+                      eventId={id}
+                      profileId={a.profile_id}
+                      fullName={p?.full_name ?? "Convidado"}
+                      initialRatings={ratingDetails.initialRatings}
+                      provisional={ratingDetails.provisional}
+                    />
+                  )}
                   {profile.is_organizer && (
                     <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/8 pt-3 sm:flex sm:items-center sm:justify-end">
                       {!eventFinished && !eventCancelled && (
