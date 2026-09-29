@@ -11,6 +11,35 @@ import { varySimulatedTeams } from "@/lib/teamSimulation";
 import { generateRoundRobinPairs, computeStandings } from "@/lib/torneioStandings";
 import { sendPushToProfiles } from "@/lib/push";
 
+async function ensureTeamHasSpace(supabase: SupabaseClient, teamId: string) {
+  const { data: team, error: teamError } = await supabase
+    .from("teams")
+    .select("generation_id")
+    .eq("id", teamId)
+    .maybeSingle();
+  if (teamError) throw new Error(teamError.message);
+  if (!team) throw new Error("Time não encontrado.");
+
+  const [{ data: generation, error: generationError }, { count, error: countError }] = await Promise.all([
+    supabase.from("team_generations").select("event_id").eq("id", team.generation_id).maybeSingle(),
+    supabase.from("team_members").select("id", { count: "exact", head: true }).eq("team_id", teamId),
+  ]);
+  if (generationError) throw new Error(generationError.message);
+  if (countError) throw new Error(countError.message);
+  if (!generation) throw new Error("Geração de times não encontrada.");
+
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("team_size")
+    .eq("id", generation.event_id)
+    .maybeSingle();
+  if (eventError) throw new Error(eventError.message);
+  if (!event) throw new Error("Racha não encontrado.");
+  if ((count ?? 0) >= event.team_size) {
+    throw new Error(`Esse ${event.team_size === 3 ? "trio" : event.team_size === 4 ? "quarteto" : "sexteto"} já está completo.`);
+  }
+}
+
 export async function generateTeams(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
@@ -18,7 +47,7 @@ export async function generateTeams(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("date, num_teams, official_list_open, is_pre_torneio")
+    .select("date, num_teams, team_size, max_players, official_list_open, is_pre_torneio")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
@@ -55,6 +84,12 @@ export async function generateTeams(formData: FormData) {
     .eq("status", "confirmed");
 
   if (!confirmed?.length) throw new Error("Nenhum jogador confirmado ainda.");
+  const teamCapacity = event.num_teams * event.team_size;
+  if (confirmed.length > teamCapacity) {
+    throw new Error(
+      `Há ${confirmed.length} confirmados, mas ${event.num_teams} times desse formato comportam no máximo ${teamCapacity}.`,
+    );
+  }
 
   const [{ selfByProfile, organizerByProfile }, weights] = await Promise.all([
     getAllRatings(supabase),
@@ -74,7 +109,7 @@ export async function generateTeams(formData: FormData) {
     };
   });
 
-  const result = balanceTeams(players, event.num_teams);
+  const result = balanceTeams(players, event.num_teams, event.team_size);
 
   const { data: generation, error: genError } = await supabase
     .from("team_generations")
@@ -144,7 +179,7 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
   await requireOrganizer();
   const supabase = await createClient();
 
-  const { data: event } = await supabase.from("events").select("num_teams").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase.from("events").select("num_teams, team_size").eq("id", eventId).maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
 
   const { data: confirmed } = await supabase
@@ -154,6 +189,10 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
     .eq("status", "confirmed");
 
   if (!confirmed?.length) throw new Error("Nenhum jogador confirmado ainda pra simular.");
+  const teamCapacity = event.num_teams * event.team_size;
+  if (confirmed.length > teamCapacity) {
+    throw new Error(`Esse formato comporta no máximo ${teamCapacity} jogadores.`);
+  }
 
   const [{ selfByProfile, organizerByProfile }, weights] = await Promise.all([
     getAllRatings(supabase),
@@ -176,7 +215,11 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
   });
   const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
 
-  const result = varySimulatedTeams(balanceTeams(players, event.num_teams), players, previousSignature);
+  const result = varySimulatedTeams(
+    balanceTeams(players, event.num_teams, event.team_size),
+    players,
+    previousSignature,
+  );
 
   return result.map((t) => {
     const members = t.memberProfileIds.map((profileId) => {
@@ -200,6 +243,8 @@ export async function addToTeam(formData: FormData) {
   const teamId = String(formData.get("teamId"));
   const profileId = String(formData.get("profileId"));
 
+  await ensureTeamHasSpace(supabase, teamId);
+
   // Pra completar um time que ficou com menos gente (ex: alguém saiu e ainda
   // não tinha substituto) sem precisar "substituir" ninguém que já está lá.
   const { error } = await supabase.from("team_members").insert({ team_id: teamId, profile_id: profileId });
@@ -214,6 +259,17 @@ export async function moveMember(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const teamMemberId = String(formData.get("teamMemberId"));
   const targetTeamId = String(formData.get("targetTeamId"));
+
+  const { data: currentMember, error: currentMemberError } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("id", teamMemberId)
+    .maybeSingle();
+  if (currentMemberError) throw new Error(currentMemberError.message);
+  if (!currentMember) throw new Error("Jogador não encontrado no time.");
+  if (currentMember.team_id === targetTeamId) return;
+
+  await ensureTeamHasSpace(supabase, targetTeamId);
 
   const { error } = await supabase
     .from("team_members")

@@ -6,6 +6,29 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
 
+function parseEventCapacity(formData: FormData) {
+  const numTeams = Number(formData.get("numTeams") ?? 2);
+  const teamSize = Number(formData.get("teamSize") ?? 6);
+  const maxPlayers = Number(formData.get("maxPlayers") ?? 0);
+  const newcomerReservedSpots = Number(formData.get("newcomerReservedSpots") ?? 0);
+  const teamCapacity = numTeams * teamSize;
+
+  if (!Number.isInteger(numTeams) || numTeams < 2) throw new Error("Informe pelo menos 2 times.");
+  if (![3, 4, 6].includes(teamSize)) throw new Error("Escolha Trio, Quarteto ou Sexteto.");
+  if (!Number.isInteger(maxPlayers) || maxPlayers < 1 || maxPlayers > teamCapacity) {
+    throw new Error(`As vagas precisam ficar entre 1 e ${teamCapacity} para esse formato.`);
+  }
+  if (
+    !Number.isInteger(newcomerReservedSpots) ||
+    newcomerReservedSpots < 0 ||
+    newcomerReservedSpots > maxPlayers
+  ) {
+    throw new Error("A quantidade de vagas para novatos não pode ultrapassar o total de vagas.");
+  }
+
+  return { numTeams, teamSize, maxPlayers, newcomerReservedSpots };
+}
+
 export async function createEvent(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
@@ -13,11 +36,9 @@ export async function createEvent(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
-  const numTeams = Number(formData.get("numTeams") ?? 2);
+  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
-  const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
-  const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
   const isPreTorneio = formData.get("isPreTorneio") === "on";
 
   if (!date || numTeams < 1) {
@@ -31,8 +52,10 @@ export async function createEvent(formData: FormData) {
       time,
       location,
       num_teams: numTeams,
+      team_size: teamSize,
       price_per_player: pricePerPlayer,
       max_players: maxPlayers,
+      newcomer_reserved_spots: newcomerReservedSpots,
       is_pre_torneio: isPreTorneio,
       created_by: organizer.id,
       official_list_open: false,
@@ -68,15 +91,32 @@ export async function updateEvent(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
-  const numTeams = Number(formData.get("numTeams") ?? 2);
+  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
-  const maxPlayersRaw = String(formData.get("maxPlayers") ?? "").trim();
-  const maxPlayers = maxPlayersRaw ? Number(maxPlayersRaw) : null;
   const isPreTorneio = formData.get("isPreTorneio") === "on";
 
   if (!date || numTeams < 1) {
     throw new Error("Data e número de times são obrigatórios.");
+  }
+
+  const { data: confirmedRows, error: confirmedError } = await supabase
+    .from("attendance")
+    .select("profile_id, uses_newcomer_spot")
+    .eq("event_id", eventId)
+    .eq("status", "confirmed");
+  if (confirmedError) throw new Error(confirmedError.message);
+
+  const confirmed = confirmedRows ?? [];
+  const newcomerCount = confirmed.filter((row) => row.uses_newcomer_spot).length;
+  const regularCount = confirmed.length - newcomerCount;
+  if (confirmed.length > maxPlayers) {
+    throw new Error(`Já existem ${confirmed.length} confirmados. Aumente o total de vagas antes de salvar.`);
+  }
+  if (regularCount > maxPlayers - newcomerReservedSpots) {
+    throw new Error(
+      `Já existem ${regularCount} membros confirmados. Reduza as vagas de novatos ou aumente o total de vagas.`,
+    );
   }
 
   const { error } = await supabase
@@ -86,8 +126,10 @@ export async function updateEvent(formData: FormData) {
       time,
       location,
       num_teams: numTeams,
+      team_size: teamSize,
       price_per_player: pricePerPlayer,
       max_players: maxPlayers,
+      newcomer_reserved_spots: newcomerReservedSpots,
       is_pre_torneio: isPreTorneio,
     })
     .eq("id", eventId);

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -36,12 +36,12 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, max_players")
+        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots")
         .eq("id", id)
         .maybeSingle(),
       supabase
         .from("attendance")
-        .select("profile_id, status, profiles(full_name, avatar_url, is_setter)")
+        .select("profile_id, status, uses_newcomer_spot, profiles(full_name, avatar_url, is_setter)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
       supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -76,14 +76,22 @@ export default async function ConfirmarPresencaPage({
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
+  const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
+  const regularConfirmedCount = confirmados.length - newcomerConfirmedCount;
+  const eventCapacity = event.max_players ?? event.num_teams * event.team_size;
+  const regularSlotsRemaining = Math.max(
+    0,
+    eventCapacity - event.newcomer_reserved_spots - regularConfirmedCount,
+  );
   const isFull = event.max_players != null && confirmados.length >= event.max_players;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
   const addDirectOptions = (approvedProfiles ?? [])
     .filter((p) => !confirmedIds.has(p.id))
+    .filter(() => regularSlotsRemaining > 0)
     .map((p) => ({ id: p.id, fullName: p.full_name }));
   const reserveOptions = (reserveEntries ?? []).map((p) => ({ id: p.id, fullName: p.full_name }));
-  const convidados = guestProfiles ?? [];
+  const convidados = (guestProfiles ?? []).filter((guest) => !confirmedIds.has(guest.id));
   const paidProfileIds = new Set((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => payment.profile_id));
   const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
 
@@ -145,11 +153,22 @@ export default async function ConfirmarPresencaPage({
       </div>
 
       {!eventFinished && !eventCancelled && (
-        <ConfirmedCounter
-          eventId={id}
-          maxPlayers={event.max_players}
-          initialConfirmedCount={confirmados.length}
-        />
+        <div className="space-y-2">
+          <ConfirmedCounter
+            eventId={id}
+            maxPlayers={eventCapacity}
+            initialConfirmedCount={confirmados.length}
+          />
+          {event.newcomer_reserved_spots > 0 && (
+            <div className="flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2} />
+              <p>
+                <strong>{event.newcomer_reserved_spots} vagas protegidas para novatos</strong>
+                <span className="text-cyan-100/60"> · {newcomerConfirmedCount} preenchida{newcomerConfirmedCount === 1 ? "" : "s"}</span>
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       {!eventFinished && !eventCancelled && highlights.topOverall.length > 0 && (

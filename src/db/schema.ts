@@ -132,10 +132,12 @@ export const events = pgTable("events", {
   time: time("time"),
   location: text("location"),
   numTeams: integer("num_teams").notNull().default(2),
+  teamSize: integer("team_size").notNull().default(6),
   pricePerPlayer: numeric("price_per_player", { precision: 8, scale: 2 }),
   // Vagas de confirmados (opcional). Sem limite quando null — só usado pra
   // avisar quem marcar interesse depois que a lista já estiver cheia.
   maxPlayers: integer("max_players"),
+  newcomerReservedSpots: integer("newcomer_reserved_spots").notNull().default(0),
   status: eventStatusEnum("status").notNull().default("open"),
   // Fase de interesse (false) vs lista de confirmados pública (true). Novos
   // rachas nascem em fase de interesse; o organizador monta a lista de
@@ -165,6 +167,7 @@ export const attendance = pgTable(
     // "não vou" sem nunca ter confirmado não conta como cancelamento pro aviso
     // do organizador.
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    usesNewcomerSpot: boolean("uses_newcomer_spot").notNull().default(false),
   },
   (t) => [unique().on(t.eventId, t.profileId)],
 );

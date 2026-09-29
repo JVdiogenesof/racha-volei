@@ -3,6 +3,7 @@ import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight } from "lucide-
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
+import { teamFormatLabel } from "@/lib/rachaFormat";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -17,7 +18,7 @@ export default async function RachaListPage() {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, date, time, location, status, official_list_open, is_pre_torneio")
+    .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio")
     .order("date", { ascending: false });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -90,6 +91,7 @@ function CurrentEventCard({
     time: string | null;
     location: string | null;
     is_pre_torneio: boolean;
+    team_size: number;
   };
 }) {
   const isArena = isNrSportTraining(event.location);
@@ -113,6 +115,9 @@ function CurrentEventCard({
             )}
           </div>
           <h3 className="mt-4 text-2xl font-black text-white">Racha rolando agora</h3>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-purple-200">
+            {teamFormatLabel(event.team_size)}
+          </p>
           <p className="mt-1 text-sm capitalize text-white/65">
             {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
               weekday: "long",
@@ -164,6 +169,7 @@ function EventRow({
     status: string;
     official_list_open: boolean;
     is_pre_torneio: boolean;
+    team_size: number;
   };
 }) {
   const isArena = isNrSportTraining(event.location);
@@ -189,6 +195,7 @@ function EventRow({
             })}
             {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
           </p>
+          <p className="mt-0.5 text-xs font-medium text-purple-300">{teamFormatLabel(event.team_size)}</p>
           {event.location && (
             <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-white/60">
               <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />

@@ -13,6 +13,7 @@ import { EventCountdown } from "@/components/EventCountdown";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { getQueridometroPeriod } from "@/lib/queridometro";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
+import { teamFormatLabel } from "@/lib/rachaFormat";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -43,7 +44,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, status, official_list_open, price_per_player, max_players, is_pre_torneio")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, is_pre_torneio")
         .gte("date", today)
         .neq("status", "finished")
         .neq("status", "cancelled")
@@ -192,6 +193,11 @@ export default async function HomePage() {
             {proximoRacha?.is_pre_torneio && (
               <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
                 Pré-torneio
+              </span>
+            )}
+            {proximoRacha && (
+              <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-purple-100">
+                {teamFormatLabel(proximoRacha.team_size)}
               </span>
             )}
           </div>

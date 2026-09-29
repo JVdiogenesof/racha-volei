@@ -68,16 +68,10 @@ export async function promoteToConfirmed(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
 
-  const { error } = await supabase.from("attendance").upsert(
-    {
-      event_id: eventId,
-      profile_id: profileId,
-      status: "confirmed",
-      confirmed_at: new Date().toISOString(),
-      cancelled_at: null,
-    },
-    { onConflict: "event_id,profile_id" },
-  );
+  const { error } = await supabase.rpc("confirm_event_participant", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+  });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);

@@ -19,6 +19,7 @@ import { UndoFinalButton } from "@/components/UndoFinalButton";
 import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import { VictoryTeamCard } from "@/components/VictoryTeamCard";
+import { teamFormatLabel } from "@/lib/rachaFormat";
 import {
   generateTeams,
   addToTeam,
@@ -42,7 +43,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const [{ data: event }, { data: generation }, { data: confirmedAttendance }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, num_teams, official_list_open, is_pre_torneio")
+      .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -206,7 +207,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         <div>
           <h1 className="text-2xl font-bold text-white">Times</h1>
           <p className="mt-1 text-sm text-white/60">
-            Racha de {eventDateLabel} · {event.num_teams} times
+            Racha de {eventDateLabel} · {event.num_teams} times · {teamFormatLabel(event.team_size)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

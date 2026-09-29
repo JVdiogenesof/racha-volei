@@ -26,9 +26,12 @@ interface TeamAccumulator {
  * o membro já alocado a esse time com maior nota de Levantamento.
  * Determinístico: empates são sempre resolvidos por profileId.
  */
-export function balanceTeams(players: PlayerInput[], numTeams: number): TeamResult[] {
+export function balanceTeams(players: PlayerInput[], numTeams: number, maxPlayersPerTeam?: number): TeamResult[] {
   if (numTeams < 1) {
     throw new Error("numTeams deve ser maior ou igual a 1");
+  }
+  if (maxPlayersPerTeam != null && players.length > numTeams * maxPlayersPerTeam) {
+    throw new Error("Há mais jogadores do que vagas disponíveis nos times.");
   }
 
   const byId = [...players].sort((a, b) => a.profileId.localeCompare(b.profileId));
@@ -40,8 +43,14 @@ export function balanceTeams(players: PlayerInput[], numTeams: number): TeamResu
   }));
 
   const leastLoadedIndex = (): number => {
-    let bestIdx = 0;
-    for (let i = 1; i < teams.length; i++) {
+    const availableIndexes = teams
+      .map((team, index) => ({ team, index }))
+      .filter(({ team }) => maxPlayersPerTeam == null || team.members.length < maxPlayersPerTeam)
+      .map(({ index }) => index);
+    if (!availableIndexes.length) throw new Error("Todos os times já atingiram o limite de jogadores.");
+
+    let bestIdx = availableIndexes[0];
+    for (const i of availableIndexes.slice(1)) {
       const candidate = teams[i];
       const best = teams[bestIdx];
       if (

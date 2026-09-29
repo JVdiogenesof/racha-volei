@@ -7,6 +7,8 @@ import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { ActionForm } from "./ActionForm";
 import { DeleteEventButton } from "./DeleteEventButton";
 import { CancelEventButton } from "./CancelEventButton";
+import { RachaCapacityFields } from "./RachaCapacityFields";
+import { teamFormatLabel } from "@/lib/rachaFormat";
 
 type EventData = {
   id: string;
@@ -14,8 +16,10 @@ type EventData = {
   time: string | null;
   location: string | null;
   num_teams: number;
+  team_size: number;
   price_per_player: number | null;
   max_players: number | null;
+  newcomer_reserved_spots: number;
   status: string;
   official_list_open: boolean;
   is_pre_torneio: boolean;
@@ -44,6 +48,14 @@ export function EventListItem({
           {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
           {event.location ? ` · ${event.location}` : ""}
         </Link>
+        <span className="shrink-0 rounded-full bg-purple-500/15 px-2.5 py-1 text-xs font-medium text-purple-200">
+          {teamFormatLabel(event.team_size)}
+        </span>
+        {event.newcomer_reserved_spots > 0 && (
+          <span className="shrink-0 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
+            {event.newcomer_reserved_spots} para novatos
+          </span>
+        )}
         {event.is_pre_torneio && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />
@@ -128,17 +140,13 @@ export function EventListItem({
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-white/60">Número de times</label>
-            <input
-              type="number"
-              name="numTeams"
-              defaultValue={event.num_teams}
-              min={2}
-              required
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
-          </div>
+          <RachaCapacityFields
+            defaultNumTeams={event.num_teams}
+            defaultMaxPlayers={event.max_players}
+            defaultTeamSize={event.team_size}
+            defaultNewcomerReservedSpots={event.newcomer_reserved_spots}
+            defaultIsPreTorneio={event.is_pre_torneio}
+          />
           <div>
             <label className="block text-xs font-medium text-white/60">Valor por jogador (R$)</label>
             <input
@@ -149,27 +157,6 @@ export function EventListItem({
               defaultValue={event.price_per_player ?? ""}
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-white/60">Vagas de confirmados (opcional)</label>
-            <input
-              type="number"
-              name="maxPlayers"
-              min={1}
-              defaultValue={event.max_players ?? ""}
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label className="flex items-center gap-2 text-sm text-white">
-              <input
-                type="checkbox"
-                name="isPreTorneio"
-                defaultChecked={event.is_pre_torneio}
-                className="h-4 w-4 rounded border-white/15 text-amber-400 focus:ring-amber-400"
-              />
-              Racha especial (pré-torneio) — fase de grupos + final, time campeão garante vaga no Torneios VPA
-            </label>
           </div>
           <div className="sm:col-span-2">
             <button

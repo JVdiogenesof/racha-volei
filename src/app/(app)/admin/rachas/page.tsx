@@ -11,7 +11,7 @@ export default async function AdminRachasPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, date, time, location, num_teams, price_per_player, max_players, status, official_list_open, is_pre_torneio",
+      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio",
     )
     .order("date", { ascending: false });
 
@@ -74,6 +74,8 @@ export default async function AdminRachasPage() {
         <RachaCapacityFields
           defaultNumTeams={lastEvent?.num_teams ?? 2}
           defaultMaxPlayers={lastEvent?.max_players ?? null}
+          defaultTeamSize={lastEvent?.team_size ?? 6}
+          defaultNewcomerReservedSpots={lastEvent?.newcomer_reserved_spots ?? 0}
         />
         <div>
           <label className="block text-sm font-medium text-white">

@@ -11,6 +11,7 @@ import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { EventProgress } from "@/components/EventProgress";
 import { startEvent, finishEvent } from "./actions";
+import { teamFormatLabel } from "@/lib/rachaFormat";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,7 +23,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, price_per_player, status, official_list_open, max_players, is_pre_torneio",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, newcomer_reserved_spots, is_pre_torneio",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -89,7 +90,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         </div>
         <p className="mt-1 text-sm text-white/60">
           {event.location ?? "Local a definir"}
-          {event.time ? ` · ${event.time.slice(0, 5)}` : ""} · {event.num_teams} times
+          {event.time ? ` · ${event.time.slice(0, 5)}` : ""} · {event.num_teams} times · {teamFormatLabel(event.team_size)}
           {event.price_per_player ? ` · R$ ${Number(event.price_per_player).toFixed(2)} por jogador` : ""}
         </p>
         <p className="mt-1 text-sm text-white/60">
