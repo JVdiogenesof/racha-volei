@@ -395,85 +395,100 @@ export default async function ConfirmarPresencaPage({
               return (
                 <li
                   key={a.profile_id}
-                  className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
+                  className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-3.5"
                 >
-                  <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
-                  <div className="min-w-0 flex-1">
-                    <p className={`truncate text-sm text-white ${a.uses_newcomer_spot ? "font-bold" : ""}`}>{p?.full_name}</p>
-                    {a.uses_newcomer_spot && (
-                      <span className="mt-0.5 inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">
-                        CONVIDADO
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
+                    <div className="min-w-0 flex-1 pt-0.5">
+                      <p className={`truncate text-[15px] text-white ${a.uses_newcomer_spot ? "font-bold" : "font-semibold"}`}>{p?.full_name}</p>
+                      <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">
+                        {a.uses_newcomer_spot && (
+                          <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">
+                            CONVIDADO
+                          </span>
+                        )}
+                        {isSetter && <SetterBadge />}
+                      </div>
+                    </div>
+                    {overall !== null && (
+                      <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/55">
+                        Nota {overall.toFixed(1)}
                       </span>
                     )}
                   </div>
-                  {isSetter && <SetterBadge />}
-                  {profile.is_organizer && !eventFinished && !eventCancelled && (
-                    <ActionForm
-                      action={setEventSetterRole}
-                      successMessage={isSetter ? `${p?.full_name ?? "Jogador"} não será levantador(a) neste racha.` : `${p?.full_name ?? "Jogador"} será levantador(a) neste racha.`}
-                      className="shrink-0"
-                    >
-                      <input type="hidden" name="eventId" value={id} />
-                      <input type="hidden" name="profileId" value={a.profile_id} />
-                      <input type="hidden" name="isSetter" value={isSetter ? "false" : "true"} />
-                      <button
-                        type="submit"
-                        aria-label={isSetter ? `Desmarcar ${p?.full_name ?? "jogador"} como levantador` : `Marcar ${p?.full_name ?? "jogador"} como levantador`}
-                        title={isSetter ? "Desmarcar levantador neste racha" : "Marcar levantador neste racha"}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm transition ${
-                          isSetter
-                            ? "border-purple-300/40 bg-purple-400/20 text-purple-100"
-                            : "border-white/10 bg-white/5 text-white/35 hover:border-purple-300/30 hover:bg-purple-400/10 hover:text-purple-200"
-                        }`}
-                      >
-                        🏐
-                      </button>
-                    </ActionForm>
-                  )}
-                  {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                   {profile.is_organizer && (
-                    <ActionForm
-                      action={setPaymentStatus}
-                      successMessage={hasPaid ? `${p?.full_name ?? "Jogador"}: pagamento desmarcado.` : `${p?.full_name ?? "Jogador"}: pagamento confirmado!`}
-                      className="shrink-0"
-                    >
-                      <input type="hidden" name="eventId" value={id} />
-                      <input type="hidden" name="profileId" value={a.profile_id} />
-                      <input type="hidden" name="paid" value={hasPaid ? "false" : "true"} />
-                      <button
-                        type="submit"
-                        aria-label={hasPaid ? `Desmarcar pagamento de ${p?.full_name ?? "jogador"}` : `Marcar pagamento de ${p?.full_name ?? "jogador"}`}
-                        title={hasPaid ? "Pago — clique para desmarcar" : "Pendente — clique para marcar como pago"}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full border transition ${
-                          hasPaid
-                            ? "border-green-400/40 bg-green-500/20 text-green-300 shadow-sm shadow-green-950/40"
-                            : "border-white/10 bg-white/5 text-white/35 hover:border-green-400/30 hover:bg-green-500/10 hover:text-green-300"
-                        }`}
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/8 pt-3 sm:flex sm:items-center sm:justify-end">
+                      {!eventFinished && !eventCancelled && (
+                        <ActionForm
+                          action={setEventSetterRole}
+                          successMessage={isSetter ? `${p?.full_name ?? "Jogador"} não será levantador(a) neste racha.` : `${p?.full_name ?? "Jogador"} será levantador(a) neste racha.`}
+                          className="min-w-0 sm:shrink-0"
+                        >
+                          <input type="hidden" name="eventId" value={id} />
+                          <input type="hidden" name="profileId" value={a.profile_id} />
+                          <input type="hidden" name="isSetter" value={isSetter ? "false" : "true"} />
+                          <button
+                            type="submit"
+                            aria-label={isSetter ? `Desmarcar ${p?.full_name ?? "jogador"} como levantador` : `Marcar ${p?.full_name ?? "jogador"} como levantador`}
+                            title={isSetter ? "Desmarcar levantador neste racha" : "Marcar levantador neste racha"}
+                            className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-medium transition sm:h-9 sm:w-9 sm:rounded-full sm:px-0 ${
+                              isSetter
+                                ? "border-purple-300/40 bg-purple-400/20 text-purple-100"
+                                : "border-white/10 bg-white/5 text-white/55 hover:border-purple-300/30 hover:bg-purple-400/10 hover:text-purple-200"
+                            }`}
+                          >
+                            <span>🏐</span>
+                            <span className="sm:hidden">{isSetter ? "Tirar levant." : "Marcar levant."}</span>
+                          </button>
+                        </ActionForm>
+                      )}
+                      <ActionForm
+                        action={setPaymentStatus}
+                        successMessage={hasPaid ? `${p?.full_name ?? "Jogador"}: pagamento desmarcado.` : `${p?.full_name ?? "Jogador"}: pagamento confirmado!`}
+                        className="min-w-0 sm:shrink-0"
                       >
-                        <CircleDollarSign className="h-4.5 w-4.5" strokeWidth={hasPaid ? 2.5 : 2} />
-                      </button>
-                    </ActionForm>
-                  )}
-                  {profile.is_organizer && !eventFinished && !eventCancelled && (
-                    <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados.">
-                      <input type="hidden" name="eventId" value={id} />
-                      <input type="hidden" name="profileId" value={a.profile_id} />
-                      <button
-                        type="submit"
-                        aria-label="Voltar pra interessados"
-                        className="flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white/70"
-                      >
-                        <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2} />
-                      </button>
-                    </ActionForm>
-                  )}
-                  {profile.is_organizer && (
-                    <RemoveAttendanceButton
-                      eventId={id}
-                      profileId={a.profile_id}
-                      fullName={p?.full_name ?? "esse jogador"}
-                      action={removeAttendance}
-                    />
+                        <input type="hidden" name="eventId" value={id} />
+                        <input type="hidden" name="profileId" value={a.profile_id} />
+                        <input type="hidden" name="paid" value={hasPaid ? "false" : "true"} />
+                        <button
+                          type="submit"
+                          aria-label={hasPaid ? `Desmarcar pagamento de ${p?.full_name ?? "jogador"}` : `Marcar pagamento de ${p?.full_name ?? "jogador"}`}
+                          title={hasPaid ? "Pago — clique para desmarcar" : "Pendente — clique para marcar como pago"}
+                          className={`flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-medium transition sm:h-9 sm:w-9 sm:rounded-full sm:px-0 ${
+                            hasPaid
+                              ? "border-green-400/40 bg-green-500/20 text-green-300 shadow-sm shadow-green-950/40"
+                              : "border-white/10 bg-white/5 text-white/55 hover:border-green-400/30 hover:bg-green-500/10 hover:text-green-300"
+                          }`}
+                        >
+                          <CircleDollarSign className="h-4 w-4" strokeWidth={hasPaid ? 2.5 : 2} />
+                          <span className="sm:hidden">{hasPaid ? "Pago" : "Pendente"}</span>
+                        </button>
+                      </ActionForm>
+                      {!eventFinished && !eventCancelled && (
+                        <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados." className="min-w-0 sm:shrink-0">
+                          <input type="hidden" name="eventId" value={id} />
+                          <input type="hidden" name="profileId" value={a.profile_id} />
+                          <button
+                            type="submit"
+                            aria-label="Voltar pra interessados"
+                            title="Voltar pra interessados"
+                            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2 text-xs font-medium text-white/60 hover:bg-white/10 hover:text-white sm:h-9 sm:w-9 sm:rounded-full sm:px-0"
+                          >
+                            <ArrowLeftRight className="h-3.5 w-3.5" strokeWidth={2} />
+                            <span className="sm:hidden">Interessados</span>
+                          </button>
+                        </ActionForm>
+                      )}
+                      <div className="min-w-0 sm:shrink-0">
+                        <RemoveAttendanceButton
+                          eventId={id}
+                          profileId={a.profile_id}
+                          fullName={p?.full_name ?? "esse jogador"}
+                          action={removeAttendance}
+                          showMobileLabel
+                        />
+                      </div>
+                    </div>
                   )}
                 </li>
               );
