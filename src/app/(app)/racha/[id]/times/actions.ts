@@ -84,6 +84,11 @@ export async function generateTeams(formData: FormData) {
     .eq("status", "confirmed");
 
   if (!confirmed?.length) throw new Error("Nenhum jogador confirmado ainda.");
+  const { data: setterOverrideRows } = await supabase
+    .from("event_setter_overrides")
+    .select("profile_id, is_setter")
+    .eq("event_id", eventId);
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
   const teamCapacity = event.num_teams * event.team_size;
   if (confirmed.length > teamCapacity) {
     throw new Error(
@@ -100,7 +105,8 @@ export async function generateTeams(formData: FormData) {
     const self = selfByProfile.get(row.profile_id) ?? {};
     const organizer = organizerByProfile.get(row.profile_id) ?? {};
     const scores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
-    const isSetter = (row.profiles as unknown as { is_setter: boolean } | null)?.is_setter ?? false;
+    const profileSetter = (row.profiles as unknown as { is_setter: boolean } | null)?.is_setter ?? false;
+    const isSetter = setterOverrides.get(row.profile_id) ?? profileSetter;
     return {
       profileId: row.profile_id,
       overall: overallScore(scores),
@@ -189,6 +195,11 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
     .eq("status", "confirmed");
 
   if (!confirmed?.length) throw new Error("Nenhum jogador confirmado ainda pra simular.");
+  const { data: setterOverrideRows } = await supabase
+    .from("event_setter_overrides")
+    .select("profile_id, is_setter")
+    .eq("event_id", eventId);
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
   const teamCapacity = event.num_teams * event.team_size;
   if (confirmed.length > teamCapacity) {
     throw new Error(`Esse formato comporta no máximo ${teamCapacity} jogadores.`);
@@ -210,7 +221,7 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
     const self = selfByProfile.get(row.profile_id) ?? {};
     const organizer = organizerByProfile.get(row.profile_id) ?? {};
     const scores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
-    const isSetter = profileById.get(row.profile_id)?.is_setter ?? false;
+    const isSetter = setterOverrides.get(row.profile_id) ?? profileById.get(row.profile_id)?.is_setter ?? false;
     return { profileId: row.profile_id, overall: overallScore(scores), settingScore: scores.setting, isSetter };
   });
   const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
@@ -229,7 +240,7 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
         fullName: p?.full_name ?? "?",
         avatarUrl: p?.avatar_url ?? null,
         overall: overallByProfile.get(profileId) ?? 0,
-        isSetter: p?.is_setter ?? false,
+        isSetter: setterOverrides.get(profileId) ?? p?.is_setter ?? false,
       };
     });
     return { teamNumber: t.teamNumber, sum: members.reduce((s, m) => s + m.overall, 0), members };

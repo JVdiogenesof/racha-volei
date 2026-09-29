@@ -20,7 +20,7 @@ import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
 import { PIX_KEY } from "@/lib/payment";
-import { setAttendance, setOfficialListOpen, setPaymentStatus, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
+import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 
 export default async function ConfirmarPresencaPage({
@@ -32,7 +32,7 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }] =
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }] =
     await Promise.all([
       supabase
         .from("events")
@@ -53,6 +53,7 @@ export default async function ConfirmarPresencaPage({
       profile.is_organizer
         ? supabase.from("payments").select("profile_id, paid").eq("event_id", id)
         : Promise.resolve({ data: null }),
+      supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
     ]);
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
@@ -98,6 +99,12 @@ export default async function ConfirmarPresencaPage({
   const convidados = (guestProfiles ?? []).filter((guest) => !confirmedIds.has(guest.id));
   const paidProfileIds = new Set((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => payment.profile_id));
   const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+
+  function isSetterForEvent(attendance: (typeof confirmados)[number]) {
+    const profileRow = attendance.profiles as unknown as { is_setter: boolean } | null;
+    return setterOverrides.get(attendance.profile_id) ?? profileRow?.is_setter ?? false;
+  }
 
   function overallFor(profileId: string) {
     if (!ratingsData) return null;
@@ -121,8 +128,9 @@ export default async function ConfirmarPresencaPage({
     ...confirmados.map((a, i) => {
       const p = a.profiles as unknown as { full_name: string; is_setter: boolean } | null;
       const name = p?.full_name ?? "?";
-      const labels = [p?.is_setter ? "🏐 levantador(a)" : null, a.uses_newcomer_spot ? "*CONVIDADO*" : null].filter(Boolean);
-      return `${i + 1}. ${p?.is_setter ? `*${name}*` : name}${labels.length > 0 ? ` · ${labels.join(" · ")}` : ""}`;
+      const isSetter = isSetterForEvent(a);
+      const labels = [isSetter ? "🏐 levantador(a)" : null, a.uses_newcomer_spot ? "*CONVIDADO*" : null].filter(Boolean);
+      return `${i + 1}. ${isSetter ? `*${name}*` : name}${labels.length > 0 ? ` · ${labels.join(" · ")}` : ""}`;
     }),
   ].join("\n");
 
@@ -369,15 +377,21 @@ export default async function ConfirmarPresencaPage({
             )}
           </div>
           {profile.is_organizer && confirmados.length > 0 && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-white/40">
-              <CircleDollarSign className="h-3.5 w-3.5 text-green-300" /> Toque no dinheiro para marcar ou desmarcar o pagamento.
-            </p>
+            <div className="mt-1.5 space-y-1 text-xs text-white/40">
+              <p className="flex items-center gap-1.5">
+                <span className="text-sm">🏐</span> Toque na bola para definir quem vai levantar neste racha.
+              </p>
+              <p className="flex items-center gap-1.5">
+                <CircleDollarSign className="h-3.5 w-3.5 text-green-300" /> Toque no dinheiro para marcar ou desmarcar o pagamento.
+              </p>
+            </div>
           )}
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {confirmadosOrdenados.map((a) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
+              const isSetter = isSetterForEvent(a);
               return (
                 <li
                   key={a.profile_id}
@@ -392,7 +406,30 @@ export default async function ConfirmarPresencaPage({
                       </span>
                     )}
                   </div>
-                  {p?.is_setter && <SetterBadge />}
+                  {isSetter && <SetterBadge />}
+                  {profile.is_organizer && !eventFinished && !eventCancelled && (
+                    <ActionForm
+                      action={setEventSetterRole}
+                      successMessage={isSetter ? `${p?.full_name ?? "Jogador"} não será levantador(a) neste racha.` : `${p?.full_name ?? "Jogador"} será levantador(a) neste racha.`}
+                      className="shrink-0"
+                    >
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="profileId" value={a.profile_id} />
+                      <input type="hidden" name="isSetter" value={isSetter ? "false" : "true"} />
+                      <button
+                        type="submit"
+                        aria-label={isSetter ? `Desmarcar ${p?.full_name ?? "jogador"} como levantador` : `Marcar ${p?.full_name ?? "jogador"} como levantador`}
+                        title={isSetter ? "Desmarcar levantador neste racha" : "Marcar levantador neste racha"}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full border text-sm transition ${
+                          isSetter
+                            ? "border-purple-300/40 bg-purple-400/20 text-purple-100"
+                            : "border-white/10 bg-white/5 text-white/35 hover:border-purple-300/30 hover:bg-purple-400/10 hover:text-purple-200"
+                        }`}
+                      >
+                        🏐
+                      </button>
+                    </ActionForm>
+                  )}
                   {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                   {profile.is_organizer && (
                     <ActionForm

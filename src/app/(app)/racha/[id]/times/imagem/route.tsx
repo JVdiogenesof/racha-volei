@@ -112,16 +112,18 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const teamIds = (teamRows ?? []).map((team) => team.id);
   if (!teamIds.length) return new Response("Nenhum time encontrado", { status: 409 });
 
-  const [{ data: memberRows, error: memberError }, { data: confirmedRows, error: confirmedError }] = await Promise.all([
+  const [{ data: memberRows, error: memberError }, { data: confirmedRows, error: confirmedError }, { data: setterOverrideRows, error: setterOverrideError }] = await Promise.all([
     supabase.from("team_members").select("team_id, profile_id, profiles(full_name, avatar_url, is_setter)").in("team_id", teamIds),
     supabase.from("attendance").select("profile_id").eq("event_id", id).eq("status", "confirmed"),
+    supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
   ]);
-  if (memberError || confirmedError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
+  if (memberError || confirmedError || setterOverrideError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
 
   const confirmedIds = new Set((confirmedRows ?? []).map((row) => row.profile_id));
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
   const players = await embedAvatarUrls((memberRows ?? []).filter((row) => confirmedIds.has(row.profile_id)).map((row) => {
     const profile = row.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
-    return { id: row.profile_id, teamId: row.team_id, fullName: profile?.full_name ?? "Jogador", avatarUrl: profile?.avatar_url ?? null, isSetter: profile?.is_setter ?? false };
+    return { id: row.profile_id, teamId: row.team_id, fullName: profile?.full_name ?? "Jogador", avatarUrl: profile?.avatar_url ?? null, isSetter: setterOverrides.get(row.profile_id) ?? profile?.is_setter ?? false };
   }));
   const data: TeamsArtData = {
     date: event.date,

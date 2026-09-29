@@ -27,11 +27,13 @@ export async function getConfirmedHighlights(
   const confirmedIds = (confirmedAttendance ?? []).map((a) => a.profile_id);
   if (!confirmedIds.length) return { topOverall: [], topSetters: [] };
 
-  const [{ data: profiles }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
+  const [{ data: profiles }, { data: setterOverrideRows }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url, is_setter").in("id", confirmedIds),
+    supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", eventId),
     getRatingsFor(supabase, confirmedIds),
     getRatingWeights(supabase),
   ]);
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
 
   const ranked = (profiles ?? [])
     .map((p) => {
@@ -46,7 +48,7 @@ export async function getConfirmedHighlights(
         fullName: p.full_name,
         avatarUrl: p.avatar_url,
         overall: overallScore(scores),
-        isSetter: p.is_setter,
+        isSetter: setterOverrides.get(p.id) ?? p.is_setter,
       };
     })
     .sort((a, b) => b.overall - a.overall);

@@ -40,7 +40,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: event }, { data: generation }, { data: confirmedAttendance }] = await Promise.all([
+  const [{ data: event }, { data: generation }, { data: confirmedAttendance }, { data: setterOverrideRows }] = await Promise.all([
     supabase
       .from("events")
       .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio")
@@ -58,8 +58,10 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .select("profile_id, profiles(full_name)")
       .eq("event_id", id)
       .eq("status", "confirmed"),
+    supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
   ]);
   if (!event) notFound();
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
 
   let teams: {
     id: string;
@@ -142,7 +144,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             fullName: p?.full_name ?? "—",
             avatarUrl: p?.avatar_url ?? null,
             overall: overallScore(scores),
-            isSetter: p?.is_setter ?? false,
+            isSetter: setterOverrides.get(m.profile_id) ?? p?.is_setter ?? false,
           };
         }),
     }));

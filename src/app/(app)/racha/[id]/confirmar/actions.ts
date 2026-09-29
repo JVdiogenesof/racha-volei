@@ -153,6 +153,44 @@ export async function setPaymentStatus(formData: FormData) {
   revalidatePath(`/racha/${eventId}/confirmar`);
 }
 
+export async function setEventSetterRole(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+  const setterValue = String(formData.get("isSetter"));
+
+  if (setterValue !== "true" && setterValue !== "false") {
+    throw new Error("Função de levantador inválida.");
+  }
+
+  const { data: attendanceRow, error: attendanceError } = await supabase
+    .from("attendance")
+    .select("status")
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (attendanceError) throw new Error(attendanceError.message);
+  if (attendanceRow?.status !== "confirmed") {
+    throw new Error("Só é possível ajustar levantadores que estão confirmados.");
+  }
+
+  const { error } = await supabase.from("event_setter_overrides").upsert(
+    {
+      event_id: eventId,
+      profile_id: profileId,
+      is_setter: setterValue === "true",
+      changed_by: organizer.id,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "event_id,profile_id" },
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function removeAttendance(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

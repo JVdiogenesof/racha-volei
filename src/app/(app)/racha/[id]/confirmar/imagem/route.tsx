@@ -22,7 +22,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   if (!user) return new Response("Não autorizado", { status: 401 });
 
-  const [{ data: event, error: eventError }, { data: attendanceRows, error: attendanceError }] = await Promise.all([
+  const [{ data: event, error: eventError }, { data: attendanceRows, error: attendanceError }, { data: setterOverrideRows, error: setterOverrideError }] = await Promise.all([
     supabase
       .from("events")
       .select("date, time, location, official_list_open, status")
@@ -34,13 +34,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       .eq("event_id", id)
       .eq("status", "confirmed")
       .order("confirmed_at", { ascending: true }),
+    supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
   ]);
 
-  if (eventError || attendanceError) return new Response("Não foi possível carregar a lista", { status: 500 });
+  if (eventError || attendanceError || setterOverrideError) return new Response("Não foi possível carregar a lista", { status: 500 });
   if (!event) return new Response("Racha não encontrado", { status: 404 });
   if (!event.official_list_open) return new Response("A lista ainda não foi publicada", { status: 409 });
   if (event.status === "cancelled") return new Response("O racha foi cancelado", { status: 409 });
 
+  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
   const players = (attendanceRows ?? []).map((row) => {
     const profile = row.profiles as unknown as {
       full_name: string;
@@ -51,7 +53,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       id: row.profile_id,
       fullName: profile?.full_name ?? "Jogador",
       avatarUrl: profile?.avatar_url ?? null,
-      isSetter: profile?.is_setter ?? false,
+      isSetter: setterOverrides.get(row.profile_id) ?? profile?.is_setter ?? false,
       isGuest: row.uses_newcomer_spot,
     };
   });

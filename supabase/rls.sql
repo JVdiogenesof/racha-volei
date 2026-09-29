@@ -223,6 +223,14 @@ create policy "attendance_write" on attendance for all to authenticated
   using (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)))
   with check (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)));
 
+-- A função de levantador pode ser ajustada por racha sem alterar o perfil.
+-- Todos veem a escalação, mas só organizadores podem mudá-la.
+alter table event_setter_overrides enable row level security;
+create policy "event_setter_overrides_select" on event_setter_overrides for select to authenticated using (true);
+create policy "event_setter_overrides_write" on event_setter_overrides for all to authenticated
+  using (public.is_organizer())
+  with check (public.is_organizer() and changed_by = (select auth.uid()));
+
 -- payments: leitura aberta ao grupo; só organizador marca pagamento.
 create policy "payments_select" on payments for select to authenticated using (true);
 create policy "payments_write" on payments for all to authenticated

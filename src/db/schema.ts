@@ -10,6 +10,8 @@ import {
   timestamp,
   pgEnum,
   unique,
+  primaryKey,
+  foreignKey,
   index,
   check,
 } from "drizzle-orm/pg-core";
@@ -170,6 +172,21 @@ export const attendance = pgTable(
     usesNewcomerSpot: boolean("uses_newcomer_spot").notNull().default(false),
   },
   (t) => [unique().on(t.eventId, t.profileId)],
+);
+
+export const eventSetterOverrides = pgTable(
+  "event_setter_overrides",
+  {
+    eventId: uuid("event_id").notNull(),
+    profileId: uuid("profile_id").notNull(),
+    isSetter: boolean("is_setter").notNull(),
+    changedBy: uuid("changed_by").notNull().references(() => profiles.id),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.profileId] }),
+    foreignKey({ columns: [t.eventId, t.profileId], foreignColumns: [attendance.eventId, attendance.profileId] }).onDelete("cascade"),
+  ],
 );
 
 export const payments = pgTable(
