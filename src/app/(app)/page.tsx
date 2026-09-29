@@ -15,6 +15,7 @@ import { getQueridometroPeriod } from "@/lib/queridometro";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { canAccessShirts } from "@/lib/shirt-access";
+import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -325,17 +326,7 @@ export default async function HomePage() {
       {canPreviewShirts && (
         <section className="overflow-hidden rounded-3xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-2xl shadow-purple-950/25">
           <div className="relative aspect-video overflow-hidden bg-black">
-            <video
-              src="/camisas/video"
-              poster="/camisas/colecao-vpa-v2.webp"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className="h-full w-full object-cover"
-              aria-label="Vídeo de apresentação dos modelos da nova camisa VPA"
-            />
+            <AutoPlayShirtVideo />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-transparent to-black/20" />
             <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-200/20 bg-black/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100 backdrop-blur sm:left-5 sm:top-5">
               <Eye className="h-3.5 w-3.5" />
