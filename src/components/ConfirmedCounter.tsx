@@ -8,26 +8,42 @@ export function ConfirmedCounter({
   eventId,
   maxPlayers: initialMaxPlayers,
   initialConfirmedCount,
+  newcomerReservedSpots: initialNewcomerReservedSpots,
+  initialNewcomerConfirmedCount,
 }: {
   eventId: string;
   maxPlayers: number | null;
   initialConfirmedCount: number;
+  newcomerReservedSpots: number;
+  initialNewcomerConfirmedCount: number;
 }) {
   const [count, setCount] = useState(initialConfirmedCount);
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
+  const [newcomerReservedSpots, setNewcomerReservedSpots] = useState(initialNewcomerReservedSpots);
+  const [newcomerConfirmedCount, setNewcomerConfirmedCount] = useState(initialNewcomerConfirmedCount);
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
-    const [{ count: fresh }, { data: eventRow }] = await Promise.all([
+    const [{ count: fresh }, { count: freshNewcomers }, { data: eventRow }] = await Promise.all([
       supabase
         .from("attendance")
         .select("id", { count: "exact", head: true })
         .eq("event_id", eventId)
         .eq("status", "confirmed"),
-      supabase.from("events").select("max_players").eq("id", eventId).maybeSingle(),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "confirmed")
+        .eq("uses_newcomer_spot", true),
+      supabase.from("events").select("max_players, newcomer_reserved_spots").eq("id", eventId).maybeSingle(),
     ]);
     if (fresh != null) setCount(fresh);
-    if (eventRow) setMaxPlayers(eventRow.max_players);
+    if (freshNewcomers != null) setNewcomerConfirmedCount(freshNewcomers);
+    if (eventRow) {
+      setMaxPlayers(eventRow.max_players);
+      setNewcomerReservedSpots(eventRow.newcomer_reserved_spots ?? 0);
+    }
   }, [eventId]);
 
   useEffect(() => {
@@ -39,8 +55,12 @@ export function ConfirmedCounter({
     return () => clearInterval(interval);
   }, [refresh]);
 
-  const vagasRestantes = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
-  const isFull = vagasRestantes === 0;
+  const memberCapacity = maxPlayers != null ? Math.max(0, maxPlayers - newcomerReservedSpots) : null;
+  const regularConfirmedCount = Math.max(0, count - newcomerConfirmedCount);
+  const memberSlotsRemaining = memberCapacity != null ? Math.max(0, memberCapacity - regularConfirmedCount) : null;
+  const newcomerSlotsRemaining = Math.max(0, newcomerReservedSpots - newcomerConfirmedCount);
+  const totalSlotsRemaining = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
+  const isFull = totalSlotsRemaining === 0;
   const pct = maxPlayers ? Math.min(100, Math.round((count / maxPlayers) * 100)) : null;
 
   return (
@@ -51,16 +71,30 @@ export function ConfirmedCounter({
           {count} confirmado{count === 1 ? "" : "s"}
           {maxPlayers != null && <span className="text-white/50"> de {maxPlayers} vagas</span>}
         </p>
-        {vagasRestantes !== null && (
+        {memberSlotsRemaining !== null && (
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
-              isFull ? "bg-red-500/15 text-red-300" : "bg-green-500/15 text-green-300"
+              memberSlotsRemaining === 0 ? "bg-red-500/15 text-red-300" : "bg-green-500/15 text-green-300"
             }`}
           >
-            {isFull ? "Lista cheia" : `Faltam ${vagasRestantes}`}
+            {memberSlotsRemaining === 0
+              ? "Vagas de membros preenchidas"
+              : `${memberSlotsRemaining} vaga${memberSlotsRemaining === 1 ? "" : "s"} para membros`}
           </span>
         )}
       </div>
+      {newcomerReservedSpots > 0 && memberCapacity !== null && (
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-lg bg-white/5 px-3 py-2 text-white/65">
+            <span className="block font-semibold text-white">Membros</span>
+            {regularConfirmedCount} de {memberCapacity} · {memberSlotsRemaining} restante{memberSlotsRemaining === 1 ? "" : "s"}
+          </div>
+          <div className="rounded-lg border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-cyan-100/70">
+            <span className="block font-semibold text-cyan-100">Convidados</span>
+            {newcomerConfirmedCount} de {newcomerReservedSpots} · {newcomerSlotsRemaining} restante{newcomerSlotsRemaining === 1 ? "" : "s"}
+          </div>
+        </div>
+      )}
       {pct !== null && (
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
           <div

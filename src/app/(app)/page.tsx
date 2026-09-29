@@ -45,7 +45,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, is_pre_torneio")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio")
         .gte("date", today)
         .neq("status", "finished")
         .neq("status", "cancelled")
@@ -101,15 +101,30 @@ export default async function HomePage() {
         .maybeSingle()
     : { data: null };
 
-  const { count: confirmedCount } = proximoRacha
-    ? await supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", proximoRacha.id)
-        .eq("status", "confirmed")
-    : { count: null };
+  const [{ count: confirmedCount }, { count: newcomerConfirmedCount }] = proximoRacha
+    ? await Promise.all([
+        supabase
+          .from("attendance")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", proximoRacha.id)
+          .eq("status", "confirmed"),
+        supabase
+          .from("attendance")
+          .select("id", { count: "exact", head: true })
+          .eq("event_id", proximoRacha.id)
+          .eq("status", "confirmed")
+          .eq("uses_newcomer_spot", true),
+      ])
+    : [{ count: null }, { count: null }];
+  const reservedSpots = proximoRacha?.newcomer_reserved_spots ?? 0;
+  const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
+  const memberCapacity =
+    proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - reservedSpots) : null;
   const isFull =
-    proximoRacha?.max_players != null && (confirmedCount ?? 0) >= proximoRacha.max_players;
+    proximoRacha?.max_players != null &&
+    (profile.status === "guest"
+      ? (confirmedCount ?? 0) >= proximoRacha.max_players
+      : memberCapacity !== null && regularConfirmedCount >= memberCapacity);
 
   const eventIdForPanel = proximoRacha?.id ?? "";
   // O aviso de cancelamento é só pra quem já estava confirmado e saiu da lista
@@ -262,6 +277,8 @@ export default async function HomePage() {
                   eventId={proximoRacha.id}
                   maxPlayers={proximoRacha.max_players}
                   initialConfirmedCount={confirmedCount ?? 0}
+                  newcomerReservedSpots={reservedSpots}
+                  initialNewcomerConfirmedCount={newcomerConfirmedCount ?? 0}
                 />
               </div>
 
@@ -394,9 +411,7 @@ export default async function HomePage() {
           proximoRachaId={proximoRacha?.id ?? null}
           interessadosCount={interessadosCount ?? 0}
           vagasRestantes={
-            proximoRacha?.max_players != null
-              ? Math.max(0, proximoRacha.max_players - (confirmedCount ?? 0))
-              : null
+            memberCapacity != null ? Math.max(0, memberCapacity - regularConfirmedCount) : null
           }
           reserveCount={reserveCount ?? 0}
           recentDeclines={(declineRows ?? []).map((d) => ({

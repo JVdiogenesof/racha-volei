@@ -79,11 +79,15 @@ export default async function ConfirmarPresencaPage({
   const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
   const regularConfirmedCount = confirmados.length - newcomerConfirmedCount;
   const eventCapacity = event.max_players ?? event.num_teams * event.team_size;
+  const memberCapacity = Math.max(0, eventCapacity - event.newcomer_reserved_spots);
   const regularSlotsRemaining = Math.max(
     0,
-    eventCapacity - event.newcomer_reserved_spots - regularConfirmedCount,
+    memberCapacity - regularConfirmedCount,
   );
-  const isFull = event.max_players != null && confirmados.length >= event.max_players;
+  const isFull =
+    profile.status === "guest"
+      ? confirmados.length >= eventCapacity
+      : regularConfirmedCount >= memberCapacity;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
   const addDirectOptions = (approvedProfiles ?? [])
@@ -117,7 +121,8 @@ export default async function ConfirmarPresencaPage({
     ...confirmados.map((a, i) => {
       const p = a.profiles as unknown as { full_name: string; is_setter: boolean } | null;
       const name = p?.full_name ?? "?";
-      return `${i + 1}. ${p?.is_setter ? `*${name}* 🏐 (levantador)` : name}`;
+      const labels = [p?.is_setter ? "🏐 levantador(a)" : null, a.uses_newcomer_spot ? "*CONVIDADO*" : null].filter(Boolean);
+      return `${i + 1}. ${p?.is_setter ? `*${name}*` : name}${labels.length > 0 ? ` · ${labels.join(" · ")}` : ""}`;
     }),
   ].join("\n");
 
@@ -158,13 +163,15 @@ export default async function ConfirmarPresencaPage({
             eventId={id}
             maxPlayers={eventCapacity}
             initialConfirmedCount={confirmados.length}
+            newcomerReservedSpots={event.newcomer_reserved_spots}
+            initialNewcomerConfirmedCount={newcomerConfirmedCount}
           />
           {event.newcomer_reserved_spots > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
               <ShieldCheck className="h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2} />
               <p>
-                <strong>{event.newcomer_reserved_spots} vagas protegidas para novatos</strong>
-                <span className="text-cyan-100/60"> · {newcomerConfirmedCount} preenchida{newcomerConfirmedCount === 1 ? "" : "s"}</span>
+                <strong>{event.newcomer_reserved_spots} vagas protegidas para convidados</strong>
+                <span className="text-cyan-100/60"> · {newcomerConfirmedCount} preenchida{newcomerConfirmedCount === 1 ? "" : "s"} · {Math.max(0, event.newcomer_reserved_spots - newcomerConfirmedCount)} livre{Math.max(0, event.newcomer_reserved_spots - newcomerConfirmedCount) === 1 ? "" : "s"}</span>
               </p>
             </div>
           )}
@@ -377,7 +384,14 @@ export default async function ConfirmarPresencaPage({
                   className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
                 >
                   <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
-                  <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className={`truncate text-sm text-white ${a.uses_newcomer_spot ? "font-bold" : ""}`}>{p?.full_name}</p>
+                    {a.uses_newcomer_spot && (
+                      <span className="mt-0.5 inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">
+                        CONVIDADO
+                      </span>
+                    )}
+                  </div>
                   {p?.is_setter && <SetterBadge />}
                   {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                   {profile.is_organizer && (

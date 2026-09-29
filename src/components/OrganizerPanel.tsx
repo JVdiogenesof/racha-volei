@@ -30,7 +30,7 @@ export function OrganizerPanel({
             {vagasRestantes === null ? "—" : vagasRestantes}
           </p>
           <p className="mt-0.5 text-xs text-white/60">
-            {vagasRestantes === 0 ? "Lista cheia" : "Vagas restantes"}
+            {vagasRestantes === 0 ? "Vagas de membros preenchidas" : "Vagas para membros"}
           </p>
         </Link>
 

@@ -30,7 +30,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       .maybeSingle(),
     supabase
       .from("attendance")
-      .select("profile_id, confirmed_at, profiles(full_name, avatar_url, is_setter)")
+      .select("profile_id, confirmed_at, uses_newcomer_spot, profiles(full_name, avatar_url, is_setter)")
       .eq("event_id", id)
       .eq("status", "confirmed")
       .order("confirmed_at", { ascending: true }),
@@ -52,6 +52,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       fullName: profile?.full_name ?? "Jogador",
       avatarUrl: profile?.avatar_url ?? null,
       isSetter: profile?.is_setter ?? false,
+      isGuest: row.uses_newcomer_spot,
     };
   });
 
@@ -261,6 +262,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
                 {player.isSetter && (
                   <span style={{ marginTop: "3px", color: "#c4b5fd", fontSize: "13px", fontWeight: 700 }}>
                     🏐 LEVANTADOR(A)
+                  </span>
+                )}
+                {player.isGuest && (
+                  <span style={{ marginTop: "3px", color: "#67e8f9", fontSize: "13px", fontWeight: 900 }}>
+                    CONVIDADO
                   </span>
                 )}
               </div>
