@@ -181,7 +181,7 @@ export function HeaderTopBar({
             <MenuLink href="/perfil#cartao-vpa" icon={CircleUserRound} label="Meu cartão VPA" />
             <MenuLink href="/evolucao" icon={TrendingUp} label="Minha evolução" />
             <MenuLink href="/avisos" icon={Bell} label="Avisos e notificações" />
-            {isOrganizer && <MenuLink href="/admin" icon={ShieldCheck} label="Painel do organizador" accent />}
+            {isOrganizer && <MenuLink href="/admin/reserva" icon={ShieldCheck} label="Painel do organizador" accent />}
             <div className="my-1 h-px bg-white/10" />
             {signOutAction ? (
               <form action={signOutAction}><button role="menuitem" className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-red-200/80 hover:bg-red-400/10 hover:text-red-100"><LogOut className="h-4 w-4" /> Sair da conta</button></form>

@@ -17,7 +17,7 @@ export default async function CadastroPage() {
   const [{ data: profile }, { self: selfRatings }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("status, full_name, birthdate, phone, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, player_level")
+      .select("status, full_name, birthdate, phone, instagram_handle, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, player_level")
       .eq("id", user.id)
       .maybeSingle(),
     getPlayerRatings(supabase, user.id),
@@ -48,6 +48,9 @@ export default async function CadastroPage() {
             </Field>
             <Field label="Telefone / WhatsApp">
               <input name="phone" defaultValue={profile?.phone ?? ""} required placeholder="(85) 90000-0000" className={inputClass} />
+            </Field>
+            <Field label="Qual é o seu @ do Instagram?">
+              <input name="instagramHandle" defaultValue={profile?.instagram_handle ?? ""} required autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="@seuusuario" className={inputClass} />
             </Field>
             {!completingApprovedProfile && (
               <Field label="Bairro">

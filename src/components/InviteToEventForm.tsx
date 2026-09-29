@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ActionForm } from "./ActionForm";
 
 export function InviteToEventForm({
@@ -12,7 +13,7 @@ export function InviteToEventForm({
   events: { id: string; label: string }[];
 }) {
   if (!events.length) {
-    return <p className="text-xs text-white/40">Nenhum racha aberto pra chamar gente agora.</p>;
+    return <p className="text-xs text-amber-200/75">Crie o próximo racha antes de chamar. <Link href="/admin/rachas" className="font-bold underline hover:text-amber-100">Criar racha</Link></p>;
   }
 
   return (

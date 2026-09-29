@@ -1,4 +1,4 @@
-import { Phone, MapPin, CheckCircle2, Circle, UserCheck, Waypoints, UsersRound, BadgeCheck, CalendarDays } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, Circle, UserCheck, Waypoints, UsersRound, BadgeCheck, CalendarDays, AtSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
@@ -25,8 +25,8 @@ export default async function AdminReservaPage() {
   const [{ data: rows }, { data: callableEvents }, { data: waitingProfiles }] = await Promise.all([
     supabase
       .from("reserve_list")
-      .select("id, auth_user_id, full_name, phone, neighborhood, player_level, how_heard, known_people, wants_official_membership, contacted, created_at")
-      .order("created_at", { ascending: true }),
+      .select("id, auth_user_id, full_name, phone, instagram_handle, neighborhood, player_level, how_heard, known_people, wants_official_membership, contacted, created_at")
+      .order("created_at", { ascending: false }),
     supabase
       .from("events")
       .select("id, date, location")
@@ -67,6 +67,7 @@ export default async function AdminReservaPage() {
                   <p className="font-bold text-white">{r.full_name}</p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs text-white/60">
                     <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{r.phone}</span>
+                    {r.instagram_handle && <span className="inline-flex items-center gap-1.5"><AtSign className="h-3.5 w-3.5" />{r.instagram_handle}</span>}
                     {r.neighborhood && <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" />{r.neighborhood}</span>}
                     {waitingProfile?.birthdate && <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5" />{new Date(`${waitingProfile.birthdate}T12:00:00`).toLocaleDateString("pt-BR")}</span>}
                   </div>

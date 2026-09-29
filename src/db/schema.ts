@@ -71,6 +71,7 @@ export const profiles = pgTable("profiles", {
   fullName: text("full_name").notNull(),
   birthdate: date("birthdate"),
   phone: text("phone"),
+  instagramHandle: text("instagram_handle"),
   avatarUrl: text("avatar_url"),
   // Apelido/insígnia divertida que o próprio jogador escolhe (ou que um
   // organizador ajusta), tipo "só tenho ataque". Puramente decorativo, exibido
@@ -288,6 +289,7 @@ export const reserveList = pgTable("reserve_list", {
   authUserId: uuid("auth_user_id").notNull().unique(),
   fullName: text("full_name").notNull(),
   phone: text("phone").notNull(),
+  instagramHandle: text("instagram_handle"),
   neighborhood: text("neighborhood"),
   playerLevel: playerLevelEnum("player_level"),
   howHeard: text("how_heard"),

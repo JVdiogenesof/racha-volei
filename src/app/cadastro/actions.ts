@@ -18,6 +18,8 @@ export async function submitSignup(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const birthdate = String(formData.get("birthdate") ?? "");
   const phone = String(formData.get("phone") ?? "").trim();
+  const instagramInput = String(formData.get("instagramHandle") ?? "").trim().toLowerCase();
+  const instagramHandle = instagramInput.startsWith("@") ? instagramInput : `@${instagramInput}`;
   const neighborhood = String(formData.get("neighborhood") ?? "").trim();
   const playerLevel = String(formData.get("playerLevel") ?? "");
   const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
@@ -28,8 +30,8 @@ export async function submitSignup(formData: FormData) {
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
 
-  if (!fullName || !birthdate || !phone || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
-    throw new Error("Preencha nome, aniversário, telefone e nível.");
+  if (!fullName || !birthdate || !phone || !/^@[a-z0-9._]{1,30}$/.test(instagramHandle) || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
+    throw new Error("Preencha nome, aniversário, telefone, Instagram e nível.");
   }
   if (!ATTENDANCE_FREQUENCIES.includes(attendanceFrequency as (typeof ATTENDANCE_FREQUENCIES)[number])) {
     throw new Error("Frequência inválida.");
@@ -49,6 +51,7 @@ export async function submitSignup(formData: FormData) {
     full_name: fullName,
     birthdate,
     phone,
+    instagram_handle: instagramHandle,
     is_setter: isSetter,
     attendance_frequency: attendanceFrequency,
     has_vpa_shirt: hasVpaShirt,
@@ -89,6 +92,7 @@ export async function submitSignup(formData: FormData) {
     p_full_name: fullName,
     p_birthdate: birthdate,
     p_phone: phone,
+    p_instagram_handle: instagramHandle,
     p_neighborhood: neighborhood,
     p_player_level: playerLevel,
     p_is_setter: isSetter,
