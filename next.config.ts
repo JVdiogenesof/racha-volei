@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/camisas/video": ["./src/private-assets/camisas/modelos-vpa.mp4.enc"],
+  },
   experimental: {
     serverActions: {
       // Padrão do Next é 1MB, pequeno demais pra foto tirada direto do

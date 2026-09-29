@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, HeartHandshake } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, HeartHandshake, Eye, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -14,6 +14,7 @@ import { getRachaLevel } from "@/lib/rachaLevel";
 import { getQueridometroPeriod } from "@/lib/queridometro";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
+import { canAccessShirts } from "@/lib/shirt-access";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -38,6 +39,7 @@ export default async function HomePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const queridometroPeriod = getQueridometroPeriod();
+  const canPreviewShirts = canAccessShirts(profile.id);
 
   const today = new Date().toISOString().slice(0, 10);
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
@@ -319,6 +321,47 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {canPreviewShirts && (
+        <section className="overflow-hidden rounded-3xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-2xl shadow-purple-950/25">
+          <div className="relative aspect-video overflow-hidden bg-black">
+            <video
+              src="/camisas/video"
+              poster="/camisas/colecao-vpa-v2.webp"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-cover"
+              aria-label="Vídeo de apresentação dos modelos da nova camisa VPA"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-transparent to-black/20" />
+            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-amber-200/20 bg-black/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100 backdrop-blur sm:left-5 sm:top-5">
+              <Eye className="h-3.5 w-3.5" />
+              Prévia privada
+            </span>
+          </div>
+          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-purple-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                Nova coleção VPA
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-white">A nova pele do nosso racha</h2>
+              <p className="mt-1 text-sm text-white/55">Essa apresentação está visível somente para você e o Vidal.</p>
+            </div>
+            <Link
+              href="/camisas"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 font-bold text-white shadow-lg shadow-purple-950/30 hover:bg-brand-purple-dark"
+            >
+              <Shirt className="h-4 w-4" />
+              Ver modelos e pedidos
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
+      )}
 
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy-light to-[#241a52] p-6">
         {/* eslint-disable-next-line @next/next/no-img-element */}
