@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SlidersHorizontal, CalendarPlus, Award, Phone, BarChart3, HeartHandshake, Shirt } from "lucide-react";
+import { SlidersHorizontal, CalendarPlus, Award, Phone, BarChart3, Shirt } from "lucide-react";
 
 const TABS = [
   { href: "/admin/jogadores", label: "Notas dos jogadores", icon: SlidersHorizontal },
@@ -11,7 +11,6 @@ const TABS = [
   { href: "/admin/reserva", label: "Cadastros e reserva", icon: Phone },
   { href: "/admin/camisas", label: "Pedidos das camisas", icon: Shirt },
   { href: "/admin/resumo", label: "Resumo mensal", icon: BarChart3 },
-  { href: "/admin/reacoes", label: "Queridômetro", icon: HeartHandshake },
 ];
 
 export function AdminTabs({ canViewShirts = false }: { canViewShirts?: boolean }) {

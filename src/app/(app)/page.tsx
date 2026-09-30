@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, HeartHandshake, Shirt } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -11,7 +11,6 @@ import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { EventCountdown } from "@/components/EventCountdown";
 import { getRachaLevel } from "@/lib/rachaLevel";
-import { getQueridometroPeriod } from "@/lib/queridometro";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
@@ -38,8 +37,6 @@ function relativeDate(dateStr: string) {
 export default async function HomePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const queridometroPeriod = getQueridometroPeriod();
-
   const today = new Date().toISOString().slice(0, 10);
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
     await Promise.all([
@@ -393,18 +390,7 @@ export default async function HomePage() {
         />
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link href="/reacoes" className="flex items-center gap-3 rounded-2xl border border-purple-300/25 bg-gradient-to-br from-brand-purple/20 to-transparent p-4 transition hover:border-purple-300/40 hover:bg-brand-purple/25">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-purple/25 text-purple-200"><HeartHandshake className="h-5 w-5" /></span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-wide text-purple-300">Queridômetro VPA</p>
-            <p className="mt-1 text-sm font-semibold text-white">{queridometroPeriod.votingOpen ? "A votação da semana está aberta" : "Os resultados da semana chegaram"}</p>
-            <p className="mt-0.5 text-xs text-white/45">{queridometroPeriod.votingOpen ? "Escolha um emoji para a galera." : "Veja suas reações e conexões."}</p>
-          </div>
-          <ChevronRight className="h-5 w-5 shrink-0 text-white/35" />
-        </Link>
-        {profile.status === "approved" && !profile.nickname_badge && <NicknamePromptCard />}
-      </div>
+      {profile.status === "approved" && !profile.nickname_badge && <NicknamePromptCard />}
 
       {profile.is_organizer && (
         <OrganizerPanel

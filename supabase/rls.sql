@@ -151,10 +151,6 @@ alter table match_wins enable row level security;
 alter table ranking_adjustments enable row level security;
 alter table reserve_list enable row level security;
 alter table push_subscriptions enable row level security;
-alter table reaction_types enable row level security;
-alter table reactions enable row level security;
-alter table queridometro_reaction_types enable row level security;
-alter table queridometro_votes enable row level security;
 alter table tournament_reserved_players enable row level security;
 alter table tournament_matches enable row level security;
 alter table shirt_orders enable row level security;
@@ -302,60 +298,6 @@ create policy "push_subscriptions_insert" on push_subscriptions for insert to au
   with check (profile_id = auth.uid() and public.is_full_member());
 create policy "push_subscriptions_delete" on push_subscriptions for delete to authenticated
   using ((profile_id = auth.uid() and public.is_full_member()) or public.is_organizer());
-
--- reaction_types: leitura aberta (precisa aparecer no formulário de mandar
--- reação); escrita separada em insert/update/delete (mesmo motivo de "events"
--- acima) pra um organizador poder editar/apagar frase criada por outro.
-create policy "reaction_types_select" on reaction_types for select to authenticated using (true);
-create policy "reaction_types_insert" on reaction_types for insert to authenticated
-  with check (public.is_organizer() and created_by = auth.uid());
-create policy "reaction_types_update" on reaction_types for update to authenticated
-  using (public.is_organizer())
-  with check (public.is_organizer());
-create policy "reaction_types_delete" on reaction_types for delete to authenticated
-  using (public.is_organizer());
-
--- reactions: feed público (leitura aberta); cada um só registra reação em
--- nome de si mesmo; apaga quem mandou (desfazer) ou organizador (moderar).
-create policy "reactions_select" on reactions for select to authenticated using (true);
-create policy "reactions_insert" on reactions for insert to authenticated
-  with check (from_profile_id = auth.uid() and public.is_full_member());
-create policy "reactions_delete" on reactions for delete to authenticated
-  using ((from_profile_id = auth.uid() and public.is_full_member()) or public.is_organizer());
-
--- Queridômetro: as opções são públicas pro grupo e moderadas por organizador.
--- Cada pessoa lê apenas os votos que enviou. Resultados recebidos saem por
--- funções agregadas SECURITY DEFINER, sem revelar quem escolheu cada emoji.
-create policy "queridometro_types_select" on queridometro_reaction_types
-  for select to authenticated using (true);
-create policy "queridometro_types_update" on queridometro_reaction_types
-  for update to authenticated using (public.is_organizer()) with check (public.is_organizer());
-create policy "queridometro_votes_select_own" on queridometro_votes
-  for select to authenticated using (from_profile_id = auth.uid());
-create policy "queridometro_votes_insert_own" on queridometro_votes
-  for insert to authenticated with check (
-    public.is_full_member()
-    and from_profile_id = auth.uid() and from_profile_id <> to_profile_id
-    and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
-    and extract(dow from timezone('America/Fortaleza', now())) <> 0
-    and exists (select 1 from profiles p where p.id = to_profile_id and p.status = 'approved')
-    and exists (select 1 from queridometro_reaction_types t where t.key = reaction_key and t.active)
-  );
-create policy "queridometro_votes_update_own" on queridometro_votes
-  for update to authenticated using (from_profile_id = auth.uid() and public.is_full_member()) with check (
-    public.is_full_member()
-    and from_profile_id = auth.uid() and from_profile_id <> to_profile_id
-    and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
-    and extract(dow from timezone('America/Fortaleza', now())) <> 0
-    and exists (select 1 from profiles p where p.id = to_profile_id and p.status = 'approved')
-    and exists (select 1 from queridometro_reaction_types t where t.key = reaction_key and t.active)
-  );
-create policy "queridometro_votes_delete_own" on queridometro_votes
-  for delete to authenticated using (
-    public.is_full_member() and from_profile_id = auth.uid()
-    and week_start = date_trunc('week', timezone('America/Fortaleza', now()))::date
-    and extract(dow from timezone('America/Fortaleza', now())) <> 0
-  );
 
 -- tournament_reserved_players: leitura aberta (vira uma vitrine pública de
 -- quem já garantiu vaga no torneio); só organizador insere/apaga (finalizar

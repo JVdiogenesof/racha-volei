@@ -13,9 +13,7 @@ import {
   primaryKey,
   foreignKey,
   index,
-  check,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 export const skillCategoryEnum = pgEnum("skill_category", [
   "attack",
@@ -341,59 +339,6 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   auth: text("auth").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
-
-// Estrutura legada das reações antigas. Mantida apenas para preservar o
-// histórico anterior ao Queridômetro; nenhuma tela nova grava nesses dados.
-export const reactionTypes = pgTable("reaction_types", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  text: text("text").notNull(),
-  active: boolean("active").notNull().default(true),
-  createdBy: uuid("created_by").notNull().references(() => profiles.id),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// Histórico legado das reações antigas, fora da interface atual.
-export const reactions = pgTable("reactions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  fromProfileId: uuid("from_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-  toProfileId: uuid("to_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-  reactionTypeId: uuid("reaction_type_id").notNull().references(() => reactionTypes.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// Catálogo fixo e moderável do Queridômetro VPA. A chave identifica a reação
-// entre semanas; organizadores podem ocultar opções sem apagar o histórico.
-export const queridometroReactionTypes = pgTable("queridometro_reaction_types", {
-  key: text("key").primaryKey(),
-  emoji: text("emoji").notNull(),
-  label: text("label").notNull(),
-  description: text("description").notNull(),
-  connectionLabel: text("connection_label"),
-  active: boolean("active").notNull().default(true),
-  sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// Uma escolha por pessoa avaliada em cada semana. Os votos individuais só
-// podem ser lidos por quem os enviou; resultados saem por RPC agregada.
-export const queridometroVotes = pgTable(
-  "queridometro_votes",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    weekStart: date("week_start").notNull(),
-    fromProfileId: uuid("from_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-    toProfileId: uuid("to_profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
-    reactionKey: text("reaction_key").notNull().references(() => queridometroReactionTypes.key),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    unique("queridometro_votes_week_pair_unique").on(t.weekStart, t.fromProfileId, t.toProfileId),
-    check("queridometro_votes_no_self", sql`${t.fromProfileId} <> ${t.toProfileId}`),
-    index("queridometro_votes_week_to_idx").on(t.weekStart, t.toProfileId),
-    index("queridometro_votes_week_reaction_idx").on(t.weekStart, t.reactionKey),
-  ],
-);
 
 // Quem já garantiu vaga no próximo Torneio VPA -- preenchido sozinho quando
 // um racha pré-torneio termina (time com mais vitórias) ou à mão por um
