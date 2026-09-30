@@ -14,7 +14,7 @@ async function fetchConfirmedListImage(eventId: string) {
   return response.blob();
 }
 
-export function ShareConfirmedListArtButton({ eventId, eventDate }: { eventId: string; eventDate: string }) {
+export function ShareConfirmedListArtButton({ eventId, eventDate, compact = false }: { eventId: string; eventDate: string; compact?: boolean }) {
   const [busyAction, setBusyAction] = useState<"share" | "download" | null>(null);
   const { showToast } = useToast();
 
@@ -46,6 +46,33 @@ export function ShareConfirmedListArtButton({ eventId, eventDate }: { eventId: s
     } finally {
       setBusyAction(null);
     }
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={handleShare}
+          disabled={busyAction !== null}
+          aria-label="Gerar e compartilhar arte dos confirmados"
+          title="Compartilhar arte dos confirmados"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-purple-300/25 bg-purple-400/15 text-purple-100 transition hover:bg-purple-400/25 disabled:opacity-60"
+        >
+          {busyAction === "share" ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+        </button>
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={busyAction !== null}
+          aria-label="Baixar arte dos confirmados"
+          title="Baixar arte dos confirmados"
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white disabled:opacity-60"
+        >
+          {busyAction === "download" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+        </button>
+      </div>
+    );
   }
 
   return (

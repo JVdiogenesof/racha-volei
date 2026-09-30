@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Share2, Check } from "lucide-react";
 import { useToast } from "./Toast";
 
-export function ShareWhatsAppButton({ text, className }: { text: string; className?: string }) {
+export function ShareWhatsAppButton({ text, className, iconOnly = false }: { text: string; className?: string; iconOnly?: boolean }) {
   const { showToast } = useToast();
   const [copied, setCopied] = useState(false);
 
@@ -25,13 +25,15 @@ export function ShareWhatsAppButton({ text, className }: { text: string; classNa
     <button
       type="button"
       onClick={handleClick}
+      aria-label={copied ? "Texto copiado" : "Copiar lista para o WhatsApp"}
+      title={copied ? "Texto copiado" : "Copiar lista para o WhatsApp"}
       className={
         className ??
         "inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-sm font-medium text-green-300 hover:bg-green-500/20"
       }
     >
       {copied ? <Check className="h-4 w-4" strokeWidth={2} /> : <Share2 className="h-4 w-4" strokeWidth={2} />}
-      Compartilhar no WhatsApp
+      {!iconOnly && "Compartilhar no WhatsApp"}
     </button>
   );
 }

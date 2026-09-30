@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ShieldCheck } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -20,6 +20,7 @@ import { CopyPixButton } from "@/components/CopyPixButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
+import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
@@ -163,49 +164,38 @@ export default async function ConfirmarPresencaPage({
   const canSeeConfirmados = listOpen || profile.is_organizer;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-4 ${profile.is_organizer ? "pb-40" : ""}`}>
       <div>
-        <h1 className="text-2xl font-bold text-white">Lista do racha · {dateLabel}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-white">Lista do racha</h1>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/65">{dateLabel}</span>
+          <span className="rounded-full border border-purple-300/20 bg-purple-400/10 px-2.5 py-1 text-xs font-semibold text-purple-100">{statusLabel}</span>
+        </div>
         {!eventCancelled && !eventFinished && (
-          <p className="mt-1 text-sm text-white/60">
-            Marque que tem interesse. Os organizadores confirmam manualmente quem entra na lista
-            oficial{listOpen ? "" : ", que ainda não foi publicada"}.
-          </p>
+          <p className="mt-1.5 text-sm text-white/50">Marque seu interesse. A confirmação final é feita pelos organizadores.</p>
         )}
-        <p className="mt-1 text-sm text-white/60">
-          Situação atual: <strong>{statusLabel}</strong>
-        </p>
       </div>
 
       {!eventFinished && !eventCancelled && (
-        <div className="space-y-2">
-          <ConfirmedCounter
-            eventId={id}
-            maxPlayers={eventCapacity}
-            initialConfirmedCount={confirmados.length}
-            newcomerReservedSpots={event.newcomer_reserved_spots}
-            initialNewcomerConfirmedCount={newcomerConfirmedCount}
-          />
-          {event.newcomer_reserved_spots > 0 && (
-            <div className="flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-100">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2} />
-              <p>
-                <strong>{event.newcomer_reserved_spots} vagas protegidas para convidados</strong>
-                <span className="text-cyan-100/60"> · {newcomerConfirmedCount} preenchida{newcomerConfirmedCount === 1 ? "" : "s"} · {Math.max(0, event.newcomer_reserved_spots - newcomerConfirmedCount)} livre{Math.max(0, event.newcomer_reserved_spots - newcomerConfirmedCount) === 1 ? "" : "s"}</span>
-              </p>
-            </div>
-          )}
-        </div>
+        <ConfirmedCounter
+          eventId={id}
+          maxPlayers={eventCapacity}
+          initialConfirmedCount={confirmados.length}
+          newcomerReservedSpots={event.newcomer_reserved_spots}
+          initialNewcomerConfirmedCount={newcomerConfirmedCount}
+        />
       )}
 
       {!eventFinished && !eventCancelled && highlights.topOverall.length > 0 && (
-        <section className="rounded-xl border border-brand-purple/30 bg-gradient-to-br from-brand-purple/15 to-transparent p-4">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+        <details className="group rounded-xl border border-brand-purple/25 bg-gradient-to-br from-brand-purple/10 to-transparent">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3.5 py-2.5 text-sm font-semibold text-white">
             <Star className="h-4 w-4 text-purple-300" strokeWidth={2} />
-            Quem já confirmou
-          </h3>
-          <p className="mt-0.5 text-xs text-white/50">Esses são alguns dos jogadores que já estão confirmados</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+            Destaques dos confirmados
+            <span className="ml-auto text-xs font-normal text-white/40">{highlights.topOverall.length + highlights.topSetters.length}</span>
+            <ChevronDown className="h-4 w-4 text-white/45 transition group-open:rotate-180" />
+          </summary>
+          <div className="border-t border-white/8 px-3.5 pb-3.5 pt-3">
+            <div className="flex flex-wrap gap-2">
             {highlights.topOverall.map((h) => (
               <div
                 key={h.profileId}
@@ -215,10 +205,10 @@ export default async function ConfirmarPresencaPage({
                 <p className="min-w-0 truncate text-sm font-medium text-white">{h.fullName}</p>
               </div>
             ))}
-          </div>
+            </div>
 
-          {highlights.topSetters.length > 0 && (
-            <>
+            {highlights.topSetters.length > 0 && (
+              <>
               <p className="mt-3 text-xs font-medium text-white/60">Levantadores confirmados</p>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {highlights.topSetters.map((h) => (
@@ -231,9 +221,10 @@ export default async function ConfirmarPresencaPage({
                   </div>
                 ))}
               </div>
-            </>
-          )}
-        </section>
+              </>
+            )}
+          </div>
+        </details>
       )}
 
       {!canRespond && !eventFinished && !eventCancelled ? (
@@ -286,92 +277,95 @@ export default async function ConfirmarPresencaPage({
         </div>
       )}
 
-      {profile.is_organizer && !eventFinished && !eventCancelled && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-          <p className="text-sm text-white/70">
-            {confirmados.length} confirmados · {interessados.length} interessados
-            {listOpen ? " · lista pública" : " · lista ainda privada"}
-          </p>
-          {listOpen && <ShareWhatsAppButton text={shareText} />}
-          {listOpen ? (
-            <ActionForm
-              action={setOfficialListOpen}
-              successMessage="Lista de confirmados escondida de novo."
-              className="ml-auto shrink-0"
-            >
-              <input type="hidden" name="eventId" value={id} />
-              <input type="hidden" name="open" value="false" />
-              <button className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10">
-                <Undo2 className="h-4 w-4" strokeWidth={2} />
-                Esconder lista de confirmados
-              </button>
-            </ActionForm>
-          ) : (
-            <ActionForm
-              action={setOfficialListOpen}
-              successMessage="Lista de confirmados publicada!"
-              className="ml-auto shrink-0"
-            >
-              <input type="hidden" name="eventId" value={id} />
-              <input type="hidden" name="open" value="true" />
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
-                <Rocket className="h-4 w-4" strokeWidth={2} />
-                Publicar lista de confirmados
-              </button>
-            </ActionForm>
-          )}
-        </div>
-      )}
-
-      {profile.is_organizer && listOpen && !eventCancelled && confirmados.length > 0 && (
-        <ShareConfirmedListArtButton eventId={id} eventDate={event.date} />
-      )}
-
-      {profile.is_organizer && !eventFinished && !eventCancelled && (
-        <AddDirectToConfirmedForm action={promoteToConfirmed} eventId={id} players={addDirectOptions} />
-      )}
-
-      {profile.is_organizer && !eventFinished && !eventCancelled && (
-        <QuickInviteReserveForm action={inviteToEvent} eventId={id} people={reserveOptions} />
-      )}
-
-      {profile.is_organizer && convidados.length > 0 && (
-        <section>
-          <h2 className="font-semibold text-white">Convidados ({convidados.length})</h2>
-          <p className="mt-1 text-xs text-white/40">
-            Chamados(as) da lista de reserva pra esse racha — ainda não estão na lista de confirmados.
-          </p>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {convidados.map((g) => (
-              <li key={g.id} className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5">
-                <Avatar src={g.avatar_url} name={g.full_name} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-white">{g.full_name}</p>
-                  {g.phone && (
-                    <p className="mt-0.5 flex items-center gap-1 text-xs text-white/40">
-                      <Phone className="h-3 w-3" strokeWidth={2} />
-                      {g.phone}
-                    </p>
-                  )}
-                </div>
-                {!eventFinished && !eventCancelled && (
-                  <ActionForm action={promoteToConfirmed} successMessage={`${g.full_name} confirmado(a)!`}>
+      {profile.is_organizer && (
+        <OrganizerListDock
+          summary={`${confirmados.length} confirmados · ${interessados.length} interessados · ${listOpen ? "pública" : "privada"}`}
+          peopleCount={addDirectOptions.length + reserveOptions.length + convidados.length}
+          controls={
+            <>
+              {!eventFinished && !eventCancelled && (
+                listOpen ? (
+                  <ActionForm action={setOfficialListOpen} successMessage="Lista de confirmados escondida de novo.">
                     <input type="hidden" name="eventId" value={id} />
-                    <input type="hidden" name="profileId" value={g.id} />
+                    <input type="hidden" name="open" value="false" />
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-1 rounded-lg bg-brand-purple px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-purple-dark"
+                      aria-label="Esconder lista de confirmados"
+                      title="Esconder lista de confirmados"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 transition hover:bg-white/10 hover:text-white"
                     >
-                      <Check className="h-3 w-3" strokeWidth={2} />
-                      Confirmar
+                      <Undo2 className="h-5 w-5" strokeWidth={2} />
                     </button>
                   </ActionForm>
-                )}
-                <EndGuestAccessButton profileId={g.id} fullName={g.full_name} action={endGuestAccess} />
-              </li>
-            ))}
-          </ul>
-        </section>
+                ) : (
+                  <ActionForm action={setOfficialListOpen} successMessage="Lista de confirmados publicada!">
+                    <input type="hidden" name="eventId" value={id} />
+                    <input type="hidden" name="open" value="true" />
+                    <button
+                      type="submit"
+                      aria-label="Publicar lista de confirmados"
+                      title="Publicar lista de confirmados"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border border-indigo-300/25 bg-brand-navy text-white transition hover:bg-brand-navy-light"
+                    >
+                      <Rocket className="h-5 w-5" strokeWidth={2} />
+                    </button>
+                  </ActionForm>
+                )
+              )}
+              {listOpen && (
+                <ShareWhatsAppButton
+                  text={shareText}
+                  iconOnly
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-green-400/25 bg-green-500/15 text-green-300 transition hover:bg-green-500/25"
+                />
+              )}
+              {listOpen && !eventCancelled && confirmados.length > 0 && (
+                <ShareConfirmedListArtButton eventId={id} eventDate={event.date} compact />
+              )}
+            </>
+          }
+        >
+          {!eventFinished && !eventCancelled && (
+            <>
+              <AddDirectToConfirmedForm action={promoteToConfirmed} eventId={id} players={addDirectOptions} />
+              <QuickInviteReserveForm action={inviteToEvent} eventId={id} people={reserveOptions} />
+            </>
+          )}
+
+          {convidados.length > 0 && (
+            <section className="rounded-xl border border-white/10 bg-white/[0.025] p-3.5">
+              <h3 className="font-semibold text-white">Convidados chamados ({convidados.length})</h3>
+              <p className="mt-0.5 text-xs text-white/40">Ainda não estão entre os confirmados.</p>
+              <ul className="mt-3 grid gap-2">
+                {convidados.map((g) => (
+                  <li key={g.id} className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5">
+                    <Avatar src={g.avatar_url} name={g.full_name} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-white">{g.full_name}</p>
+                      {g.phone && (
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-white/40">
+                          <Phone className="h-3 w-3" strokeWidth={2} />
+                          {g.phone}
+                        </p>
+                      )}
+                    </div>
+                    {!eventFinished && !eventCancelled && (
+                      <ActionForm action={promoteToConfirmed} successMessage={`${g.full_name} confirmado(a)!`}>
+                        <input type="hidden" name="eventId" value={id} />
+                        <input type="hidden" name="profileId" value={g.id} />
+                        <button type="submit" className="inline-flex items-center gap-1 rounded-lg bg-brand-purple px-2.5 py-1.5 text-xs font-medium text-white hover:bg-brand-purple-dark">
+                          <Check className="h-3 w-3" strokeWidth={2} />
+                          Confirmar
+                        </button>
+                      </ActionForm>
+                    )}
+                    <EndGuestAccessButton profileId={g.id} fullName={g.full_name} action={endGuestAccess} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </OrganizerListDock>
       )}
 
       {canSeeConfirmados && (
@@ -388,17 +382,7 @@ export default async function ConfirmarPresencaPage({
               </p>
             )}
           </div>
-          {profile.is_organizer && confirmados.length > 0 && (
-            <div className="mt-1.5 space-y-1 text-xs text-white/40">
-              <p className="flex items-center gap-1.5">
-                <span className="text-sm">🏐</span> Toque na bola para definir quem vai levantar neste racha.
-              </p>
-              <p className="flex items-center gap-1.5">
-                <CircleDollarSign className="h-3.5 w-3.5 text-green-300" /> Toque no dinheiro para marcar ou desmarcar o pagamento.
-              </p>
-            </div>
-          )}
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
             {confirmadosOrdenados.map((a) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
               const overall = overallFor(a.profile_id);
@@ -409,7 +393,7 @@ export default async function ConfirmarPresencaPage({
               return (
                 <li
                   key={a.profile_id}
-                  className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-3.5"
+                  className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-3"
                 >
                   <div className="flex min-w-0 items-start gap-3">
                     <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
@@ -422,6 +406,11 @@ export default async function ConfirmarPresencaPage({
                           </span>
                         )}
                         {isSetter && <SetterBadge />}
+                        {profile.is_organizer && (
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${hasPaid ? "border-green-400/25 bg-green-500/10 text-green-300" : "border-white/10 bg-white/5 text-white/40"}`}>
+                            {hasPaid ? "PAGO" : "PENDENTE"}
+                          </span>
+                        )}
                         {hasProvisionalGuestRating && (
                           <span className="inline-flex rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-amber-200">
                             NOTA PROVISÓRIA
@@ -445,7 +434,13 @@ export default async function ConfirmarPresencaPage({
                     />
                   )}
                   {profile.is_organizer && (
-                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/8 pt-3 sm:flex sm:items-center sm:justify-end">
+                    <details className="group mt-2 border-t border-white/8">
+                      <summary className="flex min-h-9 cursor-pointer list-none items-center justify-end gap-1.5 pt-2 text-xs font-medium text-white/45 hover:text-white/75">
+                        <Settings2 className="h-3.5 w-3.5" />
+                        Gerenciar
+                        <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
+                      </summary>
+                      <div className="grid grid-cols-2 gap-2 pb-0.5 pt-2 sm:flex sm:items-center sm:justify-end">
                       {!eventFinished && !eventCancelled && (
                         <ActionForm
                           action={setEventSetterRole}
@@ -516,7 +511,8 @@ export default async function ConfirmarPresencaPage({
                           showMobileLabel
                         />
                       </div>
-                    </div>
+                      </div>
+                    </details>
                   )}
                 </li>
               );
