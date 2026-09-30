@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Trophy } from "lucide-react";
+import { RefreshCw, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
@@ -19,6 +19,7 @@ import { UndoFinalButton } from "@/components/UndoFinalButton";
 import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import { VictoryTeamCard } from "@/components/VictoryTeamCard";
+import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import {
   generateTeams,
@@ -203,48 +204,47 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .map((m) => ({ fullName: m.fullName, teamNumber: t.teamNumber })),
   );
 
+  const tournamentMatchCount = groupMatches.length + (finalMatch ? 1 : 0) + (thirdPlaceMatch ? 1 : 0);
+  const tournamentPlayedCount = [...groupMatches, finalMatch, thirdPlaceMatch].filter(
+    (match) => match?.scoreA != null && match?.scoreB != null,
+  ).length;
+  const showActionDock = Boolean(generation) || profile.is_organizer;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Times</h1>
-          <p className="mt-1 text-sm text-white/60">
-            Racha de {eventDateLabel} · {event.num_teams} times · {teamFormatLabel(event.team_size)}
-          </p>
-        </div>
+    <div className={`space-y-4 ${showActionDock ? "pb-40" : ""}`}>
+      <div>
         <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold text-white">Times e confrontos</h1>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/60">{eventDateLabel}</span>
+          {event.is_pre_torneio && <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-xs font-bold text-amber-200">PRÉ-TORNEIO</span>}
+        </div>
+        <p className="mt-1.5 text-sm text-white/50">{event.num_teams} times · {teamFormatLabel(event.team_size)}</p>
+      </div>
+
+      {showActionDock && (
+        <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+          {profile.is_organizer && <SimulateTeamsButton eventId={id} action={simulateTeams} compact />}
           {generation && (
             <>
-              <ShareTeamsArtButton eventId={id} eventDate={event.date} />
-              <ExportTeamsButton
-                eventDateLabel={eventDateLabel}
-                teams={teams.map((t) => ({ teamNumber: t.teamNumber, members: t.members }))}
-              />
+              <ShareTeamsArtButton eventId={id} eventDate={event.date} compact />
+              <ExportTeamsButton eventDateLabel={eventDateLabel} teams={teams.map((team) => ({ teamNumber: team.teamNumber, members: team.members }))} compact />
             </>
           )}
           {finalMatch?.scoreA != null && finalMatch.scoreB != null && (
-            <Link
-              href={`/racha/${id}/resultado`}
-              className="inline-flex min-h-10 items-center rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm font-medium text-amber-300 hover:bg-amber-400/20"
-            >
-              Ver resultado final
+            <Link href={`/racha/${id}/resultado`} aria-label="Ver resultado final" title="Ver resultado final" className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20">
+              <Trophy className="h-5 w-5" />
             </Link>
           )}
           {profile.is_organizer && event.official_list_open && (
-            <ActionForm
-              action={generateTeams}
-              successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}
-            >
+            <ActionForm action={generateTeams} successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}>
               <input type="hidden" name="eventId" value={id} />
-              <button className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark">
-                {generation ? "Gerar novamente" : "Gerar times"}
+              <button type="submit" aria-label={generation ? "Gerar times novamente" : "Gerar times"} title={generation ? "Gerar times novamente" : "Gerar times"} className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-purple text-white hover:bg-brand-purple-dark">
+                <RefreshCw className="h-5 w-5" />
               </button>
             </ActionForm>
           )}
         </div>
-      </div>
-
-      {profile.is_organizer && <SimulateTeamsButton eventId={id} action={simulateTeams} />}
+      )}
 
       {generation && profile.is_organizer && orphanedMembers.length > 0 && (
         <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-300">
@@ -267,218 +267,175 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       {!generation && !event.official_list_open && (
         <p className="text-sm text-white/60">
           Os times oficiais só podem ser gerados depois que a lista oficial do racha abrir
-          {profile.is_organizer ? ' — mas dá pra usar "Simular times" acima pra ter uma noção com quem já confirmou.' : "."}
+          {profile.is_organizer ? " — mas dá para usar o botão de simulação na ilha inferior." : "."}
         </p>
       )}
 
       {!generation && event.official_list_open && (
         <p className="text-sm text-white/60">
-          Os times ainda não foram gerados. {profile.is_organizer ? "Clique em \"Gerar times\" acima." : "Aguarde o organizador gerar."}
+          Os times ainda não foram gerados. {profile.is_organizer ? "Use o botão roxo de gerar times na ilha inferior." : "Aguarde o organizador gerar."}
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {teams.map((team) => {
-          const sum = team.members.reduce((s, m) => s + m.overall, 0);
-          return (
-            <VictoryTeamCard key={team.id} teamId={team.id}>
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
-                <span className="text-xs text-white/40">soma: {sum.toFixed(1)}</span>
-              </div>
+      {generation && (
+        <TeamsWorkspaceTabs
+          teamCount={teams.length}
+          matchCount={event.is_pre_torneio ? tournamentMatchCount : normalConfrontations.length}
+          standingCount={event.is_pre_torneio ? standings.length : 0}
+          teamsContent={
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {teams.map((team) => {
+                const sum = team.members.reduce((total, member) => total + member.overall, 0);
+                return (
+                  <VictoryTeamCard key={team.id} teamId={team.id}>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
+                      <div className="flex items-center gap-2">
+                        {!event.is_pre_torneio && <span className="rounded-full bg-purple-400/10 px-2 py-1 text-[11px] font-bold text-purple-200">{team.wins}V · {team.losses}D</span>}
+                        <span className="text-[11px] text-white/35">{sum.toFixed(1)}</span>
+                      </div>
+                    </div>
 
-              {!event.is_pre_torneio && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
-                  <Trophy className="h-4 w-4 shrink-0 text-purple-300" strokeWidth={2} />
-                  <span className="text-sm font-medium text-white">
-                    {team.wins}V · {team.losses}D
-                  </span>
-                </div>
-              )}
+                    <ul className="mt-2.5 divide-y divide-white/8">
+                      {team.members.map((member) => (
+                        <li key={member.teamMemberId} className="flex min-w-0 items-center gap-2 py-2 first:pt-0 last:pb-0">
+                          <Avatar src={member.avatarUrl} name={member.fullName} size="sm" />
+                          <span className="min-w-0 flex-1 truncate text-sm text-white">{member.fullName}</span>
+                          {member.isSetter && <SetterBadge />}
+                          {orphanedTeamMemberIds.has(member.teamMemberId) && <span title="Não está mais confirmado(a)" className="h-2 w-2 shrink-0 rounded-full bg-red-400" />}
+                          <span className="shrink-0 text-xs text-white/35">{member.overall.toFixed(1)}</span>
+                          {profile.is_organizer && (
+                            <PlayerActionSelect
+                              moveAction={moveMember}
+                              swapAction={swapMembers}
+                              replaceAction={replaceMember}
+                              removeAction={removeFromTeam}
+                              eventId={id}
+                              teamMemberId={member.teamMemberId}
+                              currentTeamId={team.id}
+                              fullName={member.fullName}
+                              teams={teams.map((item) => ({ id: item.id, teamNumber: item.teamNumber }))}
+                              otherMembers={allMembersFlat.filter((item) => item.teamMemberId !== member.teamMemberId)}
+                              unassignedConfirmed={unassignedConfirmed}
+                              compact
+                            />
+                          )}
+                        </li>
+                      ))}
+                    </ul>
 
-              <ul className="mt-3 space-y-2.5">
-                {team.members.map((m) => (
-                  <li key={m.teamMemberId} className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-sm">
-                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-white">
-                      <Avatar src={m.avatarUrl} name={m.fullName} size="sm" />
-                      <span className="min-w-0 flex-1 break-words">{m.fullName}</span>
-                      {m.isSetter && <SetterBadge />}
-                      {orphanedTeamMemberIds.has(m.teamMemberId) && (
-                        <span className="inline-flex shrink-0 items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-300">
-                          não confirmado(a)
-                        </span>
-                      )}
-                    </span>
-                    <div className={`flex min-w-0 items-center gap-1.5 ${profile.is_organizer ? "w-full" : "shrink-0"}`}>
-                      <span className="shrink-0 text-xs text-white/40">{m.overall.toFixed(1)}</span>
-                      {profile.is_organizer && (
-                        <PlayerActionSelect
-                          moveAction={moveMember}
-                          swapAction={swapMembers}
-                          replaceAction={replaceMember}
-                          removeAction={removeFromTeam}
-                          eventId={id}
-                          teamMemberId={m.teamMemberId}
-                          currentTeamId={team.id}
-                          fullName={m.fullName}
-                          teams={teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber }))}
-                          otherMembers={allMembersFlat.filter((x) => x.teamMemberId !== m.teamMemberId)}
-                          unassignedConfirmed={unassignedConfirmed}
-                        />
+                    {profile.is_organizer && unassignedConfirmed.length > 0 && (
+                      <div className="mt-3 border-t border-white/8 pt-3">
+                        <AddToTeamSelect action={addToTeam} eventId={id} teamId={team.id} players={unassignedConfirmed} />
+                      </div>
+                    )}
+                  </VictoryTeamCard>
+                );
+              })}
+            </div>
+          }
+          matchesContent={
+            event.is_pre_torneio ? (
+              <div className="space-y-3">
+                <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h2 className="font-semibold text-white">Fase de grupos</h2>
+                      <p className="text-xs text-white/40">{groupMatches.filter((match) => match.scoreA != null && match.scoreB != null).length} de {groupMatches.length} partidas concluídas</p>
+                    </div>
+                    {profile.is_organizer && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
+                  </div>
+                  <div className="mt-3 grid gap-2 lg:grid-cols-2">
+                    {groupMatches.map((match, index) => (
+                      profile.is_organizer ? (
+                        <TournamentMatchScoreForm key={match.id} action={recordTournamentMatchScore} eventId={id} matchId={match.id} teamALabel={teamLabelById.get(match.teamAId) ?? "?"} teamBLabel={teamLabelById.get(match.teamBId) ?? "?"} scoreA={match.scoreA} scoreB={match.scoreB} />
+                      ) : (
+                        <article key={match.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-white/35">Jogo {index + 1}</p>
+                          <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-semibold text-white">
+                            <span>{teamLabelById.get(match.teamAId) ?? "?"}</span>
+                            <span className="rounded-lg bg-white/5 px-2 py-1 text-base">{match.scoreA ?? "–"} × {match.scoreB ?? "–"}</span>
+                            <span>{teamLabelById.get(match.teamBId) ?? "?"}</span>
+                          </div>
+                        </article>
+                      )
+                    ))}
+                  </div>
+                </section>
+
+                {finalMatch && (
+                  <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 sm:p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h2 className="flex items-center gap-1.5 font-semibold text-white"><Trophy className="h-4 w-4 text-amber-400" /> Final</h2>
+                      {profile.is_organizer && <UndoFinalButton eventId={id} action={undoFinal} />}
+                    </div>
+                    {finalMatch.scoreA != null && finalMatch.scoreB != null && <p className="mt-2 text-sm font-medium text-amber-200">🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)} é campeão e garante vaga no Torneio VPA!</p>}
+                    <div className="mt-3">
+                      {profile.is_organizer ? (
+                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={finalMatch.id} teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"} scoreA={finalMatch.scoreA} scoreB={finalMatch.scoreB} />
+                      ) : (
+                        <p className="rounded-xl border border-white/10 bg-black/10 px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(finalMatch.teamAId) ?? "?"} <span className="mx-2 text-amber-200">{finalMatch.scoreA ?? "–"} × {finalMatch.scoreB ?? "–"}</span> {teamLabelById.get(finalMatch.teamBId) ?? "?"}</p>
                       )}
                     </div>
-                  </li>
-                ))}
-              </ul>
+                  </section>
+                )}
 
-              {profile.is_organizer && unassignedConfirmed.length > 0 && (
-                <div className="mt-3">
-                  <AddToTeamSelect
-                    action={addToTeam}
-                    eventId={id}
-                    teamId={team.id}
-                    players={unassignedConfirmed}
-                  />
+                {thirdPlaceMatch && (
+                  <section className="rounded-xl border border-white/10 p-3.5 sm:p-4">
+                    <h2 className="font-semibold text-white">Disputa de 3º lugar</h2>
+                    <p className="text-xs text-white/40">Partida opcional</p>
+                    {thirdPlaceMatch.scoreA != null && thirdPlaceMatch.scoreB != null && (
+                      <p className="mt-2 text-sm text-white/70">🥉 {thirdPlaceMatch.scoreA > thirdPlaceMatch.scoreB ? teamLabelById.get(thirdPlaceMatch.teamAId) : teamLabelById.get(thirdPlaceMatch.teamBId)} ficou em 3º lugar.</p>
+                    )}
+                    <div className="mt-3">
+                      {profile.is_organizer ? (
+                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={thirdPlaceMatch.id} teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"} scoreA={thirdPlaceMatch.scoreA} scoreB={thirdPlaceMatch.scoreB} />
+                      ) : (
+                        <p className="rounded-xl bg-white/[0.025] px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} <span className="mx-2 text-white/60">{thirdPlaceMatch.scoreA ?? "–"} × {thirdPlaceMatch.scoreB ?? "–"}</span> {teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"}</p>
+                      )}
+                    </div>
+                  </section>
+                )}
+              </div>
+            ) : (
+              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))} confrontations={normalConfrontations} isOrganizer={profile.is_organizer} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+            )
+          }
+          standingsContent={
+            event.is_pre_torneio ? (
+              <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <h2 className="font-semibold text-white">Classificação</h2>
+                    <p className="text-xs text-white/40">Os dois primeiros avançam para a final.</p>
+                  </div>
+                  <span className="text-xs text-white/35">{tournamentPlayedCount} jogos</span>
                 </div>
-              )}
-            </VictoryTeamCard>
-          );
-        })}
-      </div>
-
-      {generation && !event.is_pre_torneio && (
-        <NormalMatchRecorder
-          eventId={id}
-          teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))}
-          confrontations={normalConfrontations}
-          isOrganizer={profile.is_organizer}
-          recordAction={recordNormalMatch}
-          undoAction={undoNormalMatch}
+                <ol className="mt-3 space-y-2">
+                  {standings.map((standing, index) => (
+                    <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_repeat(3,auto)] items-center gap-3 rounded-xl border px-3 py-3 ${index < 2 ? "border-amber-300/20 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
+                      <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${index < 2 ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/45"}`}>{index + 1}</span>
+                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">Time {standing.teamNumber}</p>{index < 2 && <p className="text-[10px] font-bold text-amber-200/70">CLASSIFICADO</p>}</div>
+                      <Stat label="V" value={standing.wins} />
+                      <Stat label="Saldo" value={`${standing.balance > 0 ? "+" : ""}${standing.balance}`} />
+                      <Stat label="Pontos" value={standing.pointsFor} />
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : undefined
+          }
         />
       )}
-
-      {generation && event.is_pre_torneio && (
-        <div className="space-y-6">
-          <section className="rounded-xl border border-white/10 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="font-semibold text-white">Fase de grupos</h2>
-              {profile.is_organizer && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
-            </div>
-
-            {standings.length > 0 && (
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full table-fixed text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-white/40">
-                      <th className="pb-2 font-medium">Time</th>
-                      <th className="pb-2 font-medium">V</th>
-                      <th className="pb-2 font-medium">Saldo</th>
-                      <th className="pb-2 font-medium">Pontos feitos</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/10">
-                    {standings.map((s, i) => (
-                      <tr key={s.teamId} className="text-white">
-                        <td className="py-1.5">
-                          {i < 2 && <span className="mr-1 text-amber-400">🏐</span>}
-                          Time {s.teamNumber}
-                        </td>
-                        <td className="py-1.5">{s.wins}</td>
-                        <td className="py-1.5">
-                          {s.balance > 0 ? "+" : ""}
-                          {s.balance}
-                        </td>
-                        <td className="py-1.5">{s.pointsFor}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {profile.is_organizer && (
-              <div className="mt-4 space-y-2">
-                {groupMatches.map((m) => (
-                  <TournamentMatchScoreForm
-                    key={m.id}
-                    action={recordTournamentMatchScore}
-                    eventId={id}
-                    matchId={m.id}
-                    teamALabel={teamLabelById.get(m.teamAId) ?? "?"}
-                    teamBLabel={teamLabelById.get(m.teamBId) ?? "?"}
-                    scoreA={m.scoreA}
-                    scoreB={m.scoreB}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {finalMatch && (
-            <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="flex items-center gap-1.5 font-semibold text-white">
-                  <Trophy className="h-4 w-4 text-amber-400" strokeWidth={2} />
-                  Final
-                </h2>
-                {profile.is_organizer && <UndoFinalButton eventId={id} action={undoFinal} />}
-              </div>
-
-              {finalMatch.scoreA != null && finalMatch.scoreB != null && (
-                <p className="mt-2 text-sm text-amber-300">
-                  🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)}{" "}
-                  é campeão — vagas garantidas no Torneio VPA!
-                </p>
-              )}
-
-              {profile.is_organizer && (
-                <div className="mt-3">
-                  <TournamentMatchScoreForm
-                    action={recordTournamentMatchScore}
-                    eventId={id}
-                    matchId={finalMatch.id}
-                    teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"}
-                    teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"}
-                    scoreA={finalMatch.scoreA}
-                    scoreB={finalMatch.scoreB}
-                  />
-                </div>
-              )}
-            </section>
-          )}
-
-          {thirdPlaceMatch && (
-            <section className="rounded-xl border border-white/10 p-4">
-              <h2 className="font-semibold text-white">Disputa de 3º lugar</h2>
-              <p className="mt-0.5 text-xs text-white/40">Opcional — só se der tempo depois da final.</p>
-
-              {thirdPlaceMatch.scoreA != null && thirdPlaceMatch.scoreB != null && (
-                <p className="mt-2 text-sm text-white/70">
-                  🥉{" "}
-                  {thirdPlaceMatch.scoreA > thirdPlaceMatch.scoreB
-                    ? teamLabelById.get(thirdPlaceMatch.teamAId)
-                    : teamLabelById.get(thirdPlaceMatch.teamBId)}{" "}
-                  ficou em 3º lugar.
-                </p>
-              )}
-
-              {profile.is_organizer && (
-                <div className="mt-3">
-                  <TournamentMatchScoreForm
-                    action={recordTournamentMatchScore}
-                    eventId={id}
-                    matchId={thirdPlaceMatch.id}
-                    teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"}
-                    teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"}
-                    scoreA={thirdPlaceMatch.scoreA}
-                    scoreB={thirdPlaceMatch.scoreB}
-                  />
-                </div>
-              )}
-            </section>
-          )}
-        </div>
-      )}
     </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <span className="text-center">
+      <span className="block text-[9px] font-bold uppercase tracking-wide text-white/30">{label}</span>
+      <span className="block text-sm font-bold text-white/80">{value}</span>
+    </span>
   );
 }

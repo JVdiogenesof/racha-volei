@@ -13,7 +13,7 @@ async function fetchTeamsArt(eventId: string) {
   return blob;
 }
 
-export function ShareTeamsArtButton({ eventId, eventDate }: { eventId: string; eventDate: string }) {
+export function ShareTeamsArtButton({ eventId, eventDate, compact = false }: { eventId: string; eventDate: string; compact?: boolean }) {
   const [busyAction, setBusyAction] = useState<"share" | "save" | null>(null);
   const { showToast } = useToast();
   const filename = `times-racha-${eventDate}.png`;
@@ -45,6 +45,19 @@ export function ShareTeamsArtButton({ eventId, eventDate }: { eventId: string; e
     } finally {
       setBusyAction(null);
     }
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1.5">
+        <button type="button" onClick={handleShare} disabled={busyAction !== null} aria-label="Compartilhar arte dos times" title="Compartilhar arte dos times" className="flex h-11 w-11 items-center justify-center rounded-full border border-purple-300/25 bg-purple-400/15 text-purple-100 hover:bg-purple-400/25 disabled:opacity-60">
+          {busyAction === "share" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Share2 className="h-5 w-5" />}
+        </button>
+        <button type="button" onClick={handleSave} disabled={busyAction !== null} aria-label="Salvar arte dos times" title="Salvar arte dos times" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/12 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white disabled:opacity-60">
+          {busyAction === "save" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+        </button>
+      </div>
+    );
   }
 
   return (

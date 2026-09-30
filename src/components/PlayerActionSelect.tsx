@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Settings2 } from "lucide-react";
 import { useToast } from "./Toast";
 
 const MOVE_PREFIX = "move:";
@@ -21,6 +22,7 @@ export function PlayerActionSelect({
   teams,
   otherMembers,
   unassignedConfirmed,
+  compact = false,
 }: {
   moveAction: (formData: FormData) => Promise<void> | void;
   swapAction: (formData: FormData) => Promise<void> | void;
@@ -34,6 +36,7 @@ export function PlayerActionSelect({
   otherMembers: { teamMemberId: string; fullName: string; teamNumber: number }[];
   /** Confirmados que ainda não caíram em nenhum time (ex: entraram depois da geração). */
   unassignedConfirmed: { profileId: string; fullName: string }[];
+  compact?: boolean;
 }) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -87,13 +90,13 @@ export function PlayerActionSelect({
 
   const otherTeams = teams.filter((t) => t.id !== currentTeamId);
 
-  return (
+  const select = (
     <select
       defaultValue=""
       onChange={handleChange}
       disabled={isPending}
       aria-label="Mover ou trocar jogador"
-      className="min-h-11 w-full min-w-0 rounded border border-white/15 bg-transparent px-2 text-xs text-white/60 disabled:opacity-50"
+      className={compact ? "absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" : "min-h-11 w-full min-w-0 rounded border border-white/15 bg-transparent px-2 text-xs text-white/60 disabled:opacity-50"}
     >
       <option value="" disabled>
         Mover / trocar...
@@ -129,5 +132,17 @@ export function PlayerActionSelect({
         <option value={REMOVE_VALUE}>Remover do time</option>
       </optgroup>
     </select>
+  );
+
+  if (!compact) return select;
+
+  return (
+    <span
+      title={`Gerenciar ${fullName}`}
+      className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+    >
+      <Settings2 className="h-4 w-4" strokeWidth={2} />
+      {select}
+    </span>
   );
 }
