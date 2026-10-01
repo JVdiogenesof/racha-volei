@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
+import { getActiveCommunity } from "@/lib/community";
 
 function parseEventCapacity(formData: FormData) {
   const numTeams = Number(formData.get("numTeams") ?? 2);
@@ -32,6 +33,7 @@ function parseEventCapacity(formData: FormData) {
 export async function createEvent(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
@@ -56,6 +58,7 @@ export async function createEvent(formData: FormData) {
       price_per_player: pricePerPlayer,
       max_players: maxPlayers,
       newcomer_reserved_spots: newcomerReservedSpots,
+      community,
       is_pre_torneio: isPreTorneio,
       created_by: organizer.id,
       official_list_open: false,
@@ -69,12 +72,13 @@ export async function createEvent(formData: FormData) {
     .from("profiles")
     .select("id")
     .eq("status", "approved")
+    .contains("communities", [community])
     .neq("id", organizer.id);
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR");
   await sendPushToProfiles(
     supabase,
     (approvedProfiles ?? []).map((p) => p.id),
-    { title: "Novo racha marcado!", body: `Racha de ${dateLabel}. Diga se você vai.`, url: `/racha/${data.id}` },
+    { title: `Novo racha de ${community === "sand" ? "areia" : "quadra"}!`, body: `Racha de ${dateLabel}. Diga se você vai.`, url: `/racha/${data.id}` },
   );
 
   revalidatePath("/admin/rachas");

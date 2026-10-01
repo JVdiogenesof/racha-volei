@@ -25,7 +25,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const [{ data: event, error: eventError }, { data: attendanceRows, error: attendanceError }, { data: setterOverrideRows, error: setterOverrideError }] = await Promise.all([
     supabase
       .from("events")
-      .select("date, time, location, official_list_open, status")
+      .select("date, time, location, official_list_open, status, community")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -187,7 +187,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
         <div style={{ display: "flex", alignItems: "center", marginTop: "42px", marginBottom: "20px" }}>
           <span style={{ fontSize: "30px" }}>✓</span>
-          <span style={{ marginLeft: "12px", fontSize: "28px", fontWeight: 800 }}>Quem vai estar na quadra</span>
+          <span style={{ marginLeft: "12px", fontSize: "28px", fontWeight: 800 }}>Quem vai estar na {event.community === "sand" ? "areia" : "quadra"}</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignContent: "flex-start" }}>

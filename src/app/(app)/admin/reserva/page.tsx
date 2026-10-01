@@ -15,27 +15,32 @@ import {
   makeGuestPermanent,
   promoteReserveToMember,
 } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function AdminReservaPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: rows }, { data: callableEvents }, { data: waitingProfiles }] = await Promise.all([
     supabase
       .from("reserve_list")
-      .select("id, auth_user_id, full_name, phone, instagram_handle, neighborhood, player_level, how_heard, known_people, wants_official_membership, contacted, created_at")
+      .select("id, auth_user_id, full_name, phone, instagram_handle, neighborhood, player_level, communities, how_heard, known_people, wants_official_membership, contacted, created_at")
+      .contains("communities", [community])
       .order("created_at", { ascending: false }),
     supabase
       .from("events")
       .select("id, date, location")
+      .eq("community", community)
       .gte("date", today)
       .in("status", ["open", "teams_generated"])
       .order("date", { ascending: true }),
     supabase
       .from("profiles")
-      .select("id, status, guest_for_event_id, birthdate, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments")
+      .select("id, status, guest_for_event_id, birthdate, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, communities")
+      .contains("communities", [community])
       .in("status", ["visitor", "guest"]),
   ]);
 
@@ -49,7 +54,7 @@ export default async function AdminReservaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Cadastros e reserva</h1>
+        <h1 className="text-2xl font-bold text-white">Cadastros · {community === "sand" ? "Areia" : "Quadra"}</h1>
         <p className="mt-1 text-sm text-white/60">
           Esta é a única lista de pessoas novas. Autorize o acesso completo ou chame alguém somente
           para um racha. Depois do evento, o convidado volta ao modo de visualização.

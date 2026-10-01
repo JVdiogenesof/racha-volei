@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Community } from "./community";
 
 export type EvolutionEntry = {
   eventId: string;
@@ -16,7 +17,7 @@ export type EvolutionEntry = {
  * venceu. Tudo calculado na hora a partir de tabelas já existentes -- não
  * guarda nada novo no banco.
  */
-export async function getPersonalEvolution(supabase: SupabaseClient, profileId: string): Promise<EvolutionEntry[]> {
+export async function getPersonalEvolution(supabase: SupabaseClient, profileId: string, community: Community = "court"): Promise<EvolutionEntry[]> {
   const { data: attendanceRows } = await supabase
     .from("attendance")
     .select("event_id, status")
@@ -28,6 +29,7 @@ export async function getPersonalEvolution(supabase: SupabaseClient, profileId: 
   const { data: events } = await supabase
     .from("events")
     .select("id, date, location, mvp_profile_id, mvp_profile_id_2")
+    .eq("community", community)
     .in("id", eventIds);
 
   const eventById = new Map((events ?? []).map((e) => [e.id, e]));

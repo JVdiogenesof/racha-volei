@@ -5,6 +5,7 @@ import { getAttendanceStreaks } from "@/lib/streak";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { imageUrlToDataUrl } from "@/lib/serverImageData";
+import { getActiveCommunity } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 
@@ -29,20 +30,21 @@ export async function GET(request: Request) {
 
   if (!user) return new Response("Não autorizado", { status: 401 });
 
-  const [{ data: profile, error: profileError }, rankingCounts, streaks, { data: approvedProfiles }] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, nickname_badge, is_setter")
-        .eq("id", user.id)
-        .maybeSingle(),
-      getRankingCounts(supabase),
-      getAttendanceStreaks(supabase),
-      supabase.from("profiles").select("id").eq("status", "approved"),
-    ]);
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, nickname_badge, is_setter, communities, is_organizer")
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (profileError) return new Response("Não foi possível carregar o perfil", { status: 500 });
   if (!profile) return new Response("Perfil não encontrado", { status: 404 });
+
+  const community = await getActiveCommunity(profile);
+  const [rankingCounts, streaks, { data: approvedProfiles }] = await Promise.all([
+    getRankingCounts(supabase, community),
+    getAttendanceStreaks(supabase, community),
+    supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
+  ]);
 
   const attendance = rankingCounts.attendance.get(profile.id) ?? 0;
   const wins = rankingCounts.wins.get(profile.id) ?? 0;
@@ -121,7 +123,7 @@ export async function GET(request: Request) {
 
           <span style={{ marginTop: "-16px", maxWidth: "900px", textAlign: "center", fontSize: "56px", fontWeight: 900, lineHeight: 1.05 }}>{profile.full_name}</span>
           {profile.nickname_badge && <span style={{ marginTop: "12px", color: "#ddd6fe", fontSize: "24px", fontWeight: 700 }}>{profile.nickname_badge}</span>}
-          <span style={{ marginTop: "13px", color: "rgba(255,255,255,.62)", fontSize: "20px", letterSpacing: "3px" }}>MINHA HISTÓRIA NA QUADRA</span>
+          <span style={{ marginTop: "13px", color: "rgba(255,255,255,.62)", fontSize: "20px", letterSpacing: "3px" }}>MINHA HISTÓRIA NA {community === "sand" ? "AREIA" : "QUADRA"}</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "43px" }}>

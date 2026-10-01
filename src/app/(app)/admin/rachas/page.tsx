@@ -3,16 +3,19 @@ import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
 import { RachaCapacityFields } from "@/components/RachaCapacityFields";
 import { createEvent, updateEvent, markAsPreTorneio, cancelEvent, deleteEvent } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function AdminRachasPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const { data: events } = await supabase
     .from("events")
     .select(
       "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio",
     )
+    .eq("community", community)
     .order("date", { ascending: false });
 
   // Pré-preenche o formulário com os dados do último racha criado, só
@@ -29,7 +32,7 @@ export default async function AdminRachasPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Criar racha</h1>
+        <h1 className="text-2xl font-bold text-white">Criar racha de {community === "sand" ? "areia" : "quadra"}</h1>
         <p className="mt-1 text-sm text-white/60">
           Depois de criado, o racha aparece pra todo mundo confirmar presença.
         </p>

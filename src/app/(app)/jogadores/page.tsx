@@ -7,21 +7,24 @@ import { getAttendanceStreaks } from "@/lib/streak";
 import { getRankingCounts } from "@/lib/rankings";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { PlayerSearch } from "@/components/PlayerSearch";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function JogadoresPage() {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks, rankingCounts] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, is_setter, nickname_badge")
       .eq("status", "approved")
+      .contains("communities", [community])
       .order("full_name"),
     getAllRatings(supabase),
     getRatingWeights(supabase),
-    getAttendanceStreaks(supabase),
-    getRankingCounts(supabase),
+    getAttendanceStreaks(supabase, community),
+    getRankingCounts(supabase, community),
   ]);
 
   const rows = (players ?? [])
@@ -57,7 +60,7 @@ export default async function JogadoresPage() {
           <Users className="h-5 w-5 text-purple-300" strokeWidth={2} />
         </span>
         <div>
-          <h1 className="text-2xl font-black text-white">Jogadores</h1>
+          <h1 className="text-2xl font-black text-white">Jogadores · {community === "sand" ? "Areia" : "Quadra"}</h1>
           <p className="text-sm text-white/50">Toque em um jogador para ver o perfil completo.</p>
         </div>
       </div>

@@ -16,6 +16,7 @@ import { teamFormatLabel } from "@/lib/rachaFormat";
 import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
+import { getActiveCommunity } from "@/lib/community";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -39,12 +40,14 @@ function relativeDate(dateStr: string) {
 export default async function HomePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
   const today = new Date().toISOString().slice(0, 10);
   const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
     await Promise.all([
       supabase
         .from("events")
         .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio")
+        .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
         .neq("status", "cancelled")
@@ -54,14 +57,16 @@ export default async function HomePage() {
       supabase
         .from("announcements")
         .select("id, title, body, image_url, created_at, profiles(full_name)")
+        .eq("community", community)
         .order("created_at", { ascending: false })
         .limit(1),
-      supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
+      supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved").contains("communities", [community]),
       // Card do time campeão do pré-torneio -- some sozinho 48h depois da
       // final ser decidida (ver hoursAgoIso acima).
       supabase
         .from("tournament_matches")
-        .select("team_a_id, team_b_id, score_a, score_b, events(date)")
+        .select("team_a_id, team_b_id, score_a, score_b, events!inner(date, community)")
+        .eq("events.community", community)
         .eq("stage", "final")
         .not("score_a", "is", null)
         .not("score_b", "is", null)
@@ -140,7 +145,7 @@ export default async function HomePage() {
   const [{ count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
     profile.is_organizer
       ? await Promise.all([
-          supabase.from("reserve_list").select("id", { count: "exact", head: true }),
+          supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]),
           supabase
             .from("attendance")
             .select("id", { count: "exact", head: true })
@@ -176,7 +181,7 @@ export default async function HomePage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">Vôlei por Amor</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">VPA · {community === "sand" ? "Racha de Areia" : "Racha de Quadra"}</p>
           <h1 className="mt-0.5 text-2xl font-bold text-white sm:text-3xl">Fala, {profile.full_name.split(" ")[0]}! 🏐</h1>
         </div>
         <Link href="/racha" className="inline-flex items-center gap-1 text-sm font-medium text-purple-300 hover:underline">Ver rachas <ChevronRight className="h-4 w-4" /></Link>

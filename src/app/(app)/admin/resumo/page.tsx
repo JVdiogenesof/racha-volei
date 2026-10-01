@@ -1,6 +1,7 @@
 import { BarChart3, CalendarDays, Users2, Trophy, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 function monthRange(date: Date) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -9,8 +10,9 @@ function monthRange(date: Date) {
 }
 
 export default async function AdminResumoPage() {
-  await requireOrganizer();
+  const profile = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const now = new Date();
   const { start, end } = monthRange(now);
@@ -20,6 +22,7 @@ export default async function AdminResumoPage() {
     supabase
       .from("events")
       .select("id, date, mvp_profile_id, mvp_profile_id_2")
+      .eq("community", community)
       .gte("date", start)
       .lte("date", end)
       .order("date", { ascending: true }),
@@ -27,6 +30,7 @@ export default async function AdminResumoPage() {
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("status", "approved")
+      .contains("communities", [community])
       .gte("created_at", `${start}T00:00:00`)
       .lte("created_at", `${end}T23:59:59`),
   ]);
@@ -74,7 +78,7 @@ export default async function AdminResumoPage() {
     <div>
       <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
         <BarChart3 className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Resumo mensal
+        Resumo mensal · {COMMUNITY_INFO[community].shortLabel}
       </h1>
       <p className="mt-1 text-sm capitalize text-white/60">{monthLabel}</p>
 

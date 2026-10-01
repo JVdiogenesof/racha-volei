@@ -2,9 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 import { getNotifications } from "@/lib/notifications";
+import { getActiveCommunity } from "@/lib/community";
 import { NotificationBell } from "./NotificationBell";
 
-type NotifProfile = { id: string; is_organizer: boolean; status: string };
+type NotifProfile = { id: string; is_organizer: boolean; status: string; communities: string[] };
 
 export async function NotificationCenter() {
   const supabase = await createClient();
@@ -25,7 +26,8 @@ export async function NotificationCenter() {
 
   if (!profile || profile.status !== "approved") return null;
 
-  const items = await getNotifications(supabase, profile);
+  const community = await getActiveCommunity(profile);
+  const items = await getNotifications(supabase, profile, community);
 
   return <NotificationBell items={items} />;
 }

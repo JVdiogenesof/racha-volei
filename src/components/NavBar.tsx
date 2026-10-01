@@ -5,6 +5,7 @@ import { signOut } from "@/app/(app)/actions";
 import { NavIsland } from "@/components/NavIsland";
 import { CompactAppHeader } from "@/components/CompactAppHeader";
 import { HeaderTopBar, type HeaderEventSummary } from "@/components/HeaderTopBar";
+import { getActiveCommunity, parseCommunities } from "@/lib/community";
 
 type NavProfile = {
   full_name: string;
@@ -12,6 +13,7 @@ type NavProfile = {
   is_organizer: boolean;
   status: string;
   guest_for_event_id: string | null;
+  communities: string[] | null;
 };
 
 function hoursAgoIso(hours: number) {
@@ -41,13 +43,16 @@ export async function NavBar() {
 
   const threeDaysAgo = hoursAgoIso(72);
   const today = new Date().toISOString().slice(0, 10);
+  const activeCommunity = await getActiveCommunity(profile ?? undefined);
+  const availableCommunities = profile?.is_organizer ? parseCommunities(["court", "sand"]) : parseCommunities(profile?.communities);
 
   const [{ count: newAvisosCount }, { data: upcomingEvents }] = await Promise.all([
     supabase
       .from("announcements")
       .select("id", { count: "exact", head: true })
+      .eq("community", activeCommunity)
       .gte("created_at", threeDaysAgo),
-    supabase.from("events").select("id, date, time").gte("date", today).neq("status", "finished").order("date", { ascending: true }).order("time", { ascending: true }),
+    supabase.from("events").select("id, date, time").eq("community", activeCommunity).gte("date", today).neq("status", "finished").order("date", { ascending: true }).order("time", { ascending: true }),
   ]);
 
   let pendingConfirmCount = 0;
@@ -84,7 +89,7 @@ export async function NavBar() {
   return (
     <CompactAppHeader
       topBar={
-        <HeaderTopBar fullName={profile?.full_name ?? "Atleta VPA"} avatarUrl={profile?.avatar_url ?? null} isOrganizer={profile?.is_organizer ?? false} isVisitor={profile?.status !== "approved"} nextEvent={nextEvent} signOutAction={signOut} />
+        <HeaderTopBar fullName={profile?.full_name ?? "Atleta VPA"} avatarUrl={profile?.avatar_url ?? null} isOrganizer={profile?.is_organizer ?? false} isVisitor={profile?.status !== "approved"} nextEvent={nextEvent} activeCommunity={activeCommunity} availableCommunities={availableCommunities} signOutAction={signOut} />
       }
       navigation={<NavIsland badgeByHref={badgeByHref} isOrganizer={profile?.is_organizer ?? false} canViewShirts />}
     />

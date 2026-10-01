@@ -7,24 +7,27 @@ import { DeleteAnnouncementButton } from "@/components/DeleteAnnouncementButton"
 import { AnnouncementCard } from "@/components/AnnouncementCard";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { createAnnouncement, deleteAnnouncement } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function AvisosPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: announcements }, { data: birthdayProfiles }] = await Promise.all([
     supabase
       .from("announcements")
       .select("id, title, body, image_url, created_at, profiles(full_name)")
+      .eq("community", community)
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved"),
+    supabase.from("profiles").select("id, full_name, birthdate, avatar_url").eq("status", "approved").contains("communities", [community]),
   ]);
 
   return (
     <div className="space-y-8">
       <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
         <Megaphone className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Avisos
+        Avisos · {community === "sand" ? "Areia" : "Quadra"}
       </h1>
 
       <BirthdaysCard profiles={birthdayProfiles ?? []} />

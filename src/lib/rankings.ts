@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
+import type { Community } from "./community";
 
 export type RankingMetric = "attendance" | "mvp" | "wins";
 
@@ -10,19 +11,26 @@ export type PerformanceStats = {
   percentage: number;
 };
 
-export async function getRankingCounts(supabase: SupabaseClient) {
-  const { data: finishedEvents } = await supabase.from("events").select("id").eq("status", "finished");
+export async function getRankingCounts(supabase: SupabaseClient, community: Community = "court") {
+  const { data: communityEvents } = await supabase
+    .from("events")
+    .select("id, status, mvp_profile_id, mvp_profile_id_2")
+    .eq("community", community);
+  const finishedEvents = (communityEvents ?? []).filter((event) => event.status === "finished");
   const finishedEventIds = (finishedEvents ?? []).map((e) => e.id);
+  const communityEventIds = (communityEvents ?? []).map((event) => event.id);
+  const impossibleEventId = "00000000-0000-0000-0000-000000000000";
 
   const [presentByEvent, { data: mvpEvents }, { data: winRows }, { data: memberRows }, { data: adjustmentRows }] =
     await Promise.all([
       getPresentProfileIdsByEvent(supabase, finishedEventIds),
-      supabase.from("events").select("mvp_profile_id, mvp_profile_id_2"),
+      Promise.resolve({ data: communityEvents ?? [] }),
       supabase
         .from("match_wins")
-        .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids, events(is_pre_torneio)"),
+        .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids, events(is_pre_torneio)")
+        .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
-      supabase.from("ranking_adjustments").select("profile_id, metric, delta"),
+      supabase.from("ranking_adjustments").select("profile_id, metric, delta").eq("community", community),
     ]);
 
   // Só conta presença de racha já encerrado, e só quem de fato ficou

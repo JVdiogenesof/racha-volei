@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function HistoricoPage() {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const { data: events } = await supabase
     .from("events")
@@ -12,6 +14,7 @@ export default async function HistoricoPage() {
       "id, date, location, price_per_player, mvp_profile_id, mvp_profile_id_2, mvp1:profiles!events_mvp_profile_id_profiles_id_fk(full_name), mvp2:profiles!events_mvp_profile_id_2_profiles_id_fk(full_name)",
     )
     .eq("status", "finished")
+    .eq("community", community)
     .order("date", { ascending: false });
 
   const rows = await Promise.all(
@@ -36,7 +39,7 @@ export default async function HistoricoPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white">Histórico</h1>
+      <h1 className="text-2xl font-bold text-white">Histórico · {community === "sand" ? "Areia" : "Quadra"}</h1>
 
       <div className="mt-6 space-y-3">
         {!rows.length && <p className="text-sm text-white/60">Ainda não teve racha finalizado.</p>}

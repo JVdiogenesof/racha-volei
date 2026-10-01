@@ -2,6 +2,7 @@ import { TrendingUp, Trophy, Crown, CalendarCheck, ThumbsUp, X } from "lucide-re
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPersonalEvolution } from "@/lib/evolution";
+import { getActiveCommunity } from "@/lib/community";
 
 const STATUS_INFO = {
   confirmed: { label: "Confirmado", icon: CalendarCheck, className: "text-green-300" },
@@ -12,8 +13,9 @@ const STATUS_INFO = {
 export default async function EvolucaoPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
-  const entries = await getPersonalEvolution(supabase, profile.id);
+  const entries = await getPersonalEvolution(supabase, profile.id, community);
 
   const totalConfirmados = entries.filter((e) => e.status === "confirmed").length;
   const totalDestaques = entries.filter((e) => e.wasDestaque).length;
@@ -23,7 +25,7 @@ export default async function EvolucaoPage() {
     <div>
       <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
         <TrendingUp className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Minha evolução
+        Minha evolução · {community === "sand" ? "Areia" : "Quadra"}
       </h1>
       <p className="mt-1 text-sm text-white/60">Seu histórico racha a racha.</p>
 

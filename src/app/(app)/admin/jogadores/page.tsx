@@ -7,21 +7,25 @@ import { PlayerRatingEditor } from "@/components/PlayerRatingEditor";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { restoreMember, setRatingWeights } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function AdminJogadoresPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const [{ data: players }, { data: removedPlayers }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, nickname_badge")
       .eq("status", "approved")
+      .contains("communities", [community])
       .order("full_name"),
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url")
       .eq("status", "removed")
+      .contains("communities", [community])
       .order("full_name"),
     getAllRatings(supabase),
     getRatingWeights(supabase),
@@ -30,7 +34,7 @@ export default async function AdminJogadoresPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Notas dos jogadores</h1>
+        <h1 className="text-2xl font-bold text-white">Notas · {community === "sand" ? "Areia" : "Quadra"}</h1>
         <p className="mt-1 text-sm text-white/60">
           A nota final combina autoavaliação e nota do organizador conforme o peso abaixo.
         </p>

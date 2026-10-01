@@ -10,16 +10,18 @@ import { AchievementGallery } from "@/components/AchievementGallery";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { SharePlayerCard } from "@/components/SharePlayerCard";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function PerfilPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
   const [{ self, organizer }, weights, rankingCounts, streaks, { data: approvedProfiles }] = await Promise.all([
     getPlayerRatings(supabase, profile.id),
     getRatingWeights(supabase),
-    getRankingCounts(supabase),
-    getAttendanceStreaks(supabase),
-    supabase.from("profiles").select("id").eq("status", "approved"),
+    getRankingCounts(supabase, community),
+    getAttendanceStreaks(supabase, community),
+    supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
   ]);
 
   const finalScores = finalScoresForPlayer(self, organizer, weights.selfWeight, weights.organizerWeight);
@@ -59,7 +61,7 @@ export default async function PerfilPage() {
     <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-bold text-white">Meu perfil</h1>
-        <p className="mt-1 text-sm text-white/60">Suas estatísticas, rankings e conquistas dentro da quadra.</p>
+        <p className="mt-1 text-sm text-white/60">Suas estatísticas no racha de {community === "sand" ? "areia" : "quadra"}.</p>
       </div>
 
       <SharePlayerCard

@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { teamFormatLabel } from "@/lib/rachaFormat";
+import { getActiveCommunity } from "@/lib/community";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -38,11 +39,13 @@ function getAttendanceIndicator({
 export default async function RachaListPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: events }, { data: attendanceRows }] = await Promise.all([
     supabase
       .from("events")
       .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio")
+      .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id),
   ]);
@@ -62,7 +65,7 @@ export default async function RachaListPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Rachas</h1>
+        <h1 className="text-2xl font-bold text-white">Rachas de {community === "sand" ? "areia" : "quadra"}</h1>
         {profile.is_organizer && (
           <Link
             href="/admin/rachas"

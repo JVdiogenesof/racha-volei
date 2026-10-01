@@ -4,6 +4,7 @@ import { getRankingCounts } from "@/lib/rankings";
 import { RankingAdjustControl } from "@/components/RankingAdjustControl";
 import { DeleteRankingAdjustmentButton } from "@/components/DeleteRankingAdjustmentButton";
 import { adjustRanking, deleteRankingAdjustment } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 const METRIC_LABELS: Record<string, string> = {
   attendance: "presença",
@@ -12,15 +13,17 @@ const METRIC_LABELS: Record<string, string> = {
 };
 
 export default async function AdminRankingPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const [{ data: profiles }, counts, { data: adjustmentRows }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name"),
-    getRankingCounts(supabase),
+    supabase.from("profiles").select("id, full_name").eq("status", "approved").contains("communities", [community]).order("full_name"),
+    getRankingCounts(supabase, community),
     supabase
       .from("ranking_adjustments")
       .select("id, metric, delta, reason, profiles!ranking_adjustments_profile_id_profiles_id_fk(full_name)")
+      .eq("community", community)
       .order("created_at", { ascending: false })
       .limit(20),
   ]);
@@ -28,7 +31,7 @@ export default async function AdminRankingPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Editar rankings</h1>
+        <h1 className="text-2xl font-bold text-white">Editar rankings · {community === "sand" ? "Areia" : "Quadra"}</h1>
         <p className="mt-1 text-sm text-white/60">
           Ajuste manualmente presenças, vezes destaque e vitórias de qualquer jogador pra corrigir algum problema.
         </p>

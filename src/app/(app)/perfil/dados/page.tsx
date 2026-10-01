@@ -90,6 +90,14 @@ export default async function PerfilDadosPage() {
             </label>
           </div>
         </div>
+        <fieldset>
+          <legend className="text-sm font-medium text-white">Onde você joga?</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+            <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white"><input type="radio" name="playCommunity" value="court" required defaultChecked={profile.communities.length === 1 && profile.communities.includes("court")} />🏐 Quadra</label>
+            <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white"><input type="radio" name="playCommunity" value="sand" required defaultChecked={profile.communities.length === 1 && profile.communities.includes("sand")} />🏖️ Areia</label>
+            <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white"><input type="radio" name="playCommunity" value="both" required defaultChecked={profile.communities.includes("court") && profile.communities.includes("sand")} />Os dois</label>
+          </div>
+        </fieldset>
         <div>
           <label className="block text-sm font-medium text-white">Pretende ir quantas vezes?</label>
           <select

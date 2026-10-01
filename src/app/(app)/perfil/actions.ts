@@ -5,6 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 
+function profileCommunities(value: string) {
+  if (value === "court") return ["court"];
+  if (value === "sand") return ["sand"];
+  if (value === "both") return ["court", "sand"];
+  throw new Error("Escolha Quadra, Areia ou Ambos.");
+}
+
 export async function updateProfileData(formData: FormData) {
   const profile = await requireMember();
   const supabase = await createClient();
@@ -18,6 +25,7 @@ export async function updateProfileData(formData: FormData) {
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
   const playerLevel = String(formData.get("playerLevel") ?? "");
+  const communities = profileCommunities(String(formData.get("playCommunity") ?? ""));
 
   if (!fullName || !birthdate || !["beginner", "intermediate", "advanced"].includes(playerLevel)) {
     throw new Error("Nome, data de aniversário e nível são obrigatórios.");
@@ -39,6 +47,7 @@ export async function updateProfileData(formData: FormData) {
       has_vpa_shirt: hasVpaShirt,
       wants_tournaments: wantsTournaments,
       player_level: playerLevel,
+      communities,
     })
     .eq("id", profile.id);
 
@@ -46,6 +55,7 @@ export async function updateProfileData(formData: FormData) {
   revalidatePath("/perfil");
   revalidatePath("/perfil/dados");
   revalidatePath("/jogadores");
+  revalidatePath("/ranking");
 }
 
 export async function updateSelfRatings(formData: FormData) {

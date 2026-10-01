@@ -3,14 +3,16 @@ import { requireProfile } from "@/lib/auth";
 import { getRankingCounts } from "@/lib/rankings";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function RankingPage() {
   const currentProfile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(currentProfile);
 
   const [{ data: profiles }, counts] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved"),
-    getRankingCounts(supabase),
+    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]),
+    getRankingCounts(supabase, community),
   ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -56,7 +58,7 @@ export default async function RankingPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-white">Ranking</h1>
+        <h1 className="text-2xl font-bold text-white">Ranking · {community === "sand" ? "Areia" : "Quadra"}</h1>
         <p className="mt-1 text-sm text-white/60">Compare resultados e acompanhe sua posição em cada categoria.</p>
       </div>
       <RankingTabs

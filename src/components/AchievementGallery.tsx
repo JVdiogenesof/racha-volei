@@ -27,7 +27,7 @@ export function AchievementGallery({ achievements }: { achievements: Achievement
             <Sparkles className="h-5 w-5 text-amber-300" strokeWidth={2} />
             <h2 className="font-semibold text-white">Minhas conquistas</h2>
           </div>
-          <p className="mt-1 text-sm text-white/50">Marcos conquistados dentro e fora da quadra.</p>
+          <p className="mt-1 text-sm text-white/50">Marcos conquistados nos rachas do VPA.</p>
         </div>
         <span className="shrink-0 rounded-full bg-brand-purple/20 px-3 py-1 text-xs font-bold text-purple-200">
           {unlockedCount}/{achievements.length}

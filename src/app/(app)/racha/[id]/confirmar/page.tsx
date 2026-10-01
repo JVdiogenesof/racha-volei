@@ -24,6 +24,7 @@ import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -33,12 +34,13 @@ export default async function ConfirmarPresencaPage({
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const selectedCommunity = await getActiveCommunity(profile);
 
   const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }] =
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots")
+        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots, community")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -50,7 +52,7 @@ export default async function ConfirmarPresencaPage({
       profile.is_organizer
         ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
         : Promise.resolve(null),
-      getAttendanceStreaks(supabase),
+      getAttendanceStreaks(supabase, selectedCommunity),
       getConfirmedHighlights(supabase, id),
       profile.is_organizer
         ? supabase.from("payments").select("profile_id, paid").eq("event_id", id)
@@ -60,8 +62,8 @@ export default async function ConfirmarPresencaPage({
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
     ? await Promise.all([
-        supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name"),
-        supabase.from("reserve_list").select("id, full_name").order("full_name"),
+        supabase.from("profiles").select("id, full_name").eq("status", "approved").contains("communities", [selectedCommunity]).order("full_name"),
+        supabase.from("reserve_list").select("id, full_name").contains("communities", [selectedCommunity]).order("full_name"),
         supabase
           .from("profiles")
           .select("id, full_name, avatar_url, phone")
@@ -72,6 +74,7 @@ export default async function ConfirmarPresencaPage({
     : [{ data: null }, { data: null }, { data: null }];
 
   if (!event) notFound();
+  if (event.community !== selectedCommunity) notFound();
 
   const eventFinished = event.status === "finished";
   const eventCancelled = event.status === "cancelled";

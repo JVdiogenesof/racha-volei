@@ -3,12 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { getActiveCommunity } from "@/lib/community";
 
 const VALID_METRICS = ["attendance", "mvp", "wins"];
 
 export async function adjustRanking(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
   const profileId = String(formData.get("profileId"));
   const metric = String(formData.get("metric"));
   const delta = Number(formData.get("delta"));
@@ -23,6 +25,7 @@ export async function adjustRanking(formData: FormData) {
   const { error } = await supabase.from("ranking_adjustments").insert({
     profile_id: profileId,
     metric,
+    community,
     delta,
     created_by: organizer.id,
   });

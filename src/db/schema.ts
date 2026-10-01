@@ -82,6 +82,7 @@ export const profiles = pgTable("profiles", {
   hasVpaShirt: boolean("has_vpa_shirt").notNull().default(false),
   wantsTournaments: boolean("wants_tournaments").notNull().default(false),
   playerLevel: playerLevelEnum("player_level"),
+  communities: text("communities").array().notNull().default(["court"]),
   isOrganizer: boolean("is_organizer").notNull().default(false),
   status: profileStatusEnum("status").notNull().default("pending"),
   approvedBy: uuid("approved_by"),
@@ -138,6 +139,7 @@ export const events = pgTable("events", {
   // avisar quem marcar interesse depois que a lista já estiver cheia.
   maxPlayers: integer("max_players"),
   newcomerReservedSpots: integer("newcomer_reserved_spots").notNull().default(0),
+  community: text("community").notNull().default("court"),
   status: eventStatusEnum("status").notNull().default("open"),
   // Fase de interesse (false) vs lista de confirmados pública (true). Novos
   // rachas nascem em fase de interesse; o organizador monta a lista de
@@ -285,6 +287,7 @@ export const rankingAdjustments = pgTable("ranking_adjustments", {
   id: uuid("id").primaryKey().defaultRandom(),
   profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
   metric: rankingMetricEnum("metric").notNull(),
+  community: text("community").notNull().default("court"),
   delta: integer("delta").notNull(),
   reason: text("reason"),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
@@ -296,6 +299,7 @@ export const announcements = pgTable("announcements", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   imageUrl: text("image_url"),
+  community: text("community").notNull().default("court"),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -310,6 +314,7 @@ export const reserveList = pgTable("reserve_list", {
   instagramHandle: text("instagram_handle"),
   neighborhood: text("neighborhood"),
   playerLevel: playerLevelEnum("player_level"),
+  communities: text("communities").array().notNull().default(["court"]),
   howHeard: text("how_heard"),
   knownPeople: text("known_people"),
   wantsOfficialMembership: boolean("wants_official_membership"),
@@ -346,13 +351,14 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
 // um novo ciclo de 45 dias.
 export const tournamentReservedPlayers = pgTable("tournament_reserved_players", {
   id: uuid("id").primaryKey().defaultRandom(),
-  profileId: uuid("profile_id").notNull().unique().references(() => profiles.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  community: text("community").notNull().default("court"),
   // Nulo quando adicionado manualmente por um organizador, em vez de vir de
   // um racha pré-torneio.
   sourceEventId: uuid("source_event_id").references(() => events.id, { onDelete: "set null" }),
   addedBy: uuid("added_by").notNull().references(() => profiles.id),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [unique("tournament_reserved_players_profile_community_unique").on(t.profileId, t.community)]);
 
 export const mvpVotes = pgTable(
   "mvp_votes",

@@ -501,6 +501,8 @@ async function maybeCreateFinal(supabase: SupabaseClient, eventId: string) {
  * só que disparado na hora que a final é lançada em vez de no fim do racha.
  */
 async function reserveChampionTeam(supabase: SupabaseClient, eventId: string, matchId: string, organizerId: string) {
+  const { data: event } = await supabase.from("events").select("community").eq("id", eventId).maybeSingle();
+  if (!event) return;
   const { data: match } = await supabase
     .from("tournament_matches")
     .select("team_a_id, team_b_id, score_a, score_b")
@@ -520,8 +522,8 @@ async function reserveChampionTeam(supabase: SupabaseClient, eventId: string, ma
   const { data: reserved } = await supabase
     .from("tournament_reserved_players")
     .upsert(
-      profileIds.map((profileId) => ({ profile_id: profileId, source_event_id: eventId, added_by: organizerId })),
-      { onConflict: "profile_id", ignoreDuplicates: true },
+      profileIds.map((profileId) => ({ profile_id: profileId, community: event.community, source_event_id: eventId, added_by: organizerId })),
+      { onConflict: "profile_id,community", ignoreDuplicates: true },
     )
     .select("profile_id");
 

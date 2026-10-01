@@ -8,6 +8,13 @@ import { SKILL_CATEGORIES } from "@/lib/scoring";
 const PLAYER_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 const ATTENDANCE_FREQUENCIES = ["weekly", "biweekly", "monthly"] as const;
 
+function registrationCommunities(value: string) {
+  if (value === "court") return ["court"];
+  if (value === "sand") return ["sand"];
+  if (value === "both") return ["court", "sand"];
+  throw new Error("Escolha se você joga na quadra, na areia ou nos dois.");
+}
+
 export async function submitSignup(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -29,6 +36,7 @@ export async function submitSignup(formData: FormData) {
   const isSetter = formData.get("position") === "setter";
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
+  const communities = registrationCommunities(String(formData.get("playCommunity") ?? ""));
 
   if (!fullName || !birthdate || !phone || !/^@[a-z0-9._]{1,30}$/.test(instagramHandle) || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
     throw new Error("Preencha nome, aniversário, telefone, Instagram e nível.");
@@ -57,6 +65,7 @@ export async function submitSignup(formData: FormData) {
     has_vpa_shirt: hasVpaShirt,
     wants_tournaments: wantsTournaments,
     player_level: playerLevel,
+    communities,
     avatar_url: avatarUrl,
   };
 
@@ -111,6 +120,11 @@ export async function submitSignup(formData: FormData) {
     p_self_block: ratingByCategory.block,
   });
   if (error) throw new Error(error.message);
+
+  const { error: communityError } = await supabase.rpc("set_my_communities", {
+    p_communities: communities,
+  });
+  if (communityError) throw new Error(communityError.message);
 
   const { data: organizers } = await supabase.from("profiles").select("id").eq("is_organizer", true);
   await sendPushToProfiles(supabase, (organizers ?? []).map((profile) => profile.id), {

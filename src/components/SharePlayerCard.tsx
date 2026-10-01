@@ -118,7 +118,7 @@ export function SharePlayerCard({
           </div>
           <h2 className="mt-2 truncate text-2xl font-black text-white">{fullName}</h2>
           {nickname && <p className="mt-0.5 text-sm font-semibold text-purple-200">{nickname}</p>}
-          <p className="mt-2 text-sm text-white/60">Seu perfil da quadra pronto para compartilhar.</p>
+          <p className="mt-2 text-sm text-white/60">Seu perfil do VPA pronto para compartilhar.</p>
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             {statItems.map((item) => (

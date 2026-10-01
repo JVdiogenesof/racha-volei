@@ -17,6 +17,8 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { LogoMark } from "@/components/Logo";
 import { useCompactHeader } from "@/components/CompactAppHeader";
+import { CommunitySwitcher } from "@/components/CommunitySwitcher";
+import type { Community } from "@/lib/community";
 
 export type HeaderEventSummary = {
   id: string;
@@ -73,6 +75,8 @@ export function HeaderTopBar({
   isOrganizer,
   isVisitor = false,
   nextEvent,
+  activeCommunity,
+  availableCommunities,
   signOutAction,
   previewPath,
 }: {
@@ -81,6 +85,8 @@ export function HeaderTopBar({
   isOrganizer: boolean;
   isVisitor?: boolean;
   nextEvent: HeaderEventSummary | null;
+  activeCommunity: Community;
+  availableCommunities: Community[];
   signOutAction?: () => Promise<void>;
   previewPath?: string;
 }) {
@@ -139,6 +145,10 @@ export function HeaderTopBar({
           <span className="md:hidden">{countdown ?? heading.eyebrow}</span>
           <span className="hidden md:inline">{heading.eyebrow}</span>
         </p>
+      </div>
+
+      <div className="mr-2 shrink-0">
+        <CommunitySwitcher active={activeCommunity} available={availableCommunities} />
       </div>
 
       {nextEvent && (

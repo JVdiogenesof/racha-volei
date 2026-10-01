@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
+import type { Community } from "./community";
 
 /**
  * Quantos rachas seguidos (contando do mais recente já encerrado pra trás)
@@ -7,10 +8,11 @@ import { getPresentProfileIdsByEvent } from "./presence";
  * só entra na conta depois de encerrado -- confirmar presença num racha que
  * ainda vai rolar não conta ainda.
  */
-export async function getAttendanceStreaks(supabase: SupabaseClient): Promise<Map<string, number>> {
+export async function getAttendanceStreaks(supabase: SupabaseClient, community: Community = "court"): Promise<Map<string, number>> {
   const { data: events } = await supabase
     .from("events")
     .select("id, date")
+    .eq("community", community)
     .eq("status", "finished")
     .order("date", { ascending: false });
 

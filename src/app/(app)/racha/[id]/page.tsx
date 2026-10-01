@@ -136,7 +136,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             {isInProgress
               ? "O racha está rolando. Termine o evento quando acabar pra liberar a escolha do Jogador Destaque."
               : listOpen
-                ? "Quando a galera chegar na quadra, inicie o evento."
+                ? "Quando a galera chegar ao local, inicie o evento."
                 : "Publique a lista de confirmados (em \"Lista do racha\") antes de iniciar o evento."}
           </p>
           {isInProgress ? (

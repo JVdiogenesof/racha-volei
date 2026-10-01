@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
+import { getActiveCommunity } from "@/lib/community";
 
 export async function createAnnouncement(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
@@ -27,6 +29,7 @@ export async function createAnnouncement(formData: FormData) {
     title,
     body,
     image_url: imageUrl,
+    community,
     created_by: organizer.id,
   });
 
@@ -36,6 +39,7 @@ export async function createAnnouncement(formData: FormData) {
     .from("profiles")
     .select("id")
     .eq("status", "approved")
+    .contains("communities", [community])
     .neq("id", organizer.id);
   await sendPushToProfiles(
     supabase,

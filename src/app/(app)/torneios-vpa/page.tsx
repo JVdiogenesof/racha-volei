@@ -7,10 +7,12 @@ import { AddReservedPlayerForm } from "@/components/AddReservedPlayerForm";
 import { RemoveReservedPlayerButton } from "@/components/RemoveReservedPlayerButton";
 import { ClearReservedListButton } from "@/components/ClearReservedListButton";
 import { addReservedPlayer, removeReservedPlayer, clearReservedList } from "./actions";
+import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 export default async function TorneiosVpaPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: reserved }, { data: approvedProfiles }] = await Promise.all([
     supabase
@@ -18,9 +20,10 @@ export default async function TorneiosVpaPage() {
       .select(
         "profile_id, added_at, source_event_id, profiles!tournament_reserved_players_profile_id_profiles_id_fk(full_name, avatar_url), events!tournament_reserved_players_source_event_id_events_id_fk(date)",
       )
+      .eq("community", community)
       .order("added_at", { ascending: true }),
     profile.is_organizer
-      ? supabase.from("profiles").select("id, full_name").eq("status", "approved").order("full_name")
+      ? supabase.from("profiles").select("id, full_name").eq("status", "approved").contains("communities", [community]).order("full_name")
       : Promise.resolve({ data: null }),
   ]);
 
@@ -65,7 +68,7 @@ export default async function TorneiosVpaPage() {
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
           <Trophy className="h-6 w-6 text-amber-400" strokeWidth={2} />
-          Torneios VPA
+          Torneios VPA · {COMMUNITY_INFO[community].shortLabel}
         </h1>
         <p className="mt-1 text-sm text-white/60">
           Quem já garantiu vaga no próximo Torneio Vôlei Por Amor — vencendo um racha pré-torneio ou escolhido direto

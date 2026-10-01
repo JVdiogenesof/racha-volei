@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Community } from "@/lib/community";
 
 export type NotificationType = "confirm" | "teams" | "mvp" | "publish_list" | "avisos";
 
@@ -23,6 +24,7 @@ type ProfileForNotifications = {
 export async function getNotifications(
   supabase: SupabaseClient,
   profile: ProfileForNotifications,
+  community: Community,
 ): Promise<NotificationItem[]> {
   const items: NotificationItem[] = [];
 
@@ -34,9 +36,14 @@ export async function getNotifications(
     supabase
       .from("events")
       .select("id, date, status, official_list_open, mvp_profile_id, mvp_profile_id_2")
+      .eq("community", community)
       .gte("date", twoWeeksAgo)
       .order("date", { ascending: true }),
-    supabase.from("announcements").select("id", { count: "exact", head: true }).gte("created_at", threeDaysAgo),
+    supabase
+      .from("announcements")
+      .select("id", { count: "exact", head: true })
+      .eq("community", community)
+      .gte("created_at", threeDaysAgo),
   ]);
 
   const eventIds = (events ?? []).map((e) => e.id);

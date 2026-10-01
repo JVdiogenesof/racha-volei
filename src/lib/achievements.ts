@@ -22,14 +22,14 @@ type Definition = Omit<Achievement, "current" | "unlocked"> & {
 };
 
 const DEFINITIONS: Definition[] = [
-  { id: "estreia", title: "Estreia na quadra", description: "Participou do primeiro racha.", emoji: "🏐", target: 1, tier: "bronze", value: (s) => s.attendance },
+  { id: "estreia", title: "Estreia no VPA", description: "Participou do primeiro racha.", emoji: "🏐", target: 1, tier: "bronze", value: (s) => s.attendance },
   { id: "presenca-5", title: "Presença garantida", description: "Participou de 5 rachas.", emoji: "📅", target: 5, tier: "silver", value: (s) => s.attendance },
   { id: "veterano", title: "Veterano da resenha", description: "Participou de 10 rachas.", emoji: "🎖️", target: 10, tier: "gold", value: (s) => s.attendance },
-  { id: "lenda", title: "Lenda da quadra", description: "Participou de 25 rachas.", emoji: "🌟", target: 25, tier: "special", value: (s) => s.attendance },
+  { id: "lenda", title: "Lenda do VPA", description: "Participou de 25 rachas.", emoji: "🌟", target: 25, tier: "special", value: (s) => s.attendance },
   { id: "primeira-vitoria", title: "Primeira vitória", description: "Conquistou a primeira vitória.", emoji: "✌️", target: 1, tier: "bronze", value: (s) => s.wins },
   { id: "vencedor-5", title: "Sequência vencedora", description: "Chegou a 5 vitórias.", emoji: "🔥", target: 5, tier: "silver", value: (s) => s.wins },
   { id: "vencedor-15", title: "Máquina de vitórias", description: "Chegou a 15 vitórias.", emoji: "⚡", target: 15, tier: "gold", value: (s) => s.wins },
-  { id: "vencedor-30", title: "Dono da quadra", description: "Chegou a 30 vitórias.", emoji: "👑", target: 30, tier: "special", value: (s) => s.wins },
+  { id: "vencedor-30", title: "Dono do jogo", description: "Chegou a 30 vitórias.", emoji: "👑", target: 30, tier: "special", value: (s) => s.wins },
   { id: "primeiro-mvp", title: "Brilhou na noite", description: "Foi escolhido Jogador Destaque.", emoji: "🏆", target: 1, tier: "bronze", value: (s) => s.mvp },
   { id: "mvp-3", title: "Craque da galera", description: "Foi destaque 3 vezes.", emoji: "💎", target: 3, tier: "gold", value: (s) => s.mvp },
   { id: "mvp-10", title: "Inesquecível", description: "Foi destaque 10 vezes.", emoji: "✨", target: 10, tier: "special", value: (s) => s.mvp },

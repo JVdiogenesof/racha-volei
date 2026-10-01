@@ -106,8 +106,12 @@ set search_path = public
 stable
 as $$
   select coalesce((
-    select status = 'approved' or (status = 'guest' and guest_for_event_id = target_event_id)
-    from profiles where id = auth.uid()
+    select
+      (p.status = 'approved' and e.community = any(p.communities))
+      or (p.status = 'guest' and p.guest_for_event_id = e.id)
+    from profiles p
+    join events e on e.id = target_event_id
+    where p.id = auth.uid()
   ), false);
 $$;
 
