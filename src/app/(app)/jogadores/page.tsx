@@ -52,13 +52,15 @@ export default async function JogadoresPage() {
 
   return (
     <div>
-      <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
-        <Users className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Jogadores
-      </h1>
-      <p className="mt-1 text-sm text-white/60">
-        Nota geral combinando autoavaliação e nota dos organizadores.
-      </p>
+      <div className="flex items-center gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-purple-300/15 bg-purple-300/10">
+          <Users className="h-5 w-5 text-purple-300" strokeWidth={2} />
+        </span>
+        <div>
+          <h1 className="text-2xl font-black text-white">Jogadores</h1>
+          <p className="text-sm text-white/50">Toque em um jogador para ver o perfil completo.</p>
+        </div>
+      </div>
 
       <PlayerSearch players={rows} />
     </div>
