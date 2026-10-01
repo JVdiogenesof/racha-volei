@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, Shirt, type LucideIcon } from "lucide-react";
+import { CalendarDays, Users, Award, Megaphone, History, Trophy, ShieldCheck, Shirt, Clapperboard, type LucideIcon } from "lucide-react";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/racha", label: "Rachas", icon: CalendarDays },
   { href: "/jogadores", label: "Jogadores", icon: Users },
   { href: "/ranking", label: "Ranking", icon: Award },
+  { href: "/momentos", label: "Momentos", icon: Clapperboard },
   { href: "/torneios-vpa", label: "Torneios VPA", icon: Trophy },
   { href: "/camisas", label: "Camisas VPA", icon: Shirt },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
