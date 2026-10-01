@@ -1,33 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
-import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
-import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
-import { getNotifications } from "@/lib/notifications";
-import { getActiveCommunity } from "@/lib/community";
 import { NotificationBell } from "./NotificationBell";
+import type { AppChromeData } from "@/lib/appChromeData";
 
 type NotifProfile = { id: string; is_organizer: boolean; status: string; communities: string[] };
 
-export async function NotificationCenter() {
-  const supabase = await createClient();
-  const cached = await readProfileFromHeaders<NotifProfile>();
-
-  let profile: NotifProfile | null;
-  if (cached) {
-    profile = cached.profile;
-  } else {
-    // Fallback: só acontece se essa requisição não passou pelo middleware.
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-    const { data } = await supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle();
-    profile = data;
-  }
-
-  if (!profile || profile.status !== "approved") return null;
-
-  const community = await getActiveCommunity(profile);
-  const items = await getNotifications(supabase, profile, community);
-
-  return <NotificationBell items={items} />;
+export async function NotificationCenter({ profile, chromeData }: { profile: NotifProfile; chromeData: Promise<AppChromeData> }) {
+  if (profile.status !== "approved") return null;
+  const { notifications } = await chromeData;
+  return <NotificationBell items={notifications} />;
 }

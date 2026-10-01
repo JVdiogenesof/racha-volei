@@ -14,8 +14,9 @@ export type PerformanceStats = {
 export async function getRankingCounts(supabase: SupabaseClient, community: Community = "court") {
   const { data: communityEvents } = await supabase
     .from("events")
-    .select("id, status, mvp_profile_id, mvp_profile_id_2")
-    .eq("community", community);
+    .select("id, date, status, mvp_profile_id, mvp_profile_id_2")
+    .eq("community", community)
+    .order("date", { ascending: false });
   const finishedEvents = (communityEvents ?? []).filter((event) => event.status === "finished");
   const finishedEventIds = (finishedEvents ?? []).map((e) => e.id);
   const communityEventIds = (communityEvents ?? []).map((event) => event.id);
@@ -40,6 +41,18 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
     for (const profileId of profileIds) {
       attendance.set(profileId, (attendance.get(profileId) ?? 0) + 1);
     }
+  }
+
+  // A sequência usa o mesmo mapa de presença já carregado para o ranking.
+  // Antes as telas de jogadores e perfil repetiam todas essas consultas.
+  const streaks = new Map<string, number>();
+  for (const profileId of new Set([...presentByEvent.values()].flatMap((ids) => [...ids]))) {
+    let streak = 0;
+    for (const event of finishedEvents) {
+      if (!presentByEvent.get(event.id)?.has(profileId)) break;
+      streak += 1;
+    }
+    if (streak > 0) streaks.set(profileId, streak);
   }
 
   const mvp = new Map<string, number>();
@@ -98,5 +111,5 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
   }
 
-  return { attendance, mvp, wins, performance };
+  return { attendance, mvp, wins, performance, streaks };
 }

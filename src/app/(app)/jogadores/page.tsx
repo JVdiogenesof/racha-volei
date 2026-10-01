@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
-import { getAttendanceStreaks } from "@/lib/streak";
 import { getRankingCounts } from "@/lib/rankings";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { PlayerSearch } from "@/components/PlayerSearch";
@@ -14,7 +13,7 @@ export default async function JogadoresPage() {
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
 
-  const [{ data: players }, { selfByProfile, organizerByProfile }, weights, streaks, rankingCounts] = await Promise.all([
+  const [{ data: players }, { selfByProfile, organizerByProfile }, weights, rankingCounts] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, avatar_url, is_setter, nickname_badge")
@@ -23,7 +22,6 @@ export default async function JogadoresPage() {
       .order("full_name"),
     getAllRatings(supabase),
     getRatingWeights(supabase),
-    getAttendanceStreaks(supabase, community),
     getRankingCounts(supabase, community),
   ]);
 
@@ -39,7 +37,7 @@ export default async function JogadoresPage() {
         attendance: rankingCounts.attendance.get(p.id) ?? 0,
         wins: rankingCounts.wins.get(p.id) ?? 0,
         mvp: rankingCounts.mvp.get(p.id) ?? 0,
-        streak: streaks.get(p.id) ?? 0,
+        streak: rankingCounts.streaks.get(p.id) ?? 0,
         isSetter: p.is_setter,
       };
       return {

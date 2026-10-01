@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
 import { getRankingCounts } from "@/lib/rankings";
-import { getAttendanceStreaks } from "@/lib/streak";
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementGallery } from "@/components/AchievementGallery";
@@ -16,11 +15,10 @@ export default async function PerfilPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
-  const [{ self, organizer }, weights, rankingCounts, streaks, { data: approvedProfiles }] = await Promise.all([
+  const [{ self, organizer }, weights, rankingCounts, { data: approvedProfiles }] = await Promise.all([
     getPlayerRatings(supabase, profile.id),
     getRatingWeights(supabase),
     getRankingCounts(supabase, community),
-    getAttendanceStreaks(supabase, community),
     supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
   ]);
 
@@ -30,7 +28,7 @@ export default async function PerfilPage() {
   const mvpCount = rankingCounts.mvp.get(profile.id) ?? 0;
   const winsCount = rankingCounts.wins.get(profile.id) ?? 0;
   const performance = rankingCounts.performance.get(profile.id);
-  const streak = streaks.get(profile.id) ?? 0;
+  const streak = rankingCounts.streaks.get(profile.id) ?? 0;
 
   const myStats = [
     { label: "Presenças", value: attendanceCount, icon: CalendarCheck },

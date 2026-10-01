@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getRankingCounts } from "@/lib/rankings";
-import { getAttendanceStreaks } from "@/lib/streak";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { imageUrlToDataUrl } from "@/lib/serverImageData";
@@ -40,9 +39,8 @@ export async function GET(request: Request) {
   if (!profile) return new Response("Perfil não encontrado", { status: 404 });
 
   const community = await getActiveCommunity(profile);
-  const [rankingCounts, streaks, { data: approvedProfiles }] = await Promise.all([
+  const [rankingCounts, { data: approvedProfiles }] = await Promise.all([
     getRankingCounts(supabase, community),
-    getAttendanceStreaks(supabase, community),
     supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
   ]);
 
@@ -50,7 +48,7 @@ export async function GET(request: Request) {
   const wins = rankingCounts.wins.get(profile.id) ?? 0;
   const mvp = rankingCounts.mvp.get(profile.id) ?? 0;
   const performance = rankingCounts.performance.get(profile.id);
-  const streak = streaks.get(profile.id) ?? 0;
+  const streak = rankingCounts.streaks.get(profile.id) ?? 0;
   const achievementStats = { attendance, wins, mvp, streak, isSetter: profile.is_setter };
   const achievements = getPlayerAchievements(achievementStats);
   const featuredAchievements = getFeaturedAchievements(achievementStats);

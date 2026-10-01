@@ -96,6 +96,20 @@ a,
 [role="button"],
 select {
   transition: transform 0.12s ease, opacity 0.12s ease;
+  -webkit-tap-highlight-color: rgba(196, 181, 253, 0.2);
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+a[href],
+[role="button"] {
+  cursor: pointer;
+}
+
+button:not(:disabled) svg,
+a[href] svg,
+[role="button"] svg {
+  transition: transform 0.12s ease;
 }
 
 button:not(:disabled):active,
@@ -103,6 +117,23 @@ a:active,
 [role="button"]:active {
   transform: scale(0.96);
   opacity: 0.85;
+  filter: brightness(1.16);
+}
+
+button:not(:disabled):active svg,
+a[href]:active svg,
+[role="button"]:active svg {
+  transform: scale(0.86);
+}
+
+@keyframes navigation-progress {
+  0% { transform: translateX(-105%); }
+  55% { transform: translateX(95vw); }
+  100% { transform: translateX(245vw); }
+}
+
+.navigation-progress {
+  animation: navigation-progress 1.15s ease-in-out infinite;
 }
 
 @keyframes toast-in {
@@ -171,6 +202,11 @@ form[aria-busy="true"] button[type="submit"]::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .navigation-progress {
+    animation: none;
+    width: 100%;
+  }
+
   .confetti-particle {
     animation: none;
     display: none;

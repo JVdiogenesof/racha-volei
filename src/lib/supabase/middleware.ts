@@ -44,10 +44,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !isPublic) {
-    const [{ data: profile }, { data: reserveEntry }] = await Promise.all([
-      supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle(),
-      supabase.from("reserve_list").select("id").eq("auth_user_id", user.id).maybeSingle(),
-    ]);
+    const { data: profile } = await supabase.from("profiles").select(PROFILE_COLUMNS).eq("id", user.id).maybeSingle();
+    // A reserva só precisa ser consultada quando o usuário ainda não possui
+    // perfil. Para membros, isso remove uma chamada ao banco em toda tela.
+    const { data: reserveEntry } = profile
+      ? { data: null }
+      : await supabase.from("reserve_list").select("id").eq("auth_user_id", user.id).maybeSingle();
 
     // Repassa o perfil já carregado pros Server Components via header, pra
     // NavBar/NotificationCenter/requireProfile() não refazerem a mesma consulta
