@@ -10,12 +10,14 @@ export function ConfirmedCounter({
   initialConfirmedCount,
   newcomerReservedSpots: initialNewcomerReservedSpots,
   initialNewcomerConfirmedCount,
+  compact = false,
 }: {
   eventId: string;
   maxPlayers: number | null;
   initialConfirmedCount: number;
   newcomerReservedSpots: number;
   initialNewcomerConfirmedCount: number;
+  compact?: boolean;
 }) {
   const [count, setCount] = useState(initialConfirmedCount);
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
@@ -62,6 +64,24 @@ export function ConfirmedCounter({
   const totalSlotsRemaining = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
   const isFull = totalSlotsRemaining === 0;
   const pct = maxPlayers ? Math.min(100, Math.round((count / maxPlayers) * 100)) : null;
+
+  if (compact) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-1.5">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-white">
+            <Users className="h-4 w-4 text-purple-300" />
+            {count}{maxPlayers != null ? `/${maxPlayers}` : ""} confirmados
+          </p>
+          {memberSlotsRemaining !== null && <span className={`text-xs font-semibold ${memberSlotsRemaining === 0 ? "text-red-300" : "text-green-300"}`}>{memberSlotsRemaining === 0 ? "Membros preenchidos" : `${memberSlotsRemaining} vaga${memberSlotsRemaining === 1 ? "" : "s"} para membros`}</span>}
+        </div>
+        {newcomerReservedSpots > 0 && memberCapacity !== null && (
+          <p className="mt-1 text-[11px] text-white/45">Membros {regularConfirmedCount}/{memberCapacity} · Convidados {newcomerConfirmedCount}/{newcomerReservedSpots}</p>
+        )}
+        {pct !== null && <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10"><div className={`h-full rounded-full ${isFull ? "bg-red-400" : "bg-brand-purple"}`} style={{ width: `${pct}%` }} /></div>}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">

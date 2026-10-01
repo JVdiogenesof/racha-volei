@@ -17,7 +17,7 @@ function getCountdown(startIso: string): Countdown | null {
   };
 }
 
-export function EventCountdown({ startIso, isInProgress }: { startIso: string; isInProgress: boolean }) {
+export function EventCountdown({ startIso, isInProgress, compact = false }: { startIso: string; isInProgress: boolean; compact?: boolean }) {
   const [countdown, setCountdown] = useState<Countdown | null | undefined>(undefined);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function EventCountdown({ startIso, isInProgress }: { startIso: string; i
   }
 
   if (countdown === undefined) {
-    return <div className="h-[74px] animate-pulse rounded-xl bg-white/5" aria-hidden="true" />;
+    return <div className={`${compact ? "h-10" : "h-[74px]"} animate-pulse rounded-xl bg-white/5`} aria-hidden="true" />;
   }
 
   if (countdown === null) {
@@ -54,6 +54,16 @@ export function EventCountdown({ startIso, isInProgress }: { startIso: string; i
     { value: countdown.hours, label: "horas" },
     { value: countdown.minutes, label: "min" },
   ];
+
+  if (compact) {
+    return (
+      <div className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/10 px-3 text-sm text-white/60" aria-live="polite">
+        <Timer className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
+        Começa em
+        <strong className="text-white">{countdown.days}d {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}min</strong>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/10 p-3">

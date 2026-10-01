@@ -14,6 +14,8 @@ import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
+import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
+import { birthdaysThisMonth } from "@/lib/birthdays";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -168,29 +170,33 @@ export default async function HomePage() {
   const avisoIsNew = ultimoAviso ? isRecent(ultimoAviso.created_at, 3) : false;
   const avisoPreview =
     ultimoAviso && ultimoAviso.body.length > 100 ? `${ultimoAviso.body.slice(0, 100).trim()}…` : ultimoAviso?.body;
+  const birthdayCount = birthdaysThisMonth(birthdayProfiles ?? []).length;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white sm:text-3xl">Fala, {profile.full_name.split(" ")[0]}! 🏐</h1>
-        <p className="mt-1 text-sm text-white/60">Bem-vindo ao racha da galera.</p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">Vôlei por Amor</p>
+          <h1 className="mt-0.5 text-2xl font-bold text-white sm:text-3xl">Fala, {profile.full_name.split(" ")[0]}! 🏐</h1>
+        </div>
+        <Link href="/racha" className="inline-flex items-center gap-1 text-sm font-medium text-purple-300 hover:underline">Ver rachas <ChevronRight className="h-4 w-4" /></Link>
       </div>
 
       <section
         className={
           proximoRacha?.is_pre_torneio
-            ? "relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/20 via-[#352354] to-[#171136] p-5 shadow-2xl shadow-black/15 sm:p-6"
-            : "relative overflow-hidden rounded-3xl border border-purple-300/20 bg-gradient-to-br from-[#51339a] via-[#2f205e] to-[#171136] p-5 shadow-2xl shadow-black/15 sm:p-6"
+            ? "relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/18 via-[#352354] to-[#171136] p-4 shadow-xl shadow-black/15"
+            : "relative overflow-hidden rounded-2xl border border-purple-300/20 bg-gradient-to-br from-[#51339a] via-[#2f205e] to-[#171136] p-4 shadow-xl shadow-black/15"
         }
       >
-        <span className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-purple-300/10 blur-2xl" />
+        <span className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-purple-300/10 blur-2xl" />
         <div className="relative flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <span
               className={
                 proximoRacha?.is_pre_torneio
-                  ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300"
-                  : "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-purple-100"
+                  ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300"
+                  : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-purple-100"
               }
             >
               {proximoRacha?.is_pre_torneio ? (
@@ -200,8 +206,8 @@ export default async function HomePage() {
               )}
             </span>
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">Sua próxima partida</p>
-              <h2 className="text-lg font-bold">Próximo racha</h2>
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Próxima partida</p>
+              <h2 className="font-bold">Próximo racha</h2>
             </div>
             {proximoRacha?.is_pre_torneio && (
               <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
@@ -214,28 +220,27 @@ export default async function HomePage() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {proximoRacha && myStatus === "confirmed" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-300/15 bg-green-400/15 px-3 py-1 text-xs font-medium text-green-200">
+          {proximoRacha && myStatus === "confirmed" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-300/15 bg-green-400/15 px-2.5 py-1 text-[11px] font-bold text-green-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
                 Confirmado
               </span>
-            )}
-          </div>
+          )}
         </div>
 
         {proximoRacha ? (
-          <div className="relative mt-5 grid gap-4 border-t border-white/10 pt-5 sm:grid-cols-[1.15fr_0.85fr]">
-            <div>
+          <div className="relative mt-3 grid gap-3 border-t border-white/10 pt-3 md:grid-cols-[1.05fr_0.95fr]">
+            <div className="space-y-2">
               {proximoRacha.time && (
                 <EventCountdown
                   startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
                   isInProgress={isInProgress}
+                  compact
                 />
               )}
 
-              <div className="mt-4 grid gap-2 text-sm text-white/80 sm:grid-cols-2">
-                <p className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
+              <div className="flex flex-wrap gap-1.5 text-xs text-white/75">
+                <p className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
                   <CalendarDays className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
                   {new Date(`${proximoRacha.date}T00:00:00`).toLocaleDateString("pt-BR", {
                     weekday: "short",
@@ -244,19 +249,19 @@ export default async function HomePage() {
                   })}
                 </p>
                 {proximoRacha.time && (
-                  <p className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5">
+                  <p className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
                     <Clock className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
                     {proximoRacha.time.slice(0, 5)}
                   </p>
                 )}
                 {proximoRacha.location && (
-                  <p className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5 sm:col-span-2">
+                  <p className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
                     <MapPin className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
                     <span className="min-w-0 truncate">{proximoRacha.location}</span>
                   </p>
                 )}
                 {rachaLevel !== null && (
-                  <div className="flex items-center gap-2.5 rounded-lg bg-white/5 px-3 py-2.5 sm:col-span-2">
+                  <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
                     <Star className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
                     <RachaLevelBadge level={rachaLevel} />
                   </div>
@@ -264,48 +269,32 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="flex flex-col rounded-2xl border border-white/10 bg-black/10 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-white/75">
-                <Users className="h-4 w-4 text-purple-200" strokeWidth={2} />
-                Presença da galera
-              </div>
-              <div className="mt-3">
-                <ConfirmedCounter
-                  eventId={proximoRacha.id}
-                  maxPlayers={proximoRacha.max_players}
-                  initialConfirmedCount={confirmedCount ?? 0}
-                  newcomerReservedSpots={reservedSpots}
-                  initialNewcomerConfirmedCount={newcomerConfirmedCount ?? 0}
-                />
-              </div>
-
-              <div className="mt-auto pt-4">
+            <div className="space-y-2">
+              <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} newcomerReservedSpots={reservedSpots} initialNewcomerConfirmedCount={newcomerConfirmedCount ?? 0} compact />
+              <div className="grid grid-cols-2 gap-2">
                 {!canRespondToNextEvent ? (
                   <Link
                     href={`/racha/${proximoRacha.id}/confirmar`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300/25 bg-amber-400/10 px-5 py-3.5 font-bold text-amber-100 hover:bg-amber-400/15"
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/15"
                   >
                     <Users className="h-4 w-4" strokeWidth={2} />
-                    Acompanhar como visitante
-                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                    Acompanhar
                   </Link>
                 ) : myStatus === "confirmed" ? (
                   <Link
                     href={`/racha/${proximoRacha.id}`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 py-3.5 font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
                   >
                     <Zap className="h-4 w-4" strokeWidth={2} />
                     Abrir racha
-                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
                   </Link>
                 ) : myStatus === "interested" ? (
                   <Link
                     href={`/racha/${proximoRacha.id}/confirmar`}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 py-3.5 font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
+                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
                   >
                     <ThumbsUp className="h-4 w-4" strokeWidth={2} />
-                    Interesse registrado
-                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                    Ver interesse
                   </Link>
                 ) : (
                   <InterestButton
@@ -313,21 +302,21 @@ export default async function HomePage() {
                     price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
                     isFull={isFull}
                     action={setAttendance}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 py-3.5 font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark disabled:opacity-50"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark disabled:opacity-50"
                   />
                 )}
                 <Link
                   href={`/racha/${proximoRacha.id}/confirmar`}
-                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10"
+                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-white/15 px-3 text-center text-sm font-semibold text-white/80 hover:bg-white/10"
                 >
-                  Ver lista de jogadores
-                  <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                  Ver lista
+                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
                 </Link>
               </div>
             </div>
           </div>
         ) : (
-          <div className="relative mt-5 rounded-2xl border border-dashed border-white/15 bg-black/10 px-5 py-8 text-center">
+          <div className="relative mt-3 rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-5 text-center">
             <CalendarDays className="mx-auto h-8 w-8 text-white/25" strokeWidth={1.5} />
             <p className="mt-3 font-medium text-white/70">Nenhum racha marcado ainda.</p>
             <p className="mt-1 text-sm text-white/40">O próximo evento vai aparecer aqui.</p>
@@ -335,7 +324,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      <section className="overflow-hidden rounded-3xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-2xl shadow-purple-950/25">
+      <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-xl shadow-purple-950/20">
           <div className="relative aspect-video overflow-hidden bg-black">
             <AutoPlayShirtVideo />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-transparent to-black/20" />
@@ -344,18 +333,18 @@ export default async function HomePage() {
               Lançamento oficial
             </span>
           </div>
-          <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-purple-300">
                 <Sparkles className="h-3.5 w-3.5" />
                 Nova coleção VPA
               </p>
-              <h2 className="mt-2 text-2xl font-black text-white">A nova pele do nosso racha</h2>
+              <h2 className="mt-1 text-xl font-black text-white">A nova pele do nosso racha</h2>
               <p className="mt-1 text-sm text-white/55">Conheça os modelos e escolha sua nova camisa do VPA.</p>
             </div>
             <Link
               href="/camisas"
-              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-purple px-5 font-bold text-white shadow-lg shadow-purple-950/30 hover:bg-brand-purple-dark"
+              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-purple px-4 text-sm font-bold text-white shadow-lg shadow-purple-950/30 hover:bg-brand-purple-dark"
             >
               <Shirt className="h-4 w-4" />
               Ver modelos e pedidos
@@ -363,24 +352,6 @@ export default async function HomePage() {
             </Link>
           </div>
       </section>
-
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy-light to-[#241a52] p-6">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt=""
-          className="pointer-events-none absolute -bottom-8 -right-8 h-40 w-40 rotate-[-8deg] object-contain opacity-25 sm:h-48 sm:w-48"
-        />
-        <div className="relative max-w-xs">
-          <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">Vôlei por amor</p>
-          <p className="mt-1 text-xl font-bold leading-snug sm:text-2xl">
-            Mais que um jogo, <span className="text-purple-300">é a nossa resenha!</span>
-          </p>
-          <p className="mt-2 text-sm text-white/60">
-            Aqui a gente joga, se diverte e mantém a amizade em quadra.
-          </p>
-        </div>
-      </div>
 
       {recentChampion && (
         <RecentTournamentChampionCard
@@ -406,60 +377,38 @@ export default async function HomePage() {
         />
       )}
 
-      <section>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Megaphone className="h-5 w-5 text-purple-300" strokeWidth={2} />
-            <h2 className="font-semibold">Último aviso</h2>
-          </div>
-          <Link href="/avisos" className="inline-flex items-center gap-1 text-sm text-purple-300 hover:underline">
-            Ver todos
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={2} />
-          </Link>
-        </div>
-
-        {ultimoAviso ? (
-          <Link
-            href="/avisos"
-            className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"
-          >
-            {ultimoAviso.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={ultimoAviso.image_url}
-                alt=""
-                className="h-16 w-16 shrink-0 rounded-xl object-cover"
-              />
-            ) : (
-              <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-brand-purple/20 text-purple-200">
-                <Megaphone className="h-6 w-6" strokeWidth={2} />
-              </span>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="truncate font-medium text-white">{ultimoAviso.title}</p>
-                {avisoIsNew && (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-purple/25 px-2 py-0.5 text-[10px] font-medium text-purple-200">
-                    <Sparkles className="h-2.5 w-2.5" strokeWidth={2} />
-                    Novo
-                  </span>
-                )}
-              </div>
-              <p className="mt-0.5 truncate text-sm text-white/60">{avisoPreview}</p>
-              <p className="mt-1 text-xs text-white/40">
-                {avisoAuthor} · {relativeDate(ultimoAviso.created_at)}
-              </p>
+      <HomeCommunityTabs
+        birthdayCount={birthdayCount}
+        announcementContent={
+          <div className="p-1">
+            <div className="flex justify-end">
+              <Link href="/avisos" className="inline-flex items-center gap-1 text-xs font-medium text-purple-300 hover:underline">Ver todos <ArrowRight className="h-3.5 w-3.5" /></Link>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-white/30" strokeWidth={2} />
-          </Link>
-        ) : (
-          <p className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/50">
-            Nenhum aviso ainda.
-          </p>
-        )}
-      </section>
-
-      <BirthdaysCard profiles={birthdayProfiles ?? []} />
+            {ultimoAviso ? (
+              <Link href="/avisos" className="mt-1.5 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
+                {ultimoAviso.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ultimoAviso.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-purple/20 text-purple-200"><Megaphone className="h-5 w-5" /></span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-semibold text-white">{ultimoAviso.title}</p>
+                    {avisoIsNew && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-purple/25 px-2 py-0.5 text-[9px] font-bold text-purple-200"><Sparkles className="h-2.5 w-2.5" /> Novo</span>}
+                  </div>
+                  <p className="mt-0.5 truncate text-xs text-white/55">{avisoPreview}</p>
+                  <p className="mt-1 text-[11px] text-white/35">{avisoAuthor} · {relativeDate(ultimoAviso.created_at)}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+              </Link>
+            ) : (
+              <p className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/50">Nenhum aviso ainda.</p>
+            )}
+          </div>
+        }
+        birthdaysContent={<BirthdaysCard profiles={birthdayProfiles ?? []} />}
+      />
     </div>
   );
 }
