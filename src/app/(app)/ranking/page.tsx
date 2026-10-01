@@ -1,11 +1,11 @@
-import { CalendarCheck, Trophy, Crown, Percent } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts } from "@/lib/rankings";
-import { Leaderboard, type RankingEntry } from "@/components/Leaderboard";
+import { type RankingEntry } from "@/components/Leaderboard";
+import { RankingTabs } from "@/components/RankingTabs";
 
 export default async function RankingPage() {
-  await requireProfile();
+  const currentProfile = await requireProfile();
   const supabase = await createClient();
 
   const [{ data: profiles }, counts] = await Promise.all([
@@ -54,38 +54,14 @@ export default async function RankingPage() {
     );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-white">Ranking</h1>
-        <p className="mt-1 text-sm text-white/60">Quem mais aparece e quem mais brilha nos rachas.</p>
+        <p className="mt-1 text-sm text-white/60">Compare resultados e acompanhe sua posição em cada categoria.</p>
       </div>
-
-      <Leaderboard
-        title="Melhor aproveitamento"
-        icon={<Percent className="h-5 w-5 text-purple-300" strokeWidth={2} />}
-        unit="de aproveitamento"
-        ranking={performanceRanking}
-      />
-
-      <Leaderboard
-        title="Mais vitórias"
-        icon={<Crown className="h-5 w-5 text-purple-300" strokeWidth={2} />}
-        unit="vitórias"
-        ranking={winsRanking}
-      />
-
-      <Leaderboard
-        title="Mais vezes Jogador Destaque"
-        icon={<Trophy className="h-5 w-5 text-purple-300" strokeWidth={2} />}
-        unit="vezes"
-        ranking={mvpRanking}
-      />
-
-      <Leaderboard
-        title="Mais presença"
-        icon={<CalendarCheck className="h-5 w-5 text-purple-300" strokeWidth={2} />}
-        unit="presenças"
-        ranking={attendanceRanking}
+      <RankingTabs
+        currentProfileId={currentProfile.id}
+        rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
       />
     </div>
   );

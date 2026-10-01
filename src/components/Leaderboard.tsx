@@ -24,11 +24,13 @@ export function Leaderboard({
   icon,
   unit,
   ranking,
+  currentProfileId,
 }: {
   title: string;
   icon: ReactNode;
   unit: string;
   ranking: RankingEntry[];
+  currentProfileId?: string;
 }) {
   const [showAll, setShowAll] = useState(false);
   const podium = ranking.slice(0, 3);
@@ -63,6 +65,7 @@ export function Leaderboard({
                   <p className="mt-2 w-full break-words text-sm font-medium text-white">
                     {entry.fullName}
                   </p>
+                  {entry.profileId === currentProfileId && <span className="mt-1 rounded-full bg-purple-400/15 px-2 py-0.5 text-[9px] font-black text-purple-200">VOCÊ</span>}
                   <p className="text-xs text-white/60">
                     {entry.displayValue ?? `${entry.count} ${unit}`}
                   </p>
@@ -75,11 +78,11 @@ export function Leaderboard({
           {rest.length > 0 && (
             <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
               {rest.map((entry, i) => (
-                <li key={entry.profileId} className="flex min-w-0 items-center justify-between gap-2 py-2.5 text-sm">
+                <li key={entry.profileId} className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}>
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="w-6 shrink-0 text-center text-white/40">{i + 4}º</span>
                     <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
-                    <span className="min-w-0 break-words text-white">{entry.fullName}</span>
+                    <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
                   </span>
                   <span className="shrink-0 text-white/60">
                     {entry.displayValue ?? `${entry.count} ${unit}`}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight } from "lucide-react";
+import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -12,19 +12,52 @@ function isNrSportTraining(location: string | null) {
   return !!location && location.toLowerCase().includes("nr sport");
 }
 
+type AttendanceStatus = "confirmed" | "interested" | "declined";
+type AttendanceIndicatorData = { label: string; className: string; icon: LucideIcon } | null;
+
+function getAttendanceIndicator({
+  attendanceStatus,
+  isGuestEvent,
+  isVisitor,
+  ended,
+}: {
+  attendanceStatus: AttendanceStatus | null;
+  isGuestEvent: boolean;
+  isVisitor: boolean;
+  ended: boolean;
+}): AttendanceIndicatorData {
+  if (attendanceStatus === "confirmed") return { label: ended ? "Você participou" : "Você está confirmado", className: "border-green-400/25 bg-green-500/12 text-green-300", icon: CheckCircle2 };
+  if (attendanceStatus === "interested") return { label: "Interesse marcado", className: "border-purple-300/25 bg-purple-400/12 text-purple-200", icon: Clock3 };
+  if (attendanceStatus === "declined") return { label: "Você não vai", className: "border-red-300/20 bg-red-400/10 text-red-200", icon: XCircle };
+  if (isGuestEvent) return { label: "Convidado para este racha", className: "border-cyan-300/25 bg-cyan-400/10 text-cyan-200", icon: UserRoundCheck };
+  if (isVisitor) return { label: "Somente visualização", className: "border-white/10 bg-white/5 text-white/45", icon: Eye };
+  if (!ended) return { label: "Aguardando sua resposta", className: "border-amber-300/25 bg-amber-400/10 text-amber-200", icon: CircleHelp };
+  return null;
+}
+
 export default async function RachaListPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio")
-    .order("date", { ascending: false });
+  const [{ data: events }, { data: attendanceRows }] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio")
+      .order("date", { ascending: false }),
+    supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id),
+  ]);
+  const attendanceByEvent = new Map((attendanceRows ?? []).map((row) => [row.event_id, row.status as AttendanceStatus]));
 
   const today = new Date().toISOString().slice(0, 10);
   const atuais = events?.filter((e) => e.status === "in_progress") ?? [];
   const proximos = events?.filter((e) => e.date >= today && e.status !== "in_progress") ?? [];
   const passados = events?.filter((e) => e.date < today && e.status !== "in_progress") ?? [];
+  const indicatorFor = (event: { id: string; date: string; status: string }) => getAttendanceIndicator({
+    attendanceStatus: attendanceByEvent.get(event.id) ?? null,
+    isGuestEvent: profile.status === "guest" && profile.guest_for_event_id === event.id,
+    isVisitor: profile.status !== "approved" && !(profile.status === "guest" && profile.guest_for_event_id === event.id),
+    ended: event.date < today || event.status === "finished" || event.status === "cancelled",
+  });
 
   return (
     <div className="space-y-8">
@@ -52,7 +85,7 @@ export default async function RachaListPage() {
           </div>
           <div className="space-y-3">
             {atuais.map((event) => (
-              <CurrentEventCard key={event.id} event={event} />
+              <CurrentEventCard key={event.id} event={event} indicator={indicatorFor(event)} />
             ))}
           </div>
         </section>
@@ -63,7 +96,7 @@ export default async function RachaListPage() {
         <div className="mt-3 space-y-2">
           {!proximos.length && <p className="text-sm text-white/60">Nenhum racha marcado ainda.</p>}
           {proximos.map((e) => (
-            <EventRow key={e.id} event={e} />
+            <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
           ))}
         </div>
       </section>
@@ -73,7 +106,7 @@ export default async function RachaListPage() {
           <h2 className="font-semibold text-white">Passados</h2>
           <div className="mt-3 space-y-2">
             {passados.map((e) => (
-              <EventRow key={e.id} event={e} />
+              <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
             ))}
           </div>
         </section>
@@ -84,6 +117,7 @@ export default async function RachaListPage() {
 
 function CurrentEventCard({
   event,
+  indicator,
 }: {
   event: {
     id: string;
@@ -93,6 +127,7 @@ function CurrentEventCard({
     is_pre_torneio: boolean;
     team_size: number;
   };
+  indicator: AttendanceIndicatorData;
 }) {
   const isArena = isNrSportTraining(event.location);
 
@@ -113,6 +148,7 @@ function CurrentEventCard({
                 Pré-torneio
               </span>
             )}
+            {indicator && <AttendanceIndicator indicator={indicator} />}
           </div>
           <h3 className="mt-4 text-2xl font-black text-white">Racha rolando agora</h3>
           <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-purple-200">
@@ -160,6 +196,7 @@ function CurrentEventCard({
 
 function EventRow({
   event,
+  indicator,
 }: {
   event: {
     id: string;
@@ -171,11 +208,12 @@ function EventRow({
     is_pre_torneio: boolean;
     team_size: number;
   };
+  indicator: AttendanceIndicatorData;
 }) {
   const isArena = isNrSportTraining(event.location);
 
   return (
-    <div className="relative flex items-center justify-between rounded-lg border border-white/10 px-4 py-3 hover:bg-white/5">
+    <div className="relative rounded-xl border border-white/10 px-3.5 py-3 hover:bg-white/5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-4">
       <Link href={`/racha/${event.id}`} className="absolute inset-0 rounded-lg" aria-label="Ver racha" />
       <div className="flex min-w-0 items-center gap-3">
         {isArena && (
@@ -196,6 +234,7 @@ function EventRow({
             {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
           </p>
           <p className="mt-0.5 text-xs font-medium text-purple-300">{teamFormatLabel(event.team_size)}</p>
+          {indicator && <div className="mt-1.5"><AttendanceIndicator indicator={indicator} /></div>}
           {event.location && (
             <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-white/60">
               <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
@@ -216,7 +255,7 @@ function EventRow({
           )}
         </div>
       </div>
-      <div className="relative flex shrink-0 items-center gap-2">
+      <div className="relative mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-2.5 sm:mt-0 sm:shrink-0 sm:border-0 sm:pt-0">
         {event.is_pre_torneio && (
           <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />
@@ -241,5 +280,15 @@ function EventRow({
         </span>
       </div>
     </div>
+  );
+}
+
+function AttendanceIndicator({ indicator }: { indicator: NonNullable<AttendanceIndicatorData> }) {
+  const Icon = indicator.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${indicator.className}`}>
+      <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+      {indicator.label}
+    </span>
   );
 }
