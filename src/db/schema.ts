@@ -203,12 +203,13 @@ export const payments = pgTable(
 );
 
 // Pedido individual da nova camisa VPA. Cada pessoa mantém no máximo um
-// pedido por modelo; a quantidade cobre peças repetidas do mesmo modelo.
+// pedido por modelo em cada comunidade; a quantidade cobre peças repetidas.
 export const shirtOrders = pgTable(
   "shirt_orders",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+    community: text("community").notNull().default("court"),
     model: text("model").notNull(),
     shirtName: text("shirt_name").notNull(),
     shirtNumber: integer("shirt_number").notNull(),
@@ -220,7 +221,10 @@ export const shirtOrders = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [unique("shirt_orders_profile_model_unique").on(t.profileId, t.model), index("shirt_orders_paid_created_idx").on(t.paid, t.createdAt)],
+  (t) => [
+    unique("shirt_orders_profile_model_community_unique").on(t.profileId, t.model, t.community),
+    index("shirt_orders_community_paid_created_idx").on(t.community, t.paid, t.createdAt),
+  ],
 );
 
 export const teamGenerations = pgTable("team_generations", {

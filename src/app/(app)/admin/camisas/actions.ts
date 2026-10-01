@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
+import { getActiveCommunity } from "@/lib/community";
 
 export async function setShirtOrderPaid(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
   const orderId = String(formData.get("orderId") ?? "");
   const paid = String(formData.get("paid")) === "true";
   if (!orderId) throw new Error("Pedido inválido.");
@@ -20,6 +22,7 @@ export async function setShirtOrderPaid(formData: FormData) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", orderId)
+    .eq("community", community)
     .select("id")
     .maybeSingle();
   if (error) throw new Error(error.message);

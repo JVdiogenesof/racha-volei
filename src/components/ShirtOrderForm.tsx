@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
 import { Check, Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { useToast } from "./Toast";
-import { SHIRT_MODELS, SHIRT_SIZES, type ShirtModel } from "@/lib/shirts";
+import { getShirtModels, SHIRT_SIZES, type ShirtModel, type ShirtModelInfo } from "@/lib/shirts";
+import type { Community } from "@/lib/community";
 import type { ShirtOrderState } from "@/app/(app)/camisas/actions";
 
 type ExistingOrder = {
@@ -21,10 +22,13 @@ const initialState: ShirtOrderState = { status: "idle", message: "" };
 export function ShirtOrderForm({
   action,
   existingOrders,
+  community,
 }: {
   action: (state: ShirtOrderState, formData: FormData) => Promise<ShirtOrderState>;
   existingOrders: ExistingOrder[];
+  community: Community;
 }) {
+  const shirtModels = getShirtModels(community);
   const [model, setModel] = useState<ShirtModel>("tank");
   const [state, formAction, pending] = useActionState(action, initialState);
   const { showToast } = useToast();
@@ -46,7 +50,7 @@ export function ShirtOrderForm({
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        {(Object.entries(SHIRT_MODELS) as [ShirtModel, (typeof SHIRT_MODELS)[ShirtModel]][]).map(([key, item]) => {
+        {(Object.entries(shirtModels) as [ShirtModel, ShirtModelInfo][]).map(([key, item]) => {
           const selected = model === key;
           const saved = existingOrders.find((order) => order.model === key);
           return (
@@ -71,9 +75,9 @@ export function ShirtOrderForm({
         <input type="hidden" name="model" value={model} />
         <div className="relative overflow-hidden rounded-xl border border-white/10 sm:col-span-2">
           <div className="relative aspect-[16/8] sm:aspect-[16/6]">
-            <Image src={SHIRT_MODELS[model].image} alt={`Modelo selecionado: ${SHIRT_MODELS[model].label}`} fill priority sizes="(max-width: 640px) 100vw, 720px" className="object-cover" />
+            <Image src={shirtModels[model].image} alt={`Modelo selecionado: ${shirtModels[model].label}`} fill priority sizes="(max-width: 640px) 100vw, 720px" className="object-cover" />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-4 pb-4 pt-12">
-              <p className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-4 w-4 text-purple-300" />Modelo {SHIRT_MODELS[model].label}</p>
+              <p className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-4 w-4 text-purple-300" />Modelo {shirtModels[model].label}</p>
             </div>
           </div>
         </div>
@@ -106,7 +110,7 @@ export function ShirtOrderForm({
         {existing?.paid && <p className="rounded-xl border border-green-400/20 bg-green-500/10 p-3 text-sm text-green-200 sm:col-span-2">Pagamento confirmado. Este pedido está fechado; fale com um organizador se precisar alterar.</p>}
         <button type="submit" disabled={pending || existing?.paid} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 font-bold text-white shadow-lg shadow-purple-950/30 transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2">
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingBag className="h-5 w-5" />}
-          {existing ? "Atualizar este pedido" : `Pedir modelo ${SHIRT_MODELS[model].label}`}
+          {existing ? "Atualizar este pedido" : `Pedir modelo ${shirtModels[model].label}`}
         </button>
         <p aria-live="polite" className={`text-center text-sm sm:col-span-2 ${state.status === "error" ? "text-red-300" : "text-green-300"}`}>{state.message}</p>
       </form>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -331,7 +332,11 @@ export default async function HomePage() {
 
       <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-xl shadow-purple-950/20">
           <div className="relative aspect-video overflow-hidden bg-black">
-            <AutoPlayShirtVideo />
+            {community === "sand" ? (
+              <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
+            ) : (
+              <AutoPlayShirtVideo />
+            )}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-transparent to-black/20" />
             <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur sm:left-5 sm:top-5">
               <Sparkles className="h-3.5 w-3.5" />

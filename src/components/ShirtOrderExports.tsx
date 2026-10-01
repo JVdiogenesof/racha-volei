@@ -5,6 +5,7 @@ import { Check, ClipboardCopy, Download, ImageIcon, Loader2, Share2 } from "luci
 import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 import { SHIRT_MODELS, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { useToast } from "./Toast";
+import type { Community } from "@/lib/community";
 
 export type ExportShirtOrder = {
   fullName: string;
@@ -17,7 +18,8 @@ export type ExportShirtOrder = {
   paid: boolean;
 };
 
-export function ShirtOrderExports({ orders }: { orders: ExportShirtOrder[] }) {
+export function ShirtOrderExports({ orders, community }: { orders: ExportShirtOrder[]; community: Community }) {
+  const communityLabel = community === "sand" ? "Areia" : "Quadra";
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
@@ -36,7 +38,7 @@ export function ShirtOrderExports({ orders }: { orders: ExportShirtOrder[] }) {
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "pedidos-camisas-vpa.csv";
+    anchor.download = `pedidos-camisas-vpa-${community}.csv`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -46,7 +48,7 @@ export function ShirtOrderExports({ orders }: { orders: ExportShirtOrder[] }) {
 
   async function copyPaidList() {
     const paid = orders.filter((order) => order.paid);
-    const lines = ["👕 *CAMISAS VPA — PEDIDOS PAGOS*", ""];
+    const lines = [`👕 *CAMISAS VPA — PEDIDOS PAGOS · ${communityLabel.toUpperCase()}*`, ""];
     (["tank", "sleeve"] as ShirtModel[]).forEach((model) => {
       const modelOrders = paid.filter((order) => order.model === model);
       if (!modelOrders.length) return;
@@ -70,7 +72,7 @@ export function ShirtOrderExports({ orders }: { orders: ExportShirtOrder[] }) {
   async function shareArt() {
     setBusy("share");
     try {
-      const result = await shareImageOrSave({ blob: await getImage(), filename: "pedidos-pagos-camisas-vpa.png", title: "Camisas VPA", text: "Pedidos pagos da nova camisa VPA 👕💜" });
+      const result = await shareImageOrSave({ blob: await getImage(), filename: `pedidos-pagos-camisas-vpa-${community}.png`, title: `Camisas VPA · ${communityLabel}`, text: `Pedidos pagos da nova camisa VPA · ${communityLabel} 👕💜` });
       if (result === "saved") showToast("Arte salva no aparelho!");
     } catch (error) { showToast(error instanceof Error ? error.message : "Não foi possível compartilhar."); }
     finally { setBusy(null); }
@@ -78,7 +80,7 @@ export function ShirtOrderExports({ orders }: { orders: ExportShirtOrder[] }) {
 
   async function downloadArt() {
     setBusy("download");
-    try { saveImageBlob(await getImage(), "pedidos-pagos-camisas-vpa.png"); showToast("Arte salva no aparelho!"); }
+    try { saveImageBlob(await getImage(), `pedidos-pagos-camisas-vpa-${community}.png`); showToast("Arte salva no aparelho!"); }
     catch (error) { showToast(error instanceof Error ? error.message : "Não foi possível baixar."); }
     finally { setBusy(null); }
   }

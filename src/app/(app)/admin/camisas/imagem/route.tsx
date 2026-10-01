@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
+import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 
@@ -18,19 +19,21 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Não autorizado", { status: 401 });
-  const { data: profile } = await supabase.from("profiles").select("is_organizer").eq("id", user.id).maybeSingle();
+  const { data: profile } = await supabase.from("profiles").select("is_organizer, communities").eq("id", user.id).maybeSingle();
   if (!profile?.is_organizer) return new Response("Acesso restrito aos organizadores", { status: 403 });
+  const community = await getActiveCommunity(profile);
 
   const { data, error } = await supabase
     .from("shirt_orders")
     .select("id, model, shirt_name, shirt_number, size, quantity, profiles!shirt_orders_profile_id_fkey(full_name)")
     .eq("paid", true)
+    .eq("community", community)
     .order("paid_at", { ascending: true });
   if (error) return new Response("Não foi possível carregar os pedidos", { status: 500 });
   const orders = (data ?? []) as unknown as PaidOrder[];
   const totalUnits = orders.reduce((sum, order) => sum + order.quantity, 0);
   const displayed = orders.slice(0, 28);
-  const collectionUrl = new URL("/camisas/colecao-vpa-v2.jpg", request.url).toString();
+  const collectionUrl = new URL(community === "sand" ? "/camisas/colecao-areia-vpa.jpg" : "/camisas/colecao-vpa-v2.jpg", request.url).toString();
   const logoUrl = new URL("/logo.png", request.url).toString();
 
   return new ImageResponse(
@@ -39,7 +42,7 @@ export async function GET(request: Request) {
         <div style={{ display: "flex", alignItems: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "22px" }} />
-          <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}><span style={{ color: "#ddd6fe", fontSize: "18px", fontWeight: 800, letterSpacing: "4px" }}>VÔLEI POR AMOR</span><span style={{ marginTop: "4px", fontSize: "44px", fontWeight: 900 }}>NOVA PELE VPA</span></div>
+          <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}><span style={{ color: "#ddd6fe", fontSize: "18px", fontWeight: 800, letterSpacing: "4px" }}>VÔLEI POR AMOR · {COMMUNITY_INFO[community].shortLabel.toUpperCase()}</span><span style={{ marginTop: "4px", fontSize: "44px", fontWeight: 900 }}>NOVA PELE VPA</span></div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", borderRadius: "22px", background: "#7c3aed", padding: "14px 22px" }}><span style={{ fontSize: "42px", fontWeight: 900, lineHeight: 1 }}>{totalUnits}</span><span style={{ marginTop: "5px", fontSize: "13px", fontWeight: 800, letterSpacing: "2px" }}>CAMISAS PAGAS</span></div>
       </div>
@@ -65,6 +68,6 @@ export async function GET(request: Request) {
       <div style={{ display: "flex", flex: 1 }} />
       <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.58)", fontSize: "15px", letterSpacing: "1px" }}><span>NOSSA CAMISA. NOSSA HISTÓRIA.</span><span>@volei_por_amor</span></div>
     </div>,
-    { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": 'inline; filename="pedidos-pagos-camisas-vpa.png"' } },
+    { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="pedidos-pagos-camisas-vpa-${community}.png"` } },
   );
 }

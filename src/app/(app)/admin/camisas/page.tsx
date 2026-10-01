@@ -5,6 +5,7 @@ import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { setShirtOrderPaid } from "./actions";
+import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
   id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; paid_at: string | null; created_at: string;
@@ -12,11 +13,13 @@ type OrderRow = {
 };
 
 export default async function AdminCamisasPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
+  const community = await getActiveCommunity(organizer);
   const { data, error } = await supabase
     .from("shirt_orders")
     .select("id, model, shirt_name, shirt_number, size, quantity, paid, paid_at, created_at, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
+    .eq("community", community)
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as unknown as OrderRow[];
@@ -27,7 +30,7 @@ export default async function AdminCamisasPage() {
 
   return (
     <div className="space-y-6">
-      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">Nova coleção VPA</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-black text-white"><Shirt className="h-6 w-6 text-purple-300" />Pedidos das camisas</h1><p className="mt-1 text-sm text-white/55">Você e os demais organizadores podem confirmar pagamentos e preparar o pedido para a loja.</p></div>
+      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">Nova coleção VPA · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-black text-white"><Shirt className="h-6 w-6 text-purple-300" />Pedidos das camisas</h1><p className="mt-1 text-sm text-white/55">Lista exclusiva do {COMMUNITY_INFO[community].label.toLowerCase()}. Pagamentos e exportações ficam separados da outra modalidade.</p></div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Summary label="Pedidos" value={orders.length} icon={Shirt} />
@@ -38,7 +41,7 @@ export default async function AdminCamisasPage() {
 
       <section className="rounded-2xl border border-white/10 p-4 sm:p-5"><h2 className="font-bold text-white">Resumo para produção</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{(["tank", "sleeve"] as ShirtModel[]).map((model) => <div key={model} className="rounded-xl bg-white/[0.035] p-4"><div className="flex items-center justify-between"><p className="font-bold text-white">{SHIRT_MODELS[model].label}</p><span className="text-sm font-bold text-purple-300">{orders.filter((order) => order.model === model).reduce((sum, order) => sum + order.quantity, 0)} peças</span></div><div className="mt-3 grid grid-cols-5 gap-1.5">{SHIRT_SIZES.map((size) => <div key={size} className="rounded-lg border border-white/8 py-2 text-center"><p className="text-[10px] font-bold text-white/40">{size}</p><p className="text-sm font-black text-white">{orders.filter((order) => order.model === model && order.size === size).reduce((sum, order) => sum + order.quantity, 0)}</p></div>)}</div></div>)}</div></section>
 
-      {orders.length > 0 && <ShirtOrderExports orders={exportOrders} />}
+      {orders.length > 0 && <ShirtOrderExports orders={exportOrders} community={community} />}
       <OrderSection title="Aguardando pagamento" description="Pedidos que ainda precisam ser conferidos." orders={pendingOrders} empty="Nenhum pagamento pendente." />
       <OrderSection title="Pagos" description="Lista separada dos pedidos já confirmados." orders={paidOrders} empty="Nenhum pagamento confirmado ainda." paid />
     </div>
