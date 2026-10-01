@@ -23,8 +23,8 @@ export default async function CamisasPage() {
   return (
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-[#1b0b38] shadow-2xl shadow-purple-950/25">
-        <div className="relative aspect-square sm:aspect-[16/10] lg:aspect-[16/8]">
-          <Image src={getShirtCollectionImage(community)} alt={`Coleção VPA ${community === "sand" ? "de areia" : "de quadra"} com os modelos de manga e regata`} fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
+        <div className={`relative ${community === "sand" ? "aspect-[8/5]" : "aspect-square sm:aspect-[16/10] lg:aspect-[16/8]"}`}>
+          <Image src={getShirtCollectionImage(community)} alt={`Coleção VPA ${community === "sand" ? "de areia" : "de quadra"} com os modelos de manga e regata`} fill priority sizes="(max-width: 1024px) 100vw, 960px" className={community === "sand" ? "object-contain object-center" : "object-cover"} />
           <div className="absolute inset-0 bg-gradient-to-t from-[#100620] via-transparent to-black/10" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/35 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur"><Sparkles className="h-3.5 w-3.5" />Nova coleção</span>
@@ -46,7 +46,7 @@ export default async function CamisasPage() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {orders.map((order) => (
               <article key={order.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
-                <div className="relative aspect-[16/7]"><Image src={shirtModels[order.model].image} alt={`Modelo ${shirtModels[order.model].label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover" /><span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold backdrop-blur ${order.paid ? "bg-green-500/90 text-white" : "bg-amber-400/90 text-black"}`}>{order.paid ? "Pagamento confirmado" : "Aguardando pagamento"}</span></div>
+                <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919]" : "aspect-[16/7]"}`}><Image src={shirtModels[order.model].image} alt={`Modelo ${shirtModels[order.model].label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className={community === "sand" ? "object-contain object-center" : "object-cover"} /><span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold backdrop-blur ${order.paid ? "bg-green-500/90 text-white" : "bg-amber-400/90 text-black"}`}>{order.paid ? "Pagamento confirmado" : "Aguardando pagamento"}</span></div>
                 <div className="p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold text-white">{shirtModels[order.model].label}</p><p className="mt-1 text-sm text-white/55">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p><p className="mt-1 text-sm text-white/55">Tamanho {order.size} · {order.quantity} {order.quantity === 1 ? "unidade" : "unidades"}</p></div>{!order.paid && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}</div></div>
               </article>
             ))}

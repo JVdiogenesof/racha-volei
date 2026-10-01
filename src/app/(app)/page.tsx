@@ -331,9 +331,9 @@ export default async function HomePage() {
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-xl shadow-purple-950/20">
-          <div className="relative aspect-video overflow-hidden bg-black">
+          <div className={`relative overflow-hidden bg-black ${community === "sand" ? "aspect-[8/5]" : "aspect-video"}`}>
             {community === "sand" ? (
-              <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
+              <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
             ) : (
               <AutoPlayShirtVideo />
             )}

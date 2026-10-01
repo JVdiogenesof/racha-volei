@@ -60,8 +60,8 @@ export function ShirtOrderForm({
               onClick={() => setModel(key)}
               className={`group overflow-hidden rounded-2xl border text-left transition ${selected ? "border-purple-300 bg-purple-500/15 shadow-lg shadow-purple-950/30" : "border-white/10 bg-white/[0.03] hover:border-white/20"}`}
             >
-              <div className="relative aspect-[16/9] overflow-hidden">
-                <Image src={item.image} alt={`Camisa VPA modelo ${item.label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className="object-cover transition duration-500 group-hover:scale-[1.02]" />
+              <div className={`relative overflow-hidden ${community === "sand" ? "aspect-[4/5] bg-[#191919]" : "aspect-[16/9]"}`}>
+                <Image src={item.image} alt={`Camisa VPA modelo ${item.label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className={`${community === "sand" ? "object-contain object-center" : "object-cover"} transition duration-500 group-hover:scale-[1.02]`} />
                 {selected && <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow"><Check className="h-4 w-4" /></span>}
                 {saved && <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white backdrop-blur">{saved.paid ? "Pago" : "Pedido salvo"}</span>}
               </div>
@@ -74,8 +74,8 @@ export function ShirtOrderForm({
       <form action={formAction} key={`${model}-${existing?.shirt_name ?? "new"}`} className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-2 sm:p-5">
         <input type="hidden" name="model" value={model} />
         <div className="relative overflow-hidden rounded-xl border border-white/10 sm:col-span-2">
-          <div className="relative aspect-[16/8] sm:aspect-[16/6]">
-            <Image src={shirtModels[model].image} alt={`Modelo selecionado: ${shirtModels[model].label}`} fill priority sizes="(max-width: 640px) 100vw, 720px" className="object-cover" />
+          <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919] sm:aspect-[16/11]" : "aspect-[16/8] sm:aspect-[16/6]"}`}>
+            <Image src={shirtModels[model].image} alt={`Modelo selecionado: ${shirtModels[model].label}`} fill priority sizes="(max-width: 640px) 100vw, 720px" className={community === "sand" ? "object-contain object-center" : "object-cover"} />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-4 pb-4 pt-12">
               <p className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-4 w-4 text-purple-300" />Modelo {shirtModels[model].label}</p>
             </div>
