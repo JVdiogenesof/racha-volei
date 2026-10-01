@@ -104,18 +104,24 @@ export async function setOfficialListOpen(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const open = String(formData.get("open")) === "true";
 
-  const { error } = await supabase.from("events").update({ official_list_open: open }).eq("id", eventId);
+  const { data: changedEvent, error } = await supabase
+    .from("events")
+    .update({ official_list_open: open })
+    .eq("id", eventId)
+    .neq("official_list_open", open)
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
 
-  if (open) {
+  if (open && changedEvent) {
     const [{ data: event }, { data: approvedProfiles }] = await Promise.all([
-      supabase.from("events").select("date").eq("id", eventId).maybeSingle(),
-      supabase.from("profiles").select("id").eq("status", "approved").neq("id", organizer.id),
+      supabase.from("events").select("date, community").eq("id", eventId).maybeSingle(),
+      supabase.from("profiles").select("id, communities").eq("status", "approved").neq("id", organizer.id),
     ]);
     const dateLabel = event ? new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR") : "";
     await sendPushToProfiles(
       supabase,
-      (approvedProfiles ?? []).map((p) => p.id),
+      (approvedProfiles ?? []).filter((p) => event && p.communities?.includes(event.community)).map((p) => p.id),
       { title: "Lista de confirmados publicada!", body: `Confira quem vai no racha de ${dateLabel}.`, url: `/racha/${eventId}/confirmar` },
     );
   }

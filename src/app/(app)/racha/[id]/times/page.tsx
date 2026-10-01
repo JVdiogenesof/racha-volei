@@ -21,6 +21,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { VictoryTeamCard } from "@/components/VictoryTeamCard";
 import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
 import { teamFormatLabel } from "@/lib/rachaFormat";
+import { getActiveCommunity } from "@/lib/community";
 import {
   generateTeams,
   addToTeam,
@@ -40,11 +41,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: event }, { data: generation }, { data: confirmedAttendance }, { data: setterOverrideRows }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio")
+      .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio, community, status")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -62,6 +64,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
   ]);
   if (!event) notFound();
+  if (event.community !== community) notFound();
+  const canManage = profile.is_organizer && event.status !== "cancelled";
+  const canRegenerate = canManage && event.status !== "finished";
   const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
 
   let teams: {
@@ -208,7 +213,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const tournamentPlayedCount = [...groupMatches, finalMatch, thirdPlaceMatch].filter(
     (match) => match?.scoreA != null && match?.scoreB != null,
   ).length;
-  const showActionDock = Boolean(generation) || profile.is_organizer;
+  const showActionDock = Boolean(generation) || canManage;
 
   return (
     <div className={`space-y-4 ${showActionDock ? "pb-40" : ""}`}>
@@ -223,7 +228,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
       {showActionDock && (
         <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
-          {profile.is_organizer && <SimulateTeamsButton eventId={id} action={simulateTeams} compact />}
+          {canRegenerate && <SimulateTeamsButton eventId={id} action={simulateTeams} compact />}
           {generation && (
             <>
               <ShareTeamsArtButton eventId={id} eventDate={event.date} compact />
@@ -235,7 +240,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               <Trophy className="h-5 w-5" />
             </Link>
           )}
-          {profile.is_organizer && event.official_list_open && (
+          {canRegenerate && event.official_list_open && (
             <ActionForm action={generateTeams} successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}>
               <input type="hidden" name="eventId" value={id} />
               <button type="submit" aria-label={generation ? "Gerar times novamente" : "Gerar times"} title={generation ? "Gerar times novamente" : "Gerar times"} className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-purple text-white hover:bg-brand-purple-dark">
@@ -246,7 +251,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
-      {generation && profile.is_organizer && orphanedMembers.length > 0 && (
+      {generation && canManage && orphanedMembers.length > 0 && (
         <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-300">
           {orphanedMembers.map((p) => `${p.fullName} (Time ${p.teamNumber})`).join(", ")}{" "}
           {orphanedMembers.length === 1 ? "não está mais confirmado(a)" : "não estão mais confirmados(as)"} mas ainda{" "}
@@ -255,7 +260,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         </p>
       )}
 
-      {generation && profile.is_organizer && unassignedConfirmed.length > 0 && (
+      {generation && canManage && unassignedConfirmed.length > 0 && (
         <p className="rounded-xl border border-amber-500/30 bg-amber-500/15 px-4 py-3 text-sm text-amber-300">
           {unassignedConfirmed.map((p) => p.fullName).join(", ")}{" "}
           {unassignedConfirmed.length === 1 ? "está confirmado(a)" : "estão confirmados(as)"} mas ainda{" "}
@@ -267,13 +272,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       {!generation && !event.official_list_open && (
         <p className="text-sm text-white/60">
           Os times oficiais só podem ser gerados depois que a lista oficial do racha abrir
-          {profile.is_organizer ? " — mas dá para usar o botão de simulação na ilha inferior." : "."}
+          {canManage ? " — mas dá para usar o botão de simulação na ilha inferior." : "."}
         </p>
       )}
 
       {!generation && event.official_list_open && (
         <p className="text-sm text-white/60">
-          Os times ainda não foram gerados. {profile.is_organizer ? "Use o botão roxo de gerar times na ilha inferior." : "Aguarde o organizador gerar."}
+          Os times ainda não foram gerados. {canManage ? "Use o botão roxo de gerar times na ilha inferior." : "Aguarde o organizador gerar."}
         </p>
       )}
 
@@ -304,7 +309,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                           {member.isSetter && <SetterBadge />}
                           {orphanedTeamMemberIds.has(member.teamMemberId) && <span title="Não está mais confirmado(a)" className="h-2 w-2 shrink-0 rounded-full bg-red-400" />}
                           <span className="shrink-0 text-xs text-white/35">{member.overall.toFixed(1)}</span>
-                          {profile.is_organizer && (
+                          {canManage && (
                             <PlayerActionSelect
                               moveAction={moveMember}
                               swapAction={swapMembers}
@@ -324,7 +329,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       ))}
                     </ul>
 
-                    {profile.is_organizer && unassignedConfirmed.length > 0 && (
+                    {canManage && unassignedConfirmed.length > 0 && (
                       <div className="mt-3 border-t border-white/8 pt-3">
                         <AddToTeamSelect action={addToTeam} eventId={id} teamId={team.id} players={unassignedConfirmed} />
                       </div>
@@ -343,11 +348,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       <h2 className="font-semibold text-white">Fase de grupos</h2>
                       <p className="text-xs text-white/40">{groupMatches.filter((match) => match.scoreA != null && match.scoreB != null).length} de {groupMatches.length} partidas concluídas</p>
                     </div>
-                    {profile.is_organizer && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
+                    {canManage && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
                   </div>
                   <div className="mt-3 grid gap-2 lg:grid-cols-2">
                     {groupMatches.map((match, index) => (
-                      profile.is_organizer ? (
+                      canManage ? (
                         <TournamentMatchScoreForm key={match.id} action={recordTournamentMatchScore} eventId={id} matchId={match.id} teamALabel={teamLabelById.get(match.teamAId) ?? "?"} teamBLabel={teamLabelById.get(match.teamBId) ?? "?"} scoreA={match.scoreA} scoreB={match.scoreB} />
                       ) : (
                         <article key={match.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
@@ -367,11 +372,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 sm:p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="flex items-center gap-1.5 font-semibold text-white"><Trophy className="h-4 w-4 text-amber-400" /> Final</h2>
-                      {profile.is_organizer && <UndoFinalButton eventId={id} action={undoFinal} />}
+                      {canManage && <UndoFinalButton eventId={id} action={undoFinal} />}
                     </div>
                     {finalMatch.scoreA != null && finalMatch.scoreB != null && <p className="mt-2 text-sm font-medium text-amber-200">🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)} é campeão e garante vaga no Torneio VPA!</p>}
                     <div className="mt-3">
-                      {profile.is_organizer ? (
+                      {canManage ? (
                         <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={finalMatch.id} teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"} scoreA={finalMatch.scoreA} scoreB={finalMatch.scoreB} />
                       ) : (
                         <p className="rounded-xl border border-white/10 bg-black/10 px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(finalMatch.teamAId) ?? "?"} <span className="mx-2 text-amber-200">{finalMatch.scoreA ?? "–"} × {finalMatch.scoreB ?? "–"}</span> {teamLabelById.get(finalMatch.teamBId) ?? "?"}</p>
@@ -388,7 +393,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       <p className="mt-2 text-sm text-white/70">🥉 {thirdPlaceMatch.scoreA > thirdPlaceMatch.scoreB ? teamLabelById.get(thirdPlaceMatch.teamAId) : teamLabelById.get(thirdPlaceMatch.teamBId)} ficou em 3º lugar.</p>
                     )}
                     <div className="mt-3">
-                      {profile.is_organizer ? (
+                      {canManage ? (
                         <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={thirdPlaceMatch.id} teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"} scoreA={thirdPlaceMatch.scoreA} scoreB={thirdPlaceMatch.scoreB} />
                       ) : (
                         <p className="rounded-xl bg-white/[0.025] px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} <span className="mx-2 text-white/60">{thirdPlaceMatch.scoreA ?? "–"} × {thirdPlaceMatch.scoreB ?? "–"}</span> {teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"}</p>
@@ -398,7 +403,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             ) : (
-              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))} confrontations={normalConfrontations} isOrganizer={profile.is_organizer} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
             )
           }
           standingsContent={

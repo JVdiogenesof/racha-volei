@@ -47,10 +47,13 @@ export async function generateTeams(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("date, num_teams, team_size, max_players, official_list_open, is_pre_torneio")
+    .select("date, num_teams, team_size, max_players, official_list_open, is_pre_torneio, status")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
+  if (event.status === "finished" || event.status === "cancelled") {
+    throw new Error("Esse racha não aceita uma nova geração de times.");
+  }
   if (!event.official_list_open) {
     throw new Error("Abra a lista oficial antes de gerar os times.");
   }

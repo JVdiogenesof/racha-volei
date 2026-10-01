@@ -12,18 +12,20 @@ import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { EventProgress } from "@/components/EventProgress";
 import { startEvent, finishEvent } from "./actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: event }, { count: confirmedCount }, { count: newcomerConfirmedCount }, { count: interestedCount }, { data: myAttendance }, { data: finalMatch }] =
     await Promise.all([
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, newcomer_reserved_spots, is_pre_torneio",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, newcomer_reserved_spots, is_pre_torneio, community",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -60,9 +62,11 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     ]);
 
   if (!event) notFound();
+  if (event.community !== community) notFound();
 
   const statusInfo = EVENT_STATUS_LABELS[event.status];
   const isFinished = event.status === "finished";
+  const isCancelled = event.status === "cancelled";
   const isInProgress = event.status === "in_progress";
   const listOpen = event.official_list_open;
   const rachaLevel = listOpen ? await getRachaLevel(supabase, id) : null;
@@ -110,7 +114,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             <RachaLevelBadge level={rachaLevel} />
           </div>
         )}
-        {!isFinished && (
+        {!isFinished && !isCancelled && (
           <div className="mt-3">
             <ConfirmedCounter
               eventId={id}
@@ -130,7 +134,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         isPreTournament={event.is_pre_torneio}
       />
 
-      {profile.is_organizer && !isFinished && (
+      {profile.is_organizer && !isFinished && !isCancelled && (
         <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             {isInProgress

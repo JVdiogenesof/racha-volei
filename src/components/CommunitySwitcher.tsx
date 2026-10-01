@@ -7,6 +7,7 @@ import { switchCommunity } from "@/app/(app)/community/actions";
 
 export function CommunitySwitcher({ active, available }: { active: Community; available: Community[] }) {
   const pathname = usePathname();
+  const returnTo = /^\/racha\/[^/]+/.test(pathname) ? "/racha" : pathname;
   const next: Community = active === "court" ? "sand" : "court";
   const canSwitch = available.includes(next);
   const Icon = active === "court" ? Building2 : Waves;
@@ -23,7 +24,7 @@ export function CommunitySwitcher({ active, available }: { active: Community; av
   return (
     <form action={switchCommunity}>
       <input type="hidden" name="community" value={next} />
-      <input type="hidden" name="returnTo" value={pathname} />
+      <input type="hidden" name="returnTo" value={returnTo} />
       <button
         type="submit"
         className={`flex h-9 items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-black transition ${active === "sand" ? "border-amber-200/25 bg-amber-200/15 text-amber-100" : "border-cyan-200/20 bg-cyan-200/10 text-cyan-100"}`}

@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { setMvp, clearMvp } from "./actions";
+import { getActiveCommunity } from "@/lib/community";
 
 type Candidato = { profileId: string; fullName: string; avatarUrl: string | null };
 
@@ -12,9 +13,10 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: event }, { data: confirmed }] = await Promise.all([
-    supabase.from("events").select("id, date, status, mvp_profile_id, mvp_profile_id_2").eq("id", id).maybeSingle(),
+    supabase.from("events").select("id, date, status, mvp_profile_id, mvp_profile_id_2, community").eq("id", id).maybeSingle(),
     supabase
       .from("attendance")
       .select("profile_id, profiles(full_name, avatar_url)")
@@ -22,6 +24,7 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
       .eq("status", "confirmed"),
   ]);
   if (!event) notFound();
+  if (event.community !== community) notFound();
 
   const eventFinished = event.status === "finished";
 

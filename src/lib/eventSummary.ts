@@ -14,6 +14,7 @@ export type EventSummary = {
     date: string;
     location: string | null;
     status: string;
+    community: "court" | "sand";
     isPreTournament: boolean;
   };
   players: EventSummaryPlayer[];
@@ -29,7 +30,7 @@ export async function getEventSummary(
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, location, status, is_pre_torneio")
+        .select("id, date, location, status, is_pre_torneio, community")
         .eq("id", eventId)
         .maybeSingle(),
       supabase
@@ -52,6 +53,7 @@ export async function getEventSummary(
         date: event.date,
         location: event.location,
         status: event.status,
+        community: event.community,
         isPreTournament: event.is_pre_torneio,
       },
       players: [],
@@ -75,6 +77,7 @@ export async function getEventSummary(
         date: event.date,
         location: event.location,
         status: event.status,
+        community: event.community,
         isPreTournament: event.is_pre_torneio,
       },
       players: [],
@@ -123,6 +126,7 @@ export async function getEventSummary(
       date: event.date,
       location: event.location,
       status: event.status,
+      community: event.community,
       isPreTournament: event.is_pre_torneio,
     },
     players,

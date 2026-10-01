@@ -31,11 +31,13 @@ export async function requireMember(): Promise<CurrentProfile> {
 
 export async function requireEventParticipant(eventId: string): Promise<CurrentProfile> {
   const profile = await requireProfile();
+  const supabase = await createClient();
+  const { data: event } = await supabase.from("events").select("community").eq("id", eventId).maybeSingle();
   const canParticipate =
-    profile.status === "approved" ||
+    (profile.status === "approved" && event !== null && profile.communities.includes(event.community)) ||
     (profile.status === "guest" && profile.guest_for_event_id === eventId);
   if (!canParticipate) {
-    throw new Error("Você está no modo visitante. Um organizador precisa chamar você para este racha.");
+    throw new Error("Você não tem acesso para participar desse racha.");
   }
   return profile;
 }

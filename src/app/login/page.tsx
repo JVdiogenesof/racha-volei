@@ -16,7 +16,7 @@ export default function LoginPage() {
       <div aria-hidden="true" className="absolute left-1/2 top-[42%] -z-10 h-48 w-[120%] -translate-x-1/2 -rotate-6 rounded-[50%] border border-[#6d28d9]/8 bg-white/35 blur-sm" />
 
       <div className="mx-auto flex min-h-[100svh] w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:py-10">
-        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#3c2480]/55">
+        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#59428f]">
           <span className="h-px w-7 bg-[#6d28d9]/25" />
           Vôlei por Amor
           <span className="h-px w-7 bg-[#6d28d9]/25" />
@@ -41,7 +41,7 @@ export default function LoginPage() {
             <h1 className="text-balance text-3xl font-black leading-[1.05] tracking-[-0.04em] text-[#201149] sm:text-4xl">
               Faça parte do nosso racha.
             </h1>
-            <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-[#372966]/60">
+            <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-[#594d78]">
               Entre com sua conta Google e venha viver o Vôlei por Amor.
             </p>
           </div>
@@ -49,7 +49,7 @@ export default function LoginPage() {
 
         <section className="rounded-[1.75rem] border border-white/80 bg-white/70 p-3 shadow-[0_20px_60px_rgba(54,30,113,0.12)] backdrop-blur-xl sm:p-4">
           <GoogleLoginButton />
-          <p className="px-3 pb-1 pt-3 text-center text-[10px] leading-relaxed text-[#3b2b6b]/45">
+          <p className="px-3 pb-1 pt-3 text-center text-[10px] leading-relaxed text-[#5f527d]">
             Primeiro acesso? Seu cadastro começa logo após entrar. ·{" "}
             <Link href="/privacidade" className="font-semibold underline decoration-[#6d28d9]/25 underline-offset-2 hover:text-[#4c1d95]">
               Privacidade

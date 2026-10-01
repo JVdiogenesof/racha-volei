@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { computeStandings } from "@/lib/torneioStandings";
 import { Avatar } from "@/components/Avatar";
+import { getActiveCommunity } from "@/lib/community";
 
 type ResultTeam = {
   id: string;
@@ -53,11 +54,12 @@ const PLACE_STYLE = {
 
 export default async function ResultadoFinalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
+  const community = await getActiveCommunity(profile);
 
   const [{ data: event }, { data: generation }] = await Promise.all([
-    supabase.from("events").select("id, date, is_pre_torneio").eq("id", id).maybeSingle(),
+    supabase.from("events").select("id, date, is_pre_torneio, community").eq("id", id).maybeSingle(),
     supabase
       .from("team_generations")
       .select("id")
@@ -67,7 +69,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
       .maybeSingle(),
   ]);
 
-  if (!event || !event.is_pre_torneio) notFound();
+  if (!event || !event.is_pre_torneio || event.community !== community) notFound();
 
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
   if (!generation) return <WaitingResult eventId={id} dateLabel={dateLabel} />;

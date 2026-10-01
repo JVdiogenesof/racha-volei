@@ -5,12 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getEventSummary } from "@/lib/eventSummary";
 import { Avatar } from "@/components/Avatar";
 import { ShareRachaSummaryButton } from "@/components/ShareRachaSummaryButton";
+import { getActiveCommunity } from "@/lib/community";
 
 export default async function RachaSummaryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireProfile();
+  const profile = await requireProfile();
+  const community = await getActiveCommunity(profile);
   const summary = await getEventSummary(await createClient(), id);
-  if (!summary) notFound();
+  if (!summary || summary.event.community !== community) notFound();
 
   const dateLabel = new Date(`${summary.event.date}T00:00:00`).toLocaleDateString("pt-BR", {
     day: "2-digit",
