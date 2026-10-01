@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { signOut } from "@/app/(app)/actions";
 
 export default async function AguardandoAprovacaoPage() {
   const supabase = await createClient();
@@ -30,6 +32,9 @@ export default async function AguardandoAprovacaoPage() {
           <p className="mt-2 text-white/60">
             Fale com um dos organizadores do racha se achar que foi engano.
           </p>
+          <p className="mt-3 text-sm text-white/45">
+            Se esta não é a conta que você queria usar, troque de conta abaixo.
+          </p>
         </>
       ) : profile.status === "rejected" ? (
         <>
@@ -55,6 +60,20 @@ export default async function AguardandoAprovacaoPage() {
           </Link>
         </>
       )}
+
+      <div className="mt-8 w-full rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <p className="truncate text-xs text-white/45">Conta conectada</p>
+        <p className="mt-1 truncate text-sm font-semibold text-white">{user.email}</p>
+        <form action={signOut} className="mt-4">
+          <button
+            type="submit"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-brand-navy transition hover:bg-purple-50"
+          >
+            <LogOut className="h-4 w-4" />
+            Entrar com outra conta Google
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
