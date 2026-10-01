@@ -1,6 +1,5 @@
 import { requireProfile } from "@/lib/auth";
 import { ActionForm } from "@/components/ActionForm";
-import { ATTENDANCE_FREQUENCY_OPTIONS } from "@/lib/attendanceFrequency";
 import { updateProfileData } from "../actions";
 
 export default async function PerfilDadosPage() {
@@ -98,20 +97,6 @@ export default async function PerfilDadosPage() {
             <label className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-white"><input type="radio" name="playCommunity" value="both" required defaultChecked={profile.communities.includes("court") && profile.communities.includes("sand")} />Os dois</label>
           </div>
         </fieldset>
-        <div>
-          <label className="block text-sm font-medium text-white">Pretende ir quantas vezes?</label>
-          <select
-            name="attendanceFrequency"
-            defaultValue={profile.attendance_frequency ?? "weekly"}
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple"
-          >
-            {ATTENDANCE_FREQUENCY_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
         <label className="flex items-center gap-2 text-sm text-white">
           <input
             type="checkbox"

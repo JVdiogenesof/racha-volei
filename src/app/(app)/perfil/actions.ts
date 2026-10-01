@@ -21,7 +21,6 @@ export async function updateProfileData(formData: FormData) {
   const phone = String(formData.get("phone") ?? "").trim() || null;
   const nicknameBadge = String(formData.get("nicknameBadge") ?? "").trim().slice(0, 40) || null;
   const isSetter = formData.get("position") === "setter";
-  const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
   const playerLevel = String(formData.get("playerLevel") ?? "");
@@ -43,7 +42,6 @@ export async function updateProfileData(formData: FormData) {
       phone,
       nickname_badge: nicknameBadge,
       is_setter: isSetter,
-      attendance_frequency: attendanceFrequency,
       has_vpa_shirt: hasVpaShirt,
       wants_tournaments: wantsTournaments,
       player_level: playerLevel,

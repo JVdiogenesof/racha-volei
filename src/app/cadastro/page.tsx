@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ATTENDANCE_FREQUENCY_OPTIONS } from "@/lib/attendanceFrequency";
 import { SKILL_CATEGORIES, SKILL_LABELS } from "@/lib/scoring";
 import { getPlayerRatings } from "@/lib/ratings";
 import { SkillSlider } from "@/components/SkillSlider";
@@ -17,7 +16,7 @@ export default async function CadastroPage() {
   const [{ data: profile }, { self: selfRatings }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("status, full_name, birthdate, phone, instagram_handle, is_setter, attendance_frequency, has_vpa_shirt, wants_tournaments, player_level, communities")
+      .select("status, full_name, birthdate, phone, instagram_handle, is_setter, has_vpa_shirt, wants_tournaments, player_level, communities")
       .eq("id", user.id)
       .maybeSingle(),
     getPlayerRatings(supabase, user.id),
@@ -105,11 +104,6 @@ export default async function CadastroPage() {
                 <Radio name="position" value="setter" label="Levantando" defaultChecked={profile?.is_setter ?? false} />
               </div>
             </fieldset>
-            <Field label="Pretende ir quantas vezes?">
-              <select name="attendanceFrequency" defaultValue={profile?.attendance_frequency ?? "weekly"} className={inputClass}>
-                {ATTENDANCE_FREQUENCY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </Field>
             <label className="flex items-center gap-2 text-sm text-white">
               <input type="checkbox" name="hasVpaShirt" defaultChecked={profile?.has_vpa_shirt ?? false} className="h-4 w-4 rounded border-white/15 text-purple-300 focus:ring-brand-purple" />
               Já tenho a camisa do VPA

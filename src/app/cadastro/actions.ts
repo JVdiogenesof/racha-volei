@@ -6,7 +6,6 @@ import { sendPushToProfiles } from "@/lib/push";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 
 const PLAYER_LEVELS = ["beginner", "intermediate", "advanced"] as const;
-const ATTENDANCE_FREQUENCIES = ["weekly", "biweekly", "monthly"] as const;
 
 function registrationCommunities(value: string) {
   if (value === "court") return ["court"];
@@ -29,7 +28,6 @@ export async function submitSignup(formData: FormData) {
   const instagramHandle = instagramInput.startsWith("@") ? instagramInput : `@${instagramInput}`;
   const neighborhood = String(formData.get("neighborhood") ?? "").trim();
   const playerLevel = String(formData.get("playerLevel") ?? "");
-  const attendanceFrequency = String(formData.get("attendanceFrequency") ?? "weekly");
   const howHeard = String(formData.get("howHeard") ?? "").trim();
   const knownPeople = String(formData.get("knownPeople") ?? "").trim();
   const officialAnswer = String(formData.get("wantsOfficialMembership") ?? "");
@@ -40,9 +38,6 @@ export async function submitSignup(formData: FormData) {
 
   if (!fullName || !birthdate || !phone || !/^@[a-z0-9._]{1,30}$/.test(instagramHandle) || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
     throw new Error("Preencha nome, aniversário, telefone, Instagram e nível.");
-  }
-  if (!ATTENDANCE_FREQUENCIES.includes(attendanceFrequency as (typeof ATTENDANCE_FREQUENCIES)[number])) {
-    throw new Error("Frequência inválida.");
   }
 
   const { data: existingProfile } = await supabase
@@ -61,7 +56,6 @@ export async function submitSignup(formData: FormData) {
     phone,
     instagram_handle: instagramHandle,
     is_setter: isSetter,
-    attendance_frequency: attendanceFrequency,
     has_vpa_shirt: hasVpaShirt,
     wants_tournaments: wantsTournaments,
     player_level: playerLevel,
@@ -105,7 +99,7 @@ export async function submitSignup(formData: FormData) {
     p_neighborhood: neighborhood,
     p_player_level: playerLevel,
     p_is_setter: isSetter,
-    p_attendance_frequency: attendanceFrequency,
+    p_attendance_frequency: null,
     p_has_vpa_shirt: hasVpaShirt,
     p_wants_tournaments: wantsTournaments,
     p_avatar_url: avatarUrl,
