@@ -1,102 +1,62 @@
-import { CalendarDays, Users, Award, Megaphone, type LucideIcon } from "lucide-react";
+import type { Viewport } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
-import { Logo, LogoMark } from "@/components/Logo";
 
-const FEATURES: { title: string; desc: string; icon: LucideIcon; iconClass: string }[] = [
-  {
-    title: "Confirmação de presença",
-    desc: "Substitui a lista manual do zap.",
-    icon: CalendarDays,
-    iconClass: "bg-brand-purple/30 text-purple-200",
-  },
-  {
-    title: "Times balanceados",
-    desc: "Gerados automaticamente por nível.",
-    icon: Users,
-    iconClass: "bg-blue-500/25 text-blue-300",
-  },
-  {
-    title: "Ranking e Jogador Destaque",
-    desc: "Veja quem mais brilha em quadra.",
-    icon: Award,
-    iconClass: "bg-yellow-500/25 text-yellow-300",
-  },
-  {
-    title: "Avisos e aniversários",
-    desc: "Tudo da comunidade num lugar só.",
-    icon: Megaphone,
-    iconClass: "bg-pink-500/25 text-pink-300",
-  },
-];
+export const viewport: Viewport = {
+  themeColor: "#eee8ff",
+};
 
 export default function LoginPage() {
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative isolate flex flex-col justify-center overflow-hidden bg-brand-navy px-8 py-16 text-white lg:px-16">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10"
-          style={{
-            backgroundImage:
-              "radial-gradient(600px circle at 15% 15%, rgba(124,58,237,0.35), transparent 60%), radial-gradient(500px circle at 85% 85%, rgba(124,58,237,0.25), transparent 60%)",
-          }}
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.png"
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 -z-10 h-[420px] w-[420px] rotate-12 object-contain opacity-15"
-        />
+    <main className="relative isolate flex min-h-[100svh] overflow-hidden bg-[#f7f4ff] text-[#171039]">
+      <div aria-hidden="true" className="absolute inset-0 -z-20 bg-[linear-gradient(155deg,#ffffff_0%,#f4efff_36%,#e6dcff_72%,#faf8ff_100%)]" />
+      <div aria-hidden="true" className="absolute -left-28 top-[8%] -z-10 h-72 w-72 rounded-full bg-[#b595ff]/35 blur-3xl sm:h-96 sm:w-96" />
+      <div aria-hidden="true" className="absolute -right-28 bottom-[12%] -z-10 h-72 w-72 rounded-full bg-[#d6c4ff]/60 blur-3xl sm:h-96 sm:w-96" />
+      <div aria-hidden="true" className="absolute left-1/2 top-[42%] -z-10 h-48 w-[120%] -translate-x-1/2 -rotate-6 rounded-[50%] border border-[#6d28d9]/8 bg-white/35 blur-sm" />
 
-        <Logo className="mb-10" markClassName="h-16 w-16" />
-
-        <span className="mb-6 inline-block w-fit rounded-full bg-brand-purple/20 px-3 py-1 text-xs font-semibold tracking-wide text-purple-200 ring-1 ring-inset ring-purple-400/30">
-          RACHA DA GALERA
-        </span>
-        <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">
-          Organize o racha <span className="text-purple-300">fácil.</span>
-        </h1>
-        <p className="mt-4 max-w-md text-white/70">
-          Confirme presença, veja os times balanceados e fique por dentro dos
-          avisos do grupo — tudo num lugar só.
-        </p>
-
-        <ul className="mt-10 space-y-4">
-          {FEATURES.map((f) => (
-            <li key={f.title} className="flex items-start gap-3">
-              <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${f.iconClass}`}>
-                <f.icon className="h-4 w-4" strokeWidth={2} />
-              </span>
-              <div>
-                <p className="font-medium text-white">{f.title}</p>
-                <p className="text-sm text-white/60">{f.desc}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="relative flex flex-col items-center justify-center px-8 py-16">
-        <div className="relative w-full max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 shadow-lg shadow-black/20">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt=""
-            className="pointer-events-none absolute -bottom-8 -right-8 h-40 w-40 rotate-[-8deg] object-contain opacity-20"
-          />
-          <div className="relative">
-            <LogoMark className="h-10 w-10 lg:hidden" />
-            <h2 className="mt-4 text-xl font-semibold text-white lg:mt-0">Entrada única do VPA</h2>
-            <p className="mt-1 text-sm leading-5 text-white/60">
-              Membros e visitantes entram pelo mesmo lugar. Se for sua primeira vez, você preencherá um cadastro rápido.
-            </p>
-            <div className="mt-6">
-              <GoogleLoginButton />
-            </div>
-          </div>
+      <div className="mx-auto flex min-h-[100svh] w-full max-w-lg flex-col px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] sm:px-8 sm:py-10">
+        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#3c2480]/55">
+          <span className="h-px w-7 bg-[#6d28d9]/25" />
+          Vôlei por Amor
+          <span className="h-px w-7 bg-[#6d28d9]/25" />
         </div>
+
+        <section className="flex flex-1 flex-col items-center justify-center py-5 text-center sm:py-8">
+          <div className="relative grid w-full place-items-center">
+            <div aria-hidden="true" className="absolute h-56 w-56 rounded-full bg-white/75 shadow-[0_28px_90px_rgba(76,29,149,0.16)] ring-1 ring-[#6d28d9]/8 sm:h-72 sm:w-72" />
+            <div aria-hidden="true" className="absolute h-44 w-44 rounded-full bg-[#d9ccff]/45 blur-2xl sm:h-56 sm:w-56" />
+            <Image
+              src="/logo-transparent-v2.png"
+              alt="Vôlei Por Amor Racha"
+              width={1280}
+              height={1280}
+              priority
+              sizes="(max-width: 640px) 280px, 340px"
+              className="relative h-auto w-[min(76vw,18rem)] drop-shadow-[0_20px_32px_rgba(39,20,94,0.2)] sm:w-[21rem]"
+            />
+          </div>
+
+          <div className="mt-5 sm:mt-7">
+            <h1 className="text-balance text-3xl font-black leading-[1.05] tracking-[-0.04em] text-[#201149] sm:text-4xl">
+              Faça parte do nosso racha.
+            </h1>
+            <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-[#372966]/60">
+              Entre com sua conta Google e venha viver o Vôlei por Amor.
+            </p>
+          </div>
+        </section>
+
+        <section className="rounded-[1.75rem] border border-white/80 bg-white/70 p-3 shadow-[0_20px_60px_rgba(54,30,113,0.12)] backdrop-blur-xl sm:p-4">
+          <GoogleLoginButton />
+          <p className="px-3 pb-1 pt-3 text-center text-[10px] leading-relaxed text-[#3b2b6b]/45">
+            Primeiro acesso? Seu cadastro começa logo após entrar. ·{" "}
+            <Link href="/privacidade" className="font-semibold underline decoration-[#6d28d9]/25 underline-offset-2 hover:text-[#4c1d95]">
+              Privacidade
+            </Link>
+          </p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

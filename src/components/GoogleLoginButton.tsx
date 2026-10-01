@@ -15,10 +15,12 @@ export function GoogleLoginButton() {
 
   return (
     <button
+      type="button"
       onClick={handleLogin}
-      className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3 font-medium text-brand-navy shadow-sm transition hover:bg-gray-50"
+      className="group flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#241457] px-4 py-3 font-bold text-white shadow-lg shadow-[#241457]/20 transition hover:-translate-y-0.5 hover:bg-[#301a70] hover:shadow-xl hover:shadow-[#241457]/25 active:translate-y-0"
     >
-      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-sm">
+      <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
         <path
           fill="#4285F4"
           d="M23.52 12.27c0-.82-.07-1.6-.2-2.36H12v4.47h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.73z"
@@ -36,6 +38,7 @@ export function GoogleLoginButton() {
           d="M12 4.75c1.76 0 3.34.6 4.59 1.79l3.44-3.44C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.3 6.58l4.01 3.09C6.25 6.85 8.89 4.75 12 4.75z"
         />
       </svg>
+      </span>
       Continuar com Google
     </button>
   );
