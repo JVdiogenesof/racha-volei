@@ -1,60 +1,72 @@
-import { CheckCircle2, Clock3, PackageCheck, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
-import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
+import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, shirtPayment, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel, type ShirtPayment } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { setShirtOrderPaid } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
-  id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; paid_at: string | null; created_at: string;
+  id: string; profile_id: string; community: string; model: ShirtModel; fit: ShirtFit;
+  shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean;
   profiles: { full_name: string; phone: string | null } | null;
 };
 
 export default async function AdminCamisasPage() {
   const organizer = await requireOrganizer();
-  const supabase = await createClient();
   const community = await getActiveCommunity(organizer);
-  const { data, error } = await supabase
-    .from("shirt_orders")
-    .select("id, model, shirt_name, shirt_number, size, quantity, paid, paid_at, created_at, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
-    .eq("community", community)
-    .order("created_at", { ascending: true });
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("shirt_orders")
+    .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
+    .eq("community", community).order("created_at");
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as unknown as OrderRow[];
-  const pendingOrders = orders.filter((order) => !order.paid);
-  const paidOrders = orders.filter((order) => order.paid);
-  const totalUnits = orders.reduce((sum, order) => sum + order.quantity, 0);
-  const exportOrders: ExportShirtOrder[] = orders.map((order) => ({ fullName: order.profiles?.full_name ?? "Sem nome", phone: order.profiles?.phone ?? "", model: order.model, shirtName: order.shirt_name, shirtNumber: order.shirt_number, size: order.size, quantity: order.quantity, paid: order.paid }));
-
-  return (
-    <div className="space-y-6">
-      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">Nova coleção VPA · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 flex items-center gap-2 text-2xl font-black text-white"><Shirt className="h-6 w-6 text-purple-300" />Pedidos das camisas</h1><p className="mt-1 text-sm text-white/55">Lista exclusiva do {COMMUNITY_INFO[community].label.toLowerCase()}. Pagamentos e exportações ficam separados da outra modalidade.</p></div>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Summary label="Pedidos" value={orders.length} icon={Shirt} />
-        <Summary label="Peças" value={totalUnits} icon={PackageCheck} />
-        <Summary label="Aguardando" value={pendingOrders.length} icon={Clock3} tone="amber" />
-        <Summary label="Pagos" value={paidOrders.length} icon={CheckCircle2} tone="green" />
-      </div>
-
-      <section className="rounded-2xl border border-white/10 p-4 sm:p-5"><h2 className="font-bold text-white">Resumo para produção</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{(["tank", "sleeve"] as ShirtModel[]).map((model) => <div key={model} className="rounded-xl bg-white/[0.035] p-4"><div className="flex items-center justify-between"><p className="font-bold text-white">{SHIRT_MODELS[model].label}</p><span className="text-sm font-bold text-purple-300">{orders.filter((order) => order.model === model).reduce((sum, order) => sum + order.quantity, 0)} peças</span></div><div className="mt-3 grid grid-cols-5 gap-1.5">{SHIRT_SIZES.map((size) => <div key={size} className="rounded-lg border border-white/8 py-2 text-center"><p className="text-[10px] font-bold text-white/40">{size}</p><p className="text-sm font-black text-white">{orders.filter((order) => order.model === model && order.size === size).reduce((sum, order) => sum + order.quantity, 0)}</p></div>)}</div></div>)}</div></section>
-
-      {orders.length > 0 && <ShirtOrderExports orders={exportOrders} community={community} />}
-      <OrderSection title="Aguardando pagamento" description="Pedidos que ainda precisam ser conferidos." orders={pendingOrders} empty="Nenhum pagamento pendente." />
-      <OrderSection title="Pagos" description="Lista separada dos pedidos já confirmados." orders={paidOrders} empty="Nenhum pagamento confirmado ainda." paid />
+  const groups = groupShirtOrders(orders);
+  const exportOrders: ExportShirtOrder[] = orders.map((o) => ({
+    fullName: o.profiles?.full_name ?? "Sem nome", phone: o.profiles?.phone ?? "",
+    model: o.model, fit: o.fit, shirtName: o.shirt_name, shirtNumber: o.shirt_number,
+    size: o.size, quantity: o.quantity, paid: o.paid, half_paid: o.half_paid,
+  }));
+  return <div className="space-y-5">
+    <div><p className="text-xs font-bold uppercase text-purple-300">Camisas VPA · {COMMUNITY_INFO[community].shortLabel}</p>
+      <h1 className="mt-1 text-2xl font-black">Pedidos das camisas</h1>
+      <p className="mt-1 text-sm text-white/55">Um pedido por pessoa, com todas as peças juntas. Os pagamentos abaixo se aplicam às peças exibidas no card.</p>
     </div>
-  );
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {[["Pessoas", groups.length], ["Peças", orders.reduce((sum, o) => sum + o.quantity, 0)],
+        ["Com entrada / parcial", groups.filter((g) => g.payment === "half" || g.payment === "mixed").length],
+        ["Quitados", groups.filter((g) => g.payment === "paid").length]].map(([label, value]) =>
+        <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-2xl font-black">{value}</p><p className="text-xs text-white/55">{label}</p></div>)}
+    </div>
+    <details className="rounded-2xl border border-white/10 p-4">
+      <summary className="cursor-pointer font-bold">Resumo para produção</summary>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">{(["tank", "sleeve"] as ShirtModel[]).flatMap((model) =>
+        (Object.keys(SHIRT_FITS) as ShirtFit[]).map((fit) => {
+          const items = orders.filter((o) => o.model === model && o.fit === fit);
+          if (!items.length) return null;
+          return <div key={model + fit} className="rounded-xl bg-white/5 p-3"><p className="font-bold">{SHIRT_MODELS[model].label} · {SHIRT_FITS[fit]}</p>
+            <div className="mt-2 flex flex-wrap gap-3">{SHIRT_SIZES.map((size) => <span key={size} className="text-sm text-white/65">{size}: {items.filter((o) => o.size === size).reduce((n, o) => n + o.quantity, 0)}</span>)}</div></div>;
+        }))}</div>
+    </details>
+    {!!orders.length && <ShirtOrderExports orders={exportOrders} community={community} />}
+    {(["pending", "half", "mixed", "paid"] as ShirtPayment[]).map((payment) => {
+      const selected = groups.filter((g) => g.payment === payment);
+      if (!selected.length) return null;
+      return <section key={payment}><h2 className="mb-3 font-bold">{SHIRT_PAYMENT_LABELS[payment]} ({selected.length})</h2>
+        <div className="grid gap-3 lg:grid-cols-2">{selected.map((group) => {
+          const person = group.items[0].profiles;
+          return <article key={group.profileId} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+            <h3 className="font-bold text-white">{person?.full_name ?? "Sem nome"}</h3>
+            <p className="mt-1 text-xs text-white/45">{person?.phone ?? "Telefone não informado"} · {group.items.reduce((n, o) => n + o.quantity, 0)} peças</p>
+            <ul className="my-3 divide-y divide-white/10">{group.items.map((order) => <li key={order.id} className="py-3 text-sm">
+              <p className="font-semibold text-purple-200">{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]}</p>
+              <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
+              <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+            </li>)}</ul>
+            <ShirtPaymentButton profileId={group.profileId} orderIds={group.items.map((o) => o.id)} fullName={person?.full_name ?? "Atleta"} payment={group.payment} action={setShirtOrderPaid} />
+          </article>;
+        })}</div></section>;
+    })}
+    {!orders.length && <p className="text-white/55">Nenhum pedido nesta modalidade ainda.</p>}
+  </div>;
 }
-
-function Summary({ label, value, icon: Icon, tone = "purple" }: { label: string; value: number; icon: typeof Shirt; tone?: "purple" | "amber" | "green" }) {
-  const color = tone === "green" ? "text-green-300 bg-green-500/15" : tone === "amber" ? "text-amber-300 bg-amber-500/15" : "text-purple-300 bg-purple-500/15";
-  return <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}><Icon className="h-4 w-4" /></span><p className="mt-3 text-2xl font-black text-white">{value}</p><p className="text-xs text-white/45">{label}</p></div>;
-}
-
-function OrderSection({ title, description, orders, empty, paid = false }: { title: string; description: string; orders: OrderRow[]; empty: string; paid?: boolean }) {
-  return <section className={`rounded-2xl border p-4 sm:p-5 ${paid ? "border-green-400/15 bg-green-500/[0.035]" : "border-amber-300/15 bg-amber-500/[0.025]"}`}><div className="flex items-center gap-2"><span className={`flex h-9 w-9 items-center justify-center rounded-xl ${paid ? "bg-green-500/15 text-green-300" : "bg-amber-500/15 text-amber-300"}`}>{paid ? <CheckCircle2 className="h-4 w-4" /> : <Clock3 className="h-4 w-4" />}</span><div><h2 className="font-bold text-white">{title} <span className="text-white/35">({orders.length})</span></h2><p className="text-xs text-white/45">{description}</p></div></div><div className="mt-4 grid gap-3 lg:grid-cols-2">{orders.map((order) => { const fullName = order.profiles?.full_name ?? "Sem nome"; return <article key={order.id} className="rounded-xl border border-white/10 bg-black/10 p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-bold text-white">{fullName}</p><p className="mt-0.5 text-xs text-white/40">{order.profiles?.phone ?? "Telefone não informado"}</p></div><span className="shrink-0 rounded-full bg-purple-500/15 px-2.5 py-1 text-xs font-bold text-purple-200">{SHIRT_MODELS[order.model].label}</span></div><div className="mt-3 grid grid-cols-4 gap-2 text-center"><Datum label="Nome" value={order.shirt_name.toUpperCase()} /><Datum label="Número" value={formatShirtNumber(order.shirt_number)} /><Datum label="Tam." value={order.size} /><Datum label="Qtd." value={order.quantity} /></div><div className="mt-3 flex justify-end"><ShirtPaymentButton orderId={order.id} fullName={fullName} paid={order.paid} action={setShirtOrderPaid} /></div></article>; })}{!orders.length && <p className="text-sm text-white/45">{empty}</p>}</div></section>;
-}
-
-function Datum({ label, value }: { label: string; value: string | number }) { return <div className="min-w-0 rounded-lg bg-white/[0.04] px-1.5 py-2"><p className="text-[9px] font-bold uppercase text-white/35">{label}</p><p className="mt-0.5 truncate text-sm font-bold text-white">{value}</p></div>; }

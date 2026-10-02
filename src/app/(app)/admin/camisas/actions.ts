@@ -1,5 +1,4 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
@@ -7,26 +6,22 @@ import { getActiveCommunity } from "@/lib/community";
 
 export async function setShirtOrderPaid(formData: FormData) {
   const organizer = await requireOrganizer();
-  const supabase = await createClient();
   const community = await getActiveCommunity(organizer);
-  const orderId = String(formData.get("orderId") ?? "");
-  const paid = String(formData.get("paid")) === "true";
-  if (!orderId) throw new Error("Pedido inválido.");
-
-  const { data, error } = await supabase
-    .from("shirt_orders")
-    .update({
-      paid,
-      paid_at: paid ? new Date().toISOString() : null,
-      marked_by: paid ? organizer.id : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", orderId)
-    .eq("community", community)
-    .select("id")
-    .maybeSingle();
+  const profileId = String(formData.get("profileId") ?? "");
+  const payment = String(formData.get("payment") ?? "");
+  const ids = formData.getAll("orderId").map(String);
+  if (!profileId || !ids.length || !["pending", "half", "paid"].includes(payment)) throw new Error("Pedido inválido.");
+  const supabase = await createClient();
+  const received = payment !== "pending";
+  const { data, error } = await supabase.from("shirt_orders").update({
+    paid: payment === "paid",
+    half_paid: payment === "half",
+    paid_at: received ? new Date().toISOString() : null,
+    marked_by: received ? organizer.id : null,
+    updated_at: new Date().toISOString(),
+  }).eq("profile_id", profileId).eq("community", community).in("id", ids).select("id");
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Pedido não encontrado.");
+  if (!data?.length) throw new Error("Pedido não encontrado.");
   revalidatePath("/admin/camisas");
   revalidatePath("/camisas");
 }

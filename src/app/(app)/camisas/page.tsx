@@ -3,20 +3,23 @@ import Link from "next/link";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
 import { getActiveCommunity } from "@/lib/community";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
 import { CancelShirtOrderButton } from "@/components/CancelShirtOrderButton";
-import { cancelShirtOrder, saveShirtOrder } from "./actions";
+import { cancelShirtOrder, saveShirtOrder, updateShirtFit } from "./actions";
 
-type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; created_at: string };
+import { ActionForm } from "@/components/ActionForm";
+
+type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean; fit: ShirtFit; created_at: string };
 
 export default async function CamisasPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
   const shirtModels = getShirtModels(community);
-  const { data } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
+  const { data, error } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, half_paid, fit, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
+  if (error) throw new Error(error.message);
   const orders = (data ?? []) as Order[];
   const canOrder = profile.status === "approved";
 
@@ -42,15 +45,36 @@ export default async function CamisasPage() {
 
       {orders.length > 0 && (
         <section className="rounded-2xl border border-white/10 p-4 sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-bold text-white">Meus pedidos</h2><p className="text-sm text-white/50">Cada modelo aparece como um pedido separado.</p></div>{profile.is_organizer && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-purple-300/20 bg-purple-500/10 px-3 text-sm font-semibold text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}</div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {orders.map((order) => (
-              <article key={order.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
-                <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919]" : "aspect-[16/7]"}`}><Image src={shirtModels[order.model].image} alt={`Modelo ${shirtModels[order.model].label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className={community === "sand" ? "object-contain object-center" : "object-cover"} /><span className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-bold backdrop-blur ${order.paid ? "bg-green-500/90 text-white" : "bg-amber-400/90 text-black"}`}>{order.paid ? "Pagamento confirmado" : "Aguardando pagamento"}</span></div>
-                <div className="p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-bold text-white">{shirtModels[order.model].label}</p><p className="mt-1 text-sm text-white/55">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p><p className="mt-1 text-sm text-white/55">Tamanho {order.size} · {order.quantity} {order.quantity === 1 ? "unidade" : "unidades"}</p></div>{!order.paid && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}</div></div>
-              </article>
-            ))}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><h2 className="text-lg font-bold">Meu pedido</h2>
+              <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {community === "sand" ? "Areia" : "Quadra"}</p></div>
+            {profile.is_organizer && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-purple-500/10 px-3 text-sm text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}
           </div>
+          <ul className="mt-3 divide-y divide-white/10">
+            {orders.map((order) => <li key={order.id} className="py-4">
+              <div className="flex items-start gap-3">
+                <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-black/20">
+                  <Image src={shirtModels[order.model].image} alt={shirtModels[order.model].label} fill sizes="80px" className="object-contain" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold">{shirtModels[order.model].label} · {SHIRT_FITS[order.fit]}</p>
+                  <p className="mt-1 text-sm text-white/65">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p>
+                  <p className="text-sm text-white/65">Tamanho {order.size} · Qtd. {order.quantity}</p>
+                  <p className="mt-2 text-xs font-bold text-purple-200">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+                </div>
+                {!order.paid && !order.half_paid && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}
+              </div>
+              {canOrder && <ActionForm action={updateShirtFit} successMessage="Modelagem atualizada!" className="mt-3 flex flex-wrap items-end gap-2">
+                <input type="hidden" name="orderId" value={order.id} />
+                <label className="flex-1 text-xs text-white/60">Modelagem
+                  <select name="fit" aria-label={"Modelagem da camisa " + shirtModels[order.model].label} required defaultValue={order.fit === "unspecified" ? "" : order.fit} className="mt-1 block min-h-10 w-full rounded-lg border border-white/15 bg-[#21123d] px-2 text-sm text-white">
+                    <option value="" disabled>Escolha a modelagem</option><option value="regular">Tradicional</option><option value="female">Feminina</option>
+                  </select>
+                </label>
+                <button type="submit" className="min-h-10 rounded-lg bg-purple-500/20 px-3 text-xs font-bold">Salvar modelagem</button>
+              </ActionForm>}
+            </li>)}
+          </ul>
         </section>
       )}
 

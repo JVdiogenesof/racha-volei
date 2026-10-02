@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
 import { Check, Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { useToast } from "./Toast";
-import { getShirtModels, SHIRT_SIZES, type ShirtModel, type ShirtModelInfo } from "@/lib/shirts";
+import { getShirtModels, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo } from "@/lib/shirts";
 import type { Community } from "@/lib/community";
 import type { ShirtOrderState } from "@/app/(app)/camisas/actions";
 
@@ -15,6 +15,8 @@ type ExistingOrder = {
   size: string;
   quantity: number;
   paid: boolean;
+  half_paid: boolean;
+  fit: ShirtFit;
 };
 
 const initialState: ShirtOrderState = { status: "idle", message: "" };
@@ -33,6 +35,7 @@ export function ShirtOrderForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const { showToast } = useToast();
   const existing = existingOrders.find((order) => order.model === model);
+  const locked = existing?.paid || existing?.half_paid;
 
   useEffect(() => {
     if (state.status !== "idle") showToast(state.message);
@@ -45,7 +48,7 @@ export function ShirtOrderForm({
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-purple-300">Monte seu pedido</p>
           <h2 className="mt-1 text-xl font-black text-white">Escolha primeiro o modelo</h2>
-          <p className="mt-1 text-sm text-white/55">Quer os dois? Finalize um modelo e depois faça o pedido do outro.</p>
+          <p className="mt-1 text-sm text-white/55">Adicione um modelo por vez. Todas as peças ficam juntas no seu pedido.</p>
         </div>
       </div>
 
@@ -63,7 +66,7 @@ export function ShirtOrderForm({
               <div className={`relative overflow-hidden ${community === "sand" ? "aspect-[4/5] bg-[#191919]" : "aspect-[16/9]"}`}>
                 <Image src={item.image} alt={`Camisa VPA modelo ${item.label}`} fill sizes="(max-width: 640px) 100vw, 50vw" className={`${community === "sand" ? "object-contain object-center" : "object-cover"} transition duration-500 group-hover:scale-[1.02]`} />
                 {selected && <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow"><Check className="h-4 w-4" /></span>}
-                {saved && <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white backdrop-blur">{saved.paid ? "Pago" : "Pedido salvo"}</span>}
+                {saved && <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white backdrop-blur">{saved.paid ? "Pago" : saved.half_paid ? "Metade paga" : "Pedido salvo"}</span>}
               </div>
               <div className="p-4"><p className="font-bold text-white">{item.label}</p><p className="mt-1 text-xs text-white/50">{item.description}</p></div>
             </button>
@@ -71,7 +74,7 @@ export function ShirtOrderForm({
         })}
       </div>
 
-      <form action={formAction} key={`${model}-${existing?.shirt_name ?? "new"}`} className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-2 sm:p-5">
+      <form action={formAction} key={`${model}-${existing?.shirt_name ?? "new"}-${existing?.fit ?? "new"}`} className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-2 sm:p-5">
         <input type="hidden" name="model" value={model} />
         <div className="relative overflow-hidden rounded-xl border border-white/10 sm:col-span-2">
           <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919] sm:aspect-[16/11]" : "aspect-[16/8] sm:aspect-[16/6]"}`}>
@@ -82,6 +85,14 @@ export function ShirtOrderForm({
           </div>
         </div>
 
+
+        <label className="text-sm font-medium text-white sm:col-span-2">Modelagem
+          <select name="fit" required defaultValue={existing?.fit === "unspecified" ? "" : existing?.fit ?? ""} className={inputClass}>
+            <option value="" disabled>Escolha a modelagem</option>
+            <option value="regular">Tradicional</option>
+            <option value="female">Feminina</option>
+          </select>
+        </label>
         <label className="text-sm font-medium text-white">Nome na camisa
           <input name="shirtName" required maxLength={20} defaultValue={existing?.shirt_name ?? ""} placeholder="Ex.: Diógenes" className={inputClass} />
         </label>
@@ -107,8 +118,8 @@ export function ShirtOrderForm({
           </select>
         </label>
 
-        {existing?.paid && <p className="rounded-xl border border-green-400/20 bg-green-500/10 p-3 text-sm text-green-200 sm:col-span-2">Pagamento confirmado. Este pedido está fechado; fale com um organizador se precisar alterar.</p>}
-        <button type="submit" disabled={pending || existing?.paid} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 font-bold text-white shadow-lg shadow-purple-950/30 transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2">
+        {locked && <p className="rounded-xl border border-green-400/20 bg-green-500/10 p-3 text-sm text-green-200 sm:col-span-2">Pagamento registrado. Para ajustar as peças, fale com um organizador. Você pode indicar a modelagem em Meu pedido.</p>}
+        <button type="submit" disabled={pending || locked} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 font-bold text-white shadow-lg shadow-purple-950/30 transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2">
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingBag className="h-5 w-5" />}
           {existing ? "Atualizar este pedido" : `Pedir modelo ${shirtModels[model].label}`}
         </button>

@@ -1,13 +1,18 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
-import { SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
+import { groupShirtOrders, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 export const dynamic = "force-dynamic";
 
 type PaidOrder = {
   id: string;
+  profile_id: string;
+  community: string;
   model: ShirtModel;
+  fit: ShirtFit;
+  paid: boolean;
+  half_paid: boolean;
   shirt_name: string;
   shirt_number: number;
   size: string;
@@ -23,16 +28,23 @@ export async function GET(request: Request) {
   if (!profile?.is_organizer) return new Response("Acesso restrito aos organizadores", { status: 403 });
   const community = await getActiveCommunity(profile);
 
-  const { data, error } = await supabase
+  const filter = new URL(request.url).searchParams.get("filter") ?? "received";
+  if (!["received", "half", "paid", "all"].includes(filter)) return new Response("Filtro inválido", { status: 400 });
+  const filterLabel = filter === "all" ? "TODOS OS PEDIDOS" : filter === "half" ? "METADE PAGA" : filter === "paid" ? "QUITADOS" : "COM ENTRADA OU QUITADOS";
+  let query = supabase
     .from("shirt_orders")
-    .select("id, model, shirt_name, shirt_number, size, quantity, profiles!shirt_orders_profile_id_fkey(full_name)")
-    .eq("paid", true)
+    .select("id, profile_id, community, model, fit, paid, half_paid, shirt_name, shirt_number, size, quantity, profiles!shirt_orders_profile_id_fkey(full_name)")
     .eq("community", community)
     .order("paid_at", { ascending: true });
+  if (filter === "received") query = query.or("paid.eq.true,half_paid.eq.true");
+  if (filter === "half") query = query.eq("half_paid", true);
+  if (filter === "paid") query = query.eq("paid", true);
+  const { data, error } = await query;
   if (error) return new Response("Não foi possível carregar os pedidos", { status: 500 });
   const orders = (data ?? []) as unknown as PaidOrder[];
   const totalUnits = orders.reduce((sum, order) => sum + order.quantity, 0);
-  const displayed = orders.slice(0, 28);
+  const groups = groupShirtOrders(orders);
+  const displayed = groups.slice(0, 14);
   const collectionUrl = new URL(community === "sand" ? "/camisas/colecao-areia-vpa.jpg" : "/camisas/colecao-vpa-v2.jpg", request.url).toString();
   const logoUrl = new URL("/logo.png", request.url).toString();
 
@@ -44,13 +56,13 @@ export async function GET(request: Request) {
           <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "22px" }} />
           <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}><span style={{ color: "#ddd6fe", fontSize: "18px", fontWeight: 800, letterSpacing: "4px" }}>VÔLEI POR AMOR · {COMMUNITY_INFO[community].shortLabel.toUpperCase()}</span><span style={{ marginTop: "4px", fontSize: "44px", fontWeight: 900 }}>NOVA PELE VPA</span></div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", borderRadius: "22px", background: "#7c3aed", padding: "14px 22px" }}><span style={{ fontSize: "42px", fontWeight: 900, lineHeight: 1 }}>{totalUnits}</span><span style={{ marginTop: "5px", fontSize: "13px", fontWeight: 800, letterSpacing: "2px" }}>CAMISAS PAGAS</span></div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", borderRadius: "22px", background: "#7c3aed", padding: "14px 22px" }}><span style={{ fontSize: "42px", fontWeight: 900, lineHeight: 1 }}>{totalUnits}</span><span style={{ marginTop: "5px", fontSize: "13px", fontWeight: 800, letterSpacing: "2px" }}>PEÇAS</span></div>
       </div>
 
       <div style={{ height: "360px", display: "flex", position: "relative", overflow: "hidden", marginTop: "32px", borderRadius: "28px", border: "2px solid rgba(255,255,255,.14)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={collectionUrl} alt="" width={964} height={720} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", padding: "26px", background: "linear-gradient(to top, rgba(16,6,31,.95), transparent 62%)" }}><span style={{ fontSize: "27px", fontWeight: 900 }}>PEDIDOS CONFIRMADOS</span></div>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", padding: "26px", background: "linear-gradient(to top, rgba(16,6,31,.95), transparent 62%)" }}><span style={{ fontSize: "27px", fontWeight: 900 }}>{filterLabel}</span></div>
       </div>
 
       <div style={{ display: "flex", gap: "12px", marginTop: "24px" }}>
@@ -58,16 +70,26 @@ export async function GET(request: Request) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", marginTop: "26px" }}>
-        <span style={{ color: "#ddd6fe", fontSize: "18px", fontWeight: 800, letterSpacing: "2px" }}>QUEM JÁ GARANTIU</span>
+        <span style={{ color: "#ddd6fe", fontSize: "18px", fontWeight: 800, letterSpacing: "2px" }}>LISTA DE PEDIDOS</span>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "9px", marginTop: "14px" }}>
-          {displayed.map((order, index) => <div key={order.id} style={{ width: "49.5%", display: "flex", alignItems: "center", padding: "10px 13px", borderRadius: "14px", background: "rgba(255,255,255,.065)", border: "1px solid rgba(255,255,255,.09)" }}><span style={{ width: "28px", color: "#a78bfa", fontSize: "12px", fontWeight: 900 }}>{String(index + 1).padStart(2, "0")}</span><div style={{ minWidth: 0, display: "flex", flex: 1, flexDirection: "column" }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "15px", fontWeight: 800 }}>{order.profiles?.full_name ?? "Atleta VPA"}</span><span style={{ marginTop: "2px", color: "rgba(255,255,255,.58)", fontSize: "11px" }}>{SHIRT_MODELS[order.model].label} · {order.shirt_name.toUpperCase()} {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</span></div></div>)}
+          {displayed.map((group, index) => <div key={group.profileId} style={{ width: "49.5%", display: "flex", padding: "12px", borderRadius: "14px", background: "rgba(255,255,255,.065)", border: "1px solid rgba(255,255,255,.09)" }}>
+            <span style={{ width: "25px", color: "#a78bfa", fontSize: "12px", fontWeight: 900 }}>{String(index + 1).padStart(2, "0")}</span>
+            <div style={{ display: "flex", flex: 1, flexDirection: "column" }}>
+              <span style={{ fontSize: "15px", fontWeight: 800 }}>{group.items[0].profiles?.full_name ?? "Atleta VPA"}</span>
+              {group.items.map((order) => <div key={order.id} style={{ display: "flex", flexDirection: "column", marginTop: "5px", fontSize: "11px", color: "#ddd6fe" }}>
+                <span>{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]} · {order.size} · Qtd. {order.quantity}</span>
+                <span>{order.shirt_name.toUpperCase()} {formatShirtNumber(order.shirt_number)} · {SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</span>
+              </div>)}
+            </div>
+          </div>)}
+
         </div>
-        {orders.length > displayed.length && <span style={{ marginTop: "12px", alignSelf: "center", color: "#ddd6fe", fontSize: "14px" }}>+{orders.length - displayed.length} pedidos na lista completa</span>}
+        {groups.length > displayed.length && <span style={{ marginTop: "12px", alignSelf: "center", color: "#ddd6fe", fontSize: "14px" }}>+{groups.length - displayed.length} pessoas na lista completa</span>}
       </div>
 
       <div style={{ display: "flex", flex: 1 }} />
       <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.58)", fontSize: "15px", letterSpacing: "1px" }}><span>NOSSA CAMISA. NOSSA HISTÓRIA.</span><span>@volei_por_amor</span></div>
     </div>,
-    { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="pedidos-pagos-camisas-vpa-${community}.png"` } },
+    { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="pedidos-camisas-vpa-${community}.png"` } },
   );
 }

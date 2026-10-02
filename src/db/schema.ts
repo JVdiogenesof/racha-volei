@@ -211,6 +211,8 @@ export const shirtOrders = pgTable(
     profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     community: text("community").notNull().default("court"),
     model: text("model").notNull(),
+    fit: text("fit").notNull().default("unspecified"),
+    halfPaid: boolean("half_paid").notNull().default(false),
     shirtName: text("shirt_name").notNull(),
     shirtNumber: integer("shirt_number").notNull(),
     size: text("size").notNull(),

@@ -323,30 +323,40 @@ create policy "tournament_matches_write" on tournament_matches for all to authen
 
 -- Pedidos das camisas: cada membro vê e altera o próprio pedido enquanto ele
 -- está pendente. Organizadores veem tudo e são os únicos que marcam pagamento.
+-- Ownership stays enforced by RLS. This invoker trigger limits what owners
+-- can edit after paying and prevents self-confirming any payment.
+create or replace function public.guard_shirt_order_changes()
+returns trigger language plpgsql security invoker set search_path = '' as $
+begin
+  if auth.uid() is not null and not public.is_organizer() then
+    if (to_jsonb(new) - array['fit','updated_at']) is distinct from
+       (to_jsonb(old) - array['fit','updated_at']) and (old.paid or old.half_paid) then
+      raise exception 'Pedido com pagamento: somente a modelagem pode ser alterada.';
+    end if;
+    if row(new.id,new.profile_id,new.community,new.model,new.paid,new.half_paid,new.paid_at,new.marked_by,new.created_at)
+      is distinct from row(old.id,old.profile_id,old.community,old.model,old.paid,old.half_paid,old.paid_at,old.marked_by,old.created_at) then
+      raise exception 'Somente organizadores podem alterar pagamentos ou a identificação do pedido.';
+    end if;
+  end if;
+  return new;
+end;
+$;
+drop trigger if exists guard_shirt_order_changes on public.shirt_orders;
+create trigger guard_shirt_order_changes before update on public.shirt_orders
+  for each row execute function public.guard_shirt_order_changes();
+revoke all on function public.guard_shirt_order_changes() from public;
+
 create policy "shirt_orders_select" on shirt_orders for select to authenticated
   using (profile_id = auth.uid() or public.is_organizer());
 create policy "shirt_orders_insert_own" on shirt_orders for insert to authenticated
-  with check (
-    profile_id = auth.uid() and public.is_full_member()
-    and paid = false and paid_at is null and marked_by is null
-  );
+  with check (profile_id = auth.uid() and public.is_full_member()
+    and not paid and not half_paid and paid_at is null and marked_by is null);
 create policy "shirt_orders_update_own_or_organizer" on shirt_orders for update to authenticated
-  using (
-    public.is_organizer()
-    or (profile_id = auth.uid() and public.is_full_member() and paid = false)
-  )
-  with check (
-    public.is_organizer()
-    or (
-      profile_id = auth.uid() and public.is_full_member()
-      and paid = false and paid_at is null and marked_by is null
-    )
-  );
+  using (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member()))
+  with check (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member()));
 create policy "shirt_orders_delete_own_or_organizer" on shirt_orders for delete to authenticated
-  using (
-    public.is_organizer()
-    or (profile_id = auth.uid() and public.is_full_member() and paid = false)
-  );
+  using (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member() and not paid and not half_paid));
+
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
 -- marcado como "Public bucket" antes de rodar isto). Leitura pública (fotos

@@ -21,6 +21,27 @@ export const SHIRT_MODELS = {
 
 export type ShirtModel = keyof typeof SHIRT_MODELS;
 
+export const SHIRT_FITS = { unspecified: "Não informada", regular: "Tradicional", female: "Feminina" } as const;
+export type ShirtFit = keyof typeof SHIRT_FITS;
+export type ShirtPayment = "pending" | "half" | "paid" | "mixed";
+export const SHIRT_PAYMENT_LABELS: Record<ShirtPayment, string> = {
+  pending: "Não pago", half: "Metade paga (50%)", paid: "Pago integralmente", mixed: "Pagamento parcial",
+};
+export function shirtPayment(order: { paid: boolean; half_paid: boolean }): ShirtPayment {
+  return order.paid ? "paid" : order.half_paid ? "half" : "pending";
+}
+export function groupShirtOrders<T extends { profile_id: string; community: string; paid: boolean; half_paid: boolean }>(orders: T[]) {
+  const groups = new Map<string, { profileId: string; community: string; items: T[]; payment: ShirtPayment }>();
+  for (const order of orders) {
+    const key = order.community + ":" + order.profile_id;
+    const group = groups.get(key) ?? { profileId: order.profile_id, community: order.community, items: [], payment: shirtPayment(order) };
+    group.items.push(order);
+    if (group.payment !== shirtPayment(order)) group.payment = "mixed";
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
 export const SAND_SHIRT_MODELS: Record<ShirtModel, ShirtModelInfo> = {
   tank: {
     label: "Regata",
