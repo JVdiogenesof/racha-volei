@@ -172,6 +172,51 @@ export async function generateTeams(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+export async function cancelTeams(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  if (!eventId) throw new Error("Racha não informado.");
+
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("status")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (eventError) throw new Error(eventError.message);
+  if (!event) throw new Error("Racha não encontrado.");
+  if (event.status === "finished" || event.status === "cancelled") {
+    throw new Error("Não é possível cancelar os times de um racha encerrado.");
+  }
+
+  const [{ count: recordedWins, error: winsError }, { count: recordedScores, error: scoresError }] =
+    await Promise.all([
+      supabase.from("match_wins").select("id", { count: "exact", head: true }).eq("event_id", eventId),
+      supabase
+        .from("tournament_matches")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .or("score_a.not.is.null,score_b.not.is.null"),
+    ]);
+  if (winsError) throw new Error(winsError.message);
+  if (scoresError) throw new Error(scoresError.message);
+  if ((recordedWins ?? 0) > 0 || (recordedScores ?? 0) > 0) {
+    throw new Error("Já existem resultados registrados. Desfaça os confrontos ou placares antes de cancelar os times.");
+  }
+
+  const { error: matchesError } = await supabase.from("tournament_matches").delete().eq("event_id", eventId);
+  if (matchesError) throw new Error(matchesError.message);
+
+  const { error: generationsError } = await supabase.from("team_generations").delete().eq("event_id", eventId);
+  if (generationsError) throw new Error(generationsError.message);
+
+  const { error: statusError } = await supabase.from("events").update({ status: "open" }).eq("id", eventId);
+  if (statusError) throw new Error(statusError.message);
+
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export type SimulatedTeam = {
   teamNumber: number;
   name: string;

@@ -17,6 +17,7 @@ import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm"
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
 import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
+import { CancelTeamsButton } from "@/components/CancelTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import { VictoryTeamCard } from "@/components/VictoryTeamCard";
 import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
@@ -25,6 +26,7 @@ import { getActiveCommunity } from "@/lib/community";
 import { teamDisplayName } from "@/lib/teamNames";
 import {
   generateTeams,
+  cancelTeams,
   addToTeam,
   moveMember,
   swapMembers,
@@ -234,6 +236,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           {canRegenerate && <SimulateTeamsButton eventId={id} action={simulateTeams} compact />}
           {generation && (
             <>
+              {canRegenerate && <CancelTeamsButton eventId={id} action={cancelTeams} />}
               <ShareTeamsArtButton eventId={id} eventDate={event.date} compact />
               <ExportTeamsButton eventDateLabel={eventDateLabel} teams={teams.map((team) => ({ teamNumber: team.teamNumber, name: team.name, members: team.members }))} compact />
             </>
