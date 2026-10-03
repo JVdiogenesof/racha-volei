@@ -25,3 +25,24 @@ export async function setShirtOrderPaid(formData: FormData) {
   revalidatePath("/admin/camisas");
   revalidatePath("/camisas");
 }
+
+export async function deleteShirtOrder(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const community = await getActiveCommunity(organizer);
+  const orderId = String(formData.get("orderId") ?? "");
+  if (!orderId) throw new Error("Pedido inválido.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("shirt_orders")
+    .delete()
+    .eq("id", orderId)
+    .eq("community", community)
+    .select("id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Pedido não encontrado nesta modalidade.");
+
+  revalidatePath("/admin/camisas");
+  revalidatePath("/camisas");
+}

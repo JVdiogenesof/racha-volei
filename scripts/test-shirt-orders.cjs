@@ -31,7 +31,7 @@ async function main() {
   const calls = [];
   let result = { data: [{ id: "one" }, { id: "two" }], error: null };
   const query = {};
-  for (const method of ["from", "update", "eq", "in", "select"]) {
+  for (const method of ["from", "update", "delete", "eq", "in", "select", "maybeSingle"]) {
     query[method] = (...args) => { calls.push([method, ...args]); return query; };
   }
   query.then = (resolve) => resolve(result);
@@ -57,10 +57,48 @@ async function main() {
     assert.deepEqual(calls.find((c) => c[0] === "in"), ["in", "id", ["one", "two"]]);
   }
   await assert.rejects(actions.setShirtOrderPaid(new FormData()), /inválido/);
+  result = { data: { id: "one" }, error: null };
+  calls.length = 0;
+  const deleteForm = new FormData();
+  deleteForm.set("orderId", "one");
+  await actions.deleteShirtOrder(deleteForm);
+  assert.ok(calls.some((c) => c[0] === "delete"));
+  assert.ok(calls.some((c) => c[0] === "eq" && c[1] === "id" && c[2] === "one"));
+  assert.ok(calls.some((c) => c[0] === "eq" && c[1] === "community" && c[2] === "sand"));
+
   result = { data: [], error: null };
   const form = new FormData();
   form.set("profileId", "a"); form.set("payment", "half"); form.set("orderId", "missing");
   await assert.rejects(actions.setShirtOrderPaid(form), /não encontrado/);
-  console.log("PASS: grouping, community isolation, mixed legacy payments, all payment transitions and missing orders.");
+
+  const profileCalls = [];
+  const profileQuery = {};
+  for (const method of ["from", "update", "eq", "select", "maybeSingle"]) {
+    profileQuery[method] = (...args) => { profileCalls.push([method, ...args]); return profileQuery; };
+  }
+  profileQuery.then = (resolve) => resolve({ data: { id: "player" }, error: null });
+  const playerActions = load("src/app/(app)/admin/jogadores/actions.ts", {
+    "next/cache": { revalidatePath() {} },
+    "@/lib/auth": { requireOrganizer: async () => ({ id: "organizer" }) },
+    "@/lib/scoring": { SKILL_CATEGORIES: [] },
+    "@/lib/ratings": { RATING_WEIGHTS_ID: "weights" },
+    "@/lib/supabase/server": { createClient: async () => ({ from: profileQuery.from }) },
+  });
+  const expectedCommunities = { court: ["court"], sand: ["sand"], both: ["court", "sand"] };
+  const profileForm = new FormData();
+  profileForm.set("profileId", "player");
+  profileForm.set("fullName", "Pessoa Teste");
+  for (const [choice, expected] of Object.entries(expectedCommunities)) {
+    profileCalls.length = 0;
+    profileForm.set("playCommunity", choice);
+    await playerActions.updatePlayerProfile(profileForm);
+    const profileValues = profileCalls.find((c) => c[0] === "update")[1];
+    assert.deepEqual(profileValues.communities, expected);
+    assert.ok(profileCalls.some((c) => c[0] === "eq" && c[1] === "status" && c[2] === "approved"));
+  }
+  profileForm.set("playCommunity", "invalid");
+  await assert.rejects(playerActions.updatePlayerProfile(profileForm), /Escolha Quadra/);
+
+  console.log("PASS: shirt grouping, payments and deletion; organizer community editing and validation.");
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

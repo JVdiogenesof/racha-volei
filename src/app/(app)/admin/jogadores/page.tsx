@@ -17,7 +17,7 @@ export default async function AdminJogadoresPage() {
   const [{ data: players }, { data: removedPlayers }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, nickname_badge")
+      .select("id, full_name, avatar_url, nickname_badge, communities")
       .eq("status", "approved")
       .contains("communities", [community])
       .order("full_name"),
@@ -93,6 +93,7 @@ export default async function AdminJogadoresPage() {
               fullName={player.full_name}
               avatarUrl={player.avatar_url}
               nicknameBadge={player.nickname_badge}
+              communities={player.communities as ("court" | "sand")[]}
               overall={overallScore(finalScores)}
               organizerRatings={organizer}
             />

@@ -45,18 +45,34 @@ export async function updatePlayerProfile(formData: FormData) {
   const profileId = String(formData.get("profileId"));
   const fullName = String(formData.get("fullName") ?? "").trim();
   const nicknameBadge = String(formData.get("nicknameBadge") ?? "").trim().slice(0, 40) || null;
+  const playCommunity = String(formData.get("playCommunity") ?? "");
+  const communities = playCommunity === "court"
+    ? ["court"]
+    : playCommunity === "sand"
+      ? ["sand"]
+      : playCommunity === "both"
+        ? ["court", "sand"]
+        : null;
 
   if (!fullName) throw new Error("O nome não pode ficar em branco.");
+  if (!communities) throw new Error("Escolha Quadra, Areia ou os dois.");
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, nickname_badge: nicknameBadge })
-    .eq("id", profileId);
+    .update({ full_name: fullName, nickname_badge: nicknameBadge, communities })
+    .eq("id", profileId)
+    .eq("status", "approved")
+    .select("id")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!updated) throw new Error("Jogador não encontrado ou sem acesso completo.");
 
   revalidatePath("/admin/jogadores");
+  revalidatePath("/admin/reserva");
   revalidatePath("/jogadores");
   revalidatePath("/ranking");
+  revalidatePath("/racha");
+  revalidatePath("/");
 }
 
 export async function removeMember(formData: FormData) {

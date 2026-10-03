@@ -3,7 +3,8 @@ import { requireOrganizer } from "@/lib/auth";
 import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, shirtPayment, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel, type ShirtPayment } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
-import { setShirtOrderPaid } from "./actions";
+import { DeleteShirtOrderButton } from "@/components/DeleteShirtOrderButton";
+import { deleteShirtOrder, setShirtOrderPaid } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
@@ -58,10 +59,13 @@ export default async function AdminCamisasPage() {
           return <article key={group.profileId} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
             <h3 className="font-bold text-white">{person?.full_name ?? "Sem nome"}</h3>
             <p className="mt-1 text-xs text-white/45">{person?.phone ?? "Telefone não informado"} · {group.items.reduce((n, o) => n + o.quantity, 0)} peças</p>
-            <ul className="my-3 divide-y divide-white/10">{group.items.map((order) => <li key={order.id} className="py-3 text-sm">
-              <p className="font-semibold text-purple-200">{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]}</p>
-              <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
-              <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+            <ul className="my-3 divide-y divide-white/10">{group.items.map((order) => <li key={order.id} className="flex items-start gap-3 py-3 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-purple-200">{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]}</p>
+                <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
+                <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+              </div>
+              <DeleteShirtOrderButton orderId={order.id} fullName={person?.full_name ?? "Atleta"} model={SHIRT_MODELS[order.model].label} action={deleteShirtOrder} />
             </li>)}</ul>
             <ShirtPaymentButton profileId={group.profileId} orderIds={group.items.map((o) => o.id)} fullName={person?.full_name ?? "Atleta"} payment={group.payment} action={setShirtOrderPaid} />
           </article>;

@@ -15,6 +15,7 @@ export function PlayerRatingEditor({
   fullName,
   avatarUrl,
   nicknameBadge,
+  communities,
   overall,
   organizerRatings,
 }: {
@@ -22,10 +23,17 @@ export function PlayerRatingEditor({
   fullName: string;
   avatarUrl: string | null;
   nicknameBadge: string | null;
+  communities: ("court" | "sand")[];
   overall: number;
   organizerRatings: RatingsByCategory;
 }) {
   const [open, setOpen] = useState(false);
+  const communityValue = communities.includes("court") && communities.includes("sand")
+    ? "both"
+    : communities.includes("sand")
+      ? "sand"
+      : "court";
+  const communityLabel = communityValue === "both" ? "Quadra e areia" : communityValue === "sand" ? "Areia" : "Quadra";
 
   return (
     <div className="rounded-lg border border-white/10">
@@ -38,6 +46,7 @@ export function PlayerRatingEditor({
           <Avatar src={avatarUrl} name={fullName} size="sm" />
           <span className="min-w-0 flex-1 break-words">{fullName}</span>
           <NicknameBadge text={nicknameBadge} />
+          <span className="rounded-full border border-cyan-300/15 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-100">{communityLabel}</span>
         </span>
         <span className="flex w-full items-center justify-end gap-2 text-sm text-white/60 sm:w-auto">
           nota geral: <span className="font-semibold text-purple-300">{overall.toFixed(1)}</span>
@@ -72,6 +81,20 @@ export function PlayerRatingEditor({
               placeholder="ex: só tenho ataque 🔥"
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-white/60">Modalidade do jogador</label>
+            <select
+              name="playCommunity"
+              defaultValue={communityValue}
+              required
+              className="mt-1 min-h-11 w-full rounded-lg border border-white/15 bg-[#21123d] px-3 py-2 text-sm text-white"
+            >
+              <option value="court">Quadra</option>
+              <option value="sand">Areia</option>
+              <option value="both">Quadra e areia</option>
+            </select>
+            <p className="mt-1 text-xs text-white/40">Pedidos e históricos anteriores continuam na modalidade em que foram registrados.</p>
           </div>
           <button
             type="submit"
