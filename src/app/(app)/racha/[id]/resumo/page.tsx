@@ -87,7 +87,7 @@ export default async function RachaSummaryPage({ params }: { params: Promise<{ i
                 <Avatar src={player.avatarUrl} name={player.fullName} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold">{player.fullName}</p>
-                  <p className="text-xs text-white/40">Time {player.teamNumber}</p>
+                  <p className="text-xs text-white/40">{player.teamName}</p>
                 </div>
                 <strong className="shrink-0 text-sm text-purple-200">
                   {player.wins} {player.wins === 1 ? "vitória" : "vitórias"}

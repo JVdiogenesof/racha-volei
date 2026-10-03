@@ -6,6 +6,7 @@
 export type TournamentTeam = {
   id: string;
   teamNumber: number;
+  name: string;
 };
 
 export type TournamentMatch = {
@@ -18,6 +19,7 @@ export type TournamentMatch = {
 export type StandingRow = {
   teamId: string;
   teamNumber: number;
+  name: string;
   wins: number;
   pointsFor: number;
   pointsAgainst: number;
@@ -43,7 +45,7 @@ function playedMatches(matches: TournamentMatch[]) {
 }
 
 function baseRow(team: TournamentTeam): StandingRow {
-  return { teamId: team.id, teamNumber: team.teamNumber, wins: 0, pointsFor: 0, pointsAgainst: 0, balance: 0 };
+  return { teamId: team.id, teamNumber: team.teamNumber, name: team.name, wins: 0, pointsFor: 0, pointsAgainst: 0, balance: 0 };
 }
 
 /**

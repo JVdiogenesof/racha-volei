@@ -22,6 +22,7 @@ import { VictoryTeamCard } from "@/components/VictoryTeamCard";
 import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
+import { teamDisplayName } from "@/lib/teamNames";
 import {
   generateTeams,
   addToTeam,
@@ -72,6 +73,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   let teams: {
     id: string;
     teamNumber: number;
+    name: string;
     wins: number;
     losses: number;
     members: {
@@ -94,7 +96,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   if (generation) {
     const { data: teamRows } = await supabase
       .from("teams")
-      .select("id, team_number")
+      .select("id, team_number, name")
       .eq("generation_id", generation.id)
       .order("team_number");
 
@@ -132,6 +134,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     teams = (teamRows ?? []).map((t) => ({
       id: t.id,
       teamNumber: t.team_number,
+      name: t.name,
       wins: winsByTeam.get(t.id) ?? 0,
       losses: lossesByTeam.get(t.id) ?? 0,
       members: (memberRows ?? [])
@@ -173,17 +176,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       thirdPlaceMatch = (matchRows ?? []).filter((m) => m.stage === "third_place").map(toMatch)[0] ?? null;
 
       standings = computeStandings(
-        teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber })),
+        teams.map((t) => ({ id: t.id, teamNumber: t.teamNumber, name: t.name })),
         groupMatches,
       );
     }
   }
 
-  const teamLabelById = new Map(teams.map((t) => [t.id, `Time ${t.teamNumber}`]));
+  const teamLabelById = new Map(teams.map((t) => [t.id, teamDisplayName(t)]));
 
   const eventDateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
   const allMembersFlat = teams.flatMap((t) =>
-    t.members.map((m) => ({ teamMemberId: m.teamMemberId, fullName: m.fullName, teamNumber: t.teamNumber })),
+    t.members.map((m) => ({ teamMemberId: m.teamMemberId, fullName: m.fullName, teamNumber: t.teamNumber, teamName: t.name })),
   );
 
   // Gente confirmada que entrou depois da geração dos times (ex: substituiu
@@ -206,7 +209,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const orphanedMembers = teams.flatMap((t) =>
     t.members
       .filter((m) => !confirmedProfileIds.has(m.profileId))
-      .map((m) => ({ fullName: m.fullName, teamNumber: t.teamNumber })),
+      .map((m) => ({ fullName: m.fullName, teamName: t.name })),
   );
 
   const tournamentMatchCount = groupMatches.length + (finalMatch ? 1 : 0) + (thirdPlaceMatch ? 1 : 0);
@@ -232,7 +235,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           {generation && (
             <>
               <ShareTeamsArtButton eventId={id} eventDate={event.date} compact />
-              <ExportTeamsButton eventDateLabel={eventDateLabel} teams={teams.map((team) => ({ teamNumber: team.teamNumber, members: team.members }))} compact />
+              <ExportTeamsButton eventDateLabel={eventDateLabel} teams={teams.map((team) => ({ teamNumber: team.teamNumber, name: team.name, members: team.members }))} compact />
             </>
           )}
           {finalMatch?.scoreA != null && finalMatch.scoreB != null && (
@@ -253,7 +256,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
       {generation && canManage && orphanedMembers.length > 0 && (
         <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-3 text-sm text-red-300">
-          {orphanedMembers.map((p) => `${p.fullName} (Time ${p.teamNumber})`).join(", ")}{" "}
+          {orphanedMembers.map((p) => `${p.fullName} (${p.teamName})`).join(", ")}{" "}
           {orphanedMembers.length === 1 ? "não está mais confirmado(a)" : "não estão mais confirmados(as)"} mas ainda{" "}
           {orphanedMembers.length === 1 ? "está" : "estão"} no time — use &ldquo;Substituir por&rdquo; (se já tiver
           alguém pra entrar no lugar) ou &ldquo;Remover do time&rdquo;.
@@ -294,7 +297,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 return (
                   <VictoryTeamCard key={team.id} teamId={team.id}>
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-white">Time {team.teamNumber}</h3>
+                      <h3 className="font-semibold text-white">{team.name}</h3>
                       <div className="flex items-center gap-2">
                         {!event.is_pre_torneio && <span className="rounded-full bg-purple-400/10 px-2 py-1 text-[11px] font-bold text-purple-200">{team.wins}V · {team.losses}D</span>}
                         <span className="text-[11px] text-white/35">{sum.toFixed(1)}</span>
@@ -319,7 +322,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                               teamMemberId={member.teamMemberId}
                               currentTeamId={team.id}
                               fullName={member.fullName}
-                              teams={teams.map((item) => ({ id: item.id, teamNumber: item.teamNumber }))}
+                              teams={teams.map((item) => ({ id: item.id, teamNumber: item.teamNumber, name: item.name }))}
                               otherMembers={allMembersFlat.filter((item) => item.teamMemberId !== member.teamMemberId)}
                               unassignedConfirmed={unassignedConfirmed}
                               compact
@@ -403,7 +406,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             ) : (
-              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
             )
           }
           standingsContent={
@@ -420,7 +423,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   {standings.map((standing, index) => (
                     <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_repeat(3,auto)] items-center gap-3 rounded-xl border px-3 py-3 ${index < 2 ? "border-amber-300/20 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${index < 2 ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/45"}`}>{index + 1}</span>
-                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">Time {standing.teamNumber}</p>{index < 2 && <p className="text-[10px] font-bold text-amber-200/70">CLASSIFICADO</p>}</div>
+                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{standing.name}</p>{index < 2 && <p className="text-[10px] font-bold text-amber-200/70">CLASSIFICADO</p>}</div>
                       <Stat label="V" value={standing.wins} />
                       <Stat label="Saldo" value={`${standing.balance > 0 ? "+" : ""}${standing.balance}`} />
                       <Stat label="Pontos" value={standing.pointsFor} />

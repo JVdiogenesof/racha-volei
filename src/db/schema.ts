@@ -240,6 +240,7 @@ export const teams = pgTable("teams", {
   id: uuid("id").primaryKey().defaultRandom(),
   generationId: uuid("generation_id").notNull().references(() => teamGenerations.id, { onDelete: "cascade" }),
   teamNumber: integer("team_number").notNull(),
+  name: text("name").notNull(),
 });
 
 export const teamMembers = pgTable(

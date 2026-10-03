@@ -10,6 +10,7 @@ import { getActiveCommunity } from "@/lib/community";
 type ResultTeam = {
   id: string;
   teamNumber: number;
+  name: string;
   members: { profileId: string; fullName: string; avatarUrl: string | null }[];
 };
 
@@ -75,7 +76,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
   if (!generation) return <WaitingResult eventId={id} dateLabel={dateLabel} />;
 
   const [{ data: teamRows }, { data: matchRows }] = await Promise.all([
-    supabase.from("teams").select("id, team_number").eq("generation_id", generation.id).order("team_number"),
+    supabase.from("teams").select("id, team_number, name").eq("generation_id", generation.id).order("team_number"),
     supabase
       .from("tournament_matches")
       .select("stage, team_a_id, team_b_id, score_a, score_b")
@@ -92,6 +93,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
   const teams: ResultTeam[] = (teamRows ?? []).map((team) => ({
     id: team.id,
     teamNumber: team.team_number,
+    name: team.name,
     members: (memberRows ?? [])
       .filter((member) => member.team_id === team.id)
       .map((member) => {
@@ -112,7 +114,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
 
   const groupMatches = matches.filter((match) => match.stage === "group");
   const standings = computeStandings(
-    teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber })),
+    teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name })),
     groupMatches.map((match) => ({
       teamAId: match.team_a_id,
       teamBId: match.team_b_id,
@@ -184,7 +186,7 @@ function PlacementCard({ place, team }: { place: 1 | 2 | 3 | 4; team: ResultTeam
             <Icon className={`h-4 w-4 ${style.iconClass}`} strokeWidth={2} />
             {style.label}
           </p>
-          <p className="text-sm text-white/50">Time {team.teamNumber}</p>
+          <p className="text-sm text-white/50">{team.name}</p>
         </div>
       </div>
 

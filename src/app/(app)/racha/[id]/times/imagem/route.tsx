@@ -10,7 +10,7 @@ export type TeamsArtData = {
   time: string | null;
   location: string | null;
   isPreTournament: boolean;
-  teams: { id: string; teamNumber: number; members: ArtPlayer[] }[];
+  teams: { id: string; teamNumber: number; name: string; members: ArtPlayer[] }[];
 };
 
 function initials(name: string) {
@@ -61,7 +61,7 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
         {displayedTeams.map((team) => (
           <div key={team.id} style={{ width: cardWidth, minHeight: "455px", display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: "24px", background: "rgba(6,4,25,.24)", border: "1px solid rgba(196,181,253,.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: compactCards ? "17px 18px" : "19px 22px", background: "linear-gradient(90deg, rgba(124,58,237,.42), rgba(124,58,237,.12))", borderBottom: "1px solid rgba(255,255,255,.09)" }}>
-              <span style={{ fontSize: compactCards ? "22px" : "25px", fontWeight: 900 }}>TIME {team.teamNumber}</span>
+              <span style={{ fontSize: compactCards ? "22px" : "25px", fontWeight: 900 }}>{team.name.toUpperCase()}</span>
               <span style={{ width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(255,255,255,.1)", color: "#ddd6fe", fontSize: "16px", fontWeight: 900 }}>{team.members.length}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", padding: compactCards ? "12px 15px 15px" : "14px 18px 18px" }}>
@@ -107,7 +107,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!event) return new Response("Racha não encontrado", { status: 404 });
   if (!generation) return new Response("Os times ainda não foram gerados", { status: 409 });
 
-  const { data: teamRows, error: teamError } = await supabase.from("teams").select("id, team_number").eq("generation_id", generation.id).order("team_number");
+  const { data: teamRows, error: teamError } = await supabase.from("teams").select("id, team_number, name").eq("generation_id", generation.id).order("team_number");
   if (teamError) return new Response("Não foi possível carregar os times", { status: 500 });
   const teamIds = (teamRows ?? []).map((team) => team.id);
   if (!teamIds.length) return new Response("Nenhum time encontrado", { status: 409 });
@@ -130,7 +130,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     time: event.time,
     location: event.location,
     isPreTournament: event.is_pre_torneio,
-    teams: (teamRows ?? []).map((team) => ({ id: team.id, teamNumber: team.team_number, members: players.filter((player) => player.teamId === team.id) })),
+    teams: (teamRows ?? []).map((team) => ({ id: team.id, teamNumber: team.team_number, name: team.name, members: players.filter((player) => player.teamId === team.id) })),
   };
   return renderTeamsArt(data, new URL("/logo.png", request.url).toString());
 }

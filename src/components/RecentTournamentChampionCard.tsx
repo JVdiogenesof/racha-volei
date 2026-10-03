@@ -4,11 +4,11 @@ import { Avatar } from "./Avatar";
 
 export function RecentTournamentChampionCard({
   eventDateLabel,
-  teamNumber,
+  teamName,
   players,
 }: {
   eventDateLabel: string;
-  teamNumber: number;
+  teamName: string;
   players: { fullName: string; avatarUrl: string | null }[];
 }) {
   return (
@@ -18,7 +18,7 @@ export function RecentTournamentChampionCard({
           <Trophy className="h-4.5 w-4.5" strokeWidth={2} />
         </span>
         <div className="min-w-0">
-          <h2 className="font-semibold text-white">Time {teamNumber} é campeão do Pré-Torneio! 🏆</h2>
+          <h2 className="font-semibold text-white">{teamName} é campeão do Pré-Torneio! 🏆</h2>
           <p className="text-xs text-white/50">Racha de {eventDateLabel} — vagas garantidas no Torneio VPA</p>
         </div>
       </div>

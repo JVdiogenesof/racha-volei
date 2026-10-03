@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import { TEAM_VICTORY_EVENT } from "./VictoryTeamCard";
 
-type TeamOption = { id: string; teamNumber: number };
+type TeamOption = { id: string; teamNumber: number; name: string };
 type Confrontation = {
   id: string;
   winnerTeamId: string;
@@ -37,7 +37,7 @@ export function NormalMatchRecorder({
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
   const router = useRouter();
-  const labels = new Map(teams.map((team) => [team.id, `Time ${team.teamNumber}`]));
+  const labels = new Map(teams.map((team) => [team.id, team.name]));
 
   function record(winnerTeamId: string) {
     if (!teamAId || !teamBId) return;
@@ -107,7 +107,7 @@ export function NormalMatchRecorder({
               >
                 <option value="">Escolher time</option>
                 {teams.map((team) => (
-                  <option key={team.id} value={team.id}>Time {team.teamNumber}</option>
+                  <option key={team.id} value={team.id}>{team.name}</option>
                 ))}
               </select>
             </label>
@@ -124,7 +124,7 @@ export function NormalMatchRecorder({
               >
                 <option value="">Escolher time</option>
                 {teams.filter((team) => team.id !== teamAId).map((team) => (
-                  <option key={team.id} value={team.id}>Time {team.teamNumber}</option>
+                  <option key={team.id} value={team.id}>{team.name}</option>
                 ))}
               </select>
             </label>

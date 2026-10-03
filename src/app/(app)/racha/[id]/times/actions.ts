@@ -8,6 +8,7 @@ import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { balanceTeams, type PlayerInput } from "@/lib/balanceTeams";
 import { varySimulatedTeams } from "@/lib/teamSimulation";
+import { assignTeamNames } from "@/lib/teamNames";
 import { generateRoundRobinPairs, computeStandings } from "@/lib/torneioStandings";
 import { sendPushToProfiles } from "@/lib/push";
 
@@ -119,6 +120,7 @@ export async function generateTeams(formData: FormData) {
   });
 
   const result = balanceTeams(players, event.num_teams, event.team_size);
+  const teamNames = assignTeamNames(result.length);
 
   const { data: generation, error: genError } = await supabase
     .from("team_generations")
@@ -130,9 +132,9 @@ export async function generateTeams(formData: FormData) {
   const { data: teamRows, error: teamsError } = await supabase
     .from("teams")
     .insert(
-      result.map((t) => ({ generation_id: generation.id, team_number: t.teamNumber })),
+      result.map((t, index) => ({ generation_id: generation.id, team_number: t.teamNumber, name: teamNames[index] })),
     )
-    .select("id, team_number");
+    .select("id, team_number, name");
   if (teamsError) throw new Error(teamsError.message);
 
   const teamIdByNumber = new Map(teamRows.map((t) => [t.team_number, t.id]));
@@ -172,6 +174,7 @@ export async function generateTeams(formData: FormData) {
 
 export type SimulatedTeam = {
   teamNumber: number;
+  name: string;
   sum: number;
   members: { profileId: string; fullName: string; avatarUrl: string | null; overall: number; isSetter: boolean }[];
 };
@@ -234,8 +237,9 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
     players,
     previousSignature,
   );
+  const teamNames = assignTeamNames(result.length);
 
-  return result.map((t) => {
+  return result.map((t, index) => {
     const members = t.memberProfileIds.map((profileId) => {
       const p = profileById.get(profileId);
       return {
@@ -246,7 +250,7 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
         isSetter: setterOverrides.get(profileId) ?? p?.is_setter ?? false,
       };
     });
-    return { teamNumber: t.teamNumber, sum: members.reduce((s, m) => s + m.overall, 0), members };
+    return { teamNumber: t.teamNumber, name: teamNames[index], sum: members.reduce((s, m) => s + m.overall, 0), members };
   });
 }
 
@@ -469,9 +473,9 @@ async function maybeCreateFinal(supabase: SupabaseClient, eventId: string) {
   if (!groupMatches.every((m) => m.score_a != null && m.score_b != null)) return;
 
   const teamIds = [...new Set(groupMatches.flatMap((m) => [m.team_a_id, m.team_b_id]))];
-  const { data: teamRows } = await supabase.from("teams").select("id, team_number").in("id", teamIds);
+  const { data: teamRows } = await supabase.from("teams").select("id, team_number, name").in("id", teamIds);
   const standings = computeStandings(
-    (teamRows ?? []).map((t) => ({ id: t.id, teamNumber: t.team_number })),
+    (teamRows ?? []).map((t) => ({ id: t.id, teamNumber: t.team_number, name: t.name })),
     groupMatches.map((m) => ({ teamAId: m.team_a_id, teamBId: m.team_b_id, scoreA: m.score_a, scoreB: m.score_b })),
   );
   const [first, second, third, fourth] = standings;

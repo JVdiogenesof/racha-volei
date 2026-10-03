@@ -32,8 +32,8 @@ export function PlayerActionSelect({
   teamMemberId: string;
   currentTeamId: string;
   fullName: string;
-  teams: { id: string; teamNumber: number }[];
-  otherMembers: { teamMemberId: string; fullName: string; teamNumber: number }[];
+  teams: { id: string; teamNumber: number; name: string }[];
+  otherMembers: { teamMemberId: string; fullName: string; teamNumber: number; teamName: string }[];
   /** Confirmados que ainda não caíram em nenhum time (ex: entraram depois da geração). */
   unassignedConfirmed: { profileId: string; fullName: string }[];
   compact?: boolean;
@@ -105,7 +105,7 @@ export function PlayerActionSelect({
         <optgroup label="Mover para">
           {otherTeams.map((t) => (
             <option key={t.id} value={`${MOVE_PREFIX}${t.id}`}>
-              Time {t.teamNumber}
+              {t.name}
             </option>
           ))}
         </optgroup>
@@ -114,7 +114,7 @@ export function PlayerActionSelect({
         <optgroup label="Trocar com">
           {otherMembers.map((m) => (
             <option key={m.teamMemberId} value={`${SWAP_PREFIX}${m.teamMemberId}`}>
-              {m.fullName} (Time {m.teamNumber})
+              {m.fullName} ({m.teamName})
             </option>
           ))}
         </optgroup>

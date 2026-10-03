@@ -212,7 +212,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
                     {player.fullName}
                   </span>
                   <span style={{ marginTop: "3px", fontSize: "14px", color: isLeader ? "#fde68a" : "#c4b5fd" }}>
-                    {player.wins} {player.wins === 1 ? "vitória" : "vitórias"} · T{player.teamNumber}
+                    {player.wins} {player.wins === 1 ? "vitória" : "vitórias"} · {player.teamName}
                   </span>
                 </div>
               </div>

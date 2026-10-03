@@ -10,7 +10,7 @@ export function ExportTeamsButton({
   compact = false,
 }: {
   eventDateLabel: string;
-  teams: { teamNumber: number; members: { fullName: string; isSetter: boolean }[] }[];
+  teams: { teamNumber: number; name: string; members: { fullName: string; isSetter: boolean }[] }[];
   compact?: boolean;
 }) {
   const { showToast } = useToast();
@@ -19,7 +19,7 @@ export function ExportTeamsButton({
   function handleExport() {
     const lines = [`🏐 Times do racha de ${eventDateLabel}`, ""];
     for (const team of teams) {
-      lines.push(`Time ${team.teamNumber}:`);
+      lines.push(`${team.name}:`);
       team.members.forEach((m, i) =>
         lines.push(`${i + 1}. ${m.isSetter ? `*${m.fullName}* 🏐 (levantador)` : m.fullName}`),
       );

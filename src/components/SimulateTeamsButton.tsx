@@ -92,7 +92,7 @@ export function SimulateTeamsButton({
                 {teams.map((team) => (
                   <div key={team.teamNumber} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-white">Time {team.teamNumber}</h3>
+                      <h3 className="text-sm font-semibold text-white">{team.name}</h3>
                       <span className="text-xs text-white/40">soma {team.sum.toFixed(1)}</span>
                     </div>
                     <ul className="mt-2 space-y-1.5">
@@ -149,7 +149,7 @@ export function SimulateTeamsButton({
           {teams.map((team) => (
             <div key={team.teamNumber} className="rounded-lg border border-white/10 p-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-white">Time {team.teamNumber}</h4>
+                <h4 className="text-sm font-semibold text-white">{team.name}</h4>
                 <span className="text-xs text-white/40">soma: {team.sum.toFixed(1)}</span>
               </div>
               <ul className="mt-2 space-y-1.5">

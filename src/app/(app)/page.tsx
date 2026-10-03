@@ -77,18 +77,18 @@ export default async function HomePage() {
         .maybeSingle(),
     ]);
 
-  let recentChampion: { eventDateLabel: string; teamNumber: number; players: { fullName: string; avatarUrl: string | null }[] } | null = null;
+  let recentChampion: { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] } | null = null;
   if (recentFinal) {
     const championTeamId = recentFinal.score_a! > recentFinal.score_b! ? recentFinal.team_a_id : recentFinal.team_b_id;
     const [{ data: championTeam }, { data: memberRows }] = await Promise.all([
-      supabase.from("teams").select("team_number").eq("id", championTeamId).maybeSingle(),
+      supabase.from("teams").select("name").eq("id", championTeamId).maybeSingle(),
       supabase.from("team_members").select("profiles(full_name, avatar_url)").eq("team_id", championTeamId),
     ]);
     const event = recentFinal.events as unknown as { date: string } | null;
     if (championTeam && event) {
       recentChampion = {
         eventDateLabel: new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR"),
-        teamNumber: championTeam.team_number,
+        teamName: championTeam.name,
         players: (memberRows ?? []).map((m) => {
           const p = m.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
           return { fullName: p?.full_name ?? "?", avatarUrl: p?.avatar_url ?? null };
@@ -366,7 +366,7 @@ export default async function HomePage() {
       {recentChampion && (
         <RecentTournamentChampionCard
           eventDateLabel={recentChampion.eventDateLabel}
-          teamNumber={recentChampion.teamNumber}
+          teamName={recentChampion.teamName}
           players={recentChampion.players}
         />
       )}

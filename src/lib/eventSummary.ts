@@ -5,6 +5,7 @@ export type EventSummaryPlayer = {
   fullName: string;
   avatarUrl: string | null;
   teamNumber: number;
+  teamName: string;
   wins: number;
 };
 
@@ -64,7 +65,7 @@ export async function getEventSummary(
 
   const { data: teamRows, error: teamError } = await supabase
     .from("teams")
-    .select("id, team_number")
+    .select("id, team_number, name")
     .eq("generation_id", generation.id)
     .order("team_number");
   if (teamError) throw new Error(teamError.message);
@@ -99,6 +100,7 @@ export async function getEventSummary(
   if (winError) throw new Error(winError.message);
 
   const teamNumberById = new Map((teamRows ?? []).map((team) => [team.id, team.team_number]));
+  const teamNameById = new Map((teamRows ?? []).map((team) => [team.id, team.name]));
   const winsByTeam = new Map<string, number>();
   for (const win of winRows ?? []) {
     winsByTeam.set(win.team_id, (winsByTeam.get(win.team_id) ?? 0) + 1);
@@ -115,6 +117,7 @@ export async function getEventSummary(
         fullName: profile?.full_name ?? "Jogador",
         avatarUrl: profile?.avatar_url ?? null,
         teamNumber: teamNumberById.get(member.team_id) ?? 0,
+        teamName: teamNameById.get(member.team_id) ?? "Time",
         wins: winsByTeam.get(member.team_id) ?? 0,
       };
     })
