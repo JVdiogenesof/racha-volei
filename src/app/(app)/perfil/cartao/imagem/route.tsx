@@ -5,6 +5,7 @@ import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievemen
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { imageUrlToDataUrl } from "@/lib/serverImageData";
 import { getActiveCommunity } from "@/lib/community";
+import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -104,7 +105,8 @@ export async function GET(request: Request) {
           <span style={{ fontSize: "54px" }}>🏐</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "42px" }}>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "32px" }}>
           <div style={{ position: "relative", width: "430px", height: "390px", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg viewBox="0 0 512 512" width="430" height="390" style={{ position: "absolute", inset: 0, filter: "drop-shadow(0 0 26px rgba(196,181,253,.36))" }}>
               <path d="M256 466S44 337 44 177C44 91 113 45 181 45c37 0 63 13 75 27 12-14 38-27 75-27 68 0 137 46 137 132 0 160-212 289-212 289Z" fill="rgba(124,58,237,.28)" stroke="#c4b5fd" strokeWidth="17" />
@@ -151,10 +153,10 @@ export async function GET(request: Request) {
           </div>
         </div>
 
-        <div style={{ display: "flex", flex: 1 }} />
+        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.62)", fontSize: "18px", letterSpacing: "1px" }}>
           <span>JOGAR, EVOLUIR E COMPARTILHAR 💜</span>
-          <span>@volei_por_amor</span>
+          <span>{VPA_INSTAGRAM_HANDLE}</span>
         </div>
       </div>
     ),

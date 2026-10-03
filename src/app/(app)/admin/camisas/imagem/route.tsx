@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { groupShirtOrders, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
+import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,8 @@ export async function GET(request: Request) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", borderRadius: "22px", background: "#7c3aed", padding: "14px 22px" }}><span style={{ fontSize: "42px", fontWeight: 900, lineHeight: 1 }}>{totalUnits}</span><span style={{ marginTop: "5px", fontSize: "13px", fontWeight: 800, letterSpacing: "2px" }}>PEÇAS</span></div>
       </div>
 
-      <div style={{ height: "360px", display: "flex", position: "relative", overflow: "hidden", marginTop: "32px", borderRadius: "28px", border: "2px solid rgba(255,255,255,.14)" }}>
+      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
+      <div style={{ height: "360px", display: "flex", position: "relative", overflow: "hidden", marginTop: "26px", borderRadius: "28px", border: "2px solid rgba(255,255,255,.14)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={collectionUrl} alt="" width={964} height={720} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", padding: "26px", background: "linear-gradient(to top, rgba(16,6,31,.95), transparent 62%)" }}><span style={{ fontSize: "27px", fontWeight: 900 }}>{filterLabel}</span></div>
@@ -87,8 +89,8 @@ export async function GET(request: Request) {
         {groups.length > displayed.length && <span style={{ marginTop: "12px", alignSelf: "center", color: "#ddd6fe", fontSize: "14px" }}>+{groups.length - displayed.length} pessoas na lista completa</span>}
       </div>
 
-      <div style={{ display: "flex", flex: 1 }} />
-      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.58)", fontSize: "15px", letterSpacing: "1px" }}><span>NOSSA CAMISA. NOSSA HISTÓRIA.</span><span>@volei_por_amor</span></div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "20px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.58)", fontSize: "15px", letterSpacing: "1px" }}><span>NOSSA CAMISA. NOSSA HISTÓRIA.</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>
     </div>,
     { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="pedidos-camisas-vpa-${community}.png"` } },
   );

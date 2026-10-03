@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
+import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +83,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           fontFamily: "sans-serif",
         }}
       >
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
         <div
           style={{
             position: "absolute",
@@ -282,7 +284,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           </div>
         )}
 
-        <div style={{ display: "flex", flex: 1 }} />
+        </div>
         <div
           style={{
             display: "flex",
@@ -296,7 +298,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           }}
         >
           <span>A GALERA ESTÁ CONFIRMADA. AGORA É SÓ JOGAR!</span>
-          <span>@volei_por_amor</span>
+          <span>{VPA_INSTAGRAM_HANDLE}</span>
         </div>
       </div>
     ),

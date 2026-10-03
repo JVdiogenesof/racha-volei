@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getEventSummary } from "@/lib/eventSummary";
 import { embedAvatarUrls } from "@/lib/serverImageData";
+import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           fontFamily: "sans-serif",
         }}
       >
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
         <div
           style={{
             position: "absolute",
@@ -220,7 +222,13 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           })}
         </div>
 
-        <div style={{ display: "flex", flex: 1 }} />
+        {hiddenPlayers > 0 && (
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "14px", color: "#ddd6fe", fontSize: "15px" }}>
+            +{hiddenPlayers} jogadores no resumo completo
+          </div>
+        )}
+
+        </div>
         <div
           style={{
             display: "flex",
@@ -234,7 +242,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           }}
         >
           <span>MAIS QUE UM JOGO, É A NOSSA RESENHA!</span>
-          <span>{hiddenPlayers > 0 ? `+${hiddenPlayers} jogadores no resumo completo` : "@volei_por_amor"}</span>
+          <span>{VPA_INSTAGRAM_HANDLE}</span>
         </div>
       </div>
     ),

@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
+import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,8 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
         <div style={{ width: "104px", height: "104px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "28px", background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.13)", fontSize: "52px" }}>🏐</div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "38px", padding: "24px 28px", borderRadius: "25px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
+      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "32px", padding: "24px 28px", borderRadius: "25px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span style={{ fontSize: "27px", fontWeight: 800, textTransform: "capitalize" }}>{dateLabel}</span>
           <span style={{ marginTop: "6px", fontSize: "19px", color: "rgba(255,255,255,.62)" }}>{data.location ?? "Local a definir"}{data.time ? ` · ${data.time.slice(0, 5)}` : ""}</span>
@@ -83,11 +85,12 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
       </div>
 
       {data.teams.length > displayedTeams.length && <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", color: "#ddd6fe", fontSize: "17px" }}>+{data.teams.length - displayedTeams.length} times na lista completa</div>}
-      <div style={{ display: "flex", flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "34px" }}>
         <span style={{ color: "rgba(221,214,254,.22)", fontSize: "58px", fontWeight: 900, letterSpacing: "8px" }}>BORA PRO RACHA</span>
         <span style={{ marginTop: "10px", color: "rgba(255,255,255,.45)", fontSize: "18px", fontWeight: 700, letterSpacing: "2px" }}>MARQUE SEU TIME E COMPARTILHE 💜</span>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.62)", fontSize: "17px", letterSpacing: "1px" }}><span>TIMES PRONTOS. AGORA É BOLA PRA CIMA!</span><span>@volei_por_amor</span></div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.62)", fontSize: "17px", letterSpacing: "1px" }}><span>TIMES PRONTOS. AGORA É BOLA PRA CIMA!</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>
     </div>,
     { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="times-racha-${data.date}.png"` } },
   );
