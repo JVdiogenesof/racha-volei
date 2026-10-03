@@ -30,16 +30,29 @@
 }
 
 html {
+  min-height: 100%;
   background-color: var(--app-top-color);
   color-scheme: dark;
 }
 
 body {
+  min-height: 100%;
   min-width: 0;
-  background: var(--background);
+  background-color: #0a0d24;
+  background-image: var(--background);
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* O conteúdo não pode depender só do fundo do body. Alguns navegadores no
+   Windows deixam de pintar gradientes fixos depois de zoom, economia de
+   energia ou falha de aceleração gráfica. A cor sólida mantém textos e cards
+   legíveis; o degradê continua por cima quando estiver disponível. */
+.community-court {
+  background-color: #0a0d24;
+  background-image: var(--background);
+  background-attachment: fixed;
 }
 
 /* Mantém o cabeçalho integrado ao mesmo degradê da área principal. */
@@ -56,10 +69,12 @@ body {
 .community-sand {
   --brand-purple: #a86419;
   --brand-purple-dark: #7c4510;
-  background:
+  background-color: #101a38;
+  background-image:
     radial-gradient(105% 70% at 8% -8%, rgba(251, 191, 36, 0.28), transparent 58%),
     radial-gradient(95% 80% at 102% 8%, rgba(34, 211, 238, 0.2), transparent 55%),
     linear-gradient(165deg, #3b2767 0%, #231c4d 45%, #101a38 100%);
+  background-attachment: fixed;
 }
 
 .community-sand .app-header-background {
