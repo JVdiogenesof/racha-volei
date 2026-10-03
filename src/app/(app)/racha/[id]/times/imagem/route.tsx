@@ -27,7 +27,7 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
   const compactCards = displayedTeams.length > 4;
 
   return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", padding: "64px 58px 52px", color: "white", backgroundImage: "radial-gradient(circle at 94% 5%, rgba(167,139,250,.42), transparent 30%), radial-gradient(circle at 2% 92%, rgba(37,99,235,.26), transparent 33%), linear-gradient(155deg, #48218a 0%, #251052 46%, #0c0d2a 100%)", fontFamily: "sans-serif" }}>
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", padding: "180px 58px 150px", color: "white", backgroundImage: "radial-gradient(circle at 94% 5%, rgba(167,139,250,.42), transparent 30%), radial-gradient(circle at 2% 92%, rgba(37,99,235,.26), transparent 33%), linear-gradient(155deg, #48218a 0%, #251052 46%, #0c0d2a 100%)", fontFamily: "sans-serif" }}>
       <div style={{ position: "absolute", right: "-170px", top: "250px", width: "500px", height: "500px", display: "flex", borderRadius: "999px", border: "3px solid rgba(255,255,255,.045)" }} />
       <div style={{ position: "absolute", left: "-160px", bottom: "80px", width: "430px", height: "430px", display: "flex", borderRadius: "999px", border: "3px solid rgba(196,181,253,.05)" }} />
 
@@ -44,7 +44,7 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
       </div>
 
       <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "32px", padding: "24px 28px", borderRadius: "25px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "20px", padding: "22px 28px", borderRadius: "25px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span style={{ fontSize: "27px", fontWeight: 800, textTransform: "capitalize" }}>{dateLabel}</span>
           <span style={{ marginTop: "6px", fontSize: "19px", color: "rgba(255,255,255,.62)" }}>{data.location ?? "Local a definir"}{data.time ? ` · ${data.time.slice(0, 5)}` : ""}</span>
@@ -55,13 +55,13 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", marginTop: "30px", marginBottom: "17px" }}>
+      <div style={{ display: "flex", alignItems: "center", marginTop: "22px", marginBottom: "14px" }}>
         <span style={{ fontSize: "28px" }}>✨</span><span style={{ marginLeft: "11px", fontSize: "24px", fontWeight: 800 }}>Escalações confirmadas</span>
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignContent: "flex-start" }}>
         {displayedTeams.map((team) => (
-          <div key={team.id} style={{ width: cardWidth, minHeight: "455px", display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: "24px", background: "rgba(6,4,25,.24)", border: "1px solid rgba(196,181,253,.2)" }}>
+          <div key={team.id} style={{ width: cardWidth, minHeight: "445px", display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: "24px", background: "rgba(6,4,25,.24)", border: "1px solid rgba(196,181,253,.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: compactCards ? "17px 18px" : "19px 22px", background: "linear-gradient(90deg, rgba(124,58,237,.42), rgba(124,58,237,.12))", borderBottom: "1px solid rgba(255,255,255,.09)" }}>
               <span style={{ fontSize: compactCards ? "22px" : "25px", fontWeight: 900 }}>{team.name.toUpperCase()}</span>
               <span style={{ width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(255,255,255,.1)", color: "#ddd6fe", fontSize: "16px", fontWeight: 900 }}>{team.members.length}</span>
@@ -85,8 +85,8 @@ export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
       </div>
 
       {data.teams.length > displayedTeams.length && <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", color: "#ddd6fe", fontSize: "17px" }}>+{data.teams.length - displayedTeams.length} times na lista completa</div>}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "34px" }}>
-        <span style={{ color: "rgba(221,214,254,.22)", fontSize: "58px", fontWeight: 900, letterSpacing: "8px" }}>BORA PRO RACHA</span>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "24px" }}>
+        <span style={{ color: "rgba(221,214,254,.3)", fontSize: "54px", fontWeight: 900, letterSpacing: "8px" }}>BORA PRO RACHA</span>
         <span style={{ marginTop: "10px", color: "rgba(255,255,255,.45)", fontSize: "18px", fontWeight: 700, letterSpacing: "2px" }}>MARQUE SEU TIME E COMPARTILHE 💜</span>
       </div>
       </div>
