@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
+import { ShareMvpArtButton } from "@/components/ShareMvpArtButton";
 import { setMvp, clearMvp } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
 
@@ -147,6 +148,15 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
             );
           })}
         </div>
+      )}
+
+      {eventFinished && destaques.length > 0 && (
+        <section className="rounded-2xl border border-purple-300/20 bg-purple-400/[0.08] p-4">
+          <p className="mb-3 text-sm text-white/65">
+            Gere uma arte vertical dos destaques para publicar no Instagram ou enviar no WhatsApp.
+          </p>
+          <ShareMvpArtButton eventId={id} eventDate={event.date} />
+        </section>
       )}
     </div>
   );
