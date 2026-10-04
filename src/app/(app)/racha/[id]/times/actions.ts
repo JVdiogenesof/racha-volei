@@ -39,6 +39,8 @@ async function ensureTeamHasSpace(supabase: SupabaseClient, teamId: string) {
   if ((count ?? 0) >= event.team_size) {
     throw new Error(`Esse ${event.team_size === 3 ? "trio" : event.team_size === 4 ? "quarteto" : "sexteto"} já está completo.`);
   }
+
+  return { eventId: generation.event_id, generationId: team.generation_id };
 }
 
 export async function generateTeams(formData: FormData) {
@@ -306,13 +308,52 @@ export async function addToTeam(formData: FormData) {
   const teamId = String(formData.get("teamId"));
   const profileId = String(formData.get("profileId"));
 
-  await ensureTeamHasSpace(supabase, teamId);
+  if (!eventId || !teamId || !profileId) throw new Error("Escolha uma pessoa para completar o time.");
+
+  const teamContext = await ensureTeamHasSpace(supabase, teamId);
+  if (teamContext.eventId !== eventId) throw new Error("Esse time não pertence ao racha informado.");
+
+  const [{ data: generationTeams, error: teamsError }, { data: attendance, error: attendanceError }] = await Promise.all([
+    supabase.from("teams").select("id").eq("generation_id", teamContext.generationId),
+    supabase
+      .from("attendance")
+      .select("status")
+      .eq("event_id", eventId)
+      .eq("profile_id", profileId)
+      .maybeSingle(),
+  ]);
+  if (teamsError) throw new Error(teamsError.message);
+  if (attendanceError) throw new Error(attendanceError.message);
+  if (!attendance || (attendance.status !== "confirmed" && attendance.status !== "interested")) {
+    throw new Error("Essa pessoa precisa estar confirmada ou na lista de interessados.");
+  }
+
+  const generationTeamIds = (generationTeams ?? []).map((team) => team.id);
+  if (generationTeamIds.length > 0) {
+    const { count: existingCount, error: existingError } = await supabase
+      .from("team_members")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", profileId)
+      .in("team_id", generationTeamIds);
+    if (existingError) throw new Error(existingError.message);
+    if (existingCount) throw new Error("Essa pessoa já está em outro time desta geração.");
+  }
+
+  if (attendance.status === "interested") {
+    const { error: confirmationError } = await supabase.rpc("confirm_event_participant", {
+      p_event_id: eventId,
+      p_profile_id: profileId,
+    });
+    if (confirmationError) throw new Error(confirmationError.message);
+  }
 
   // Pra completar um time que ficou com menos gente (ex: alguém saiu e ainda
   // não tinha substituto) sem precisar "substituir" ninguém que já está lá.
   const { error } = await supabase.from("team_members").insert({ team_id: teamId, profile_id: profileId });
 
   if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}/times`);
 }
 

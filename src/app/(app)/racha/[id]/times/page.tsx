@@ -61,9 +61,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .maybeSingle(),
     supabase
       .from("attendance")
-      .select("profile_id, profiles(full_name)")
+      .select("profile_id, status, profiles(full_name)")
       .eq("event_id", id)
-      .eq("status", "confirmed"),
+      .in("status", ["confirmed", "interested"]),
     supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
   ]);
   if (!event) notFound();
@@ -195,16 +195,30 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   // alguém que saiu) e por isso ainda não tem uma linha em team_members.
   const assignedProfileIds = new Set(teams.flatMap((t) => t.members.map((m) => m.profileId)));
   const unassignedConfirmed = (confirmedAttendance ?? [])
+    .filter((a) => a.status === "confirmed")
     .filter((a) => !assignedProfileIds.has(a.profile_id))
     .map((a) => ({
       profileId: a.profile_id,
       fullName: (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
     }));
+  const unassignedInterested = (confirmedAttendance ?? [])
+    .filter((a) => a.status === "interested")
+    .filter((a) => !assignedProfileIds.has(a.profile_id))
+    .map((a) => ({
+      profileId: a.profile_id,
+      fullName: (a.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
+    }));
+  const addablePlayers = [
+    ...unassignedConfirmed.map((player) => ({ ...player, status: "confirmed" as const })),
+    ...unassignedInterested.map((player) => ({ ...player, status: "interested" as const })),
+  ].sort((a, b) => a.fullName.localeCompare(b.fullName, "pt-BR"));
 
   // O caminho inverso: gente que já saiu da lista de confirmados mas ainda
   // está presa num time (a geração de times não se atualiza sozinha quando
   // alguém sai depois de gerada).
-  const confirmedProfileIds = new Set((confirmedAttendance ?? []).map((a) => a.profile_id));
+  const confirmedProfileIds = new Set(
+    (confirmedAttendance ?? []).filter((a) => a.status === "confirmed").map((a) => a.profile_id),
+  );
   const orphanedTeamMemberIds = new Set(
     teams.flatMap((t) => t.members.filter((m) => !confirmedProfileIds.has(m.profileId)).map((m) => m.teamMemberId)),
   );
@@ -271,7 +285,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           {unassignedConfirmed.map((p) => p.fullName).join(", ")}{" "}
           {unassignedConfirmed.length === 1 ? "está confirmado(a)" : "estão confirmados(as)"} mas ainda{" "}
           {unassignedConfirmed.length === 1 ? "não foi colocado(a)" : "não foram colocados(as)"} em nenhum time — use
-          &ldquo;Substituir por&rdquo; no lugar de quem saiu.
+          &ldquo;Completar time&rdquo; no card que ainda tem vaga.
         </p>
       )}
 
@@ -335,9 +349,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       ))}
                     </ul>
 
-                    {canManage && unassignedConfirmed.length > 0 && (
+                    {canManage && team.members.length < event.team_size && (
                       <div className="mt-3 border-t border-white/8 pt-3">
-                        <AddToTeamSelect action={addToTeam} eventId={id} teamId={team.id} players={unassignedConfirmed} />
+                        <AddToTeamSelect action={addToTeam} eventId={id} teamId={team.id} players={addablePlayers} />
                       </div>
                     )}
                   </VictoryTeamCard>
