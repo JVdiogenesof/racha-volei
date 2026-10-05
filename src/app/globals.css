@@ -166,6 +166,21 @@ a[href]:active svg,
   animation: toast-in 0.2s ease-out;
 }
 
+@keyframes pwa-sheet-in {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-pwa-sheet-in {
+  animation: pwa-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (display-mode: standalone) {
+  .pwa-install-menu-item {
+    display: none;
+  }
+}
+
 /* Indicador de carregamento: todo botão de enviar dentro de um ActionForm
    ganha um spinner e fica "desabilitado" visualmente enquanto a ação roda,
    sem precisar mexer em cada tela que usa ActionForm. */
@@ -220,6 +235,10 @@ form[aria-busy="true"] button[type="submit"]::after {
   .navigation-progress {
     animation: none;
     width: 100%;
+  }
+
+  .animate-pwa-sheet-in {
+    animation: none;
   }
 
   .confetti-particle {

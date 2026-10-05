@@ -7,6 +7,7 @@ import {
   CalendarDays,
   ChevronDown,
   CircleUserRound,
+  Download,
   LogOut,
   ShieldCheck,
   Sparkles,
@@ -19,6 +20,7 @@ import { LogoMark } from "@/components/Logo";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 import { CommunitySwitcher } from "@/components/CommunitySwitcher";
 import type { Community } from "@/lib/community";
+import { OPEN_PWA_INSTALL_EVENT } from "@/components/PwaInstallPrompt";
 
 export type HeaderEventSummary = {
   id: string;
@@ -191,6 +193,17 @@ export function HeaderTopBar({
             <MenuLink href="/perfil#cartao-vpa" icon={CircleUserRound} label="Meu cartão VPA" />
             <MenuLink href="/evolucao" icon={TrendingUp} label="Minha evolução" />
             <MenuLink href="/avisos" icon={Bell} label="Avisos e notificações" />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                window.dispatchEvent(new Event(OPEN_PWA_INSTALL_EVENT));
+              }}
+              className="pwa-install-menu-item flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
+            >
+              <Download className="h-4 w-4" /> Instalar aplicativo
+            </button>
             {isOrganizer && <MenuLink href="/admin/reserva" icon={ShieldCheck} label="Painel do organizador" accent />}
             <div className="my-1 h-px bg-white/10" />
             {signOutAction ? (
