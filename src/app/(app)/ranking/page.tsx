@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { getRankingCounts } from "@/lib/rankings";
+import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE } from "@/lib/rankings";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -42,16 +42,21 @@ export default async function RankingPage() {
       if (!profile || !stats.matches) return [];
       return [{
         profileId,
-        count: stats.percentage,
+        count: stats.indexScore,
         fullName: profile.full_name,
         avatarUrl: profile.avatar_url,
-        displayValue: `${stats.percentage}%`,
-        detail: `${stats.wins}V · ${stats.losses}D`,
+        displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
+        detail: stats.eligible
+          ? `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres.`
+          : `${stats.attendance}/${PERFORMANCE_MIN_ATTENDANCE} rachas · ${stats.percentage}% atual`,
+        ranked: stats.eligible,
       }];
     })
     .sort(
       (a, b) =>
+        Number(b.ranked !== false) - Number(a.ranked !== false) ||
         b.count - a.count ||
+        (counts.performance.get(b.profileId)?.percentage ?? 0) - (counts.performance.get(a.profileId)?.percentage ?? 0) ||
         (counts.performance.get(b.profileId)?.wins ?? 0) - (counts.performance.get(a.profileId)?.wins ?? 0),
     );
 

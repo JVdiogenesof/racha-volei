@@ -9,7 +9,15 @@ export type PerformanceStats = {
   losses: number;
   matches: number;
   percentage: number;
+  attendance: number;
+  attendancePercentage: number;
+  indexScore: number;
+  eligible: boolean;
 };
+
+export const PERFORMANCE_MIN_ATTENDANCE = 3;
+export const PERFORMANCE_RESULT_WEIGHT = 0.7;
+export const PERFORMANCE_ATTENDANCE_WEIGHT = 0.3;
 
 export async function getRankingCounts(supabase: SupabaseClient, community: Community = "court") {
   const { data: communityEvents } = await supabase
@@ -83,7 +91,16 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
   // vitórias, mas não entram aqui porque não possuem uma derrota pareada.
   const performance = new Map<string, PerformanceStats>();
   const addResult = (profileId: string, won: boolean) => {
-    const current = performance.get(profileId) ?? { wins: 0, losses: 0, matches: 0, percentage: 0 };
+    const current = performance.get(profileId) ?? {
+      wins: 0,
+      losses: 0,
+      matches: 0,
+      percentage: 0,
+      attendance: 0,
+      attendancePercentage: 0,
+      indexScore: 0,
+      eligible: false,
+    };
     current.matches += 1;
     if (won) current.wins += 1;
     else current.losses += 1;
@@ -109,6 +126,20 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
   for (const adj of adjustmentRows ?? []) {
     const target = byMetric[adj.metric as RankingMetric];
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
+  }
+
+  // O Índice VPA evita que uma amostra muito pequena domine o ranking:
+  // 70% vêm do aproveitamento e 30% da presença relativa ao líder de assiduidade.
+  // Com menos de 3 rachas encerrados, o jogador aparece como "em classificação".
+  const attendanceLeader = Math.max(1, ...attendance.values());
+  for (const [profileId, stats] of performance) {
+    stats.attendance = Math.max(0, attendance.get(profileId) ?? 0);
+    stats.attendancePercentage = Math.min(100, Math.round((stats.attendance / attendanceLeader) * 100));
+    stats.indexScore = Math.round(
+      (stats.percentage * PERFORMANCE_RESULT_WEIGHT +
+        stats.attendancePercentage * PERFORMANCE_ATTENDANCE_WEIGHT) * 10,
+    ) / 10;
+    stats.eligible = stats.attendance >= PERFORMANCE_MIN_ATTENDANCE;
   }
 
   return { attendance, mvp, wins, performance, streaks };

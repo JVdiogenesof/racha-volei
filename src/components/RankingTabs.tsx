@@ -7,7 +7,7 @@ import { Leaderboard, type RankingEntry } from "./Leaderboard";
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
 const CONFIG: Record<RankingId, { label: string; shortLabel: string; unit: string; description: string; icon: LucideIcon }> = {
-  performance: { label: "Melhor aproveitamento", shortLabel: "Aproveit.", unit: "de aproveitamento", description: "Percentual de vitórias nos confrontos registrados dos rachas normais.", icon: Percent },
+  performance: { label: "Índice VPA", shortLabel: "Índice VPA", unit: "pontos", description: "Classificação justa: 70% do aproveitamento + 30% da presença em relação ao jogador mais assíduo. São necessários 3 rachas encerrados para entrar nas posições.", icon: Percent },
   wins: { label: "Mais vitórias", shortLabel: "Vitórias", unit: "vitórias", description: "Total de confrontos vencidos por cada jogador.", icon: Crown },
   mvp: { label: "Jogador Destaque", shortLabel: "Destaques", unit: "vezes", description: "Quantidade de vezes em que a pessoa foi eleita destaque do racha.", icon: Trophy },
   attendance: { label: "Mais presença", shortLabel: "Presenças", unit: "presenças", description: "Participações confirmadas em rachas que já foram encerrados.", icon: CalendarCheck },
@@ -28,7 +28,11 @@ export function RankingTabs({
   function currentEntry(id: RankingId) {
     const ranking = rankings[id];
     const index = ranking.findIndex((entry) => entry.profileId === currentProfileId);
-    return { entry: index >= 0 ? ranking[index] : null, position: index >= 0 ? index + 1 : null };
+    const entry = index >= 0 ? ranking[index] : null;
+    const position = entry && entry.ranked !== false
+      ? ranking.filter((item) => item.ranked !== false).findIndex((item) => item.profileId === currentProfileId) + 1
+      : null;
+    return { entry, position };
   }
 
   return (

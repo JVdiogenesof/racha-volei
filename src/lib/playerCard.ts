@@ -32,13 +32,16 @@ export function getPlayerRankingPositions(
   const eligibleIds = new Set(eligibleProfileIds);
   const playerPerformance = counts.performance.get(profileId);
 
-  const performance = playerPerformance?.matches
+  const performance = playerPerformance?.matches && playerPerformance.eligible
     ? 1 +
       [...counts.performance.entries()].filter(([otherId, stats]) => {
-        if (!eligibleIds.has(otherId) || !stats.matches) return false;
+        if (!eligibleIds.has(otherId) || !stats.matches || !stats.eligible) return false;
         return (
-          stats.percentage > playerPerformance.percentage ||
-          (stats.percentage === playerPerformance.percentage && stats.wins > playerPerformance.wins)
+          stats.indexScore > playerPerformance.indexScore ||
+          (stats.indexScore === playerPerformance.indexScore && stats.percentage > playerPerformance.percentage) ||
+          (stats.indexScore === playerPerformance.indexScore &&
+            stats.percentage === playerPerformance.percentage &&
+            stats.wins > playerPerformance.wins)
         );
       }).length
     : null;
