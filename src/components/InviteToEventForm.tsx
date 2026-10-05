@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Send } from "lucide-react";
 import { ActionForm } from "./ActionForm";
 
 export function InviteToEventForm({
@@ -17,13 +18,13 @@ export function InviteToEventForm({
   }
 
   return (
-    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto">
+    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex min-w-0 flex-1 items-center gap-1.5">
       <input type="hidden" name="reserveEntryId" value={reserveEntryId} />
       <select
         name="eventId"
         defaultValue=""
         required
-        className="min-h-11 w-full min-w-0 rounded-lg border border-white/15 px-2 py-1.5 text-sm sm:w-60"
+        className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-[#1c1233] px-2 py-1.5 text-xs text-white sm:max-w-52"
       >
         <option value="" disabled>
           Chamar pra...
@@ -36,9 +37,11 @@ export function InviteToEventForm({
       </select>
       <button
         type="submit"
-        className="min-h-11 rounded-lg bg-brand-purple px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-purple-dark"
+        aria-label="Chamar para o racha selecionado"
+        title="Chamar para o racha selecionado"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-purple text-white hover:bg-brand-purple-dark"
       >
-        Chamar
+        <Send className="h-4 w-4" />
       </button>
     </ActionForm>
   );

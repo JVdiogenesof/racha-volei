@@ -127,8 +127,8 @@ export function HeaderTopBar({
   return (
     <div className={`mx-auto flex max-w-5xl items-center px-3 transition-[height,padding] duration-300 sm:px-4 ${compact ? "h-14" : "h-[4.5rem] sm:h-20"}`}>
       <Link href="/" aria-label="Ir para o início" className="group flex shrink-0 items-center gap-2.5">
-        <span className={`relative grid place-items-center rounded-2xl border border-white/15 bg-white/10 shadow-lg shadow-black/20 transition-all duration-300 group-hover:bg-white/15 ${compact ? "h-9 w-9" : "h-11 w-11"}`}>
-          <LogoMark className={`object-contain transition-all duration-300 ${compact ? "h-8 w-8" : "h-10 w-10"}`} />
+        <span className={`relative grid place-items-center overflow-visible transition-all duration-300 group-hover:scale-105 ${compact ? "h-10 w-11" : "h-12 w-14"}`}>
+          <LogoMark className={`object-contain transition-all duration-300 ${compact ? "h-11 w-11" : "h-14 w-14"}`} />
           <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#29165f] bg-emerald-400" />
         </span>
         <span className="hidden leading-none sm:block">

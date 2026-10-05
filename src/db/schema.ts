@@ -339,6 +339,21 @@ export const reserveList = pgTable("reserve_list", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const reserveInvitations = pgTable(
+  "reserve_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reserveEntryId: uuid("reserve_entry_id").notNull().references(() => reserveList.id, { onDelete: "cascade" }),
+    eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+    invitedBy: uuid("invited_by").references(() => profiles.id, { onDelete: "set null" }),
+    invitedAt: timestamp("invited_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("reserve_invitations_entry_event_unique").on(t.reserveEntryId, t.eventId),
+    index("reserve_invitations_entry_invited_at_idx").on(t.reserveEntryId, t.invitedAt),
+  ],
+);
+
 // Uma linha por aparelho/navegador inscrito pra notificação push. Reinscrever
 // o mesmo aparelho sobrescreve a linha (unique em endpoint) -- não cresce por
 // notificação enviada, só por aparelho distinto, e se apagam sozinhas quando
