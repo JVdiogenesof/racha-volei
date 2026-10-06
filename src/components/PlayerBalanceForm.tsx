@@ -9,7 +9,7 @@ type PlayerOption = { id: string; fullName: string };
 const defaults: Record<string, { effect: string; description: string; help: string }> = {
   advance_payment: { effect: "income", description: "Pagamento antecipado", help: "O dinheiro entrou agora e também vira saldo para a pessoa." },
   cancellation_credit: { effect: "none", description: "Crédito por desistência avisada", help: "A entrada já foi contada antes; agora só guardamos o valor para outro racha." },
-  challenge: { effect: "expense", description: "Prêmio de desafio", help: "Cria saldo promocional e registra o custo como saída." },
+  challenge: { effect: "none", description: "Prêmio de desafio", help: "Cria o saldo promocional sem retirar dinheiro do caixa agora. Quando for usado, o racha ficará sem essa entrada." },
   other: { effect: "none", description: "Ajuste de saldo", help: "Escolha abaixo se esse ajuste movimentou o caixa." },
 };
 
