@@ -5,7 +5,7 @@ import type { MonthlySelection, MonthlySelectionPlayer } from "@/lib/monthlySele
 
 const PLAYER_POSITIONS = [
   "left-[17%] top-[24%]",
-  "left-1/2 top-[24%]",
+  "left-[83%] top-[24%]",
   "left-[17%] top-[67%]",
   "left-1/2 top-[67%]",
   "left-[83%] top-[67%]",
@@ -67,7 +67,7 @@ export function MonthlySelectionCourt({
           {selection.players.map((player, index) => (
             <CourtPlayer key={player.profileId} player={player} position={PLAYER_POSITIONS[index]} />
           ))}
-          <CourtPlayer player={selection.setter} position="left-[83%] top-[24%]" featured />
+          <CourtPlayer player={selection.setter} position="left-1/2 top-[24%]" featured />
         </div>
       </div>
     </section>

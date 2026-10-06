@@ -56,7 +56,7 @@ export function getMonthlySelection(report: MonthlyReport): MonthlySelection {
 
   const bestSetter = scored.find((player) => player.setterAppearances > 0) ?? null;
   const setter = bestSetter ? { ...bestSetter, role: "setter" as const } : null;
-  const players = scored.filter((player) => player.profileId !== setter?.profileId).slice(0, 5);
+  const players = scored.filter((player) => player.setterAppearances === 0).slice(0, 5);
 
   return { setter, players, complete: Boolean(setter) && players.length === 5 };
 }
