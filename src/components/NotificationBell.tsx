@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
+import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp, Sparkles } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -70,6 +70,9 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
         </IslandLink>
         <IslandLink href="/evolucao" label="Minha evolução" active={pathname.startsWith("/evolucao")}>
           <TrendingUp className="h-5 w-5" strokeWidth={2} />
+        </IslandLink>
+        <IslandLink href="/selecao-do-mes" label="Seleção do mês" active={pathname.startsWith("/selecao-do-mes")}>
+          <Sparkles className="h-5 w-5" strokeWidth={2} />
         </IslandLink>
         <span aria-hidden className="mx-0.5 h-6 w-px bg-white/15" />
         <button

@@ -10,6 +10,8 @@ export type MonthlyReportPlayer = {
   profileId: string;
   fullName: string;
   avatarUrl: string | null;
+  isSetter: boolean;
+  setterAppearances: number;
   attendance: number;
   wins: number;
   mvp: number;
@@ -99,14 +101,19 @@ export async function getMonthlyReport(
   };
   if (!finishedEventIds.length) return emptyReport;
 
-  const [presentByEvent, { data: matchRows, error: matchError }] = await Promise.all([
+  const [presentByEvent, { data: matchRows, error: matchError }, { data: setterOverrideRows, error: setterOverrideError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, finishedEventIds),
     supabase
       .from("match_wins")
       .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
       .in("event_id", finishedEventIds),
+    supabase
+      .from("event_setter_overrides")
+      .select("event_id, profile_id, is_setter")
+      .in("event_id", finishedEventIds),
   ]);
   if (matchError) throw new Error(matchError.message);
+  if (setterOverrideError) throw new Error(setterOverrideError.message);
 
   const allTeamIds = [
     ...new Set(
@@ -125,7 +132,7 @@ export async function getMonthlyReport(
     profileIdsByTeam.set(member.team_id, ids);
   }
 
-  type MutableStats = Omit<MonthlyReportPlayer, "fullName" | "avatarUrl" | "percentage"> & {
+  type MutableStats = Omit<MonthlyReportPlayer, "fullName" | "avatarUrl" | "isSetter" | "setterAppearances" | "percentage"> & {
     percentage: number | null;
   };
   const statsByProfile = new Map<string, MutableStats>();
@@ -181,19 +188,28 @@ export async function getMonthlyReport(
 
   const profileIds = [...statsByProfile.keys()];
   const { data: profileRows, error: profileError } = profileIds.length
-    ? await supabase.from("profiles").select("id, full_name, avatar_url").in("id", profileIds)
+    ? await supabase.from("profiles").select("id, full_name, avatar_url, is_setter").in("id", profileIds)
     : { data: [], error: null };
   if (profileError) throw new Error(profileError.message);
   const profileById = new Map((profileRows ?? []).map((profile) => [profile.id, profile]));
+  const setterOverrideByEventAndProfile = new Map(
+    (setterOverrideRows ?? []).map((row) => [`${row.event_id}:${row.profile_id}`, row.is_setter]),
+  );
 
   const players = [...statsByProfile.values()]
     .flatMap((stats) => {
       const profile = profileById.get(stats.profileId);
       if (!profile) return [];
+      const setterAppearances = finishedEvents.filter((event) => {
+        if (!presentByEvent.get(event.id)?.has(stats.profileId)) return false;
+        return setterOverrideByEventAndProfile.get(`${event.id}:${stats.profileId}`) ?? profile.is_setter;
+      }).length;
       return [{
         ...stats,
         fullName: profile.full_name,
         avatarUrl: profile.avatar_url,
+        isSetter: profile.is_setter,
+        setterAppearances,
         percentage: stats.matches ? Math.round((stats.performanceWins / stats.matches) * 100) : null,
       } satisfies MonthlyReportPlayer];
     })

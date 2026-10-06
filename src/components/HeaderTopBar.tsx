@@ -34,6 +34,7 @@ const PAGE_TITLES: { prefix: string; title: string; eyebrow: string }[] = [
   { prefix: "/racha", title: "Rachas", eyebrow: "Agenda VPA" },
   { prefix: "/jogadores", title: "Jogadores", eyebrow: "Nossa equipe" },
   { prefix: "/ranking", title: "Ranking", eyebrow: "Desempenho" },
+  { prefix: "/selecao-do-mes", title: "Seleção do mês", eyebrow: "Esquadrão VPA" },
   { prefix: "/momentos", title: "Momentos", eyebrow: "Lances da galera" },
   { prefix: "/torneios-vpa", title: "Torneios VPA", eyebrow: "Competições" },
   { prefix: "/avisos", title: "Avisos", eyebrow: "Central VPA" },
