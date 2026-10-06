@@ -158,6 +158,7 @@ alter table push_subscriptions enable row level security;
 alter table tournament_reserved_players enable row level security;
 alter table tournament_matches enable row level security;
 alter table shirt_orders enable row level security;
+alter table free_racha_credits enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -236,6 +237,16 @@ create policy "payments_select" on payments for select to authenticated using (t
 create policy "payments_write" on payments for all to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+
+-- Créditos de racha gratuito contêm controle financeiro interno. Somente
+-- organizadores podem consultar ou alterar, inclusive pela Data API.
+create policy "free_racha_credits_select_organizer" on free_racha_credits for select to authenticated
+  using ((select public.is_organizer()));
+create policy "free_racha_credits_insert_organizer" on free_racha_credits for insert to authenticated
+  with check ((select public.is_organizer()) and granted_by = (select auth.uid()));
+create policy "free_racha_credits_update_organizer" on free_racha_credits for update to authenticated
+  using ((select public.is_organizer()))
+  with check ((select public.is_organizer()));
 
 -- times gerados: leitura aberta; só organizador gera/edita.
 create policy "team_generations_select" on team_generations for select to authenticated using (true);

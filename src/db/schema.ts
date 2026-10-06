@@ -202,6 +202,31 @@ export const payments = pgTable(
   (t) => [unique().on(t.eventId, t.profileId)],
 );
 
+// Livro de cortesias do racha. Cada linha vale uma entrada gratuita e é
+// preservada quando usada/cancelada para manter o histórico administrativo.
+export const freeRachaCredits = pgTable(
+  "free_racha_credits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+    community: text("community").notNull().default("court"),
+    reason: text("reason").notNull(),
+    notes: text("notes"),
+    status: text("status").notNull().default("available"),
+    grantedBy: uuid("granted_by").notNull().references(() => profiles.id),
+    grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
+    usedEventId: uuid("used_event_id").references(() => events.id, { onDelete: "set null" }),
+    usedBy: uuid("used_by").references(() => profiles.id, { onDelete: "set null" }),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("free_racha_credits_community_status_granted_idx").on(t.community, t.status, t.grantedAt),
+    index("free_racha_credits_profile_community_idx").on(t.profileId, t.community),
+  ],
+);
+
 // Pedido individual da nova camisa VPA. Cada pessoa mantém no máximo um
 // pedido por modelo em cada comunidade; a quantidade cobre peças repetidas.
 export const shirtOrders = pgTable(
