@@ -158,6 +158,7 @@ alter table push_subscriptions enable row level security;
 alter table tournament_reserved_players enable row level security;
 alter table tournament_matches enable row level security;
 alter table shirt_orders enable row level security;
+alter table shirt_finance_transactions enable row level security;
 alter table player_balance_entries enable row level security;
 alter table finance_transactions enable row level security;
 alter table finance_reminders enable row level security;
@@ -259,6 +260,14 @@ create policy "finance_transactions_update_organizer" on finance_transactions fo
   with check ((select public.is_organizer()));
 
 create policy "finance_reminders_organizer_all" on finance_reminders for all to authenticated
+  using ((select public.is_organizer()))
+  with check ((select public.is_organizer()));
+
+create policy "shirt_finance_transactions_select_organizer" on shirt_finance_transactions for select to authenticated
+  using ((select public.is_organizer()));
+create policy "shirt_finance_transactions_insert_organizer" on shirt_finance_transactions for insert to authenticated
+  with check ((select public.is_organizer()) and created_by = (select auth.uid()));
+create policy "shirt_finance_transactions_update_organizer" on shirt_finance_transactions for update to authenticated
   using ((select public.is_organizer()))
   with check ((select public.is_organizer()));
 

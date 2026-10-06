@@ -24,6 +24,7 @@ const APP_TABLES = [
   "player_balance_entries",
   "finance_transactions",
   "finance_reminders",
+  "shirt_finance_transactions",
   "team_generations",
   "teams",
   "team_members",

@@ -12,19 +12,27 @@ type OrderRow = {
   shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean;
   profiles: { full_name: string; phone: string | null } | null;
 };
+type ShirtFinanceRow = { id: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_stage: string; voided_at: string | null; profiles: { full_name: string } | null };
 
 export default async function AdminCamisasPage() {
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);
   const supabase = await createClient();
-  const { data, error } = await supabase.from("shirt_orders")
-    .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
-    .eq("community", community).order("created_at");
-  if (error) throw new Error(error.message);
-  const orders = (data ?? []) as unknown as OrderRow[];
+  const [ordersResult, financeResult] = await Promise.all([
+    supabase.from("shirt_orders")
+      .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
+      .eq("community", community).order("created_at"),
+    supabase.from("shirt_finance_transactions")
+      .select("id, description, amount, transaction_date, profile_id, payment_stage, voided_at, profiles!shirt_finance_transactions_profile_id_fkey(full_name)")
+      .eq("community", community).order("transaction_date", { ascending: false }).order("created_at", { ascending: false }),
+  ]);
+  if (ordersResult.error) throw new Error(ordersResult.error.message);
+  if (financeResult.error) throw new Error(financeResult.error.message);
+  const orders = (ordersResult.data ?? []) as unknown as OrderRow[];
+  const shirtTransactions = (financeResult.data ?? []) as unknown as ShirtFinanceRow[];
   const groups = groupShirtOrders(orders);
   const totalOrdered = orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0);
-  const totalReceived = orders.reduce((sum, order) => sum + (order.paid ? shirtOrderTotal(order) : order.half_paid ? shirtOrderTotal(order) / 2 : 0), 0);
+  const totalReceived = shirtTransactions.filter((transaction) => !transaction.voided_at).reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const exportOrders: ExportShirtOrder[] = orders.map((o) => ({
     fullName: o.profiles?.full_name ?? "Sem nome", phone: o.profiles?.phone ?? "",
     model: o.model, fit: o.fit, shirtName: o.shirt_name, shirtNumber: o.shirt_number,
@@ -43,6 +51,10 @@ export default async function AdminCamisasPage() {
         ["Peças", orders.reduce((sum, o) => sum + o.quantity, 0)]].map(([label, value]) =>
         <div key={label} className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3"><p className="truncate text-xl font-black sm:text-2xl">{value}</p><p className="text-xs text-white/55">{label}</p></div>)}
     </div>
+    <details className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.04] p-4">
+      <summary className="cursor-pointer font-bold text-purple-100">Extrato exclusivo das camisas ({shirtTransactions.filter((transaction) => !transaction.voided_at).length})</summary>
+      <div className="mt-3 divide-y divide-white/10">{shirtTransactions.length ? shirtTransactions.slice(0, 80).map((transaction) => <div key={transaction.id} className={`flex items-center gap-3 py-3 ${transaction.voided_at ? "opacity-40" : ""}`}><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{transaction.profiles?.full_name ?? "Pessoa não encontrada"}</p><p className="mt-0.5 text-xs text-white/45">{transaction.description} · {new Date(`${transaction.transaction_date}T12:00:00`).toLocaleDateString("pt-BR")}{transaction.voided_at ? " · Estornado" : ""}</p></div><strong className="shrink-0 text-emerald-300">+{Number(transaction.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>) : <p className="py-4 text-center text-sm text-white/40">Nenhum pagamento de camisa registrado.</p>}</div>
+    </details>
     <details className="rounded-2xl border border-white/10 p-4">
       <summary className="cursor-pointer font-bold">Resumo para produção</summary>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">{(["tank", "sleeve"] as ShirtModel[]).flatMap((model) =>

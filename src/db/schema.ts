@@ -247,9 +247,6 @@ export const financeTransactions = pgTable(
     eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
     paymentId: uuid("payment_id").unique().references(() => payments.id, { onDelete: "set null" }),
     balanceEntryId: uuid("balance_entry_id").unique().references(() => playerBalanceEntries.id, { onDelete: "set null" }),
-    // A FK é criada pela migração porque shirtOrders é declarado abaixo.
-    shirtOrderId: uuid("shirt_order_id"),
-    shirtPaymentStage: text("shirt_payment_stage"),
     notes: text("notes"),
     createdBy: uuid("created_by").notNull().references(() => profiles.id),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -301,6 +298,26 @@ export const shirtOrders = pgTable(
     unique("shirt_orders_profile_model_community_unique").on(t.profileId, t.model, t.community),
     index("shirt_orders_community_paid_created_idx").on(t.community, t.paid, t.createdAt),
   ],
+);
+
+// Caixa exclusivo das camisas. Não participa dos totais financeiros dos rachas.
+export const shirtFinanceTransactions = pgTable(
+  "shirt_finance_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    community: text("community").notNull(),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    transactionDate: date("transaction_date").notNull().defaultNow(),
+    profileId: uuid("profile_id").references(() => profiles.id, { onDelete: "set null" }),
+    shirtOrderId: uuid("shirt_order_id").references(() => shirtOrders.id, { onDelete: "set null" }),
+    paymentStage: text("payment_stage").notNull(),
+    createdBy: uuid("created_by").notNull().references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => profiles.id, { onDelete: "set null" }),
+  },
+  (t) => [index("shirt_finance_transactions_community_date_idx").on(t.community, t.transactionDate, t.createdAt)],
 );
 
 export const teamGenerations = pgTable("team_generations", {
