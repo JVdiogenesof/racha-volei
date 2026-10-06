@@ -6,6 +6,8 @@ import { currentMonthKey, formatMonthLabel, getMonthlyReport, normalizeMonthKey 
 import { getMonthlySelection } from "@/lib/monthlySelection";
 import { MonthlySelectionCourt } from "@/components/MonthlySelectionCourt";
 
+const INAUGURAL_SELECTION_MONTH = "2026-09";
+
 export default async function MonthlySelectionPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const profile = await requireProfile();
   const supabase = await createClient();
@@ -23,7 +25,7 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
     finishedCountByMonth.set(key, (finishedCountByMonth.get(key) ?? 0) + 1);
   }
   const completedMonths = [...finishedCountByMonth.entries()]
-    .filter(([, count]) => count >= 4)
+    .filter(([key, count]) => count >= 4 || (community === "court" && key === INAUGURAL_SELECTION_MONTH && count >= 3))
     .map(([key]) => key)
     .sort()
     .reverse();
@@ -32,7 +34,9 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
   const defaultMonth = completedMonths[0] ?? currentMonthKey();
   const monthKey = normalizeMonthKey(requested, defaultMonth);
   const report = await getMonthlyReport(supabase, community, monthKey);
-  const selection = getMonthlySelection(report);
+  const isInauguralEdition = community === "court" && monthKey === INAUGURAL_SELECTION_MONTH && report.finishedEvents.length >= 3;
+  const selectionUnlocked = report.unlocked || isInauguralEdition;
+  const selection = getMonthlySelection({ ...report, unlocked: selectionUnlocked });
   const availableMonths = [...new Set([monthKey, currentMonthKey(), ...completedMonths, ...eventMonths])].sort().reverse();
   const remaining = Math.max(0, report.requiredEvents - report.finishedEvents.length);
 
@@ -53,7 +57,7 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
         </form>
       </div>
 
-      {!report.unlocked ? (
+      {!selectionUnlocked ? (
         <section className="mt-6 overflow-hidden rounded-3xl border border-amber-300/20 bg-gradient-to-br from-amber-300/[0.09] to-white/[0.025] p-6 text-center">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-300/10 text-amber-200"><LockKeyhole className="h-6 w-6" /></span>
           <h2 className="mt-4 text-lg font-black text-white">A seleção ainda está em formação</h2>
@@ -67,6 +71,11 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
         </section>
       ) : selection.complete ? (
         <div className="mt-6 space-y-4">
+          {isInauguralEdition ? (
+            <div className="rounded-2xl border border-purple-300/20 bg-purple-400/[0.08] px-4 py-3 text-center text-xs font-semibold text-purple-100">
+              Edição inaugural formada com os 3 rachas encerrados em setembro.
+            </div>
+          ) : null}
           <MonthlySelectionCourt selection={selection} community={community} monthLabel={report.monthLabel} />
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <InfoCard icon={Sparkles} label="Índice VPA" value="60%" />
