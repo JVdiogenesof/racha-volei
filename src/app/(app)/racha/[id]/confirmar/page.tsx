@@ -55,7 +55,7 @@ export default async function ConfirmarPresencaPage({
       getAttendanceStreaks(supabase, selectedCommunity),
       getConfirmedHighlights(supabase, id),
       profile.is_organizer
-        ? supabase.from("payments").select("profile_id, paid").eq("event_id", id)
+        ? supabase.from("payments").select("profile_id, paid, payment_source").eq("event_id", id)
         : Promise.resolve({ data: null }),
       supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
     ]);
@@ -103,6 +103,7 @@ export default async function ConfirmarPresencaPage({
   const reserveOptions = (reserveEntries ?? []).map((p) => ({ id: p.id, fullName: p.full_name }));
   const convidados = (guestProfiles ?? []).filter((guest) => !confirmedIds.has(guest.id));
   const paidProfileIds = new Set((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => payment.profile_id));
+  const paymentSourceByProfile = new Map((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => [payment.profile_id, payment.payment_source]));
   const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
   const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
 
@@ -390,6 +391,7 @@ export default async function ConfirmarPresencaPage({
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
+              const paymentSource = paymentSourceByProfile.get(a.profile_id);
               const isSetter = isSetterForEvent(a);
               const ratingDetails = ratingDetailsFor(a.profile_id);
               const hasProvisionalGuestRating = a.uses_newcomer_spot && ratingDetails.provisional;
@@ -411,7 +413,7 @@ export default async function ConfirmarPresencaPage({
                         {isSetter && <SetterBadge />}
                         {profile.is_organizer && (
                           <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${hasPaid ? "border-green-400/25 bg-green-500/10 text-green-300" : "border-white/10 bg-white/5 text-white/40"}`}>
-                            {hasPaid ? "PAGO" : "PENDENTE"}
+                            {hasPaid ? paymentSource === "balance" ? "PAGO · SALDO" : "PAGO" : "PENDENTE"}
                           </span>
                         )}
                         {hasProvisionalGuestRating && (

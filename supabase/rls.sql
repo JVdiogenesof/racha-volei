@@ -158,7 +158,9 @@ alter table push_subscriptions enable row level security;
 alter table tournament_reserved_players enable row level security;
 alter table tournament_matches enable row level security;
 alter table shirt_orders enable row level security;
-alter table free_racha_credits enable row level security;
+alter table player_balance_entries enable row level security;
+alter table finance_transactions enable row level security;
+alter table finance_reminders enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -238,13 +240,25 @@ create policy "payments_write" on payments for all to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
 
--- Créditos de racha gratuito contêm controle financeiro interno. Somente
+-- Caixa, saldos individuais e agenda financeira são internos. Somente
 -- organizadores podem consultar ou alterar, inclusive pela Data API.
-create policy "free_racha_credits_select_organizer" on free_racha_credits for select to authenticated
+create policy "player_balance_entries_select_organizer" on player_balance_entries for select to authenticated
   using ((select public.is_organizer()));
-create policy "free_racha_credits_insert_organizer" on free_racha_credits for insert to authenticated
-  with check ((select public.is_organizer()) and granted_by = (select auth.uid()));
-create policy "free_racha_credits_update_organizer" on free_racha_credits for update to authenticated
+create policy "player_balance_entries_insert_organizer" on player_balance_entries for insert to authenticated
+  with check ((select public.is_organizer()) and created_by = (select auth.uid()));
+create policy "player_balance_entries_update_organizer" on player_balance_entries for update to authenticated
+  using ((select public.is_organizer()))
+  with check ((select public.is_organizer()));
+
+create policy "finance_transactions_select_organizer" on finance_transactions for select to authenticated
+  using ((select public.is_organizer()));
+create policy "finance_transactions_insert_organizer" on finance_transactions for insert to authenticated
+  with check ((select public.is_organizer()) and created_by = (select auth.uid()));
+create policy "finance_transactions_update_organizer" on finance_transactions for update to authenticated
+  using ((select public.is_organizer()))
+  with check ((select public.is_organizer()));
+
+create policy "finance_reminders_organizer_all" on finance_reminders for all to authenticated
   using ((select public.is_organizer()))
   with check ((select public.is_organizer()));
 

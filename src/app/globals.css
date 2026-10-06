@@ -45,6 +45,26 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+.field {
+  min-height: 2.75rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.12);
+  padding: 0.625rem 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease;
+}
+
+.field:focus {
+  border-color: rgb(196 181 253 / 0.55);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.field::placeholder { color: rgb(255 255 255 / 0.28); }
+
 /* O conteúdo não pode depender só do fundo do body. Alguns navegadores no
    Windows deixam de pintar gradientes fixos depois de zoom, economia de
    energia ou falha de aceleração gráfica. A cor sólida mantém textos e cards

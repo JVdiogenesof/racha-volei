@@ -21,6 +21,9 @@ const APP_TABLES = [
   "events",
   "attendance",
   "payments",
+  "player_balance_entries",
+  "finance_transactions",
+  "finance_reminders",
   "team_generations",
   "teams",
   "team_members",
@@ -30,8 +33,6 @@ const APP_TABLES = [
   "ranking_adjustments",
   "reserve_list",
   "push_subscriptions",
-  "reaction_types",
-  "reactions",
   "tournament_reserved_players",
 ];
 

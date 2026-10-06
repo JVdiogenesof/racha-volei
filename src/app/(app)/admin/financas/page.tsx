@@ -1,122 +1,119 @@
-import { CalendarCheck, Gift, History, RotateCcw, TicketCheck, UserRoundCheck, WalletCards, X } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarClock, Check, CircleDollarSign, ClipboardCheck, History, RotateCcw, WalletCards, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
-import { cancelFreeRachaCredit, grantFreeRachaCredits, restoreFreeRachaCredit, useFreeRachaCredit } from "./actions";
+import { PlayerBalanceForm } from "@/components/PlayerBalanceForm";
+import { addFinanceReminder, addFinanceTransaction, addPlayerBalance, applyPlayerBalance, reversePlayerBalance, toggleFinanceReminder, voidFinanceTransaction } from "./actions";
 
-type ProfileRow = { id: string; full_name: string; avatar_url: string | null; status: string; communities: string[] | null };
-type EventRow = { id: string; date: string; location: string | null; status: string };
-type CreditStatus = "available" | "used" | "cancelled";
-type CreditRow = {
-  id: string;
-  profile_id: string;
-  reason: string;
-  notes: string | null;
-  status: CreditStatus;
-  granted_by: string;
-  granted_at: string;
-  used_event_id: string | null;
-  used_by: string | null;
-  used_at: string | null;
-  cancelled_by: string | null;
-  cancelled_at: string | null;
+type ProfileRow = { id: string; full_name: string; avatar_url: string | null; status: string };
+type EventRow = { id: string; date: string; location: string | null; price_per_player: string | number | null };
+type BalanceRow = { id: string; profile_id: string; entry_type: "credit" | "debit"; amount: string | number; category: string; cash_effect: string; description: string; notes: string | null; event_id: string | null; created_at: string; reversed_at: string | null };
+type TransactionRow = { id: string; transaction_type: "income" | "expense"; category: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_id: string | null; balance_entry_id: string | null; notes: string | null; voided_at: string | null };
+type ReminderRow = { id: string; title: string; notes: string | null; due_date: string | null; completed: boolean; created_at: string };
+
+const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const categoryLabels: Record<string, string> = {
+  event_payment: "Pagamento do racha", sponsorship: "Patrocínio", court_rental: "Aluguel da quadra",
+  medals: "Medalhas", balance: "Saldo de jogador", other: "Outro",
+  advance_payment: "Pagamento antecipado", cancellation_credit: "Desistência avisada",
+  challenge: "Prêmio de desafio",
 };
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function eventLabel(event: EventRow) {
-  const date = new Date(`${event.date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
-  return `${date}${event.location ? ` · ${event.location}` : ""}`;
-}
+function amount(value: string | number) { return Number(value) || 0; }
+function formatDate(value: string) { return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); }
+function eventLabel(event: EventRow) { return `${formatDate(event.date)}${event.location ? ` · ${event.location}` : ""}${event.price_per_player ? ` · ${money.format(amount(event.price_per_player))}` : ""}`; }
 
 export default async function AdminFinancasPage() {
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);
   const supabase = await createClient();
-  const [{ data: profiles, error: profilesError }, { data: credits, error: creditsError }, { data: events, error: eventsError }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, avatar_url, status, communities").contains("communities", [community]).order("full_name"),
-    supabase.from("free_racha_credits").select("id, profile_id, reason, notes, status, granted_by, granted_at, used_event_id, used_by, used_at, cancelled_by, cancelled_at").eq("community", community).order("granted_at", { ascending: false }),
-    supabase.from("events").select("id, date, location, status").eq("community", community).neq("status", "cancelled").order("date", { ascending: false }).limit(16),
+  const [profilesResult, balancesResult, transactionsResult, remindersResult, eventsResult] = await Promise.all([
+    supabase.from("profiles").select("id, full_name, avatar_url, status").contains("communities", [community]).order("full_name"),
+    supabase.from("player_balance_entries").select("id, profile_id, entry_type, amount, category, cash_effect, description, notes, event_id, created_at, reversed_at").eq("community", community).order("created_at", { ascending: false }),
+    supabase.from("finance_transactions").select("id, transaction_type, category, description, amount, transaction_date, profile_id, payment_id, balance_entry_id, notes, voided_at").eq("community", community).order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).limit(160),
+    supabase.from("finance_reminders").select("id, title, notes, due_date, completed, created_at").eq("community", community).order("completed").order("due_date", { ascending: true, nullsFirst: false }).limit(60),
+    supabase.from("events").select("id, date, location, price_per_player").eq("community", community).neq("status", "cancelled").order("date", { ascending: false }).limit(20),
   ]);
-  if (profilesError) throw new Error(profilesError.message);
-  if (creditsError) throw new Error(creditsError.message);
-  if (eventsError) throw new Error(eventsError.message);
+  for (const result of [profilesResult, balancesResult, transactionsResult, remindersResult, eventsResult]) if (result.error) throw new Error(result.error.message);
 
-  const profileRows = (profiles ?? []) as ProfileRow[];
-  const creditRows = (credits ?? []) as CreditRow[];
-  const eventRows = (events ?? []) as EventRow[];
-  const profileById = new Map(profileRows.map((profile) => [profile.id, profile]));
-  const eventById = new Map(eventRows.map((event) => [event.id, event]));
-  const selectableProfiles = profileRows.filter((profile) => profile.status === "approved" || profile.status === "guest");
-  const availableCredits = creditRows.filter((credit) => credit.status === "available");
-  const historyCredits = creditRows.filter((credit) => credit.status !== "available").slice(0, 30);
-  const availableByProfile = new Map<string, CreditRow[]>();
-  for (const credit of availableCredits) {
-    const current = availableByProfile.get(credit.profile_id) ?? [];
-    current.push(credit);
-    availableByProfile.set(credit.profile_id, current);
+  const profiles = (profilesResult.data ?? []) as ProfileRow[];
+  const balanceRows = (balancesResult.data ?? []) as BalanceRow[];
+  const transactionRows = (transactionsResult.data ?? []) as TransactionRow[];
+  const reminders = (remindersResult.data ?? []) as ReminderRow[];
+  const events = (eventsResult.data ?? []) as EventRow[];
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  const selectableProfiles = profiles.filter((profile) => profile.status === "approved" || profile.status === "guest");
+
+  const activeTransactions = transactionRows.filter((row) => !row.voided_at);
+  const now = new Date();
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthTransactions = activeTransactions.filter((row) => row.transaction_date.startsWith(monthKey));
+  const monthIncome = monthTransactions.filter((row) => row.transaction_type === "income").reduce((sum, row) => sum + amount(row.amount), 0);
+  const monthExpense = monthTransactions.filter((row) => row.transaction_type === "expense").reduce((sum, row) => sum + amount(row.amount), 0);
+  const cashTotal = activeTransactions.reduce((sum, row) => sum + (row.transaction_type === "income" ? amount(row.amount) : -amount(row.amount)), 0);
+
+  const entriesByProfile = new Map<string, BalanceRow[]>();
+  const balanceByProfile = new Map<string, number>();
+  for (const entry of balanceRows.filter((row) => !row.reversed_at)) {
+    entriesByProfile.set(entry.profile_id, [...(entriesByProfile.get(entry.profile_id) ?? []), entry]);
+    balanceByProfile.set(entry.profile_id, (balanceByProfile.get(entry.profile_id) ?? 0) + (entry.entry_type === "credit" ? amount(entry.amount) : -amount(entry.amount)));
   }
+  const holders = [...balanceByProfile.entries()].filter(([, value]) => value > 0.009).sort((a, b) => b[1] - a[1]);
+  const totalPlayerBalance = holders.reduce((sum, [, value]) => sum + value, 0);
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  return (
-    <div className="min-w-0">
-      <header className="flex items-start gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-200"><WalletCards className="h-6 w-6" /></span>
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/70">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p>
-          <h1 className="mt-1 text-2xl font-black text-white">Finanças e rachas gratuitos</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Registre cortesias, veja quem ainda possui entrada gratuita e marque quando ela for utilizada.</p>
-        </div>
-      </header>
+  return <div className="min-w-0 pb-10">
+    <header className="flex items-start gap-3">
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-200"><WalletCards className="h-6 w-6" /></span>
+      <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/70">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 text-2xl font-black text-white">Caixa e saldos</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Entradas, despesas, saldo antecipado das pessoas e lembretes dos administradores.</p></div>
+    </header>
 
-      <section className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
-        <StatCard icon={Gift} label="Disponíveis" value={availableCredits.length} accent="text-emerald-200" />
-        <StatCard icon={UserRoundCheck} label="Pessoas" value={availableByProfile.size} accent="text-purple-200" />
-        <StatCard icon={TicketCheck} label="Utilizados" value={creditRows.filter((credit) => credit.status === "used").length} accent="text-amber-200" />
-      </section>
+    <section className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <Stat icon={ArrowUpRight} label="Entradas no mês" value={money.format(monthIncome)} color="text-emerald-300" />
+      <Stat icon={ArrowDownRight} label="Saídas no mês" value={money.format(monthExpense)} color="text-red-300" />
+      <Stat icon={CircleDollarSign} label="Resultado do mês" value={money.format(monthIncome - monthExpense)} color={monthIncome - monthExpense >= 0 ? "text-cyan-200" : "text-red-300"} />
+      <Stat icon={WalletCards} label="Caixa acumulado" value={money.format(cashTotal)} color="text-purple-200" />
+    </section>
 
-      <section className="mt-6 rounded-2xl border border-emerald-300/15 bg-emerald-400/[0.045] p-4 sm:p-5">
-        <div className="flex items-center gap-2"><Gift className="h-5 w-5 text-emerald-200" /><h2 className="font-black text-white">Adicionar racha gratuito</h2></div>
-        <ActionForm action={grantFreeRachaCredits} successMessage="Crédito gratuito registrado!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          <label className="min-w-0 lg:col-span-2"><span className="mb-1.5 block text-xs font-semibold text-white/55">Pessoa</span><select name="profileId" required defaultValue="" className="min-h-11 w-full rounded-xl border border-white/10 bg-[#171039] px-3 text-sm text-white"><option value="" disabled>Escolha a pessoa</option>{selectableProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name}</option>)}</select></label>
-          <label className="min-w-0 lg:col-span-2"><span className="mb-1.5 block text-xs font-semibold text-white/55">Motivo</span><input name="reason" list="credit-reasons" required maxLength={120} placeholder="Ex.: prêmio do sorteio" className="min-h-11 w-full rounded-xl border border-white/10 bg-black/10 px-3 text-sm text-white placeholder:text-white/30" /><datalist id="credit-reasons"><option value="Premiação" /><option value="Sorteio" /><option value="Cortesia" /><option value="Compensação" /><option value="Convidado especial" /></datalist></label>
-          <label><span className="mb-1.5 block text-xs font-semibold text-white/55">Quantidade</span><input type="number" name="quantity" min={1} max={10} defaultValue={1} required className="min-h-11 w-full rounded-xl border border-white/10 bg-black/10 px-3 text-sm text-white" /></label>
-          <button type="submit" className="min-h-11 self-end rounded-xl bg-emerald-500 px-4 text-sm font-black text-emerald-950 hover:bg-emerald-400">Registrar</button>
-          <label className="min-w-0 sm:col-span-2 lg:col-span-6"><span className="mb-1.5 block text-xs font-semibold text-white/55">Observação opcional</span><textarea name="notes" maxLength={500} rows={2} placeholder="Detalhes importantes para os administradores" className="w-full resize-y rounded-xl border border-white/10 bg-black/10 px-3 py-2.5 text-sm text-white placeholder:text-white/30" /></label>
-        </ActionForm>
-      </section>
+    <section className="mt-6 rounded-2xl border border-emerald-300/15 bg-emerald-400/[0.045] p-4 sm:p-5">
+      <div className="flex items-center gap-2"><WalletCards className="h-5 w-5 text-emerald-200" /><div><h2 className="font-black text-white">Adicionar saldo a uma pessoa</h2><p className="text-xs text-white/45">O saldo fica em reais e pode pagar um racha futuro inteiro.</p></div></div>
+      <PlayerBalanceForm action={addPlayerBalance} players={selectableProfiles.map((profile) => ({ id: profile.id, fullName: profile.full_name }))} />
+    </section>
 
-      <section className="mt-6">
-        <div className="flex items-center justify-between gap-3"><div><h2 className="font-black text-white">Créditos disponíveis</h2><p className="mt-1 text-xs text-white/45">Pessoas que ainda podem participar gratuitamente.</p></div><span className="rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200">{availableCredits.length}</span></div>
-        {availableByProfile.size ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{[...availableByProfile.entries()].map(([profileId, playerCredits]) => {
-          const player = profileById.get(profileId);
-          return <article key={profileId} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-            <div className="flex items-center gap-3 border-b border-white/[0.07] p-4"><Avatar src={player?.avatar_url ?? null} name={player?.full_name ?? "Jogador"} size="md" /><div className="min-w-0 flex-1"><p className="truncate font-black text-white">{player?.full_name ?? "Perfil não encontrado"}</p><p className="mt-0.5 text-xs text-emerald-200">{playerCredits.length} {playerCredits.length === 1 ? "racha gratuito disponível" : "rachas gratuitos disponíveis"}</p></div></div>
-            <div className="divide-y divide-white/[0.07]">{playerCredits.map((credit) => <div key={credit.id} className="p-4"><div className="flex items-start gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-400/10 text-emerald-200"><Gift className="h-4 w-4" /></span><div className="min-w-0 flex-1"><p className="font-bold text-white">{credit.reason}</p><p className="mt-0.5 text-[11px] text-white/40">Concedido em {formatDate(credit.granted_at)}{profileById.get(credit.granted_by)?.full_name ? ` por ${profileById.get(credit.granted_by)?.full_name}` : ""}</p>{credit.notes && <p className="mt-2 rounded-lg bg-black/10 px-2.5 py-2 text-xs leading-5 text-white/55">{credit.notes}</p>}</div></div>
-              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <ActionForm action={useFreeRachaCredit} successMessage={`${player?.full_name ?? "Pessoa"} utilizou o racha gratuito.`} className="flex min-w-0 gap-2"><input type="hidden" name="creditId" value={credit.id} /><select name="eventId" aria-label="Vincular ao racha" defaultValue="" className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/10 bg-[#171039] px-2 text-xs text-white"><option value="">Usar sem vincular a um racha</option>{eventRows.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}</select><button type="submit" className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg bg-emerald-500/15 px-3 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25"><CalendarCheck className="h-4 w-4" />Usar</button></ActionForm>
-                <ActionForm action={cancelFreeRachaCredit} successMessage="Crédito cancelado."><input type="hidden" name="creditId" value={credit.id} /><button type="submit" title="Cancelar crédito" aria-label="Cancelar crédito" className="grid h-10 w-10 place-items-center rounded-full border border-red-400/20 text-red-300 hover:bg-red-500/10"><X className="h-4 w-4" /></button></ActionForm>
-              </div>
-            </div>)}</div>
-          </article>;
-        })}</div> : <div className="mt-3 rounded-2xl border border-dashed border-white/10 p-8 text-center"><Gift className="mx-auto h-8 w-8 text-white/20" /><p className="mt-3 font-semibold text-white/60">Nenhum racha gratuito pendente.</p></div>}
-      </section>
+    <section className="mt-7">
+      <div className="flex items-end justify-between gap-3"><div><h2 className="font-black text-white">Saldos disponíveis</h2><p className="mt-1 text-xs text-white/45">{holders.length} pessoas · total reservado de {money.format(totalPlayerBalance)}</p></div><span className="rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200">{money.format(totalPlayerBalance)}</span></div>
+      {holders.length ? <div className="mt-3 grid gap-3 lg:grid-cols-2">{holders.map(([profileId, currentBalance]) => {
+        const player = profileById.get(profileId); const entries = entriesByProfile.get(profileId) ?? [];
+        return <article key={profileId} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          <div className="flex items-center gap-3 border-b border-white/[0.07] p-4"><Avatar src={player?.avatar_url ?? null} name={player?.full_name ?? "Jogador"} size="md" /><div className="min-w-0 flex-1"><p className="truncate font-black text-white">{player?.full_name ?? "Perfil não encontrado"}</p><p className="mt-0.5 text-sm font-black text-emerald-200">{money.format(currentBalance)} disponíveis</p></div></div>
+          <div className="p-4"><ActionForm action={applyPlayerBalance} successMessage="Saldo utilizado e pagamento confirmado!" className="flex min-w-0 gap-2"><input type="hidden" name="profileId" value={profileId} /><select name="eventId" required defaultValue="" className="field min-w-0 flex-1 text-xs"><option value="" disabled>Usar no racha...</option>{events.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}</select><button type="submit" className="min-h-11 shrink-0 rounded-xl bg-emerald-500/15 px-3 text-xs font-black text-emerald-200 hover:bg-emerald-500/25">Usar saldo</button></ActionForm></div>
+          <details className="border-t border-white/[0.07]"><summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-white/45">Ver movimentações ({entries.length})</summary><div className="divide-y divide-white/[0.06]">{entries.slice(0, 8).map((entry) => <div key={entry.id} className="flex items-start gap-3 px-4 py-3"><span className={`mt-0.5 font-black ${entry.entry_type === "credit" ? "text-emerald-300" : "text-amber-300"}`}>{entry.entry_type === "credit" ? "+" : "−"}{money.format(amount(entry.amount))}</span><div className="min-w-0 flex-1"><p className="text-xs font-semibold text-white/75">{entry.description}</p><p className="mt-0.5 text-[10px] text-white/35">{formatDate(entry.created_at)}{entry.event_id && eventById.get(entry.event_id) ? ` · ${eventLabel(eventById.get(entry.event_id)!)}` : ""}</p></div>{entry.entry_type === "credit" && <ActionForm action={reversePlayerBalance} successMessage="Lançamento estornado."><input type="hidden" name="entryId" value={entry.id} /><button type="submit" title="Estornar saldo" className="grid h-8 w-8 place-items-center rounded-full text-white/35 hover:bg-red-400/10 hover:text-red-300"><RotateCcw className="h-3.5 w-3.5" /></button></ActionForm>}</div>)}</div></details>
+        </article>;
+      })}</div> : <Empty text="Nenhuma pessoa possui saldo disponível." />}
+    </section>
 
-      <section className="mt-7 rounded-2xl border border-white/10 bg-white/[0.02]">
-        <div className="flex items-center gap-2 border-b border-white/10 p-4"><History className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Histórico recente</h2><p className="text-xs text-white/40">Créditos utilizados ou cancelados.</p></div></div>
-        {historyCredits.length ? <div className="divide-y divide-white/[0.07]">{historyCredits.map((credit) => {
-          const player = profileById.get(credit.profile_id);
-          const event = credit.used_event_id ? eventById.get(credit.used_event_id) : null;
-          return <article key={credit.id} className="flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center"><div className="flex min-w-0 flex-1 items-center gap-3"><Avatar src={player?.avatar_url ?? null} name={player?.full_name ?? "Jogador"} size="sm" /><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-bold text-white">{player?.full_name ?? "Perfil não encontrado"}</p><span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase ${credit.status === "used" ? "bg-amber-300/10 text-amber-200" : "bg-red-400/10 text-red-200"}`}>{credit.status === "used" ? "Utilizado" : "Cancelado"}</span></div><p className="mt-1 text-xs text-white/45">{credit.reason}{event ? ` · ${eventLabel(event)}` : ""} · {formatDate(credit.used_at ?? credit.cancelled_at ?? credit.granted_at)}</p></div></div><ActionForm action={restoreFreeRachaCredit} successMessage="Crédito restaurado e disponível novamente."><input type="hidden" name="creditId" value={credit.id} /><input type="hidden" name="previousStatus" value={credit.status} /><button type="submit" className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-white/60 hover:bg-white/5 hover:text-white"><RotateCcw className="h-3.5 w-3.5" />Restaurar</button></ActionForm></article>;
-        })}</div> : <p className="p-6 text-center text-sm text-white/35">O histórico aparecerá quando um crédito for usado ou cancelado.</p>}
-      </section>
-    </div>
-  );
+    <section className="mt-7 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
+      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Nova movimentação manual</h2><p className="text-xs text-white/40">Patrocínio, aluguel, medalhas ou outra entrada e saída.</p></div></div><ActionForm action={addFinanceTransaction} successMessage="Movimentação registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label><Label>Tipo</Label><select name="transactionType" className="field"><option value="income">Entrada</option><option value="expense">Saída</option></select></label>
+        <label><Label>Categoria</Label><select name="category" className="field"><option value="sponsorship">Patrocínio</option><option value="court_rental">Aluguel da quadra</option><option value="medals">Medalhas</option><option value="other">Outro</option></select></label>
+        <label><Label>Valor</Label><input name="amount" inputMode="decimal" required placeholder="0,00" className="field" /></label><label><Label>Data</Label><input type="date" name="transactionDate" defaultValue={today} required className="field" /></label>
+        <label className="sm:col-span-2"><Label>Descrição</Label><input name="description" maxLength={160} required placeholder="Ex.: pagamento do aluguel da NR" className="field" /></label><label className="sm:col-span-2"><Label>Observação opcional</Label><input name="notes" maxLength={500} className="field" /></label><button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white sm:col-span-2 hover:bg-purple-400">Registrar movimentação</button>
+      </ActionForm></div>
+
+      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-amber-200" /><div><h2 className="font-black text-white">Agenda financeira</h2><p className="text-xs text-white/40">Contas e tarefas que não podem ser esquecidas.</p></div></div><ActionForm action={addFinanceReminder} successMessage="Lembrete criado!" resetOnSuccess className="mt-4 grid grid-cols-[1fr_auto] gap-2"><input name="title" required maxLength={140} placeholder="Ex.: pagar medalhas" className="field min-w-0" /><input type="date" name="dueDate" className="field w-[8.7rem]" /><input name="notes" maxLength={500} placeholder="Observação opcional" className="field col-span-2" /><button type="submit" className="col-span-2 min-h-10 rounded-xl bg-amber-300/15 text-xs font-black text-amber-100 hover:bg-amber-300/25">Adicionar à agenda</button></ActionForm>
+        <div className="mt-4 space-y-2">{reminders.length ? reminders.map((reminder) => <div key={reminder.id} className={`flex items-start gap-3 rounded-xl border p-3 ${reminder.completed ? "border-white/5 bg-white/[0.015] opacity-55" : "border-white/10 bg-black/10"}`}><ActionForm action={toggleFinanceReminder} successMessage={reminder.completed ? "Lembrete reaberto." : "Lembrete concluído!"}><input type="hidden" name="reminderId" value={reminder.id} /><input type="hidden" name="completed" value={reminder.completed ? "false" : "true"} /><button type="submit" className={`grid h-8 w-8 place-items-center rounded-full border ${reminder.completed ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-white/15 text-white/30 hover:text-emerald-200"}`}>{reminder.completed ? <Check className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}</button></ActionForm><div className="min-w-0"><p className={`text-sm font-semibold text-white ${reminder.completed ? "line-through" : ""}`}>{reminder.title}</p>{reminder.due_date && <p className="mt-0.5 text-[10px] font-bold text-amber-200/70">Prazo: {formatDate(reminder.due_date)}</p>}{reminder.notes && <p className="mt-1 text-xs leading-5 text-white/40">{reminder.notes}</p>}</div></div>) : <p className="py-4 text-center text-xs text-white/30">Agenda vazia.</p>}</div>
+      </div>
+    </section>
+
+    <section className="mt-7 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-4"><div className="flex items-center gap-2"><History className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Extrato do caixa</h2><p className="text-xs text-white/40">Pagamentos marcados na lista entram aqui automaticamente.</p></div></div><span className="text-xs font-black text-white/35">{activeTransactions.length}</span></div>
+      {transactionRows.length ? <div className="divide-y divide-white/[0.07]">{transactionRows.slice(0, 80).map((row) => { const player = row.profile_id ? profileById.get(row.profile_id) : null; return <article key={row.id} className={`flex items-center gap-3 p-3 sm:p-4 ${row.voided_at ? "opacity-40" : ""}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${row.transaction_type === "income" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>{row.transaction_type === "income" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-bold text-white">{row.description}</p>{row.voided_at && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-black text-white/50">ESTORNADO</span>}</div><p className="mt-0.5 truncate text-[10px] text-white/35">{categoryLabels[row.category] ?? row.category}{player ? ` · ${player.full_name}` : ""} · {formatDate(row.transaction_date)}</p></div><strong className={row.transaction_type === "income" ? "text-emerald-300" : "text-red-300"}>{row.transaction_type === "income" ? "+" : "−"}{money.format(amount(row.amount))}</strong>{!row.voided_at && !row.payment_id && !row.balance_entry_id && <ActionForm action={voidFinanceTransaction} successMessage="Movimentação estornada."><input type="hidden" name="transactionId" value={row.id} /><button type="submit" title="Estornar movimentação" className="grid h-8 w-8 place-items-center rounded-full text-white/30 hover:bg-red-400/10 hover:text-red-300"><X className="h-3.5 w-3.5" /></button></ActionForm>}</article>; })}</div> : <p className="p-8 text-center text-sm text-white/35">O extrato aparecerá conforme o caixa for movimentado.</p>}
+    </section>
+  </div>;
 }
 
-function StatCard({ icon: Icon, label, value, accent }: { icon: typeof Gift; label: string; value: number; accent: string }) {
-  return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${accent}`} /><strong className="mt-2 block text-xl text-white sm:text-2xl">{value}</strong><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>;
-}
+function Stat({ icon: Icon, label, value, color }: { icon: typeof WalletCards; label: string; value: string; color: string }) { return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${color}`} /><strong className="mt-2 block truncate text-base text-white sm:text-xl">{value}</strong><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>; }
+function Label({ children }: { children: React.ReactNode }) { return <span className="mb-1.5 block text-xs font-semibold text-white/55">{children}</span>; }
+function Empty({ text }: { text: string }) { return <div className="mt-3 rounded-2xl border border-dashed border-white/10 p-8 text-center"><WalletCards className="mx-auto h-8 w-8 text-white/20" /><p className="mt-3 font-semibold text-white/50">{text}</p></div>; }

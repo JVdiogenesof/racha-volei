@@ -133,7 +133,7 @@ export async function setOfficialListOpen(formData: FormData) {
 }
 
 export async function setPaymentStatus(formData: FormData) {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
@@ -144,19 +144,15 @@ export async function setPaymentStatus(formData: FormData) {
   }
 
   const paid = paidValue === "true";
-  const { error } = await supabase.from("payments").upsert(
-    {
-      event_id: eventId,
-      profile_id: profileId,
-      paid,
-      paid_at: paid ? new Date().toISOString() : null,
-      marked_by: paid ? organizer.id : null,
-    },
-    { onConflict: "event_id,profile_id" },
-  );
+  const { error } = await supabase.rpc("set_event_payment_status", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+    p_paid: paid,
+  });
 
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath("/admin/financas");
 }
 
 export async function setEventSetterRole(formData: FormData) {

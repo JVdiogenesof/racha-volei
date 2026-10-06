@@ -198,33 +198,79 @@ export const payments = pgTable(
     paid: boolean("paid").notNull().default(false),
     paidAt: timestamp("paid_at", { withTimezone: true }),
     markedBy: uuid("marked_by").references(() => profiles.id),
+    amount: numeric("amount", { precision: 10, scale: 2 }),
+    paymentSource: text("payment_source").notNull().default("cash"),
+    // A FK é adicionada pela migração, porque playerBalanceEntries é declarado
+    // depois de payments e a referência circular atrapalha a inferência.
+    balanceEntryId: uuid("balance_entry_id"),
   },
   (t) => [unique().on(t.eventId, t.profileId)],
 );
 
-// Livro de cortesias do racha. Cada linha vale uma entrada gratuita e é
-// preservada quando usada/cancelada para manter o histórico administrativo.
-export const freeRachaCredits = pgTable(
-  "free_racha_credits",
+// Livro de saldo individual. Créditos somam; débitos descontam quando o saldo
+// paga um racha. Reversões preservam o histórico em vez de apagar movimentos.
+export const playerBalanceEntries = pgTable(
+  "player_balance_entries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
     community: text("community").notNull().default("court"),
-    reason: text("reason").notNull(),
+    entryType: text("entry_type").notNull().default("credit"),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    category: text("category").notNull().default("other"),
+    cashEffect: text("cash_effect").notNull().default("none"),
+    description: text("description").notNull(),
     notes: text("notes"),
-    status: text("status").notNull().default("available"),
-    grantedBy: uuid("granted_by").notNull().references(() => profiles.id),
-    grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
-    usedEventId: uuid("used_event_id").references(() => events.id, { onDelete: "set null" }),
-    usedBy: uuid("used_by").references(() => profiles.id, { onDelete: "set null" }),
-    usedAt: timestamp("used_at", { withTimezone: true }),
-    cancelledBy: uuid("cancelled_by").references(() => profiles.id, { onDelete: "set null" }),
-    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
+    createdBy: uuid("created_by").notNull().references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reversedAt: timestamp("reversed_at", { withTimezone: true }),
+    reversedBy: uuid("reversed_by").references(() => profiles.id, { onDelete: "set null" }),
   },
   (t) => [
-    index("free_racha_credits_community_status_granted_idx").on(t.community, t.status, t.grantedAt),
-    index("free_racha_credits_profile_community_idx").on(t.profileId, t.community),
+    index("player_balance_entries_profile_community_created_idx").on(t.profileId, t.community, t.createdAt),
+    index("player_balance_entries_community_created_idx").on(t.community, t.createdAt),
   ],
+);
+
+export const financeTransactions = pgTable(
+  "finance_transactions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    community: text("community").notNull(),
+    transactionType: text("transaction_type").notNull(),
+    category: text("category").notNull(),
+    description: text("description").notNull(),
+    amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+    transactionDate: date("transaction_date").notNull().defaultNow(),
+    profileId: uuid("profile_id").references(() => profiles.id, { onDelete: "set null" }),
+    eventId: uuid("event_id").references(() => events.id, { onDelete: "set null" }),
+    paymentId: uuid("payment_id").unique().references(() => payments.id, { onDelete: "set null" }),
+    balanceEntryId: uuid("balance_entry_id").unique().references(() => playerBalanceEntries.id, { onDelete: "set null" }),
+    notes: text("notes"),
+    createdBy: uuid("created_by").notNull().references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => profiles.id, { onDelete: "set null" }),
+  },
+  (t) => [index("finance_transactions_community_date_idx").on(t.community, t.transactionDate, t.createdAt)],
+);
+
+export const financeReminders = pgTable(
+  "finance_reminders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    community: text("community").notNull(),
+    title: text("title").notNull(),
+    notes: text("notes"),
+    dueDate: date("due_date"),
+    completed: boolean("completed").notNull().default(false),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: uuid("completed_by").references(() => profiles.id, { onDelete: "set null" }),
+    createdBy: uuid("created_by").notNull().references(() => profiles.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("finance_reminders_community_completed_due_idx").on(t.community, t.completed, t.dueDate)],
 );
 
 // Pedido individual da nova camisa VPA. Cada pessoa mantém no máximo um
