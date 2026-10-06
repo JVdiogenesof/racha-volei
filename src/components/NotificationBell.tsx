@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp, Sparkles } from "lucide-react";
+import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -72,7 +72,7 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
           <TrendingUp className="h-5 w-5" strokeWidth={2} />
         </IslandLink>
         <IslandLink href="/selecao-do-mes" label="Seleção do mês" active={pathname.startsWith("/selecao-do-mes")}>
-          <Sparkles className="h-5 w-5" strokeWidth={2} />
+          <VolleyballCourtIcon className="h-5 w-5" />
         </IslandLink>
         <span aria-hidden className="mx-0.5 h-6 w-px bg-white/15" />
         <button
@@ -91,6 +91,16 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
         </button>
       </nav>
     </div>
+  );
+}
+
+function VolleyballCourtIcon({ className }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="1.5" />
+      <path d="M12 4v16M3 12h18" />
+      <path d="M9.5 4v16M14.5 4v16" strokeDasharray="1.5 2" opacity="0.65" />
+    </svg>
   );
 }
 
