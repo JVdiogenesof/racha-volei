@@ -127,6 +127,13 @@ a[href] svg,
   transition: transform 0.12s ease;
 }
 
+/* Ícones não podem encolher e empurrar ou cortar o texto em ações estreitas. */
+button > svg,
+a[href] > svg,
+[role="button"] > svg {
+  flex-shrink: 0;
+}
+
 button:not(:disabled):active,
 a:active,
 [role="button"]:active {

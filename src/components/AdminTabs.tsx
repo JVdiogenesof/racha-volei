@@ -25,14 +25,14 @@ export function AdminTabs({ canViewShirts = false }: { canViewShirts?: boolean }
             key={tab.href}
             href={tab.href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-w-0 items-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-medium transition sm:px-3 sm:text-sm ${
+            className={`flex min-h-12 min-w-0 items-center gap-2 border-b-2 px-2 py-2.5 text-xs font-medium leading-tight transition sm:min-h-0 sm:px-3 sm:text-sm ${
               active
                 ? "border-brand-purple text-purple-300"
                 : "border-transparent text-white/60 hover:text-white"
             }`}
           >
             <tab.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-            {tab.label}
+            <span className="min-w-0 text-balance">{tab.label}</span>
           </Link>
         );
       })}

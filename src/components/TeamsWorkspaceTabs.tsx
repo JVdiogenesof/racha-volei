@@ -40,13 +40,13 @@ export function TeamsWorkspaceTabs({
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-pressed={active}
-                className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition sm:text-sm ${
+                className={`flex min-h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold leading-none transition sm:flex-1 sm:text-sm ${
                   active ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/50 hover:bg-white/5 hover:text-white/80"
                 }`}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
                 {tab.label}
-                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-white/15 text-white" : "bg-white/5 text-white/35"}`}>
+                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] leading-none ${active ? "bg-white/15 text-white" : "bg-white/5 text-white/35"}`}>
                   {tab.count}
                 </span>
               </button>

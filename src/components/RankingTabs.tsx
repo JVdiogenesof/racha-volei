@@ -72,9 +72,9 @@ export function RankingTabs({
                 type="button"
                 onClick={() => setActive(id)}
                 aria-pressed={selected}
-                className={`flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-semibold transition ${selected ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:bg-white/5 hover:text-white/75"}`}
+                className={`flex min-h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold leading-none transition sm:flex-1 ${selected ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:bg-white/5 hover:text-white/75"}`}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {config.shortLabel}
               </button>
             );

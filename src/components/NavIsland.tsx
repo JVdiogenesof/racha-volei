@@ -40,7 +40,7 @@ export function NavIsland({
   return (
     <nav aria-label="Navegação principal" className={`border-t border-white/10 px-2 transition-[padding] duration-300 sm:flex sm:justify-center sm:px-3 ${compact ? "py-1.5 sm:py-2" : "py-2 sm:py-2.5"}`}>
       <div
-        className={`no-scrollbar mx-auto flex w-full max-w-full items-center gap-1 overflow-x-auto border border-white/10 bg-black/10 p-1 transition-all duration-300 sm:w-auto sm:max-w-none sm:overflow-visible sm:rounded-full sm:p-1.5 ${compact ? "rounded-full" : "rounded-2xl"}`}
+        className="no-scrollbar mx-auto flex w-full max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/10 p-1 transition-all duration-300 sm:w-auto sm:max-w-none sm:overflow-visible sm:p-1.5"
       >
         {LINKS.filter((link) => link.href !== "/camisas" || canViewShirts).map((link) => {
           const active = isActiveHref(pathname, link.href);
@@ -51,12 +51,12 @@ export function NavIsland({
               href={link.href}
               aria-label={link.label}
               aria-current={active ? "page" : undefined}
-              className={`relative flex shrink-0 items-center justify-center text-white/60 transition-all duration-300 ease-out sm:h-9 sm:min-h-0 sm:flex-row sm:gap-1.5 sm:rounded-full sm:py-0 ${compact ? "h-9 gap-1 rounded-full px-2" : "h-11 flex-col gap-0.5 rounded-xl px-2.5 sm:h-9 sm:flex-row"} ${
-                active ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white shadow-md shadow-purple-950/30 sm:px-3.5" : "hover:bg-white/10 hover:text-white/80 sm:w-9 sm:px-0"
+              className={`relative flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full text-white/60 transition-all duration-300 ease-out sm:h-9 ${
+                active ? "w-auto bg-gradient-to-r from-purple-600 to-violet-500 px-3 text-white shadow-md shadow-purple-950/30 sm:px-3.5" : "w-10 px-0 hover:bg-white/10 hover:text-white/80 sm:w-9"
               }`}
             >
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              <span className={`whitespace-nowrap text-center text-[9px] leading-tight font-semibold sm:text-xs ${compact && !active ? "hidden" : ""} ${active ? "animate-nav-label sm:inline" : "sm:hidden"}`}>{link.label}</span>
+              {active && <span className="animate-nav-label whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs">{link.label}</span>}
               {!active && badge > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
                   {badge > 9 ? "9+" : badge}
@@ -73,12 +73,12 @@ export function NavIsland({
               href="/admin/reserva"
               aria-label="Admin"
               aria-current={adminActive ? "page" : undefined}
-              className={`flex shrink-0 items-center justify-center transition-all duration-300 ease-out sm:h-9 sm:min-h-0 sm:flex-row sm:gap-1.5 sm:rounded-full sm:py-0 ${compact ? "h-9 gap-1 rounded-full px-2" : "h-11 flex-col gap-0.5 rounded-xl px-2.5 sm:h-9 sm:flex-row"} ${
-                adminActive ? "bg-red-500/20 text-red-300 sm:px-3.5" : "text-red-300/70 hover:bg-white/10 hover:text-red-300 sm:w-9 sm:px-0"
+              className={`flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full transition-all duration-300 ease-out sm:h-9 ${
+                adminActive ? "w-auto bg-red-500/20 px-3 text-red-300 sm:px-3.5" : "w-10 px-0 text-red-300/70 hover:bg-white/10 hover:text-red-300 sm:w-9"
               }`}
             >
               <ShieldCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
-              <span className={`text-[9px] font-semibold sm:text-xs ${compact && !adminActive ? "hidden" : ""} ${adminActive ? "animate-nav-label sm:inline" : "sm:hidden"}`}>Admin</span>
+              {adminActive && <span className="animate-nav-label whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs">Admin</span>}
             </Link>
           </>
         )}
