@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
 import { Check, Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { useToast } from "./Toast";
-import { getShirtModels, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo } from "@/lib/shirts";
+import { getShirtModels, SHIRT_PRICES, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo } from "@/lib/shirts";
 import type { Community } from "@/lib/community";
 import type { ShirtOrderState } from "@/app/(app)/camisas/actions";
 
@@ -68,7 +68,7 @@ export function ShirtOrderForm({
                 {selected && <span className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-purple-600 text-white shadow"><Check className="h-4 w-4" /></span>}
                 {saved && <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white backdrop-blur">{saved.paid ? "Pago" : saved.half_paid ? "Metade paga" : "Pedido salvo"}</span>}
               </div>
-              <div className="p-4"><p className="font-bold text-white">{item.label}</p><p className="mt-1 text-xs text-white/50">{item.description}</p></div>
+              <div className="p-4"><div className="flex items-center justify-between gap-3"><p className="font-bold text-white">{item.label}</p><strong className="text-sm text-emerald-300">{SHIRT_PRICES[key].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div><p className="mt-1 text-xs text-white/50">{item.description}</p></div>
             </button>
           );
         })}
@@ -80,7 +80,7 @@ export function ShirtOrderForm({
           <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919] sm:aspect-[16/11]" : "aspect-[16/8] sm:aspect-[16/6]"}`}>
             <Image src={shirtModels[model].image} alt={`Modelo selecionado: ${shirtModels[model].label}`} fill priority sizes="(max-width: 640px) 100vw, 720px" className={community === "sand" ? "object-contain object-center" : "object-cover"} />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent px-4 pb-4 pt-12">
-              <p className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-4 w-4 text-purple-300" />Modelo {shirtModels[model].label}</p>
+              <div className="flex items-center justify-between gap-3"><p className="flex items-center gap-2 text-lg font-black text-white"><Sparkles className="h-4 w-4 text-purple-300" />Modelo {shirtModels[model].label}</p><strong className="rounded-full bg-emerald-400/15 px-3 py-1 text-sm text-emerald-200">{SHIRT_PRICES[model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>
             </div>
           </div>
         </div>

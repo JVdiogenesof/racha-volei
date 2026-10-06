@@ -104,7 +104,7 @@ export async function voidFinanceTransaction(formData: FormData) {
   const { data, error } = await supabase.from("finance_transactions")
     .update({ voided_at: new Date().toISOString(), voided_by: organizer.id })
     .eq("id", transactionId).eq("community", community).is("payment_id", null)
-    .is("balance_entry_id", null).is("voided_at", null).select("id").maybeSingle();
+    .is("balance_entry_id", null).is("shirt_order_id", null).is("voided_at", null).select("id").maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Lançamentos automáticos devem ser corrigidos no pagamento ou no saldo da pessoa.");
   revalidateFinance();

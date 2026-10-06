@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
-import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, shirtPayment, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel, type ShirtPayment } from "@/lib/shirts";
+import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtPayment, shirtOrderTotal, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel, type ShirtPayment } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { DeleteShirtOrderButton } from "@/components/DeleteShirtOrderButton";
@@ -23,6 +23,8 @@ export default async function AdminCamisasPage() {
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as unknown as OrderRow[];
   const groups = groupShirtOrders(orders);
+  const totalOrdered = orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0);
+  const totalReceived = orders.reduce((sum, order) => sum + (order.paid ? shirtOrderTotal(order) : order.half_paid ? shirtOrderTotal(order) / 2 : 0), 0);
   const exportOrders: ExportShirtOrder[] = orders.map((o) => ({
     fullName: o.profiles?.full_name ?? "Sem nome", phone: o.profiles?.phone ?? "",
     model: o.model, fit: o.fit, shirtName: o.shirt_name, shirtNumber: o.shirt_number,
@@ -33,11 +35,12 @@ export default async function AdminCamisasPage() {
       <h1 className="mt-1 text-2xl font-black">Pedidos das camisas</h1>
       <p className="mt-1 text-sm text-white/55">Um pedido por pessoa, com todas as peças juntas. Os pagamentos abaixo se aplicam às peças exibidas no card.</p>
     </div>
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {[["Pessoas", groups.length], ["Peças", orders.reduce((sum, o) => sum + o.quantity, 0)],
-        ["Com entrada / parcial", groups.filter((g) => g.payment === "half" || g.payment === "mixed").length],
-        ["Quitados", groups.filter((g) => g.payment === "paid").length]].map(([label, value]) =>
-        <div key={label} className="rounded-xl border border-white/10 bg-white/5 p-3"><p className="text-2xl font-black">{value}</p><p className="text-xs text-white/55">{label}</p></div>)}
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {[["Valor dos pedidos", totalOrdered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
+        ["Já recebido", totalReceived.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
+        ["Falta receber", (totalOrdered - totalReceived).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
+        ["Peças", orders.reduce((sum, o) => sum + o.quantity, 0)]].map(([label, value]) =>
+        <div key={label} className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3"><p className="truncate text-xl font-black sm:text-2xl">{value}</p><p className="text-xs text-white/55">{label}</p></div>)}
     </div>
     <details className="rounded-2xl border border-white/10 p-4">
       <summary className="cursor-pointer font-bold">Resumo para produção</summary>
@@ -56,6 +59,8 @@ export default async function AdminCamisasPage() {
       return <section key={payment}><h2 className="mb-3 font-bold">{SHIRT_PAYMENT_LABELS[payment]} ({selected.length})</h2>
         <div className="grid gap-3 lg:grid-cols-2">{selected.map((group) => {
           const person = group.items[0].profiles;
+          const groupTotal = group.items.reduce((sum, order) => sum + shirtOrderTotal(order), 0);
+          const groupReceived = group.items.reduce((sum, order) => sum + (order.paid ? shirtOrderTotal(order) : order.half_paid ? shirtOrderTotal(order) / 2 : 0), 0);
           return <article key={group.profileId} className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
             <h3 className="font-bold text-white">{person?.full_name ?? "Sem nome"}</h3>
             <p className="mt-1 text-xs text-white/45">{person?.phone ?? "Telefone não informado"} · {group.items.reduce((n, o) => n + o.quantity, 0)} peças</p>
@@ -63,10 +68,11 @@ export default async function AdminCamisasPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-purple-200">{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]}</p>
                 <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
-                <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+                <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} = {shirtOrderTotal(order).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
               </div>
               <DeleteShirtOrderButton orderId={order.id} fullName={person?.full_name ?? "Atleta"} model={SHIRT_MODELS[order.model].label} action={deleteShirtOrder} />
             </li>)}</ul>
+            <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl bg-black/15 p-3 text-center"><div><p className="text-[9px] font-bold uppercase text-white/35">Total</p><p className="mt-1 text-sm font-black text-white">{groupTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div><div><p className="text-[9px] font-bold uppercase text-white/35">Recebido</p><p className="mt-1 text-sm font-black text-emerald-300">{groupReceived.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div><div><p className="text-[9px] font-bold uppercase text-white/35">Falta</p><p className="mt-1 text-sm font-black text-amber-200">{(groupTotal - groupReceived).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div></div>
             <ShirtPaymentButton profileId={group.profileId} orderIds={group.items.map((o) => o.id)} fullName={person?.full_name ?? "Atleta"} payment={group.payment} action={setShirtOrderPaid} />
           </article>;
         })}</div></section>;

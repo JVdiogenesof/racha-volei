@@ -21,6 +21,15 @@ export const SHIRT_MODELS = {
 
 export type ShirtModel = keyof typeof SHIRT_MODELS;
 
+export const SHIRT_PRICES: Record<ShirtModel, number> = {
+  tank: 37,
+  sleeve: 41,
+};
+
+export function shirtOrderTotal(order: { model: ShirtModel; quantity: number }) {
+  return SHIRT_PRICES[order.model] * order.quantity;
+}
+
 export const SHIRT_FITS = { unspecified: "Não informada", regular: "Tradicional", female: "Feminina" } as const;
 export type ShirtFit = keyof typeof SHIRT_FITS;
 export type ShirtPayment = "pending" | "half" | "paid" | "mixed";

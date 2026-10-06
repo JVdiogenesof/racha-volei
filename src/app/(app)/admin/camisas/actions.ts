@@ -24,6 +24,7 @@ export async function setShirtOrderPaid(formData: FormData) {
   if (!data?.length) throw new Error("Pedido não encontrado.");
   revalidatePath("/admin/camisas");
   revalidatePath("/camisas");
+  revalidatePath("/admin/financas");
 }
 
 export async function deleteShirtOrder(formData: FormData) {
@@ -33,6 +34,11 @@ export async function deleteShirtOrder(formData: FormData) {
   if (!orderId) throw new Error("Pedido inválido.");
 
   const supabase = await createClient();
+  const { data: order, error: lookupError } = await supabase.from("shirt_orders")
+    .select("id, paid, half_paid").eq("id", orderId).eq("community", community).maybeSingle();
+  if (lookupError) throw new Error(lookupError.message);
+  if (!order) throw new Error("Pedido não encontrado nesta modalidade.");
+  if (order.paid || order.half_paid) throw new Error("Marque o pedido como não pago antes de excluí-lo, para o caixa ser corrigido.");
   const { data, error } = await supabase
     .from("shirt_orders")
     .delete()
@@ -45,4 +51,5 @@ export async function deleteShirtOrder(formData: FormData) {
 
   revalidatePath("/admin/camisas");
   revalidatePath("/camisas");
+  revalidatePath("/admin/financas");
 }

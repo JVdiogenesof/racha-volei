@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { SHIRT_FITS, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtOrderTotal, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
 import { getActiveCommunity } from "@/lib/community";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
 import { CancelShirtOrderButton } from "@/components/CancelShirtOrderButton";
@@ -47,7 +47,7 @@ export default async function CamisasPage() {
         <section className="rounded-2xl border border-white/10 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><h2 className="text-lg font-bold">Meu pedido</h2>
-              <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {community === "sand" ? "Areia" : "Quadra"}</p></div>
+              <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · {community === "sand" ? "Areia" : "Quadra"}</p></div>
             {profile.is_organizer && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-purple-500/10 px-3 text-sm text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}
           </div>
           <ul className="mt-3 divide-y divide-white/10">
@@ -59,7 +59,7 @@ export default async function CamisasPage() {
                 <div className="min-w-0 flex-1">
                   <p className="font-bold">{shirtModels[order.model].label} · {SHIRT_FITS[order.fit]}</p>
                   <p className="mt-1 text-sm text-white/65">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p>
-                  <p className="text-sm text-white/65">Tamanho {order.size} · Qtd. {order.quantity}</p>
+                  <p className="text-sm text-white/65">Tamanho {order.size} · Qtd. {order.quantity} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
                   <p className="mt-2 text-xs font-bold text-purple-200">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
                 </div>
                 {!order.paid && !order.half_paid && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}
