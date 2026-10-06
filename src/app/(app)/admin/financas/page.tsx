@@ -57,6 +57,7 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
   const displayTransactions = transactionRows.filter((row) => row.transaction_date.startsWith(selectedMonth));
   const monthIncome = monthTransactions.filter((row) => row.transaction_type === "income").reduce((sum, row) => sum + amount(row.amount), 0);
   const monthExpense = monthTransactions.filter((row) => row.transaction_type === "expense").reduce((sum, row) => sum + amount(row.amount), 0);
+  const cashTotal = activeTransactions.reduce((sum, row) => sum + (row.transaction_type === "income" ? amount(row.amount) : -amount(row.amount)), 0);
 
   const entriesByProfile = new Map<string, BalanceRow[]>();
   const balanceByProfile = new Map<string, number>();
@@ -75,6 +76,11 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
       <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-200"><WalletCards className="h-6 w-6" /></span>
       <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/70">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 text-2xl font-black text-white">Caixa e saldos</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Entradas, despesas, saldo antecipado das pessoas e lembretes dos administradores.</p></div>
     </header>
+
+    <section className="relative mt-5 overflow-hidden rounded-3xl border border-emerald-300/20 bg-gradient-to-br from-emerald-400/15 via-cyan-400/[0.06] to-purple-500/10 p-5 shadow-lg shadow-emerald-950/10 sm:p-6">
+      <div className="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-emerald-300/10 blur-2xl" />
+      <div className="relative flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200"><CircleDollarSign className="h-6 w-6" /></span><div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/65">Total no caixa geral agora</p><strong className={`mt-1 block truncate text-3xl font-black sm:text-4xl ${cashTotal >= 0 ? "text-white" : "text-red-200"}`}>{money.format(cashTotal)}</strong><p className="mt-1 text-xs text-white/45">Atualizado com pagamentos, patrocínios, saldos e despesas. Camisas ficam em outro caixa.</p></div></div>
+    </section>
 
     <form method="get" className="mt-5 flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:max-w-md">
       <label className="min-w-0 flex-1"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-white/40">Mês da leitura</span><select name="month" defaultValue={selectedMonth} className="field capitalize">{availableMonths.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}</select></label>
