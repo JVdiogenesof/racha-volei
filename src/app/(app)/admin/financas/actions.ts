@@ -82,15 +82,21 @@ export async function addFinanceTransaction(formData: FormData) {
   const description = requiredText(formData, "description", "Descrição", 160);
   const amount = positiveAmount(formData);
   const transactionDate = requiredText(formData, "transactionDate", "Data", 10);
+  const eventId = String(formData.get("eventId") ?? "").trim() || null;
   const notes = optionalText(formData, "notes", 500);
   if (!TRANSACTION_TYPES.has(transactionType)) throw new Error("Tipo de movimentação inválido.");
   if (!TRANSACTION_CATEGORIES.has(category)) throw new Error("Categoria inválida.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate)) throw new Error("Data inválida.");
 
   const supabase = await createClient();
+  if (eventId) {
+    const { data: event, error: eventError } = await supabase.from("events").select("id").eq("id", eventId).eq("community", community).maybeSingle();
+    if (eventError) throw new Error(eventError.message);
+    if (!event) throw new Error("Racha não encontrado nesta modalidade.");
+  }
   const { error } = await supabase.from("finance_transactions").insert({
     community, transaction_type: transactionType, category, description, amount,
-    transaction_date: transactionDate, notes, created_by: organizer.id,
+    transaction_date: transactionDate, event_id: eventId, notes, created_by: organizer.id,
   });
   if (error) throw new Error(error.message);
   revalidateFinance();

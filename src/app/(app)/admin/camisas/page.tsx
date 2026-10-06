@@ -33,8 +33,9 @@ export default async function AdminCamisasPage() {
   return <div className="space-y-5">
     <div><p className="text-xs font-bold uppercase text-purple-300">Camisas VPA · {COMMUNITY_INFO[community].shortLabel}</p>
       <h1 className="mt-1 text-2xl font-black">Pedidos das camisas</h1>
-      <p className="mt-1 text-sm text-white/55">Um pedido por pessoa, com todas as peças juntas. Os pagamentos abaixo se aplicam às peças exibidas no card.</p>
+      <p className="mt-1 text-sm text-white/55">Um pedido por pessoa, com todas as peças juntas. O dinheiro das camisas fica separado do caixa dos rachas.</p>
     </div>
+    <div className="flex items-center justify-between gap-3"><div><h2 className="font-black text-white">Caixa das camisas</h2><p className="mt-1 text-xs text-white/45">Valores exclusivos desta coleção.</p></div><span className="rounded-full bg-purple-400/10 px-3 py-1.5 text-[10px] font-black uppercase text-purple-200">Caixa separado</span></div>
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {[["Valor dos pedidos", totalOrdered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
         ["Já recebido", totalReceived.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],

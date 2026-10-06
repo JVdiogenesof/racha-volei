@@ -10,7 +10,7 @@ import { addFinanceReminder, addFinanceTransaction, addPlayerBalance, applyPlaye
 type ProfileRow = { id: string; full_name: string; avatar_url: string | null; status: string };
 type EventRow = { id: string; date: string; location: string | null; price_per_player: string | number | null };
 type BalanceRow = { id: string; profile_id: string; entry_type: "credit" | "debit"; amount: string | number; category: string; cash_effect: string; description: string; notes: string | null; event_id: string | null; created_at: string; reversed_at: string | null };
-type TransactionRow = { id: string; transaction_type: "income" | "expense"; category: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_id: string | null; balance_entry_id: string | null; shirt_order_id: string | null; notes: string | null; voided_at: string | null };
+type TransactionRow = { id: string; transaction_type: "income" | "expense"; category: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; event_id: string | null; payment_id: string | null; balance_entry_id: string | null; shirt_order_id: string | null; notes: string | null; voided_at: string | null };
 type ReminderRow = { id: string; title: string; notes: string | null; due_date: string | null; completed: boolean; created_at: string };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -23,18 +23,23 @@ const categoryLabels: Record<string, string> = {
 
 function amount(value: string | number) { return Number(value) || 0; }
 function formatDate(value: string) { return new Date(`${value.slice(0, 10)}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" }); }
+function formatMonth(value: string) { const [year, month] = value.split("-"); return new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); }
 function eventLabel(event: EventRow) { return `${formatDate(event.date)}${event.location ? ` · ${event.location}` : ""}${event.price_per_player ? ` · ${money.format(amount(event.price_per_player))}` : ""}`; }
 
-export default async function AdminFinancasPage() {
+export default async function AdminFinancasPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);
   const supabase = await createClient();
+  const requestedMonth = (await searchParams).month;
+  const currentDate = new Date();
+  const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
+  const selectedMonth = requestedMonth && /^\d{4}-\d{2}$/.test(requestedMonth) ? requestedMonth : currentMonth;
   const [profilesResult, balancesResult, transactionsResult, remindersResult, eventsResult] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url, status").contains("communities", [community]).order("full_name"),
     supabase.from("player_balance_entries").select("id, profile_id, entry_type, amount, category, cash_effect, description, notes, event_id, created_at, reversed_at").eq("community", community).order("created_at", { ascending: false }),
-    supabase.from("finance_transactions").select("id, transaction_type, category, description, amount, transaction_date, profile_id, payment_id, balance_entry_id, shirt_order_id, notes, voided_at").eq("community", community).order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).limit(160),
+    supabase.from("finance_transactions").select("id, transaction_type, category, description, amount, transaction_date, profile_id, event_id, payment_id, balance_entry_id, shirt_order_id, notes, voided_at").eq("community", community).neq("category", "shirt_sale").order("transaction_date", { ascending: false }).order("created_at", { ascending: false }).limit(1000),
     supabase.from("finance_reminders").select("id, title, notes, due_date, completed, created_at").eq("community", community).order("completed").order("due_date", { ascending: true, nullsFirst: false }).limit(60),
-    supabase.from("events").select("id, date, location, price_per_player").eq("community", community).neq("status", "cancelled").order("date", { ascending: false }).limit(20),
+    supabase.from("events").select("id, date, location, price_per_player").eq("community", community).neq("status", "cancelled").order("date", { ascending: false }).limit(120),
   ]);
   for (const result of [profilesResult, balancesResult, transactionsResult, remindersResult, eventsResult]) if (result.error) throw new Error(result.error.message);
 
@@ -48,12 +53,10 @@ export default async function AdminFinancasPage() {
   const selectableProfiles = profiles.filter((profile) => profile.status === "approved" || profile.status === "guest");
 
   const activeTransactions = transactionRows.filter((row) => !row.voided_at);
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthTransactions = activeTransactions.filter((row) => row.transaction_date.startsWith(monthKey));
+  const monthTransactions = activeTransactions.filter((row) => row.transaction_date.startsWith(selectedMonth));
+  const displayTransactions = transactionRows.filter((row) => row.transaction_date.startsWith(selectedMonth));
   const monthIncome = monthTransactions.filter((row) => row.transaction_type === "income").reduce((sum, row) => sum + amount(row.amount), 0);
   const monthExpense = monthTransactions.filter((row) => row.transaction_type === "expense").reduce((sum, row) => sum + amount(row.amount), 0);
-  const cashTotal = activeTransactions.reduce((sum, row) => sum + (row.transaction_type === "income" ? amount(row.amount) : -amount(row.amount)), 0);
 
   const entriesByProfile = new Map<string, BalanceRow[]>();
   const balanceByProfile = new Map<string, number>();
@@ -63,7 +66,9 @@ export default async function AdminFinancasPage() {
   }
   const holders = [...balanceByProfile.entries()].filter(([, value]) => value > 0.009).sort((a, b) => b[1] - a[1]);
   const totalPlayerBalance = holders.reduce((sum, [, value]) => sum + value, 0);
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const monthEvents = events.filter((event) => event.date.startsWith(selectedMonth));
+  const availableMonths = [...new Set([...activeTransactions.map((row) => row.transaction_date.slice(0, 7)), ...events.map((event) => event.date.slice(0, 7)), currentMonth])].sort().reverse();
+  const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
 
   return <div className="min-w-0 pb-10">
     <header className="flex items-start gap-3">
@@ -71,11 +76,28 @@ export default async function AdminFinancasPage() {
       <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/70">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 text-2xl font-black text-white">Caixa e saldos</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Entradas, despesas, saldo antecipado das pessoas e lembretes dos administradores.</p></div>
     </header>
 
+    <form method="get" className="mt-5 flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:max-w-md">
+      <label className="min-w-0 flex-1"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-white/40">Mês da leitura</span><select name="month" defaultValue={selectedMonth} className="field capitalize">{availableMonths.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}</select></label>
+      <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-xs font-black text-white hover:bg-purple-400">Filtrar</button>
+    </form>
+
     <section className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
-      <Stat icon={ArrowUpRight} label="Entradas no mês" value={money.format(monthIncome)} color="text-emerald-300" />
-      <Stat icon={ArrowDownRight} label="Saídas no mês" value={money.format(monthExpense)} color="text-red-300" />
-      <Stat icon={CircleDollarSign} label="Resultado do mês" value={money.format(monthIncome - monthExpense)} color={monthIncome - monthExpense >= 0 ? "text-cyan-200" : "text-red-300"} />
-      <Stat icon={WalletCards} label="Caixa acumulado" value={money.format(cashTotal)} color="text-purple-200" />
+      <Stat icon={ArrowUpRight} label="Entradas" value={money.format(monthIncome)} color="text-emerald-300" />
+      <Stat icon={ArrowDownRight} label="Saídas" value={money.format(monthExpense)} color="text-red-300" />
+      <Stat icon={CircleDollarSign} label="Saldo" value={money.format(monthIncome - monthExpense)} color={monthIncome - monthExpense >= 0 ? "text-cyan-200" : "text-red-300"} />
+      <Stat icon={WalletCards} label="Resumo" value={`${monthEvents.length} ${monthEvents.length === 1 ? "racha" : "rachas"}`} color="text-purple-200" />
+    </section>
+
+    <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+      <div className="border-b border-white/10 p-4"><h2 className="font-black capitalize text-white">Resumo de {formatMonth(selectedMonth)}</h2><p className="mt-1 text-xs text-white/45">A sobra de cada racha é o que entrou menos as despesas vinculadas a ele.</p></div>
+      {monthEvents.length ? <div className="divide-y divide-white/[0.07]">{monthEvents.map((event) => {
+        const eventTransactions = activeTransactions.filter((row) => row.event_id === event.id);
+        const income = eventTransactions.filter((row) => row.transaction_type === "income").reduce((sum, row) => sum + amount(row.amount), 0);
+        const expense = eventTransactions.filter((row) => row.transaction_type === "expense").reduce((sum, row) => sum + amount(row.amount), 0);
+        const paidCount = eventTransactions.filter((row) => row.category === "event_payment" && row.transaction_type === "income").length;
+        const surplus = income - expense;
+        return <article key={event.id} className="p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div><p className="font-bold text-white">Racha de {formatDate(event.date)}</p><p className="mt-0.5 text-xs text-white/40">{event.location ?? "Local não informado"} · {paidCount} pagamentos registrados</p></div><strong className={`rounded-full px-3 py-1.5 text-sm ${surplus >= 0 ? "bg-emerald-400/10 text-emerald-200" : "bg-red-400/10 text-red-200"}`}>Sobra: {money.format(surplus)}</strong></div><div className="mt-3 grid grid-cols-3 gap-2 text-center"><MiniValue label="Entradas" value={money.format(income)} color="text-emerald-300" /><MiniValue label="Saídas" value={money.format(expense)} color="text-red-300" /><MiniValue label="Saldo" value={money.format(surplus)} color={surplus >= 0 ? "text-cyan-200" : "text-red-300"} /></div></article>;
+      })}</div> : <p className="p-7 text-center text-sm text-white/40">Nenhum racha encontrado neste mês.</p>}
     </section>
 
     <section className="mt-6 rounded-2xl border border-emerald-300/15 bg-emerald-400/[0.045] p-4 sm:p-5">
@@ -100,6 +122,7 @@ export default async function AdminFinancasPage() {
         <label><Label>Tipo</Label><select name="transactionType" className="field"><option value="income">Entrada</option><option value="expense">Saída</option></select></label>
         <label><Label>Categoria</Label><select name="category" className="field"><option value="sponsorship">Patrocínio</option><option value="court_rental">Aluguel da quadra</option><option value="medals">Medalhas</option><option value="other">Outro</option></select></label>
         <label><Label>Valor</Label><input name="amount" inputMode="decimal" required placeholder="0,00" className="field" /></label><label><Label>Data</Label><input type="date" name="transactionDate" defaultValue={today} required className="field" /></label>
+        <label className="sm:col-span-2"><Label>Vincular a um racha</Label><select name="eventId" defaultValue="" className="field"><option value="">Caixa geral · sem racha específico</option>{events.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}</select><span className="mt-1 block text-[10px] text-white/35">Vincule aluguel, medalha ou outra despesa para calcular a sobra daquele racha.</span></label>
         <label className="sm:col-span-2"><Label>Descrição</Label><input name="description" maxLength={160} required placeholder="Ex.: pagamento do aluguel da NR" className="field" /></label><label className="sm:col-span-2"><Label>Observação opcional</Label><input name="notes" maxLength={500} className="field" /></label><button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white sm:col-span-2 hover:bg-purple-400">Registrar movimentação</button>
       </ActionForm></div>
 
@@ -108,12 +131,13 @@ export default async function AdminFinancasPage() {
       </div>
     </section>
 
-    <section className="mt-7 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-4"><div className="flex items-center gap-2"><History className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Extrato do caixa</h2><p className="text-xs text-white/40">Pagamentos marcados na lista entram aqui automaticamente.</p></div></div><span className="text-xs font-black text-white/35">{activeTransactions.length}</span></div>
-      {transactionRows.length ? <div className="divide-y divide-white/[0.07]">{transactionRows.slice(0, 80).map((row) => { const player = row.profile_id ? profileById.get(row.profile_id) : null; return <article key={row.id} className={`flex items-center gap-3 p-3 sm:p-4 ${row.voided_at ? "opacity-40" : ""}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${row.transaction_type === "income" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>{row.transaction_type === "income" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-bold text-white">{row.description}</p>{row.voided_at && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-black text-white/50">ESTORNADO</span>}</div><p className="mt-0.5 truncate text-[10px] text-white/35">{categoryLabels[row.category] ?? row.category}{player ? ` · ${player.full_name}` : ""} · {formatDate(row.transaction_date)}</p></div><strong className={row.transaction_type === "income" ? "text-emerald-300" : "text-red-300"}>{row.transaction_type === "income" ? "+" : "−"}{money.format(amount(row.amount))}</strong>{!row.voided_at && !row.payment_id && !row.balance_entry_id && !row.shirt_order_id && <ActionForm action={voidFinanceTransaction} successMessage="Movimentação estornada."><input type="hidden" name="transactionId" value={row.id} /><button type="submit" title="Estornar movimentação" className="grid h-8 w-8 place-items-center rounded-full text-white/30 hover:bg-red-400/10 hover:text-red-300"><X className="h-3.5 w-3.5" /></button></ActionForm>}</article>; })}</div> : <p className="p-8 text-center text-sm text-white/35">O extrato aparecerá conforme o caixa for movimentado.</p>}
+    <section className="mt-7 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-4"><div className="flex items-center gap-2"><History className="h-5 w-5 text-purple-300" /><div><h2 className="font-black capitalize text-white">Extrato de {formatMonth(selectedMonth)}</h2><p className="text-xs text-white/40">As camisas ficam fora deste caixa e aparecem somente na área de pedidos.</p></div></div><span className="text-xs font-black text-white/35">{displayTransactions.filter((row) => !row.voided_at).length}</span></div>
+      {displayTransactions.length ? <div className="divide-y divide-white/[0.07]">{displayTransactions.slice(0, 80).map((row) => { const player = row.profile_id ? profileById.get(row.profile_id) : null; return <article key={row.id} className={`flex items-center gap-3 p-3 sm:p-4 ${row.voided_at ? "opacity-40" : ""}`}><span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${row.transaction_type === "income" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>{row.transaction_type === "income" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-bold text-white">{row.description}</p>{row.voided_at && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[9px] font-black text-white/50">ESTORNADO</span>}</div><p className="mt-0.5 truncate text-[10px] text-white/35">{categoryLabels[row.category] ?? row.category}{player ? ` · ${player.full_name}` : ""} · {formatDate(row.transaction_date)}</p></div><strong className={row.transaction_type === "income" ? "text-emerald-300" : "text-red-300"}>{row.transaction_type === "income" ? "+" : "−"}{money.format(amount(row.amount))}</strong>{!row.voided_at && !row.payment_id && !row.balance_entry_id && !row.shirt_order_id && <ActionForm action={voidFinanceTransaction} successMessage="Movimentação estornada."><input type="hidden" name="transactionId" value={row.id} /><button type="submit" title="Estornar movimentação" className="grid h-8 w-8 place-items-center rounded-full text-white/30 hover:bg-red-400/10 hover:text-red-300"><X className="h-3.5 w-3.5" /></button></ActionForm>}</article>; })}</div> : <p className="p-8 text-center text-sm text-white/35">O extrato aparecerá conforme o caixa for movimentado.</p>}
     </section>
   </div>;
 }
 
 function Stat({ icon: Icon, label, value, color }: { icon: typeof WalletCards; label: string; value: string; color: string }) { return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${color}`} /><strong className="mt-2 block truncate text-base text-white sm:text-xl">{value}</strong><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>; }
+function MiniValue({ label, value, color }: { label: string; value: string; color: string }) { return <div className="rounded-xl bg-black/10 p-2"><p className="text-[9px] font-black uppercase tracking-wide text-white/35">{label}</p><p className={`mt-1 truncate text-sm font-black ${color}`}>{value}</p></div>; }
 function Label({ children }: { children: React.ReactNode }) { return <span className="mb-1.5 block text-xs font-semibold text-white/55">{children}</span>; }
 function Empty({ text }: { text: string }) { return <div className="mt-3 rounded-2xl border border-dashed border-white/10 p-8 text-center"><WalletCards className="mx-auto h-8 w-8 text-white/20" /><p className="mt-3 font-semibold text-white/50">{text}</p></div>; }
