@@ -1,27 +1,33 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { ShirtOrderStatusControl } from "@/components/ShirtOrderStatusControl";
+import { SHIRT_ORDER_STATUS_LABELS, type ShirtOrderStatus } from "@/lib/shirts";
 import { requireOrganizer } from "@/lib/auth";
 import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtPayment, shirtOrderTotal, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel, type ShirtPayment } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { DeleteShirtOrderButton } from "@/components/DeleteShirtOrderButton";
 import { EditShirtOrderButton } from "@/components/EditShirtOrderButton";
-import { deleteShirtOrder, setShirtOrderPaid, updateShirtOrder } from "./actions";
+import { deleteShirtOrder, setShirtOrderPaid, updateShirtOrder, setShirtOrderStatus } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
+  fulfillment_status: ShirtOrderStatus;
   id: string; profile_id: string; community: string; model: ShirtModel; fit: ShirtFit;
   shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean;
   profiles: { full_name: string; phone: string | null } | null;
 };
 type ShirtFinanceRow = { id: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_stage: string; voided_at: string | null; profiles: { full_name: string } | null };
 
-export default async function AdminCamisasPage() {
+export default async function AdminCamisasPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+  const { status } = await searchParams;
+  const statusFilter = status && Object.hasOwn(SHIRT_ORDER_STATUS_LABELS, status) ? status as ShirtOrderStatus : null;
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);
   const supabase = await createClient();
   const [ordersResult, financeResult] = await Promise.all([
     supabase.from("shirt_orders")
-      .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
+      .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, fulfillment_status, profiles!shirt_orders_profile_id_fkey(full_name, phone)")
       .eq("community", community).order("created_at"),
     supabase.from("shirt_finance_transactions")
       .select("id, description, amount, transaction_date, profile_id, payment_stage, voided_at, profiles!shirt_finance_transactions_profile_id_fkey(full_name)")
@@ -38,6 +44,7 @@ export default async function AdminCamisasPage() {
     fullName: o.profiles?.full_name ?? "Sem nome", phone: o.profiles?.phone ?? "",
     model: o.model, fit: o.fit, shirtName: o.shirt_name, shirtNumber: o.shirt_number,
     size: o.size, quantity: o.quantity, paid: o.paid, half_paid: o.half_paid,
+    fulfillment_status: o.fulfillment_status,
   }));
   return <div className="space-y-5">
     <div><p className="text-xs font-bold uppercase text-purple-300">Camisas VPA · {COMMUNITY_INFO[community].shortLabel}</p>
@@ -67,8 +74,20 @@ export default async function AdminCamisasPage() {
         }))}</div>
     </details>
     {!!orders.length && <ShirtOrderExports orders={exportOrders} community={community} />}
+    <section className="rounded-2xl border border-white/10 p-3">
+      <h2 className="text-sm font-bold">Andamento dos pedidos</h2>
+      <p className="mt-1 text-xs leading-relaxed text-white/50">“Pedido feito” significa enviado à loja. Pagamentos continuam separados. O filtro mostra cada pessoa com todas as suas peças.</p>
+      <nav aria-label="Filtrar por andamento" className="mt-3 flex flex-wrap gap-2">
+        <Link href="/admin/camisas" aria-current={!statusFilter ? "page" : undefined} className="rounded-full border border-white/15 px-3 py-2 text-xs aria-[current=page]:bg-purple-500/30">Todos ({orders.length})</Link>
+        {(Object.entries(SHIRT_ORDER_STATUS_LABELS) as [ShirtOrderStatus, string][]).map(([value, label]) =>
+          <Link key={value} href={`/admin/camisas?status=${value}`} aria-current={statusFilter === value ? "page" : undefined} className="rounded-full border border-white/15 px-3 py-2 text-xs aria-[current=page]:bg-purple-500/30">
+            {value === "awaiting_payment" ? "Aguardando pagamento / envio" : label} ({orders.filter((o) => o.fulfillment_status === value).length})
+          </Link>)}
+      </nav>
+      {statusFilter && !orders.some((o) => o.fulfillment_status === statusFilter) && <p className="mt-3 text-sm text-white/50">Nenhum pedido neste andamento.</p>}
+    </section>
     {(["pending", "half", "mixed", "paid"] as ShirtPayment[]).map((payment) => {
-      const selected = groups.filter((g) => g.payment === payment);
+      const selected = groups.filter((g) => g.payment === payment && (!statusFilter || g.items.some((o) => o.fulfillment_status === statusFilter)));
       if (!selected.length) return null;
       return <section key={payment}><h2 className="mb-3 font-bold">{SHIRT_PAYMENT_LABELS[payment]} ({selected.length})</h2>
         <div className="grid gap-3 lg:grid-cols-2">{selected.map((group) => {
@@ -83,6 +102,7 @@ export default async function AdminCamisasPage() {
                 <p className="font-semibold text-purple-200">{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]}</p>
                 <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
                 <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} = {shirtOrderTotal(order).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                <ShirtOrderStatusControl orderId={order.id} status={order.fulfillment_status} hasPayment={order.paid || order.half_paid} label={`${person?.full_name ?? "Atleta"} · ${SHIRT_MODELS[order.model].label}`} action={setShirtOrderStatus} />
               </div>
               <div className="flex shrink-0 gap-2">
                 <EditShirtOrderButton fullName={person?.full_name ?? "Atleta"} order={{ id: order.id, model: order.model, fit: order.fit, shirtName: order.shirt_name, shirtNumber: order.shirt_number, size: order.size, quantity: order.quantity }} action={updateShirtOrder} />

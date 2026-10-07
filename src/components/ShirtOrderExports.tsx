@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, ClipboardCopy, Download, ImageIcon, Loader2, Share2 } from "lucide-react";
 import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
-import { SHIRT_MODELS, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
+import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_MODELS, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { useToast } from "./Toast";
 import type { Community } from "@/lib/community";
 
@@ -18,6 +18,7 @@ export type ExportShirtOrder = {
   paid: boolean;
   half_paid: boolean;
   fit: ShirtFit;
+  fulfillment_status: ShirtOrderStatus;
 };
 
 export function ShirtOrderExports({ orders, community }: { orders: ExportShirtOrder[]; community: Community }) {
@@ -36,8 +37,8 @@ export function ShirtOrderExports({ orders, community }: { orders: ExportShirtOr
       return `"${safe.replaceAll('"', '""')}"`;
     };
     const rows = [
-      ["Status", "Pessoa", "Telefone", "Modelo", "Modelagem", "Nome na camisa", "Número", "Tamanho", "Quantidade"],
-      ...selected.map((order) => [SHIRT_PAYMENT_LABELS[shirtPayment(order)], order.fullName, order.phone, SHIRT_MODELS[order.model].label, SHIRT_FITS[order.fit], order.shirtName, formatShirtNumber(order.shirtNumber), order.size, order.quantity]),
+      ["Pagamento", "Andamento", "Pessoa", "Telefone", "Modelo", "Modelagem", "Nome na camisa", "Número", "Tamanho", "Quantidade"],
+      ...selected.map((order) => [SHIRT_PAYMENT_LABELS[shirtPayment(order)], shirtOrderStatusLabel(order), order.fullName, order.phone, SHIRT_MODELS[order.model].label, SHIRT_FITS[order.fit], order.shirtName, formatShirtNumber(order.shirtNumber), order.size, order.quantity]),
     ];
     const csv = `\uFEFF${rows.map((row) => row.map(escape).join(";")).join("\r\n")}`;
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -58,7 +59,7 @@ export function ShirtOrderExports({ orders, community }: { orders: ExportShirtOr
       const modelOrders = paid.filter((order) => order.model === model);
       if (!modelOrders.length) return;
       lines.push(`*${SHIRT_MODELS[model].label.toUpperCase()}*`);
-      modelOrders.forEach((order, index) => lines.push(`${index + 1}. ${order.fullName} — ${order.shirtName.toUpperCase()} ${formatShirtNumber(order.shirtNumber)} — ${SHIRT_FITS[order.fit]} — ${order.size} — ${SHIRT_PAYMENT_LABELS[shirtPayment(order)]} — Qtd. ${order.quantity}`));
+      modelOrders.forEach((order, index) => lines.push(`${index + 1}. ${order.fullName} — ${order.shirtName.toUpperCase()} ${formatShirtNumber(order.shirtNumber)} — ${SHIRT_FITS[order.fit]} — ${order.size} — ${SHIRT_PAYMENT_LABELS[shirtPayment(order)]} — ${shirtOrderStatusLabel(order)} — Qtd. ${order.quantity}`));
       lines.push("");
     });
     lines.push(`Total: ${paid.reduce((sum, order) => sum + order.quantity, 0)} camisa(s)`);

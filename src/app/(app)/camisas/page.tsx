@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { SHIRT_FITS, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtOrderTotal, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtOrderTotal, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
 import { getActiveCommunity } from "@/lib/community";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
 import { CancelShirtOrderButton } from "@/components/CancelShirtOrderButton";
@@ -11,14 +11,14 @@ import { cancelShirtOrder, saveShirtOrder, updateShirtFit } from "./actions";
 
 import { ActionForm } from "@/components/ActionForm";
 
-type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean; fit: ShirtFit; created_at: string };
+type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean; fulfillment_status: ShirtOrderStatus; fit: ShirtFit; created_at: string };
 
 export default async function CamisasPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
   const shirtModels = getShirtModels(community);
-  const { data, error } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, half_paid, fit, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
+  const { data, error } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, half_paid, fulfillment_status, fit, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as Order[];
   const canOrder = profile.status === "approved";
@@ -60,11 +60,12 @@ export default async function CamisasPage() {
                   <p className="font-bold">{shirtModels[order.model].label} · {SHIRT_FITS[order.fit]}</p>
                   <p className="mt-1 text-sm text-white/65">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p>
                   <p className="text-sm text-white/65">Tamanho {order.size} · Qtd. {order.quantity} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
+                  <p className="mt-2 inline-flex rounded-full border border-purple-300/20 bg-purple-500/15 px-2.5 py-1 text-xs font-bold text-purple-100">{shirtOrderStatusLabel(order)}</p>
                   <p className="mt-2 text-xs font-bold text-purple-200">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
                 </div>
-                {!order.paid && !order.half_paid && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}
+                {!order.paid && !order.half_paid && order.fulfillment_status === "awaiting_payment" && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}
               </div>
-              {canOrder && <ActionForm action={updateShirtFit} successMessage="Modelagem atualizada!" className="mt-3 flex flex-wrap items-end gap-2">
+              {canOrder && order.fulfillment_status === "awaiting_payment" && <ActionForm action={updateShirtFit} successMessage="Modelagem atualizada!" className="mt-3 flex flex-wrap items-end gap-2">
                 <input type="hidden" name="orderId" value={order.id} />
                 <label className="flex-1 text-xs text-white/60">Modelagem
                   <select name="fit" aria-label={"Modelagem da camisa " + shirtModels[order.model].label} required defaultValue={order.fit === "unspecified" ? "" : order.fit} className="mt-1 block min-h-10 w-full rounded-lg border border-white/15 bg-[#21123d] px-2 text-sm text-white">

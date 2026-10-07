@@ -32,6 +32,16 @@ export function shirtOrderTotal(order: { model: ShirtModel; quantity: number }) 
 
 export const SHIRT_FITS = { unspecified: "Não informada", regular: "Tradicional", female: "Feminina" } as const;
 export type ShirtFit = keyof typeof SHIRT_FITS;
+export const SHIRT_ORDER_STATUS_LABELS = {
+  awaiting_payment: "Aguardando pagamento",
+  ordered: "Pedido feito",
+  delivered: "Pedido entregue",
+} as const;
+export type ShirtOrderStatus = keyof typeof SHIRT_ORDER_STATUS_LABELS;
+export function shirtOrderStatusLabel(order: { fulfillment_status: ShirtOrderStatus; paid: boolean; half_paid: boolean }) {
+  if (order.fulfillment_status === "awaiting_payment" && (order.paid || order.half_paid)) return "Aguardando pedido à loja";
+  return SHIRT_ORDER_STATUS_LABELS[order.fulfillment_status];
+}
 export type ShirtPayment = "pending" | "half" | "paid" | "mixed";
 export const SHIRT_PAYMENT_LABELS: Record<ShirtPayment, string> = {
   pending: "Não pago", half: "Metade paga (50%)", paid: "Pago integralmente", mixed: "Pagamento parcial",

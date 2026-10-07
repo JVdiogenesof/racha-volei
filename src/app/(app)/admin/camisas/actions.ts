@@ -3,7 +3,23 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
-import { SHIRT_FITS, SHIRT_MODELS, SHIRT_SIZES } from "@/lib/shirts";
+import { SHIRT_FITS, SHIRT_MODELS, SHIRT_SIZES, SHIRT_ORDER_STATUS_LABELS } from "@/lib/shirts";
+
+export async function setShirtOrderStatus(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const community = await getActiveCommunity(organizer);
+  const orderId = String(formData.get("orderId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!orderId || !Object.hasOwn(SHIRT_ORDER_STATUS_LABELS, status)) throw new Error("Status do pedido inválido.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("shirt_orders")
+    .update({ fulfillment_status: status, updated_at: new Date().toISOString() })
+    .eq("id", orderId).eq("community", community).select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Pedido não encontrado nesta modalidade.");
+  revalidatePath("/admin/camisas");
+  revalidatePath("/camisas");
+}
 
 export async function setShirtOrderPaid(formData: FormData) {
   const organizer = await requireOrganizer();

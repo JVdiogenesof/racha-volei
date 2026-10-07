@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
-import { groupShirtOrders, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
+import { shirtOrderStatusLabel, type ShirtOrderStatus, groupShirtOrders, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 
@@ -14,6 +14,7 @@ type PaidOrder = {
   fit: ShirtFit;
   paid: boolean;
   half_paid: boolean;
+  fulfillment_status: ShirtOrderStatus;
   shirt_name: string;
   shirt_number: number;
   size: string;
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   const filterLabel = filter === "all" ? "TODOS OS PEDIDOS" : filter === "half" ? "METADE PAGA" : filter === "paid" ? "QUITADOS" : "COM ENTRADA OU QUITADOS";
   let query = supabase
     .from("shirt_orders")
-    .select("id, profile_id, community, model, fit, paid, half_paid, shirt_name, shirt_number, size, quantity, profiles!shirt_orders_profile_id_fkey(full_name)")
+    .select("id, profile_id, community, model, fit, paid, half_paid, fulfillment_status, shirt_name, shirt_number, size, quantity, profiles!shirt_orders_profile_id_fkey(full_name)")
     .eq("community", community)
     .order("paid_at", { ascending: true });
   if (filter === "received") query = query.or("paid.eq.true,half_paid.eq.true");
@@ -81,6 +82,7 @@ export async function GET(request: Request) {
               {group.items.map((order) => <div key={order.id} style={{ display: "flex", flexDirection: "column", marginTop: "5px", fontSize: "11px", color: "#ddd6fe" }}>
                 <span>{SHIRT_MODELS[order.model].label} · {SHIRT_FITS[order.fit]} · {order.size} · Qtd. {order.quantity}</span>
                 <span>{order.shirt_name.toUpperCase()} {formatShirtNumber(order.shirt_number)} · {SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</span>
+                <span>{shirtOrderStatusLabel(order)}</span>
               </div>)}
             </div>
           </div>)}

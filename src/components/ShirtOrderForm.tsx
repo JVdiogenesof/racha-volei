@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useActionState, useEffect, useState } from "react";
 import { Check, Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { useToast } from "./Toast";
-import { getShirtModels, SHIRT_PRICES, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo } from "@/lib/shirts";
+import { getShirtModels, SHIRT_PRICES, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo, type ShirtOrderStatus } from "@/lib/shirts";
 import type { Community } from "@/lib/community";
 import type { ShirtOrderState } from "@/app/(app)/camisas/actions";
 
@@ -17,6 +17,7 @@ type ExistingOrder = {
   paid: boolean;
   half_paid: boolean;
   fit: ShirtFit;
+  fulfillment_status: ShirtOrderStatus;
 };
 
 const initialState: ShirtOrderState = { status: "idle", message: "" };
@@ -35,7 +36,8 @@ export function ShirtOrderForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const { showToast } = useToast();
   const existing = existingOrders.find((order) => order.model === model);
-  const locked = existing?.paid || existing?.half_paid;
+  const inProduction = !!existing && existing.fulfillment_status !== "awaiting_payment";
+  const locked = existing?.paid || existing?.half_paid || inProduction;
 
   useEffect(() => {
     if (state.status !== "idle") showToast(state.message);
@@ -118,7 +120,7 @@ export function ShirtOrderForm({
           </select>
         </label>
 
-        {locked && <p className="rounded-xl border border-green-400/20 bg-green-500/10 p-3 text-sm text-green-200 sm:col-span-2">Pagamento registrado. Para ajustar as peças, fale com um organizador. Você pode indicar a modelagem em Meu pedido.</p>}
+        {locked && <p className="rounded-xl border border-green-400/20 bg-green-500/10 p-3 text-sm text-green-200 sm:col-span-2">{inProduction ? "Este pedido já foi enviado à loja ou entregue. Para ajustes, fale com um organizador." : "Pagamento registrado. Para ajustar as peças, fale com um organizador. Você pode indicar a modelagem em Meu pedido."}</p>}
         <button type="submit" disabled={pending || locked} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 font-bold text-white shadow-lg shadow-purple-950/30 transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-2">
           {pending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingBag className="h-5 w-5" />}
           {existing ? "Atualizar este pedido" : `Pedir modelo ${shirtModels[model].label}`}

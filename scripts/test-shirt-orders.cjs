@@ -36,6 +36,7 @@ async function main() {
   }
   query.then = (resolve) => resolve(result);
   const actions = load("src/app/(app)/admin/camisas/actions.ts", {
+    "@/lib/shirts": shirts,
     "next/cache": { revalidatePath() {} },
     "@/lib/auth": { requireOrganizer: async () => ({ id: "organizer" }) },
     "@/lib/community": { getActiveCommunity: async () => "sand" },
@@ -70,6 +71,31 @@ async function main() {
   const form = new FormData();
   form.set("profileId", "a"); form.set("payment", "half"); form.set("orderId", "missing");
   await assert.rejects(actions.setShirtOrderPaid(form), /não encontrado/);
+
+
+  result = { data: { id: "one" }, error: null };
+  const statusForm = new FormData();
+  statusForm.set("orderId", "one");
+  for (const status of ["awaiting_payment", "ordered", "delivered"]) {
+    calls.length = 0;
+    statusForm.set("status", status);
+    await actions.setShirtOrderStatus(statusForm);
+    const values = calls.find((c) => c[0] === "update")[1];
+    assert.deepEqual(Object.keys(values).sort(), ["fulfillment_status", "updated_at"]);
+    assert.equal(values.fulfillment_status, status);
+    assert.ok(calls.some((c) => c[0] === "eq" && c[1] === "community" && c[2] === "sand"));
+    assert.ok(calls.some((c) => c[0] === "eq" && c[1] === "id" && c[2] === "one"));
+  }
+  statusForm.set("status", "toString");
+  await assert.rejects(actions.setShirtOrderStatus(statusForm), /inválido/);
+  statusForm.set("status", "ordered");
+  result = { data: null, error: null };
+  await assert.rejects(actions.setShirtOrderStatus(statusForm), /não encontrado/);
+  result = { data: null, error: { message: "Falha de conexão" } };
+  await assert.rejects(actions.setShirtOrderStatus(statusForm), /Falha de conexão/);
+  assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "awaiting_payment", paid: false, half_paid: false }), "Aguardando pagamento");
+  assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "awaiting_payment", paid: false, half_paid: true }), "Aguardando pedido à loja");
+  assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "delivered", paid: false, half_paid: true }), "Pedido entregue");
 
   const profileCalls = [];
   const profileQuery = {};

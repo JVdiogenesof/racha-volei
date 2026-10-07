@@ -31,12 +31,13 @@ export async function saveShirtOrder(
 
   const { data: existing, error: lookupError } = await supabase
     .from("shirt_orders")
-    .select("id, paid, half_paid")
+    .select("id, paid, half_paid, fulfillment_status")
     .eq("profile_id", profile.id)
     .eq("model", model)
     .eq("community", community)
     .maybeSingle();
   if (lookupError) return { status: "error", message: lookupError.message };
+  if (existing && existing.fulfillment_status !== "awaiting_payment") return { status: "error", message: "Pedido enviado à loja ou entregue. Fale com um organizador para ajustar." };
   if (existing?.paid || existing?.half_paid) return { status: "error", message: "Este pedido já foi pago e não pode mais ser alterado." };
 
   const values = {
@@ -48,7 +49,7 @@ export async function saveShirtOrder(
     updated_at: new Date().toISOString(),
   };
   const result = existing
-    ? await supabase.from("shirt_orders").update(values).eq("id", existing.id).eq("profile_id", profile.id).eq("community", community).eq("paid", false).eq("half_paid", false).select("id")
+    ? await supabase.from("shirt_orders").update(values).eq("id", existing.id).eq("profile_id", profile.id).eq("community", community).eq("paid", false).eq("half_paid", false).eq("fulfillment_status", "awaiting_payment").select("id")
     : await supabase.from("shirt_orders").insert({ ...values, profile_id: profile.id, model, community }).select("id");
 
   if (result.error) return { status: "error", message: result.error.message };
@@ -72,7 +73,7 @@ export async function cancelShirtOrder(formData: FormData) {
     .eq("id", orderId)
     .eq("profile_id", profile.id)
     .eq("community", community)
-    .eq("paid", false).eq("half_paid", false).select("id");
+    .eq("paid", false).eq("half_paid", false).eq("fulfillment_status", "awaiting_payment").select("id");
   if (error) throw new Error(error.message);
   if (!data?.length) throw new Error("Este item não pode ser cancelado. Atualize a página.");
   revalidatePath("/camisas");
@@ -88,9 +89,9 @@ export async function updateShirtFit(formData: FormData) {
   const { data, error } = await supabase.from("shirt_orders")
     .update({ fit, updated_at: new Date().toISOString() })
     .eq("id", String(formData.get("orderId"))).eq("profile_id", profile.id).eq("community", community)
-    .select("id").maybeSingle();
+    .eq("fulfillment_status", "awaiting_payment").select("id").maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("Pedido não encontrado.");
+  if (!data) throw new Error("Pedido enviado à loja, entregue ou não encontrado. Fale com um organizador.");
   revalidatePath("/camisas");
   revalidatePath("/admin/camisas");
 }
