@@ -65,8 +65,10 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
   const totalOrdered = orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0);
   const totalReceived = shirtTransactions.filter((transaction) => !transaction.voided_at).reduce((sum, transaction) => sum + Number(transaction.amount), 0);
   const query = (params.q ?? "").trim().toLocaleLowerCase("pt-BR");
+  const paymentPriority = { paid: 0, half: 1, mixed: 1, pending: 2 } as const;
   const selected = listView ? groups.filter((g) => shirtGroupMatchesView(g, listView) &&
-    (!query || g.items.some((o) => (o.profiles?.full_name ?? "").toLocaleLowerCase("pt-BR").includes(query) || o.shirt_name.toLocaleLowerCase("pt-BR").includes(query)))) : [];
+    (!query || g.items.some((o) => (o.profiles?.full_name ?? "").toLocaleLowerCase("pt-BR").includes(query) || o.shirt_name.toLocaleLowerCase("pt-BR").includes(query))))
+    .sort((first, second) => paymentPriority[first.payment] - paymentPriority[second.payment]) : [];
   const exportOrders: ExportShirtOrder[] = view === "exports" ? orders.map((o) => ({
     fullName: o.profiles?.full_name ?? "Sem nome", phone: o.profiles?.phone ?? "",
     model: o.model, fit: o.fit, shirtName: o.shirt_name, shirtNumber: o.shirt_number,
