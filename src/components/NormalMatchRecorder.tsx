@@ -5,6 +5,7 @@ import { RotateCcw, Swords, Trophy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import { TEAM_VICTORY_EVENT } from "./VictoryTeamCard";
+import { EmptyState } from "./EmptyState";
 
 type TeamOption = { id: string; teamNumber: number; name: string };
 type Confrontation = {
@@ -155,7 +156,7 @@ export function NormalMatchRecorder({
       <div className="mt-4">
         <h3 className="text-sm font-medium text-white">Histórico do racha</h3>
         {!confrontations.length ? (
-          <p className="mt-2 rounded-lg bg-white/5 px-3 py-3 text-sm text-white/50">Nenhum confronto registrado ainda.</p>
+          <div className="mt-2"><EmptyState compact icon={<Swords className="h-5 w-5" />} title="A quadra está pronta" description="Escolha dois times acima e registre o vencedor do primeiro confronto." /></div>
         ) : (
           <ol className="mt-2 space-y-2">
             {confrontations.map((match, index) => (

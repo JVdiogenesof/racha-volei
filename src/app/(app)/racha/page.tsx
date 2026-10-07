@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, type LucideIcon } from "lucide-react";
+import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
+import { EmptyState } from "@/components/EmptyState";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -97,7 +98,7 @@ export default async function RachaListPage() {
       <section>
         <h2 className="font-semibold text-white">Próximos</h2>
         <div className="mt-3 space-y-2">
-          {!proximos.length && <p className="text-sm text-white/60">Nenhum racha marcado ainda.</p>}
+          {!proximos.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Agenda livre no momento" description="Assim que o próximo racha for criado, ele aparecerá aqui com data, horário e confirmação." />}
           {proximos.map((e) => (
             <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
           ))}

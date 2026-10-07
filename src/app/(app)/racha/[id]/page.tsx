@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, StopCircle, Award, Crown, Share2, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -13,6 +13,8 @@ import { EventProgress } from "@/components/EventProgress";
 import { startEvent, finishEvent } from "./actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
+import { getEventSummary } from "@/lib/eventSummary";
+import { FinishEventCelebration } from "@/components/FinishEventCelebration";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -70,6 +72,10 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const isInProgress = event.status === "in_progress";
   const listOpen = event.official_list_open;
   const rachaLevel = listOpen ? await getRachaLevel(supabase, id) : null;
+  const finishSummary = profile.is_organizer && isInProgress ? await getEventSummary(supabase, id) : null;
+  const finishLeaders = finishSummary?.bestWinCount
+    ? finishSummary.players.filter((player) => player.wins === finishSummary.bestWinCount).map((player) => player.fullName)
+    : [];
   const myStatusLabel =
     myAttendance?.status === "confirmed"
       ? "confirmado"
@@ -144,13 +150,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
                 : "Publique a lista de confirmados (em \"Lista do racha\") antes de iniciar o evento."}
           </p>
           {isInProgress ? (
-            <ActionForm action={finishEvent} successMessage="Racha finalizado! Agora os organizadores podem escolher o Jogador Destaque." className="ml-auto shrink-0">
-              <input type="hidden" name="eventId" value={id} />
-              <button className="inline-flex items-center gap-1.5 rounded-lg bg-brand-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-navy-light">
-                <StopCircle className="h-4 w-4" strokeWidth={2} />
-                Terminar evento
-              </button>
-            </ActionForm>
+            <FinishEventCelebration eventId={id} confirmedCount={confirmedCount ?? 0} totalMatches={finishSummary?.totalMatches ?? 0} leaderNames={finishLeaders} action={finishEvent} />
           ) : listOpen ? (
             <ActionForm action={startEvent} successMessage="Racha iniciado!" className="ml-auto shrink-0">
               <input type="hidden" name="eventId" value={id} />

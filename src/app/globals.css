@@ -252,6 +252,110 @@ a[href]:active svg,
   transform: scale(0.86);
 }
 
+@keyframes tap-confirm {
+  0% { box-shadow: 0 0 0 0 rgb(196 181 253 / 0.38); }
+  55% { box-shadow: 0 0 0 5px rgb(196 181 253 / 0.11); }
+  100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+.tap-feedback-active {
+  animation: tap-confirm 0.34s ease-out;
+}
+
+/* A ilha inferior mantém o item ativo elevado e iluminado para orientar a
+   navegação sem aumentar sua altura no celular. */
+.nav-island {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 12px 28px rgb(5 3 20 / 0.18);
+  backdrop-filter: blur(16px);
+}
+
+.nav-island-item > svg {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), filter 0.28s ease;
+}
+
+.nav-island-item:hover > svg {
+  transform: translateY(-1px) scale(1.08);
+}
+
+.nav-island-active > svg {
+  transform: translateY(-1px) scale(1.08);
+  filter: drop-shadow(0 0 7px rgb(221 214 254 / 0.58));
+}
+
+.nav-island-badge {
+  animation: nav-badge-breathe 1.8s ease-in-out infinite;
+  box-shadow: 0 0 0 2px #25164e, 0 0 10px rgb(239 68 68 / 0.5);
+}
+
+@keyframes nav-badge-breathe {
+  50% { transform: scale(1.1); }
+}
+
+/* Fotos ganham profundidade dentro do próprio espaço, sem deslocar cards. */
+.avatar-photo {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, filter 0.28s ease;
+}
+
+.group:hover .avatar-photo,
+.avatar-photo:hover {
+  transform: scale(1.075);
+  filter: saturate(1.08) brightness(1.06);
+  box-shadow: 0 0 0 3px rgb(167 139 250 / 0.14), 0 8px 20px rgb(7 4 24 / 0.3);
+}
+
+.podium-avatar .avatar-photo {
+  animation: podium-float 3.2s ease-in-out infinite;
+}
+
+.podium-avatar-first .avatar-photo {
+  box-shadow: 0 0 0 3px rgb(253 224 71 / 0.15), 0 0 24px rgb(251 191 36 / 0.18);
+}
+
+@keyframes podium-float {
+  50% { transform: translateY(-3px); }
+}
+
+.empty-state-icon {
+  animation: empty-state-float 3s ease-in-out infinite;
+}
+
+@keyframes empty-state-float {
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+
+/* Encerramento do racha: celebração curta sobre os mesmos dados já salvos. */
+@keyframes finish-card-in {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-finish-card {
+  animation: finish-card-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.finish-confetti {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.finish-confetti i {
+  position: absolute;
+  left: var(--x);
+  top: -8%;
+  width: 8px;
+  height: 14px;
+  border-radius: 3px;
+  background: hsl(calc(255 + var(--i) * 13) 88% 68%);
+  animation: finish-confetti-fall var(--duration) linear infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes finish-confetti-fall {
+  to { transform: translate3d(var(--drift), 115vh, 0) rotate(620deg); }
+}
+
 @keyframes navigation-progress {
   0% { transform: translateX(-105%); }
   55% { transform: translateX(95vw); }
@@ -465,6 +569,15 @@ form[aria-busy="true"] button[type="submit"]::after {
   .community-switch-orb,
   .animate-community-icon-out,
   .skeleton-shimmer::after {
+    animation: none;
+  }
+
+  .tap-feedback-active,
+  .nav-island-badge,
+  .podium-avatar .avatar-photo,
+  .empty-state-icon,
+  .animate-finish-card,
+  .finish-confetti i {
     animation: none;
   }
 }

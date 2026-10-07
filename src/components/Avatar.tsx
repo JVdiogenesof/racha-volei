@@ -35,12 +35,12 @@ export function Avatar({
         <img
           src={src}
           alt={name}
-          className={`${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ring-white/15`}
+          className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ring-white/15`}
           referrerPolicy="no-referrer"
         />
       ) : (
         <span
-          className={`flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ring-white/15`}
+          className={`avatar-photo flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ring-white/15`}
         >
           {initials || "?"}
         </span>

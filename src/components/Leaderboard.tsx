@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
+import { EmptyState } from "./EmptyState";
 
 export type RankingEntry = {
   profileId: string;
@@ -52,7 +53,7 @@ export function Leaderboard({
       </div>
 
       {!ranking.length ? (
-        <p className="mt-4 text-sm text-white/60">Ainda não tem dados suficientes.</p>
+        <div className="mt-4"><EmptyState compact icon={<BarChart3 className="h-5 w-5" />} title="Ranking sendo formado" description="Os resultados aparecem aqui conforme os rachas e confrontos forem registrados." /></div>
       ) : (
         <>
           {podium.length > 0 && (
@@ -62,7 +63,7 @@ export function Leaderboard({
                 const place = podium.indexOf(entry);
                 const isFirst = place === 0;
                 return (
-                  <div key={entry.profileId} className="flex min-w-0 flex-col items-center text-center">
+                  <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
                     <span
                       className={`mb-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${MEDAL_BADGE[place]}`}
                     >

@@ -8,6 +8,7 @@ import { AnnouncementCard } from "@/components/AnnouncementCard";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { createAnnouncement, deleteAnnouncement } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
+import { EmptyState } from "@/components/EmptyState";
 
 export default async function AvisosPage() {
   const profile = await requireProfile();
@@ -90,7 +91,7 @@ export default async function AvisosPage() {
             />
           );
         })}
-        {!announcements?.length && <p className="text-sm text-white/60">Nenhum aviso ainda.</p>}
+        {!announcements?.length && <EmptyState icon={<Megaphone className="h-5 w-5" />} title="Tudo tranquilo por aqui" description="Os próximos avisos do VPA vão aparecer nesta área." />}
       </div>
     </div>
   );
