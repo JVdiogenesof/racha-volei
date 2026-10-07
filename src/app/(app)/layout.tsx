@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <PwaInstallPrompt />
       <NavBar profile={profile} activeCommunity={community} chromeData={chromeData} />
       {isVisitor && <VisitorModeBanner invited={profile.status === "guest"} />}
-      <main className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 py-6 pb-40 sm:py-8 sm:pb-40">
+      <main className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 py-6 pb-40 sm:py-8 sm:pb-40 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem]">
         <BackButton />
         <PageTransition community={community}>{children}</PageTransition>
       </main>

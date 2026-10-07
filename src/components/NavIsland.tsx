@@ -38,7 +38,7 @@ export function NavIsland({
   const compact = useCompactHeader();
 
   return (
-    <nav aria-label="Navegação principal" className={`nav-island-shell border-t border-white/10 px-2 transition-[padding] duration-300 sm:flex sm:justify-center sm:px-3 ${compact ? "py-1.5 sm:py-2" : "py-2 sm:py-2.5"}`}>
+    <nav aria-label="Navegação principal" className={`nav-island-shell border-t border-white/10 px-2 transition-[padding] duration-300 sm:flex sm:justify-center sm:px-3 xl:px-6 ${compact ? "py-1.5 sm:py-2" : "py-2 sm:py-2.5"}`}>
       <div
         className="nav-island no-scrollbar mx-auto flex w-full max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/10 p-1 transition-all duration-300 sm:w-auto sm:max-w-none sm:overflow-visible sm:p-1.5"
       >
@@ -52,11 +52,11 @@ export function NavIsland({
               aria-label={link.label}
               aria-current={active ? "page" : undefined}
               className={`nav-island-item relative flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full text-white/60 transition-all duration-300 ease-out sm:h-9 ${
-                active ? "nav-island-active w-auto bg-gradient-to-r from-purple-600 to-violet-500 px-3 text-white shadow-md shadow-purple-950/30 sm:px-3.5" : "w-10 px-0 hover:bg-white/10 hover:text-white/80 sm:w-9"
+                active ? "nav-island-active w-auto bg-gradient-to-r from-purple-600 to-violet-500 px-3 text-white shadow-md shadow-purple-950/30 sm:px-3.5" : "w-10 px-0 hover:bg-white/10 hover:text-white/80 sm:w-9 xl:w-auto xl:px-3"
               }`}
             >
               <link.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {active && <span className="animate-nav-label whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs">{link.label}</span>}
+              <span className={`${active ? "animate-nav-label" : "hidden xl:inline"} whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs`}>{link.label}</span>
               {!active && badge > 0 && (
                 <span className="nav-island-badge absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold leading-none text-white">
                   {badge > 9 ? "9+" : badge}
@@ -74,11 +74,11 @@ export function NavIsland({
               aria-label="Admin"
               aria-current={adminActive ? "page" : undefined}
               className={`nav-island-item flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full transition-all duration-300 ease-out sm:h-9 ${
-                adminActive ? "nav-island-active w-auto bg-red-500/20 px-3 text-red-300 sm:px-3.5" : "w-10 px-0 text-red-300/70 hover:bg-white/10 hover:text-red-300 sm:w-9"
+                adminActive ? "nav-island-active w-auto bg-red-500/20 px-3 text-red-300 sm:px-3.5" : "w-10 px-0 text-red-300/70 hover:bg-white/10 hover:text-red-300 sm:w-9 xl:w-auto xl:px-3"
               }`}
             >
               <ShieldCheck className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {adminActive && <span className="animate-nav-label whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs">Admin</span>}
+              <span className={`${adminActive ? "animate-nav-label" : "hidden xl:inline"} whitespace-nowrap text-[10px] font-semibold leading-none sm:text-xs`}>Admin</span>
             </Link>
           </>
         )}
