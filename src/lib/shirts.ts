@@ -20,6 +20,14 @@ export const SHIRT_MODELS = {
 } as const;
 
 export type ShirtModel = keyof typeof SHIRT_MODELS;
+export type ShirtExportFilter = "received" | "half" | "paid" | "all";
+export function selectShirtExportOrders<T extends { model: ShirtModel; paid: boolean; half_paid: boolean }>(
+  orders: T[], model: ShirtModel, filter: ShirtExportFilter,
+) {
+  return orders.filter((order) => order.model === model && (
+    filter === "all" || (filter === "paid" ? order.paid : filter === "half" ? order.half_paid : order.paid || order.half_paid)
+  ));
+}
 
 export const SHIRT_PRICES: Record<ShirtModel, number> = {
   tank: 37,
