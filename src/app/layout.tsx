@@ -20,8 +20,11 @@ export const metadata: Metadata = {
   description: "Organização do racha de vôlei: presença, times e avisos do grupo.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [
+      { url: "/pwa-icon-v2-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-icon-v2-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon-v2.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,

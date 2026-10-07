@@ -125,7 +125,7 @@ export function PwaInstallPrompt() {
         <div className="relative p-5 pt-6 sm:p-6">
           <div className="flex items-center gap-4 pr-8">
             <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white shadow-lg shadow-purple-950/40">
-              <Image src="/pwa-icon-192.png" alt="Vôlei por Amor" width={64} height={64} className="h-full w-full object-cover" priority />
+              <Image src="/pwa-icon-v2-192.png" alt="Vôlei por Amor" width={64} height={64} className="h-full w-full object-cover" priority />
             </span>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-purple-200/70">Acesso mais rápido</p>

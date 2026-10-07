@@ -9,8 +9,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "VPA Racha";
   const options = {
     body: data.body || "",
-    icon: "/logo.png",
-    badge: "/logo.png",
+    icon: "/pwa-icon-v2-192.png",
+    badge: "/pwa-icon-v2-192.png",
     data: { url: data.url || "/" },
   };
 
