@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Loader2, Pencil, X } from "lucide-react";
 import { SHIRT_FITS, SHIRT_MODELS, SHIRT_SIZES, type ShirtFit, type ShirtModel } from "@/lib/shirts";
@@ -32,7 +33,7 @@ export function EditShirtOrderButton({ order, fullName, action }: {
       <Pencil className="h-4 w-4" />
     </button>
 
-    {open && <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(event) => {
+    {open && createPortal(<div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !pending) setOpen(false);
     }}>
       <section role="dialog" aria-modal="true" aria-labelledby={`edit-shirt-${order.id}`}
@@ -69,7 +70,7 @@ export function EditShirtOrderButton({ order, fullName, action }: {
           </button>
         </form>
       </section>
-    </div>}
+    </div>, document.body)}
   </>;
 }
 

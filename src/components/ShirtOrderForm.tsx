@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Loader2, ShoppingBag, Sparkles } from "lucide-react";
 import { useToast } from "./Toast";
 import { getShirtModels, SHIRT_PRICES, SHIRT_SIZES, type ShirtModel, type ShirtFit, type ShirtModelInfo, type ShirtOrderStatus } from "@/lib/shirts";
@@ -33,15 +34,13 @@ export function ShirtOrderForm({
 }) {
   const shirtModels = getShirtModels(community);
   const [model, setModel] = useState<ShirtModel>("tank");
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, setState] = useState<ShirtOrderState>(initialState);
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const { showToast } = useToast();
   const existing = existingOrders.find((order) => order.model === model);
   const inProduction = !!existing && existing.fulfillment_status !== "awaiting_payment";
   const locked = existing?.paid || existing?.half_paid || inProduction;
-
-  useEffect(() => {
-    if (state.status !== "idle") showToast(state.message);
-  }, [state, showToast]);
 
   return (
     <section id="fazer-pedido" className="scroll-mt-36 rounded-3xl border border-purple-300/20 bg-gradient-to-br from-purple-500/10 via-white/[0.025] to-transparent p-4 sm:p-6">
@@ -76,7 +75,22 @@ export function ShirtOrderForm({
         })}
       </div>
 
-      <form action={formAction} key={`${model}-${existing?.shirt_name ?? "new"}-${existing?.fit ?? "new"}`} className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-2 sm:p-5">
+      <form key={`${model}-${existing?.shirt_name ?? "new"}-${existing?.fit ?? "new"}`} className="mt-5 grid gap-4 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-2 sm:p-5" onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        startTransition(async () => {
+          try {
+            const result = await action(initialState, formData);
+            setState(result);
+            showToast(result.message);
+            if (result.status === "success") router.refresh();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : "Não foi possível salvar o pedido.";
+            setState({ status: "error", message });
+            showToast(message);
+          }
+        });
+      }}>
         <input type="hidden" name="model" value={model} />
         <div className="relative overflow-hidden rounded-xl border border-white/10 sm:col-span-2">
           <div className={`relative ${community === "sand" ? "aspect-[4/5] bg-[#191919] sm:aspect-[16/11]" : "aspect-[16/8] sm:aspect-[16/6]"}`}>
