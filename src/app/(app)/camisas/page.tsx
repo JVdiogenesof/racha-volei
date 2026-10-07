@@ -3,7 +3,8 @@ import Link from "next/link";
 import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtOrderTotal, shirtPayment, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_PRICES, shirtOrderTotal, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { getActiveCommunity } from "@/lib/community";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
 import { CancelShirtOrderButton } from "@/components/CancelShirtOrderButton";
@@ -60,8 +61,8 @@ export default async function CamisasPage() {
                   <p className="font-bold">{shirtModels[order.model].label} · {SHIRT_FITS[order.fit]}</p>
                   <p className="mt-1 text-sm text-white/65">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)}</p>
                   <p className="text-sm text-white/65">Tamanho {order.size} · Qtd. {order.quantity} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
-                  <p className="mt-2 inline-flex rounded-full border border-purple-300/20 bg-purple-500/15 px-2.5 py-1 text-xs font-bold text-purple-100">{shirtOrderStatusLabel(order)}</p>
-                  <p className="mt-2 text-xs font-bold text-purple-200">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]}</p>
+                  {order.fulfillment_status !== "delivered" && <p className="mt-2 text-xs text-purple-200">{shirtOrderStatusLabel(order)}</p>}
+                  <div className="mt-2"><ShirtProgressBadges items={[order]} /></div>
                 </div>
                 {!order.paid && !order.half_paid && order.fulfillment_status === "awaiting_payment" && <CancelShirtOrderButton orderId={order.id} model={shirtModels[order.model].label} action={cancelShirtOrder} />}
               </div>

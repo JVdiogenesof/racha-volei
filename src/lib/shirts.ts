@@ -51,6 +51,16 @@ export function shirtOrderStatusLabel(order: { fulfillment_status: ShirtOrderSta
   return SHIRT_ORDER_STATUS_LABELS[order.fulfillment_status];
 }
 export type ShirtPayment = "pending" | "half" | "paid" | "mixed";
+export type ShirtListView = "all" | "pending" | "partial" | "paid" | "ordered" | "delivered";
+export function shirtGroupMatchesView(group: {
+  payment: ShirtPayment; items: { fulfillment_status: ShirtOrderStatus }[];
+}, view: ShirtListView) {
+  if (view === "all") return true;
+  if (view === "partial") return group.payment === "half" || group.payment === "mixed";
+  if (view === "pending" || view === "paid") return group.payment === view;
+  // Deliveries may be partial: show the person with an explicit item count.
+  return group.items.some((item) => item.fulfillment_status === view);
+}
 export const SHIRT_PAYMENT_LABELS: Record<ShirtPayment, string> = {
   pending: "Não pago", half: "Metade paga (50%)", paid: "Pago integralmente", mixed: "Pagamento parcial",
 };

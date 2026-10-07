@@ -26,6 +26,16 @@ assert.equal(groups[1].payment, "half");
 assert.equal(groups[2].payment, "mixed", "legacy mixed payments must not become 50% or paid");
 assert.equal(shirts.groupShirtOrders([item("a", "sand", true), item("a", "sand", true)])[0].payment, "paid");
 assert.equal(shirts.SHIRT_FITS.unspecified, "Não informada");
+const groupedProgress = shirts.groupShirtOrders([
+  { ...item("a", "court", true), fulfillment_status: "delivered" },
+  { ...item("a", "court", true), fulfillment_status: "ordered" },
+  { ...item("b", "court", false, true), fulfillment_status: "awaiting_payment" },
+]);
+assert.equal(shirts.shirtGroupMatchesView(groupedProgress[0], "paid"), true);
+assert.equal(shirts.shirtGroupMatchesView(groupedProgress[0], "delivered"), true, "partially delivered people must appear in delivery list");
+assert.equal(shirts.shirtGroupMatchesView(groupedProgress[0], "ordered"), true, "partially ordered people must appear in production list");
+assert.equal(shirts.shirtGroupMatchesView(groupedProgress[1], "partial"), true);
+assert.equal(shirts.shirtGroupMatchesView(groupedProgress[1], "pending"), false);
 
 async function main() {
   const calls = [];

@@ -20,7 +20,7 @@ export function ShirtOrderStatusControl({ orderId, status, hasPayment, label, ac
     Andamento do pedido
     <span className="mt-1 flex items-center gap-2">
       <select aria-label={`Andamento de ${label}`} value={status} disabled={pending}
-        className="min-h-10 w-full min-w-0 rounded-xl border border-purple-300/20 bg-[#21123d] px-2 text-xs font-semibold text-purple-100 disabled:opacity-60"
+        className={`min-h-10 w-full min-w-0 rounded-xl border px-2 text-xs font-semibold disabled:opacity-60 ${status === "delivered" ? "border-emerald-300/30 bg-[#12382f] text-emerald-200" : "border-purple-300/20 bg-[#21123d] text-purple-100"}`}
         onChange={(event) => {
           const data = new FormData();
           data.set("orderId", orderId);

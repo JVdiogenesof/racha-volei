@@ -15,7 +15,7 @@ export function ShirtPaymentButton({ profileId, orderIds, fullName, payment, act
   return <div className="flex flex-wrap gap-2" aria-label={"Pagamento de " + fullName}>
     {(["pending", "half", "paid"] as const).map((status) => <button key={status} type="button"
       disabled={pending || payment === status} aria-pressed={payment === status}
-      className="min-h-10 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-bold text-white transition hover:bg-purple-500/20 aria-pressed:border-purple-300 aria-pressed:bg-purple-500/25 disabled:opacity-60"
+      className={`min-h-10 rounded-xl border px-3 text-xs font-bold transition disabled:opacity-60 ${payment === "paid" && status === "paid" ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-white/15 bg-white/5 text-white hover:bg-purple-500/20 aria-pressed:border-purple-300 aria-pressed:bg-purple-500/25"}`}
       onClick={() => {
         if (!window.confirm("Marcar todas as peças exibidas de " + fullName + " como “" + SHIRT_PAYMENT_LABELS[status] + "”?")) return;
         const data = new FormData();
