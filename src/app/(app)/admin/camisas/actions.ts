@@ -5,6 +5,65 @@ import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
 import { SHIRT_FITS, SHIRT_MODELS, SHIRT_SIZES, SHIRT_ORDER_STATUS_LABELS } from "@/lib/shirts";
 
+function revalidateShirtFinance() {
+  revalidatePath("/admin/camisas");
+  revalidatePath("/camisas");
+}
+
+function manualAmount(formData: FormData) {
+  const text = String(formData.get("amount") ?? "").trim().replace(/\./g, "").replace(",", ".");
+  const amount = Number(text);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) throw new Error("Informe um valor válido.");
+  return amount;
+}
+
+export async function addManualShirtFinanceTransaction(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const community = await getActiveCommunity(organizer);
+  const transactionType = String(formData.get("transactionType") ?? "");
+  const description = String(formData.get("description") ?? "").trim();
+  const transactionDate = String(formData.get("transactionDate") ?? "").trim();
+  const profileId = String(formData.get("profileId") ?? "").trim() || null;
+  if (transactionType !== "income" && transactionType !== "expense") throw new Error("Tipo de movimentação inválido.");
+  if (!description || description.length > 160) throw new Error("A descrição deve ter entre 1 e 160 caracteres.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate)) throw new Error("Data inválida.");
+
+  const supabase = await createClient();
+  if (profileId) {
+    const { data: profile, error: profileError } = await supabase.from("profiles")
+      .select("id").eq("id", profileId).contains("communities", [community]).maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+    if (!profile) throw new Error("Pessoa não encontrada nesta modalidade.");
+  }
+  const { error } = await supabase.from("shirt_finance_transactions").insert({
+    community,
+    transaction_type: transactionType,
+    description,
+    amount: manualAmount(formData),
+    transaction_date: transactionDate,
+    profile_id: profileId,
+    payment_stage: "manual",
+    created_by: organizer.id,
+  });
+  if (error) throw new Error(error.message);
+  revalidateShirtFinance();
+}
+
+export async function voidManualShirtFinanceTransaction(formData: FormData) {
+  const organizer = await requireOrganizer();
+  const community = await getActiveCommunity(organizer);
+  const transactionId = String(formData.get("transactionId") ?? "").trim();
+  if (!transactionId) throw new Error("Movimentação inválida.");
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("shirt_finance_transactions")
+    .update({ voided_at: new Date().toISOString(), voided_by: organizer.id })
+    .eq("id", transactionId).eq("community", community).eq("payment_stage", "manual").is("voided_at", null)
+    .select("id").maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Somente movimentações manuais podem ser estornadas aqui.");
+  revalidateShirtFinance();
+}
+
 export async function setShirtOrderStatus(formData: FormData) {
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);

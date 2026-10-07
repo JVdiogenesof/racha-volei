@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, ChevronDown, Clock, CircleDollarSign, Package, PackageCheck, Shirt, FileDown, Wallet, Ruler, Users, Search } from "lucide-react";
+import { ArrowDownRight, ArrowLeft, ArrowUpRight, CheckCircle2, ChevronDown, Clock, CircleDollarSign, Package, PackageCheck, Shirt, FileDown, Wallet, Ruler, Users, Search, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { ShirtOrderStatusControl } from "@/components/ShirtOrderStatusControl";
@@ -11,7 +11,8 @@ import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { DeleteShirtOrderButton } from "@/components/DeleteShirtOrderButton";
 import { EditShirtOrderButton } from "@/components/EditShirtOrderButton";
-import { deleteShirtOrder, setShirtOrderPaid, updateShirtOrder, setShirtOrderStatus } from "./actions";
+import { ActionForm } from "@/components/ActionForm";
+import { addManualShirtFinanceTransaction, deleteShirtOrder, setShirtOrderPaid, updateShirtOrder, setShirtOrderStatus, voidManualShirtFinanceTransaction } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
@@ -20,7 +21,7 @@ type OrderRow = {
   shirt_name: string; shirt_number: number; size: string; quantity: number; paid: boolean; half_paid: boolean;
   profiles: { full_name: string; phone: string | null; avatar_url: string | null } | null;
 };
-type ShirtFinanceRow = { id: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_stage: string; voided_at: string | null; profiles: { full_name: string } | null };
+type ShirtFinanceRow = { id: string; description: string; amount: string | number; transaction_date: string; profile_id: string | null; payment_stage: string; transaction_type: "income" | "expense"; voided_at: string | null; profiles: { full_name: string } | null };
 
 
 const LIST_VIEWS = {
@@ -53,7 +54,7 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
       .select("id, profile_id, community, model, fit, shirt_name, shirt_number, size, quantity, paid, half_paid, fulfillment_status, profiles!shirt_orders_profile_id_fkey(full_name, phone, avatar_url)")
       .eq("community", community).order("created_at"),
     view === "finance" ? supabase.from("shirt_finance_transactions")
-      .select("id, description, amount, transaction_date, profile_id, payment_stage, voided_at, profiles!shirt_finance_transactions_profile_id_fkey(full_name)")
+      .select("id, description, amount, transaction_date, profile_id, payment_stage, transaction_type, voided_at, profiles!shirt_finance_transactions_profile_id_fkey(full_name)")
       .eq("community", community).order("transaction_date", { ascending: false }).order("created_at", { ascending: false })
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -63,7 +64,13 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
   const shirtTransactions = (financeResult.data ?? []) as unknown as ShirtFinanceRow[];
   const groups = groupShirtOrders(orders);
   const totalOrdered = orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0);
-  const totalReceived = shirtTransactions.filter((transaction) => !transaction.voided_at).reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const activeShirtTransactions = shirtTransactions.filter((transaction) => !transaction.voided_at);
+  const totalReceived = activeShirtTransactions.filter((transaction) => transaction.transaction_type === "income").reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const totalSpent = activeShirtTransactions.filter((transaction) => transaction.transaction_type === "expense").reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+  const shirtCashTotal = totalReceived - totalSpent;
+  const shirtProfiles = [...new Map(orders.map((order) => [order.profile_id, order.profiles])).entries()]
+    .map(([id, profile]) => ({ id, fullName: profile?.full_name ?? "Sem nome" })).sort((first, second) => first.fullName.localeCompare(second.fullName, "pt-BR"));
+  const today = new Date().toISOString().slice(0, 10);
   const query = (params.q ?? "").trim().toLocaleLowerCase("pt-BR");
   const paymentPriority = { paid: 0, half: 1, mixed: 1, pending: 2 } as const;
   const selected = listView ? groups.filter((g) => shirtGroupMatchesView(g, listView) &&
@@ -104,13 +111,23 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {[["Valor dos pedidos", totalOrdered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
         ["Já recebido", totalReceived.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
-        ["Falta receber", (totalOrdered - totalReceived).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
-        ["Peças", orders.reduce((sum, o) => sum + o.quantity, 0)]].map(([label, value]) =>
+        ["No caixa agora", shirtCashTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })],
+        ["Falta receber", (totalOrdered - totalReceived).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })]].map(([label, value]) =>
         <div key={label} className="min-w-0 rounded-xl border border-white/10 bg-white/5 p-3"><p className="truncate text-xl font-black sm:text-2xl">{value}</p><p className="text-xs text-white/55">{label}</p></div>)}
     </div>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div><h3 className="font-black text-white">Nova movimentação manual</h3><p className="text-xs text-white/45">Registre uma entrada, como a parte paga pelo Vidal, ou uma saída deste caixa.</p></div></div>
+      <ActionForm action={addManualShirtFinanceTransaction} successMessage="Movimentação das camisas registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="text-xs font-semibold text-white/60">Tipo<select name="transactionType" className="field"><option value="income">Entrada</option><option value="expense">Saída</option></select></label>
+        <label className="text-xs font-semibold text-white/60">Pessoa opcional<select name="profileId" defaultValue="" className="field"><option value="">Sem pessoa vinculada</option>{shirtProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.fullName}</option>)}</select></label>
+        <label className="text-xs font-semibold text-white/60">Valor<input name="amount" inputMode="decimal" required placeholder="0,00" className="field" /></label>
+        <label className="text-xs font-semibold text-white/60">Data<input type="date" name="transactionDate" defaultValue={today} required className="field" /></label>
+        <label className="text-xs font-semibold text-white/60 sm:col-span-2">Descrição<input name="description" maxLength={160} required placeholder="Ex.: Vidal pagou parte das camisas" className="field" /></label>
+        <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white hover:bg-purple-400 sm:col-span-2">Registrar movimentação</button>
+      </ActionForm>
+    </div>
     <details className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.04] p-4">
-      <summary className="cursor-pointer font-bold text-purple-100">Extrato exclusivo das camisas ({shirtTransactions.filter((transaction) => !transaction.voided_at).length})</summary>
-      <div className="mt-3 divide-y divide-white/10">{shirtTransactions.length ? shirtTransactions.slice(0, 80).map((transaction) => <div key={transaction.id} className={`flex items-center gap-3 py-3 ${transaction.voided_at ? "opacity-40" : ""}`}><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{transaction.profiles?.full_name ?? "Pessoa não encontrada"}</p><p className="mt-0.5 text-xs text-white/45">{transaction.description} · {new Date(`${transaction.transaction_date}T12:00:00`).toLocaleDateString("pt-BR")}{transaction.voided_at ? " · Estornado" : ""}</p></div><strong className="shrink-0 text-emerald-300">+{Number(transaction.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>) : <p className="py-4 text-center text-sm text-white/40">Nenhum pagamento de camisa registrado.</p>}</div>
+      <summary className="cursor-pointer font-bold text-purple-100">Extrato exclusivo das camisas ({activeShirtTransactions.length})</summary>
+      <div className="mt-3 divide-y divide-white/10">{shirtTransactions.length ? shirtTransactions.slice(0, 80).map((transaction) => <div key={transaction.id} className={`flex items-center gap-3 py-3 ${transaction.voided_at ? "opacity-40" : ""}`}><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl ${transaction.transaction_type === "income" ? "bg-emerald-400/10 text-emerald-300" : "bg-red-400/10 text-red-300"}`}>{transaction.transaction_type === "income" ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-white">{transaction.profiles?.full_name ?? "Caixa das camisas"}</p><p className="mt-0.5 text-xs text-white/45">{transaction.description} · {new Date(`${transaction.transaction_date}T12:00:00`).toLocaleDateString("pt-BR")}{transaction.payment_stage === "manual" ? " · Manual" : ""}{transaction.voided_at ? " · Estornado" : ""}</p></div><strong className={`shrink-0 ${transaction.transaction_type === "income" ? "text-emerald-300" : "text-red-300"}`}>{transaction.transaction_type === "income" ? "+" : "−"}{Number(transaction.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>{!transaction.voided_at && transaction.payment_stage === "manual" && <ActionForm action={voidManualShirtFinanceTransaction} successMessage="Movimentação estornada."><input type="hidden" name="transactionId" value={transaction.id} /><button type="submit" title="Estornar movimentação" className="grid h-8 w-8 place-items-center rounded-full text-white/30 hover:bg-red-400/10 hover:text-red-300"><X className="h-3.5 w-3.5" /></button></ActionForm>}</div>) : <p className="py-4 text-center text-sm text-white/40">Nenhuma movimentação de camisa registrada.</p>}</div>
     </details>
 
     </section>}

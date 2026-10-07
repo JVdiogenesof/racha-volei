@@ -41,7 +41,7 @@ async function main() {
   const calls = [];
   let result = { data: [{ id: "one" }, { id: "two" }], error: null };
   const query = {};
-  for (const method of ["from", "update", "delete", "eq", "in", "select", "maybeSingle"]) {
+  for (const method of ["from", "insert", "update", "delete", "eq", "in", "is", "select", "maybeSingle"]) {
     query[method] = (...args) => { calls.push([method, ...args]); return query; };
   }
   query.then = (resolve) => resolve(result);
@@ -106,6 +106,29 @@ async function main() {
   assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "awaiting_payment", paid: false, half_paid: false }), "Aguardando pagamento");
   assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "awaiting_payment", paid: false, half_paid: true }), "Aguardando pedido à loja");
   assert.equal(shirts.shirtOrderStatusLabel({ fulfillment_status: "delivered", paid: false, half_paid: true }), "Pedido entregue");
+
+  result = { data: { id: "manual" }, error: null };
+  calls.length = 0;
+  const manualForm = new FormData();
+  manualForm.set("transactionType", "income");
+  manualForm.set("description", "Vidal pagou parte das camisas");
+  manualForm.set("amount", "50,00");
+  manualForm.set("transactionDate", "2026-10-07");
+  await actions.addManualShirtFinanceTransaction(manualForm);
+  const manualValues = calls.find((c) => c[0] === "insert")[1];
+  assert.equal(manualValues.payment_stage, "manual");
+  assert.equal(manualValues.transaction_type, "income");
+  assert.equal(manualValues.amount, 50);
+  assert.equal(manualValues.community, "sand");
+  manualForm.set("amount", "0");
+  await assert.rejects(actions.addManualShirtFinanceTransaction(manualForm), /valor válido/);
+
+  result = { data: { id: "manual" }, error: null };
+  calls.length = 0;
+  const voidManualForm = new FormData();
+  voidManualForm.set("transactionId", "manual");
+  await actions.voidManualShirtFinanceTransaction(voidManualForm);
+  assert.ok(calls.some((c) => c[0] === "is" && c[1] === "voided_at" && c[2] === null));
 
   const profileCalls = [];
   const profileQuery = {};
