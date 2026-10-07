@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronRight, Flame, Gauge, Search, Trophy, UsersRound, X } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { NicknameBadge } from "./NicknameBadge";
@@ -54,7 +55,7 @@ function PlayerDetails({
 
   const performance = player.performance;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-4"
       role="presentation"
@@ -187,7 +188,8 @@ function PlayerDetails({
           </p>
         ) : null}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

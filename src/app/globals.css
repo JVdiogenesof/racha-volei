@@ -511,8 +511,8 @@ form[aria-busy="true"] button[type="submit"]::after {
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
+    transform: none;
+    filter: none;
   }
 }
 
@@ -523,7 +523,7 @@ form[aria-busy="true"] button[type="submit"]::after {
 /* Os blocos principais chegam em sequência sem atrasar a navegação. */
 @keyframes card-stagger-in {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: 1; transform: none; }
 }
 
 .page-stagger > * > * {

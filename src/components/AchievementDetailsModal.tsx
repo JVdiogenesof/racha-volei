@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { CheckCircle2, Lock, X } from "lucide-react";
 import type { Achievement } from "@/lib/achievements";
 
@@ -30,7 +31,7 @@ export function AchievementDetailsModal({
 
   const progress = Math.min(100, (achievement.current / achievement.target) * 100);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-3 backdrop-blur-sm sm:items-center"
       role="presentation"
@@ -90,6 +91,7 @@ export function AchievementDetailsModal({
           )}
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
