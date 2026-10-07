@@ -5,6 +5,7 @@ import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { PlayerBalanceForm } from "@/components/PlayerBalanceForm";
+import { AnimatedMetric } from "@/components/AnimatedMetric";
 import { addFinanceReminder, addFinanceTransaction, addPlayerBalance, applyPlayerBalance, reversePlayerBalance, toggleFinanceReminder, voidFinanceTransaction } from "./actions";
 
 type ProfileRow = { id: string; full_name: string; avatar_url: string | null; status: string };
@@ -143,7 +144,7 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
   </div>;
 }
 
-function Stat({ icon: Icon, label, value, color }: { icon: typeof WalletCards; label: string; value: string; color: string }) { return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${color}`} /><strong className="mt-2 block truncate text-base text-white sm:text-xl">{value}</strong><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>; }
+function Stat({ icon: Icon, label, value, color }: { icon: typeof WalletCards; label: string; value: string; color: string }) { return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${color}`} /><AnimatedMetric className="mt-2 block truncate text-base font-bold text-white sm:text-xl" value={value} /><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>; }
 function MiniValue({ label, value, color }: { label: string; value: string; color: string }) { return <div className="rounded-xl bg-black/10 p-2"><p className="text-[9px] font-black uppercase tracking-wide text-white/35">{label}</p><p className={`mt-1 truncate text-sm font-black ${color}`}>{value}</p></div>; }
 function Label({ children }: { children: React.ReactNode }) { return <span className="mb-1.5 block text-xs font-semibold text-white/55">{children}</span>; }
 function Empty({ text }: { text: string }) { return <div className="mt-3 rounded-2xl border border-dashed border-white/10 p-8 text-center"><WalletCards className="mx-auto h-8 w-8 text-white/20" /><p className="mt-3 font-semibold text-white/50">{text}</p></div>; }

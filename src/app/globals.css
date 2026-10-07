@@ -104,6 +104,90 @@ body {
     linear-gradient(165deg, rgba(67, 43, 111, 0.97), rgba(31, 28, 72, 0.98));
 }
 
+/* A troca Quadra/Areia mantém o conteúdo funcional enquanto uma camada curta
+   apresenta a identidade do novo ambiente. */
+.community-shell {
+  position: relative;
+  isolation: isolate;
+  transition: background-color 0.35s ease;
+}
+
+.community-aura {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  animation: community-aura-in 0.72s ease-out;
+}
+
+.community-aura-court {
+  background: radial-gradient(circle at 50% 8%, rgba(139, 92, 246, 0.2), transparent 54%);
+}
+
+.community-aura-sand {
+  background: radial-gradient(circle at 50% 8%, rgba(251, 191, 36, 0.2), transparent 48%);
+}
+
+.community-switch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  backdrop-filter: blur(14px);
+  animation: community-overlay-in 0.24s ease-out both;
+}
+
+.community-switch-overlay-court {
+  background: radial-gradient(circle at 50% 40%, rgba(124, 58, 237, 0.42), transparent 45%), rgba(10, 13, 36, 0.86);
+}
+
+.community-switch-overlay-sand {
+  background: radial-gradient(circle at 50% 40%, rgba(251, 191, 36, 0.34), transparent 44%), rgba(16, 26, 56, 0.88);
+}
+
+.community-switch-orb {
+  display: grid;
+  height: 5rem;
+  width: 5rem;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  color: white;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow: 0 0 45px rgb(196 181 253 / 0.24);
+  animation: community-orb 0.7s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
+}
+
+.animate-community-icon-out {
+  animation: community-icon-out 0.7s ease-in-out infinite;
+}
+
+@keyframes community-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes community-orb {
+  from { transform: scale(0.94) rotate(-4deg); }
+  to { transform: scale(1.06) rotate(4deg); }
+}
+
+@keyframes community-icon-out {
+  50% { opacity: 0.45; transform: rotate(12deg) scale(0.88); }
+}
+
+@keyframes community-aura-in {
+  0% { opacity: 0; }
+  32% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -318,20 +402,69 @@ form[aria-busy="true"] button[type="submit"]::after {
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px) scale(0.994);
+    filter: blur(2px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 .animate-page-in {
-  animation: page-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: page-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Os blocos principais chegam em sequência sem atrasar a navegação. */
+@keyframes card-stagger-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-stagger > * > * {
+  animation: card-stagger-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.12s;
+}
+
+.page-stagger > * > :nth-child(1) { animation-delay: 0.02s; }
+.page-stagger > * > :nth-child(2) { animation-delay: 0.055s; }
+.page-stagger > * > :nth-child(3) { animation-delay: 0.09s; }
+.page-stagger > * > :nth-child(4) { animation-delay: 0.125s; }
+.page-stagger > * > :nth-child(5) { animation-delay: 0.16s; }
+.page-stagger > * > :nth-child(6) { animation-delay: 0.195s; }
+.page-stagger > * > :nth-child(7) { animation-delay: 0.23s; }
+.page-stagger > * > :nth-child(n+8) { animation-delay: 0.265s; }
+
+/* Esqueletos já ocupam o espaço final dos cards e recebem apenas um brilho
+   leve, mantendo a sensação rápida que o app já tinha. */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.065);
+}
+
+.skeleton-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-110%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent);
+  animation: skeleton-sweep 1.15s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  to { transform: translateX(110%); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-page-in {
+  .animate-page-in,
+  .page-stagger > * > *,
+  .community-aura,
+  .community-switch-overlay,
+  .community-switch-orb,
+  .animate-community-icon-out,
+  .skeleton-shimmer::after {
     animation: none;
   }
 }

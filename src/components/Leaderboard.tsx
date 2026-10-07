@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar } from "./Avatar";
+import { AnimatedMetric } from "./AnimatedMetric";
 
 export type RankingEntry = {
   profileId: string;
@@ -65,7 +66,7 @@ export function Leaderboard({
                     <span
                       className={`mb-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${MEDAL_BADGE[place]}`}
                     >
-                      {place + 1}º
+                      <AnimatedMetric value={`${place + 1}º`} />
                     </span>
                     <Avatar src={entry.avatarUrl} name={entry.fullName} size={isFirst ? "lg" : "md"} />
                     <p className="mt-2 w-full break-words text-sm font-medium text-white">
@@ -73,7 +74,7 @@ export function Leaderboard({
                     </p>
                     {entry.profileId === currentProfileId && <span className="mt-1 rounded-full bg-purple-400/15 px-2 py-0.5 text-[9px] font-black text-purple-200">VOCÊ</span>}
                     <p className="text-xs text-white/60">
-                      {entry.displayValue ?? `${entry.count} ${unit}`}
+                      <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
                     {entry.detail && <p className="mt-0.5 text-[10px] text-white/40">{entry.detail}</p>}
                   </div>
@@ -89,12 +90,12 @@ export function Leaderboard({
                 return (
                   <li key={entry.profileId} className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}>
                     <span className="flex min-w-0 items-center gap-2">
-                      <span className="w-6 shrink-0 text-center text-white/40">{rankedPosition ? `${rankedPosition}º` : "—"}</span>
+                      <AnimatedMetric className="w-6 shrink-0 text-center text-white/40" value={rankedPosition ? `${rankedPosition}º` : "—"} />
                       <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
                       <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
                     </span>
                     <span className="max-w-[52%] shrink-0 text-right text-white/60">
-                      <span className="block font-semibold">{entry.displayValue ?? `${entry.count} ${unit}`}</span>
+                      <AnimatedMetric className="block font-semibold" value={entry.displayValue ?? `${entry.count} ${unit}`} />
                       {entry.detail && <span className="mt-0.5 block text-[10px] leading-tight text-white/35">{entry.detail}</span>}
                     </span>
                   </li>

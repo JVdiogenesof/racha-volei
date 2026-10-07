@@ -10,6 +10,7 @@ import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievemen
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { SharePlayerCard } from "@/components/SharePlayerCard";
 import { getActiveCommunity } from "@/lib/community";
+import { AnimatedMetric } from "@/components/AnimatedMetric";
 
 export default async function PerfilPage() {
   const profile = await requireProfile();
@@ -83,7 +84,7 @@ export default async function PerfilPage() {
           {myStats.map((s) => (
             <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
               <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />
-              <p className="mt-2 text-xl font-bold text-white">{s.value}</p>
+              <AnimatedMetric className="mt-2 block text-xl font-bold text-white" value={s.value} />
               <p className="text-xs text-white/60">{s.label}</p>
             </div>
           ))}

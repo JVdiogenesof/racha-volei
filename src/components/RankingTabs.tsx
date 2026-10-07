@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarCheck, Crown, Percent, Trophy, type LucideIcon } from "lucide-react";
 import { Leaderboard, type RankingEntry } from "./Leaderboard";
+import { AnimatedMetric } from "./AnimatedMetric";
 
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
@@ -51,7 +52,7 @@ export function RankingTabs({
             >
               <span className="flex items-center justify-between gap-2">
                 <Icon className={`h-4 w-4 ${active === id ? "text-purple-200" : "text-white/35"}`} />
-                <span className={`text-lg font-black ${mine.position ? "text-white" : "text-white/30"}`}>{mine.position ? `${mine.position}º` : "—"}</span>
+                <AnimatedMetric className={`text-lg font-black ${mine.position ? "text-white" : "text-white/30"}`} value={mine.position ? `${mine.position}º` : "—"} />
               </span>
               <span className="mt-2 block text-[10px] font-bold uppercase tracking-wide text-white/40">Sua posição</span>
               <span className="block truncate text-xs font-semibold text-white/70">{config.shortLabel}</span>

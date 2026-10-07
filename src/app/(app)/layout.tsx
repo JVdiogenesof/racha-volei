@@ -18,14 +18,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const community = await getActiveCommunity(profile);
   const chromeData = getAppChromeData(await createClient(), profile, community);
   return (
-    <div className={`flex min-h-screen flex-1 flex-col ${community === "sand" ? "community-sand" : "community-court"}`}>
+    <div className={`community-shell flex min-h-screen flex-1 flex-col ${community === "sand" ? "community-sand" : "community-court"}`}>
+      <div key={community} aria-hidden="true" className={`community-aura community-aura-${community}`} />
       <NavigationFeedback />
       <PwaInstallPrompt />
       <NavBar profile={profile} activeCommunity={community} chromeData={chromeData} />
       {isVisitor && <VisitorModeBanner invited={profile.status === "guest"} />}
       <main className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 py-6 pb-40 sm:py-8 sm:pb-40">
         <BackButton />
-        <PageTransition>{children}</PageTransition>
+        <PageTransition community={community}>{children}</PageTransition>
       </main>
       <Footer />
       <NotificationCenter profile={profile} chromeData={chromeData} />
