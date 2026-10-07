@@ -4,7 +4,8 @@ import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, SHIRT_PRIC
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
 import { DeleteShirtOrderButton } from "@/components/DeleteShirtOrderButton";
-import { deleteShirtOrder, setShirtOrderPaid } from "./actions";
+import { EditShirtOrderButton } from "@/components/EditShirtOrderButton";
+import { deleteShirtOrder, setShirtOrderPaid, updateShirtOrder } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 
 type OrderRow = {
@@ -83,7 +84,10 @@ export default async function AdminCamisasPage() {
                 <p className="mt-1 break-words">{order.shirt_name.toUpperCase()} · Nº {formatShirtNumber(order.shirt_number)} · {order.size} · Qtd. {order.quantity}</p>
                 <p className="mt-1 text-xs text-white/55">{SHIRT_PAYMENT_LABELS[shirtPayment(order)]} · {order.quantity} × {SHIRT_PRICES[order.model].toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} = {shirtOrderTotal(order).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
               </div>
-              <DeleteShirtOrderButton orderId={order.id} fullName={person?.full_name ?? "Atleta"} model={SHIRT_MODELS[order.model].label} action={deleteShirtOrder} />
+              <div className="flex shrink-0 gap-2">
+                <EditShirtOrderButton fullName={person?.full_name ?? "Atleta"} order={{ id: order.id, model: order.model, fit: order.fit, shirtName: order.shirt_name, shirtNumber: order.shirt_number, size: order.size, quantity: order.quantity }} action={updateShirtOrder} />
+                <DeleteShirtOrderButton orderId={order.id} fullName={person?.full_name ?? "Atleta"} model={SHIRT_MODELS[order.model].label} action={deleteShirtOrder} />
+              </div>
             </li>)}</ul>
             <div className="mb-3 grid grid-cols-3 gap-2 rounded-xl bg-black/15 p-3 text-center"><div><p className="text-[9px] font-bold uppercase text-white/35">Total</p><p className="mt-1 text-sm font-black text-white">{groupTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div><div><p className="text-[9px] font-bold uppercase text-white/35">Recebido</p><p className="mt-1 text-sm font-black text-emerald-300">{groupReceived.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div><div><p className="text-[9px] font-bold uppercase text-white/35">Falta</p><p className="mt-1 text-sm font-black text-amber-200">{(groupTotal - groupReceived).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p></div></div>
             <ShirtPaymentButton profileId={group.profileId} orderIds={group.items.map((o) => o.id)} fullName={person?.full_name ?? "Atleta"} payment={group.payment} action={setShirtOrderPaid} />

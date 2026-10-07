@@ -26,7 +26,7 @@ export function DeleteShirtOrderButton({
       disabled={pending}
       aria-label={`Excluir pedido ${model} de ${fullName}`}
       onClick={() => {
-        if (!window.confirm(`Excluir o pedido ${model} de ${fullName}? Essa ação também remove o status de pagamento dessa peça.`)) return;
+        if (!window.confirm(`Excluir o pedido ${model} de ${fullName}? Se houver pagamento, ele também será estornado do caixa das camisas.`)) return;
         const data = new FormData();
         data.set("orderId", orderId);
         startTransition(async () => {
