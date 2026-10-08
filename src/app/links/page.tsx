@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ComponentType, SVGProps } from "react";
-import { ArrowUpRight, Clapperboard, Smartphone } from "lucide-react";
+import { ArrowUpRight, Clapperboard } from "lucide-react";
+import { LogoMark } from "@/components/Logo";
 
 export const metadata: Metadata = {
   title: "Links | Vôlei Por Amor",
@@ -28,6 +29,10 @@ function TikTokIcon(props: IconProps) {
   );
 }
 
+function AppIcon({ className }: IconProps) {
+  return <LogoMark className={className ?? "h-5 w-5"} />;
+}
+
 type BioLink = {
   href: string;
   label: string;
@@ -38,7 +43,7 @@ type BioLink = {
 };
 
 const links: BioLink[] = [
-  { href: "/", label: "Entrar no app", detail: "Rachas, times e rankings", icon: Smartphone, internal: true, accent: "bg-white text-[#31116d]" },
+  { href: "/", label: "Entrar no app", detail: "Rachas, times e rankings", icon: AppIcon, internal: true, accent: "bg-white text-[#31116d]" },
   { href: "https://www.instagram.com/rachavoleiporamor/", label: "Instagram", detail: "@rachavoleiporamor", icon: InstagramIcon, accent: "bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white" },
   { href: "https://www.tiktok.com/@rachavoleiporamor", label: "TikTok", detail: "@rachavoleiporamor", icon: TikTokIcon, accent: "bg-[#080808] text-white ring-1 ring-cyan-200/35" },
   { href: "https://drive.google.com/drive/folders/1NC15vjykfEVVpdKAdS0WBl7dZqTIC8xI", label: "Vídeos e momentos", detail: "Veja os lances da galera", icon: Clapperboard, accent: "bg-violet-400 text-[#1d0d4b]" },
