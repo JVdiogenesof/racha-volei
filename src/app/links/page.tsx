@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ComponentType, SVGProps } from "react";
 import { ArrowUpRight, Clapperboard } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
 
 export const metadata: Metadata = {
   title: "Links | Vôlei Por Amor",
@@ -30,7 +29,8 @@ function TikTokIcon(props: IconProps) {
 }
 
 function AppIcon({ className }: IconProps) {
-  return <LogoMark className={className ?? "h-5 w-5"} />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/logo-vpa-oficial.jpg" alt="" className={`${className ?? "h-5 w-5"} rounded-md object-cover`} />;
 }
 
 type BioLink = {
