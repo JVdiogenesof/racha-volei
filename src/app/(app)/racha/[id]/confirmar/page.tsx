@@ -185,8 +185,6 @@ export default async function ConfirmarPresencaPage({
           eventId={id}
           maxPlayers={eventCapacity}
           initialConfirmedCount={confirmados.length}
-          newcomerReservedSpots={event.newcomer_reserved_spots}
-          initialNewcomerConfirmedCount={newcomerConfirmedCount}
         />
       )}
 

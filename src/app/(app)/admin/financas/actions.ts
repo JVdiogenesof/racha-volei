@@ -31,7 +31,13 @@ function positiveAmount(formData: FormData) {
 
 function revalidateFinance(eventId?: string) {
   revalidatePath("/admin/financas");
-  if (eventId) revalidatePath(`/racha/${eventId}/confirmar`);
+  if (eventId) {
+    revalidatePath("/");
+    revalidatePath("/racha");
+    revalidatePath(`/racha/${eventId}`);
+    revalidatePath(`/racha/${eventId}/confirmar`);
+    revalidatePath(`/racha/${eventId}/times`);
+  }
 }
 
 export async function addPlayerBalance(formData: FormData) {

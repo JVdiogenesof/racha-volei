@@ -96,7 +96,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
         <SummaryStat label="Convites feitos" value={totalInvitations} />
       </section>
 
-      <form action="/admin/reserva" method="get" className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+      <form action="/admin/reserva" method="get" className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           <label className="relative sm:col-span-2">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -119,13 +119,13 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
         </div>
       </form>
 
-      <ul className="grid gap-2 xl:grid-cols-2">
+      <ul className="grid gap-3 md:grid-cols-2">
         {filteredRows.map((row) => {
           const waitingProfile = profileById.get(row.auth_user_id);
           const guestEventId = waitingProfile?.guest_for_event_id;
           const invitationCount = invitationCountFor(row);
           return (
-            <li key={row.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:p-3.5">
+            <li key={row.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:p-4">
               <div className="flex min-w-0 items-start gap-3">
                 <Avatar src={waitingProfile?.avatar_url} name={row.full_name} size="md" />
                 <div className="min-w-0 flex-1">
@@ -142,9 +142,9 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
                 </div>
               </div>
 
-              <div className="mt-2.5 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-xs text-white/50">
-                <span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{row.phone}</span>
-                {row.instagram_handle && <span className="inline-flex min-w-0 items-center gap-1"><AtSign className="h-3.5 w-3.5" /><span className="truncate">{row.instagram_handle}</span></span>}
+              <div className="mt-3 grid gap-1.5 border-t border-white/8 pt-2.5 text-xs text-white/50 sm:grid-cols-2">
+                <span className="inline-flex min-w-0 items-center gap-1"><Phone className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{row.phone}</span></span>
+                {row.instagram_handle && <span className="inline-flex min-w-0 items-center gap-1"><AtSign className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{row.instagram_handle}</span></span>}
               </div>
 
               <details className="group mt-2 rounded-xl bg-white/[0.025] px-3 py-2">
@@ -157,7 +157,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
                 </div>
               </details>
 
-              <div className="mt-2.5 flex flex-wrap items-center gap-2 border-t border-white/8 pt-2.5">
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                 {guestEventId ? (
                   <>
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-2.5 py-1.5 text-xs font-medium text-blue-300"><UserCheck className="h-3.5 w-3.5" />{eventLabelById.get(guestEventId) ?? "Racha atual"}</span>
@@ -180,7 +180,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
             </li>
           );
         })}
-        {!filteredRows.length && <li className="rounded-xl border border-white/10 px-4 py-8 text-center text-sm text-white/55 xl:col-span-2">Nenhuma pessoa corresponde aos filtros escolhidos.</li>}
+        {!filteredRows.length && <li className="rounded-xl border border-white/10 px-4 py-8 text-center text-sm text-white/55 md:col-span-2">Nenhuma pessoa corresponde aos filtros escolhidos.</li>}
       </ul>
     </div>
   );

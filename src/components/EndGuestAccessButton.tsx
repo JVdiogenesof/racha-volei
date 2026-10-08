@@ -22,6 +22,8 @@ export function EndGuestAccessButton({
     <button
       type="button"
       disabled={isPending}
+      aria-label={`Encerrar o acesso temporário de ${fullName}`}
+      title={`Encerrar o acesso temporário de ${fullName}`}
       onClick={() => {
         const confirmed = window.confirm(`Encerrar o acesso temporário de ${fullName}?`);
         if (!confirmed) return;
@@ -34,14 +36,14 @@ export function EndGuestAccessButton({
           router.refresh();
         });
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-white/70 hover:bg-white/5 disabled:opacity-50"
+      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 text-white/70 hover:bg-white/5 disabled:opacity-50 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-xs sm:font-medium"
     >
       {isPending ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
       ) : (
         <XCircle className="h-3.5 w-3.5" strokeWidth={2} />
       )}
-      Encerrar acesso
+      <span className="hidden sm:inline">Encerrar acesso</span>
     </button>
   );
 }

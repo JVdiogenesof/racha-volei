@@ -152,7 +152,7 @@ function RankingArt({ report, metric, logoUrl }: { report: Awaited<ReturnType<ty
   );
 }
 
-export function renderMonthlyArt(
+function renderMonthlyArt(
   report: Awaited<ReturnType<typeof getMonthlyReport>>,
   art: ArtId,
   logoUrl: string,

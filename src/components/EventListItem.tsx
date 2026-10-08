@@ -51,11 +51,6 @@ export function EventListItem({
         <span className="shrink-0 rounded-full bg-purple-500/15 px-2.5 py-1 text-xs font-medium text-purple-200">
           {teamFormatLabel(event.team_size)}
         </span>
-        {event.newcomer_reserved_spots > 0 && (
-          <span className="shrink-0 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
-            {event.newcomer_reserved_spots} para novatos
-          </span>
-        )}
         {event.is_pre_torneio && (
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />

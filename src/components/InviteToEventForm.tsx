@@ -18,7 +18,7 @@ export function InviteToEventForm({
   }
 
   return (
-    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex min-w-0 flex-1 items-center gap-1.5">
+    <ActionForm action={action} successMessage="Pessoa chamada! Ela já tem acesso a esse racha." className="flex w-full min-w-0 items-center gap-1.5 sm:flex-1">
       <input type="hidden" name="reserveEntryId" value={reserveEntryId} />
       <select
         name="eventId"

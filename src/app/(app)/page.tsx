@@ -276,7 +276,7 @@ export default async function HomePage() {
             </div>
 
             <div className="space-y-2">
-              <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} newcomerReservedSpots={reservedSpots} initialNewcomerConfirmedCount={newcomerConfirmedCount ?? 0} compact />
+              <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
               <div className="grid grid-cols-2 gap-2">
                 {!canRespondToNextEvent ? (
                   <Link

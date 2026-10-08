@@ -18,7 +18,7 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-export function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
+function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
   const date = new Date(`${data.date}T12:00:00`);
   const dateLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   const displayedTeams = data.teams.slice(0, 6);

@@ -22,12 +22,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
 
-  const [{ data: event }, { count: confirmedCount }, { count: newcomerConfirmedCount }, { count: interestedCount }, { data: myAttendance }, { data: finalMatch }] =
+  const [{ data: event }, { count: confirmedCount }, { count: interestedCount }, { data: myAttendance }, { data: finalMatch }] =
     await Promise.all([
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, newcomer_reserved_spots, is_pre_torneio, community",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, community",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -36,12 +36,6 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         .select("id", { count: "exact", head: true })
         .eq("event_id", id)
         .eq("status", "confirmed"),
-      supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", id)
-        .eq("status", "confirmed")
-        .eq("uses_newcomer_spot", true),
       supabase
         .from("attendance")
         .select("id", { count: "exact", head: true })
@@ -126,8 +120,6 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
               eventId={id}
               maxPlayers={event.max_players}
               initialConfirmedCount={confirmedCount ?? 0}
-              newcomerReservedSpots={event.newcomer_reserved_spots ?? 0}
-              initialNewcomerConfirmedCount={newcomerConfirmedCount ?? 0}
             />
           </div>
         )}

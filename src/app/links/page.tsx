@@ -30,7 +30,7 @@ function TikTokIcon(props: IconProps) {
 
 function AppIcon({ className }: IconProps) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo-vpa-oficial.jpg" alt="" className="h-full w-full rounded-2xl object-cover" />;
+  return <img src="/logo-vpa-oficial.jpg" alt="" className={className ? `${className} rounded-2xl object-cover` : "h-full w-full rounded-2xl object-cover"} />;
 }
 
 type BioLink = {
