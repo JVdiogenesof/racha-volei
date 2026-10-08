@@ -8,9 +8,11 @@ import { useToast } from "./Toast";
 export function ResetGroupStageButton({
   eventId,
   action,
+  isPreTournament,
 }: {
   eventId: string;
   action: (formData: FormData) => Promise<void>;
+  isPreTournament: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -22,7 +24,9 @@ export function ResetGroupStageButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          "Reiniciar a fase de grupos? Todo o placar já lançado (grupo e final) é apagado, e as vagas do Torneio VPA reservadas a partir desse racha são desfeitas.",
+          isPreTournament
+            ? "Reiniciar a fase de grupos? Todo o placar já lançado (grupo e final) é apagado, e as vagas do Torneio VPA reservadas a partir desse racha são desfeitas."
+            : "Reiniciar a tabela? Todos os placares, o jogo dos dois últimos e a final serão apagados e os confrontos serão gerados novamente.",
         );
         if (!confirmed) return;
 

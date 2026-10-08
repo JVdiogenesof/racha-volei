@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, MapPin, Trophy, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
+import { Plus, MapPin, Trophy, Medal, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -45,7 +45,7 @@ export default async function RachaListPage() {
   const [{ data: events }, { data: attendanceRows }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio")
+      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio, is_mini_torneio")
       .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id),
@@ -129,6 +129,7 @@ function CurrentEventCard({
     time: string | null;
     location: string | null;
     is_pre_torneio: boolean;
+    is_mini_torneio: boolean;
     team_size: number;
   };
   indicator: AttendanceIndicatorData;
@@ -150,6 +151,12 @@ function CurrentEventCard({
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-3 py-1 text-xs font-medium text-amber-200">
                 <Trophy className="h-3.5 w-3.5" />
                 Pré-torneio
+              </span>
+            )}
+            {event.is_mini_torneio && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-medium text-cyan-100">
+                <Medal className="h-3.5 w-3.5" />
+                Mini torneio
               </span>
             )}
             {indicator && <AttendanceIndicator indicator={indicator} />}
@@ -210,6 +217,7 @@ function EventRow({
     status: string;
     official_list_open: boolean;
     is_pre_torneio: boolean;
+    is_mini_torneio: boolean;
     team_size: number;
   };
   indicator: AttendanceIndicatorData;
@@ -264,6 +272,12 @@ function EventRow({
           <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />
             Pré-torneio
+          </span>
+        )}
+        {event.is_mini_torneio && (
+          <span className="flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
+            <Medal className="h-3 w-3" strokeWidth={2} />
+            Mini torneio
           </span>
         )}
         {event.status === "open" && (

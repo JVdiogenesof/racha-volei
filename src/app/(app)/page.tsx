@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Users, Zap, Shirt } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Medal, Users, Zap, Shirt } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -47,7 +47,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio")
         .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
@@ -66,8 +66,9 @@ export default async function HomePage() {
       // final ser decidida (ver hoursAgoIso acima).
       supabase
         .from("tournament_matches")
-        .select("team_a_id, team_b_id, score_a, score_b, events!inner(date, community)")
+        .select("team_a_id, team_b_id, score_a, score_b, events!inner(date, community, is_pre_torneio)")
         .eq("events.community", community)
+        .eq("events.is_pre_torneio", true)
         .eq("stage", "final")
         .not("score_a", "is", null)
         .not("score_b", "is", null)
@@ -218,6 +219,12 @@ export default async function HomePage() {
             {proximoRacha?.is_pre_torneio && (
               <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
                 Pré-torneio
+              </span>
+            )}
+            {proximoRacha?.is_mini_torneio && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-100">
+                <Medal className="h-3 w-3" />
+                Mini torneio
               </span>
             )}
             {proximoRacha && (

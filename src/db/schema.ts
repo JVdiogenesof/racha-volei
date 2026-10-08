@@ -153,6 +153,7 @@ export const events = pgTable("events", {
   // mais vitórias garantem vaga automática no próximo Torneio VPA (ver
   // tournamentReservedPlayers).
   isPreTorneio: boolean("is_pre_torneio").notNull().default(false),
+  isMiniTorneio: boolean("is_mini_torneio").notNull().default(false),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

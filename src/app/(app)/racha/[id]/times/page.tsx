@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { RefreshCw, Trophy } from "lucide-react";
+import { Medal, RefreshCw, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
@@ -35,6 +35,7 @@ import {
   recordNormalMatch,
   undoNormalMatch,
   recordTournamentMatchScore,
+  generateMiniTournamentSchedule,
   resetGroupStage,
   undoFinal,
   simulateTeams,
@@ -49,7 +50,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const [{ data: event }, { data: generation }, { data: confirmedAttendance }, { data: setterOverrideRows }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio, community, status")
+      .select("id, date, num_teams, team_size, official_list_open, is_pre_torneio, is_mini_torneio, community, status")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -70,6 +71,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   if (event.community !== community) notFound();
   const canManage = profile.is_organizer && event.status !== "cancelled";
   const canRegenerate = canManage && event.status !== "finished";
+  const isTournament = event.is_pre_torneio || event.is_mini_torneio;
   const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
 
   let teams: {
@@ -127,7 +129,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       if (w.loser_team_id) lossesByTeam.set(w.loser_team_id, (lossesByTeam.get(w.loser_team_id) ?? 0) + 1);
     }
 
-    if (!event.is_pre_torneio) {
+    if (!isTournament) {
       normalConfrontations = (winRows ?? [])
         .filter((win): win is typeof win & { loser_team_id: string } => Boolean(win.loser_team_id))
         .map((win) => ({ id: win.id, winnerTeamId: win.team_id, loserTeamId: win.loser_team_id }));
@@ -160,7 +162,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         }),
     }));
 
-    if (event.is_pre_torneio) {
+    if (isTournament) {
       const { data: matchRows } = await supabase
         .from("tournament_matches")
         .select("id, stage, team_a_id, team_b_id, score_a, score_b")
@@ -232,6 +234,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const tournamentPlayedCount = [...groupMatches, finalMatch, thirdPlaceMatch].filter(
     (match) => match?.scoreA != null && match?.scoreB != null,
   ).length;
+  const bottomMatchComplete = thirdPlaceMatch?.scoreA != null && thirdPlaceMatch.scoreB != null;
   const showActionDock = Boolean(generation) || canManage;
 
   return (
@@ -241,6 +244,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
           <h1 className="text-2xl font-bold text-white">Times e confrontos</h1>
           <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/60">{eventDateLabel}</span>
           {event.is_pre_torneio && <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-xs font-bold text-amber-200">PRÉ-TORNEIO</span>}
+          {event.is_mini_torneio && <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-bold text-cyan-100"><Medal className="h-3 w-3" /> MINI TORNEIO</span>}
         </div>
         <p className="mt-1.5 text-sm text-white/50">{event.num_teams} times · {teamFormatLabel(event.team_size)}</p>
       </div>
@@ -305,8 +309,8 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       {generation && (
         <TeamsWorkspaceTabs
           teamCount={teams.length}
-          matchCount={event.is_pre_torneio ? tournamentMatchCount : normalConfrontations.length}
-          standingCount={event.is_pre_torneio ? standings.length : 0}
+          matchCount={isTournament ? tournamentMatchCount : normalConfrontations.length}
+          standingCount={isTournament && groupMatches.length > 0 ? standings.length : 0}
           teamsContent={
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {teams.map((team) => {
@@ -316,7 +320,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-semibold text-white">{team.name}</h3>
                       <div className="flex items-center gap-2">
-                        {!event.is_pre_torneio && <span className="rounded-full bg-purple-400/10 px-2 py-1 text-[11px] font-bold text-purple-200">{team.wins}V · {team.losses}D</span>}
+                        {!isTournament && <span className="rounded-full bg-purple-400/10 px-2 py-1 text-[11px] font-bold text-purple-200">{team.wins}V · {team.losses}D</span>}
                         <span className="text-[11px] text-white/35">{sum.toFixed(1)}</span>
                       </div>
                     </div>
@@ -360,15 +364,36 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             </div>
           }
           matchesContent={
-            event.is_pre_torneio ? (
-              <div className="space-y-3">
-                <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
+            isTournament ? (
+              <div className="flex flex-col gap-3">
+                {event.is_mini_torneio && groupMatches.length === 0 && (
+                  <section className="rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 to-purple-500/10 p-5 text-center sm:p-7">
+                    <Medal className="mx-auto h-9 w-9 text-cyan-200" strokeWidth={1.8} />
+                    <h2 className="mt-3 text-lg font-bold text-white">Tabela do mini torneio</h2>
+                    <p className="mx-auto mt-1 max-w-md text-sm text-white/55">
+                      Gere todos os confrontos da fase inicial. Cada time enfrentará todos os outros uma vez.
+                    </p>
+                    {canManage ? (
+                      <ActionForm action={generateMiniTournamentSchedule} successMessage="Tabela de jogos gerada!" className="mt-4">
+                        <input type="hidden" name="eventId" value={id} />
+                        <button type="submit" className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-[#09252b] transition hover:bg-cyan-300 active:scale-[0.98]">
+                          <RefreshCw className="h-4 w-4" strokeWidth={2.2} />
+                          Gerar tabela de jogos
+                        </button>
+                      </ActionForm>
+                    ) : (
+                      <p className="mt-4 text-sm text-white/45">Aguarde um administrador gerar a tabela.</p>
+                    )}
+                  </section>
+                )}
+
+                {groupMatches.length > 0 && <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h2 className="font-semibold text-white">Fase de grupos</h2>
                       <p className="text-xs text-white/40">{groupMatches.filter((match) => match.scoreA != null && match.scoreB != null).length} de {groupMatches.length} partidas concluídas</p>
                     </div>
-                    {canManage && <ResetGroupStageButton eventId={id} action={resetGroupStage} />}
+                    {canManage && <ResetGroupStageButton eventId={id} action={resetGroupStage} isPreTournament={event.is_pre_torneio} />}
                   </div>
                   <div className="mt-3 grid gap-2 lg:grid-cols-2">
                     {groupMatches.map((match, index) => (
@@ -386,18 +411,22 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       )
                     ))}
                   </div>
-                </section>
+                </section>}
 
                 {finalMatch && (
-                  <section className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 sm:p-4">
+                  <section className="order-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 sm:p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="flex items-center gap-1.5 font-semibold text-white"><Trophy className="h-4 w-4 text-amber-400" /> Final</h2>
-                      {canManage && <UndoFinalButton eventId={id} action={undoFinal} />}
+                      {canManage && <UndoFinalButton eventId={id} action={undoFinal} isPreTournament={event.is_pre_torneio} />}
                     </div>
-                    {finalMatch.scoreA != null && finalMatch.scoreB != null && <p className="mt-2 text-sm font-medium text-amber-200">🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)} é campeão e garante vaga no Torneio VPA!</p>}
+                    {finalMatch.scoreA != null && finalMatch.scoreB != null && <p className="mt-2 text-sm font-medium text-amber-200">🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)} {event.is_pre_torneio ? "é campeão e garante vaga no Torneio VPA!" : "é campeão do mini torneio!"}</p>}
                     <div className="mt-3">
-                      {canManage ? (
+                      {canManage && (!event.is_mini_torneio || bottomMatchComplete) ? (
                         <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={finalMatch.id} teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"} scoreA={finalMatch.scoreA} scoreB={finalMatch.scoreB} />
+                      ) : canManage ? (
+                        <p className="rounded-xl border border-amber-300/15 bg-black/10 px-3 py-3 text-center text-sm text-amber-100/70">
+                          A final libera depois do placar do jogo dos dois últimos.
+                        </p>
                       ) : (
                         <p className="rounded-xl border border-white/10 bg-black/10 px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(finalMatch.teamAId) ?? "?"} <span className="mx-2 text-amber-200">{finalMatch.scoreA ?? "–"} × {finalMatch.scoreB ?? "–"}</span> {teamLabelById.get(finalMatch.teamBId) ?? "?"}</p>
                       )}
@@ -406,9 +435,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 )}
 
                 {thirdPlaceMatch && (
-                  <section className="rounded-xl border border-white/10 p-3.5 sm:p-4">
-                    <h2 className="font-semibold text-white">Disputa de 3º lugar</h2>
-                    <p className="text-xs text-white/40">Partida opcional</p>
+                  <section className="order-1 rounded-xl border border-white/10 p-3.5 sm:p-4">
+                    <h2 className="font-semibold text-white">{event.is_mini_torneio ? "Jogo dos dois últimos" : "Disputa de 3º lugar"}</h2>
+                    <p className="text-xs text-white/40">{event.is_mini_torneio ? "3º colocado × 4º colocado" : "Partida opcional"}</p>
                     {thirdPlaceMatch.scoreA != null && thirdPlaceMatch.scoreB != null && (
                       <p className="mt-2 text-sm text-white/70">🥉 {thirdPlaceMatch.scoreA > thirdPlaceMatch.scoreB ? teamLabelById.get(thirdPlaceMatch.teamAId) : teamLabelById.get(thirdPlaceMatch.teamBId)} ficou em 3º lugar.</p>
                     )}
@@ -427,7 +456,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             )
           }
           standingsContent={
-            event.is_pre_torneio ? (
+            isTournament ? (
               <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
                 <div className="flex items-end justify-between gap-3">
                   <div>
@@ -447,6 +476,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     </li>
                   ))}
                 </ol>
+                {groupMatches.length === 0 && (
+                  <p className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-sm text-white/45">
+                    A classificação aparece depois que a tabela de jogos for gerada.
+                  </p>
+                )}
               </section>
             ) : undefined
           }

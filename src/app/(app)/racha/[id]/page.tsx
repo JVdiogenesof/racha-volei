@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, Medal, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -27,7 +27,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, community",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, is_mini_torneio, community",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -65,6 +65,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const isCancelled = event.status === "cancelled";
   const isInProgress = event.status === "in_progress";
   const listOpen = event.official_list_open;
+  const isTournament = event.is_pre_torneio || event.is_mini_torneio;
   const rachaLevel = listOpen ? await getRachaLevel(supabase, id) : null;
   const finishSummary = profile.is_organizer && isInProgress ? await getEventSummary(supabase, id) : null;
   const finishLeaders = finishSummary?.bestWinCount
@@ -95,6 +96,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
               <Award className="h-3 w-3" strokeWidth={2} />
               Pré-torneio · time vencedor garante vaga
+            </span>
+          )}
+          {event.is_mini_torneio && (
+            <span className="flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
+              <Medal className="h-3 w-3" strokeWidth={2} />
+              Mini torneio · todos contra todos
             </span>
           )}
         </div>
@@ -129,7 +136,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         status={event.status}
         officialListOpen={event.official_list_open}
         hasFinalResult={Boolean(finalMatch)}
-        isPreTournament={event.is_pre_torneio}
+        hasFinalStage={isTournament}
       />
 
       {profile.is_organizer && !isFinished && !isCancelled && (
@@ -168,12 +175,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           title="Times"
           description={listOpen ? "Veja ou gere os times balanceados." : "Libera depois que a lista de confirmados for publicada."}
         />
-        {event.is_pre_torneio && finalMatch && (
+        {isTournament && finalMatch && (
           <HubCard
             href={`/racha/${id}/resultado`}
             icon={Crown}
             title="Resultado final"
-            description="Veja o campeão, o vice, o 3º e o 4º lugar."
+            description={event.is_mini_torneio ? "Veja a classificação final do mini torneio." : "Veja o campeão, o vice, o 3º e o 4º lugar."}
           />
         )}
         {isFinished && (

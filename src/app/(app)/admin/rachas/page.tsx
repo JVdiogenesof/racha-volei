@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
 import { RachaCapacityFields } from "@/components/RachaCapacityFields";
-import { createEvent, updateEvent, markAsPreTorneio, cancelEvent, deleteEvent } from "./actions";
+import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
 
 export default async function AdminRachasPage() {
@@ -13,7 +13,7 @@ export default async function AdminRachasPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio",
+      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio",
     )
     .eq("community", community)
     .order("date", { ascending: false });
@@ -111,7 +111,6 @@ export default async function AdminRachasPage() {
               key={e.id}
               event={e}
               updateEvent={updateEvent}
-              markAsPreTorneio={markAsPreTorneio}
               cancelEvent={cancelEvent}
               deleteEvent={deleteEvent}
             />

@@ -60,7 +60,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
   const community = await getActiveCommunity(profile);
 
   const [{ data: event }, { data: generation }] = await Promise.all([
-    supabase.from("events").select("id, date, is_pre_torneio, community").eq("id", id).maybeSingle(),
+    supabase.from("events").select("id, date, is_pre_torneio, is_mini_torneio, community").eq("id", id).maybeSingle(),
     supabase
       .from("team_generations")
       .select("id")
@@ -70,10 +70,11 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
       .maybeSingle(),
   ]);
 
-  if (!event || !event.is_pre_torneio || event.community !== community) notFound();
+  if (!event || (!event.is_pre_torneio && !event.is_mini_torneio) || event.community !== community) notFound();
 
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
-  if (!generation) return <WaitingResult eventId={id} dateLabel={dateLabel} />;
+  const tournamentLabel = event.is_pre_torneio ? "Pré-torneio VPA" : "Mini torneio VPA";
+  if (!generation) return <WaitingResult eventId={id} dateLabel={dateLabel} tournamentLabel={tournamentLabel} />;
 
   const [{ data: teamRows }, { data: matchRows }] = await Promise.all([
     supabase.from("teams").select("id, team_number, name").eq("generation_id", generation.id).order("team_number"),
@@ -109,7 +110,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
   const matches = (matchRows ?? []) as MatchRow[];
   const finalMatch = matches.find((match) => match.stage === "final");
   if (!finalMatch || finalMatch.score_a == null || finalMatch.score_b == null) {
-    return <WaitingResult eventId={id} dateLabel={dateLabel} />;
+    return <WaitingResult eventId={id} dateLabel={dateLabel} tournamentLabel={tournamentLabel} />;
   }
 
   const groupMatches = matches.filter((match) => match.stage === "group");
@@ -156,7 +157,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
           <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/20 ring-1 ring-amber-300/40">
             <Trophy className="h-8 w-8 text-amber-300" strokeWidth={1.8} />
           </span>
-          <p className="mt-4 text-xs font-bold tracking-[0.25em] text-amber-300 uppercase">Pré-torneio VPA</p>
+          <p className="mt-4 text-xs font-bold tracking-[0.25em] text-amber-300 uppercase">{tournamentLabel}</p>
           <h1 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Resultado final</h1>
           <p className="mt-2 text-sm text-white/60">{dateLabel}</p>
         </div>
@@ -202,7 +203,7 @@ function PlacementCard({ place, team }: { place: 1 | 2 | 3 | 4; team: ResultTeam
   );
 }
 
-function WaitingResult({ eventId, dateLabel }: { eventId: string; dateLabel: string }) {
+function WaitingResult({ eventId, dateLabel, tournamentLabel }: { eventId: string; dateLabel: string; tournamentLabel: string }) {
   return (
     <div className="space-y-6">
       <Link href={`/racha/${eventId}`} className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white">
@@ -212,7 +213,7 @@ function WaitingResult({ eventId, dateLabel }: { eventId: string; dateLabel: str
       <section className="rounded-2xl border border-white/10 p-8 text-center">
         <Trophy className="mx-auto h-12 w-12 text-white/25" strokeWidth={1.5} />
         <h1 className="mt-4 text-2xl font-bold text-white">Resultado final</h1>
-        <p className="mt-1 text-sm text-white/50">Pré-torneio de {dateLabel}</p>
+        <p className="mt-1 text-sm text-white/50">{tournamentLabel} de {dateLabel}</p>
         <p className="mt-4 text-sm text-white/60">O pódio aparecerá aqui assim que o placar da final for salvo.</p>
       </section>
     </div>

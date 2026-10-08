@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, X, Trophy } from "lucide-react";
+import { Medal, Pencil, X, Trophy } from "lucide-react";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { ActionForm } from "./ActionForm";
 import { DeleteEventButton } from "./DeleteEventButton";
@@ -23,18 +23,17 @@ type EventData = {
   status: string;
   official_list_open: boolean;
   is_pre_torneio: boolean;
+  is_mini_torneio: boolean;
 };
 
 export function EventListItem({
   event,
   updateEvent,
-  markAsPreTorneio,
   cancelEvent,
   deleteEvent,
 }: {
   event: EventData;
   updateEvent: (formData: FormData) => Promise<void>;
-  markAsPreTorneio: (formData: FormData) => Promise<void>;
   cancelEvent: (formData: FormData) => Promise<void>;
   deleteEvent: (formData: FormData) => Promise<void>;
 }) {
@@ -55,6 +54,12 @@ export function EventListItem({
           <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
             <Trophy className="h-3 w-3" strokeWidth={2} />
             Pré-torneio
+          </span>
+        )}
+        {event.is_mini_torneio && (
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
+            <Medal className="h-3 w-3" strokeWidth={2} />
+            Mini torneio
           </span>
         )}
         {event.status === "open" && (
@@ -81,19 +86,6 @@ export function EventListItem({
         >
           {editing ? <X className="h-4 w-4" strokeWidth={2} /> : <Pencil className="h-4 w-4" strokeWidth={2} />}
         </button>
-        {!event.is_pre_torneio && event.status !== "finished" && event.status !== "cancelled" && (
-          <ActionForm action={markAsPreTorneio} successMessage="Racha transformado em pré-torneio!">
-            <input type="hidden" name="eventId" value={event.id} />
-            <button
-              type="submit"
-              aria-label="Transformar em pré-torneio"
-              title="Transformar em pré-torneio"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/15 text-amber-400 hover:bg-amber-500/20"
-            >
-              <Trophy className="h-4 w-4" strokeWidth={2} />
-            </button>
-          </ActionForm>
-        )}
         {event.status !== "cancelled" && <CancelEventButton eventId={event.id} action={cancelEvent} />}
         <DeleteEventButton eventId={event.id} action={deleteEvent} />
       </div>
@@ -141,6 +133,7 @@ export function EventListItem({
             defaultTeamSize={event.team_size}
             defaultNewcomerReservedSpots={event.newcomer_reserved_spots}
             defaultIsPreTorneio={event.is_pre_torneio}
+            defaultIsMiniTorneio={event.is_mini_torneio}
           />
           <div>
             <label className="block text-xs font-medium text-white/60">Valor por jogador (R$)</label>

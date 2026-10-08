@@ -11,19 +11,19 @@ export function EventProgress({
   status,
   officialListOpen,
   hasFinalResult,
-  isPreTournament,
+  hasFinalStage,
 }: {
   status: string;
   officialListOpen: boolean;
   hasFinalResult: boolean;
-  isPreTournament: boolean;
+  hasFinalStage: boolean;
 }) {
   const steps = [
     ...BASE_STEPS,
-    isPreTournament ? { label: "Final", icon: Trophy } : { label: "Encerrado", icon: Flag },
+    hasFinalStage ? { label: "Final", icon: Trophy } : { label: "Encerrado", icon: Flag },
   ];
   const currentStep =
-    status === "finished" || (isPreTournament && hasFinalResult)
+    status === "finished" || (hasFinalStage && hasFinalResult)
       ? 4
       : status === "in_progress"
         ? 3

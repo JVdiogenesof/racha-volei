@@ -8,9 +8,11 @@ import { useToast } from "./Toast";
 export function UndoFinalButton({
   eventId,
   action,
+  isPreTournament,
 }: {
   eventId: string;
   action: (formData: FormData) => Promise<void>;
+  isPreTournament: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -22,7 +24,9 @@ export function UndoFinalButton({
       disabled={isPending}
       onClick={() => {
         const confirmed = window.confirm(
-          "Desfazer a final e a disputa de 3º lugar? Os placares de grupo continuam intactos. Se a final já tinha resultado, as vagas do Torneio VPA reservadas a partir desse racha também são desfeitas.",
+          isPreTournament
+            ? "Desfazer a final e a disputa de 3º lugar? Os placares de grupo continuam intactos. Se a final já tinha resultado, as vagas do Torneio VPA reservadas a partir desse racha também são desfeitas."
+            : "Desfazer a final e o jogo dos dois últimos? Os placares da fase inicial continuam intactos.",
         );
         if (!confirmed) return;
 

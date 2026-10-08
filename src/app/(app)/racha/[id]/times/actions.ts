@@ -50,7 +50,7 @@ export async function generateTeams(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("date, num_teams, team_size, max_players, official_list_open, is_pre_torneio, status")
+    .select("date, num_teams, team_size, max_players, official_list_open, is_pre_torneio, is_mini_torneio, status")
     .eq("id", eventId)
     .maybeSingle();
   if (!event) throw new Error("Racha não encontrado.");
@@ -61,7 +61,7 @@ export async function generateTeams(formData: FormData) {
     throw new Error("Abra a lista oficial antes de gerar os times.");
   }
 
-  if (event.is_pre_torneio) {
+  if (event.is_pre_torneio || event.is_mini_torneio) {
     const { count: playedCount } = await supabase
       .from("tournament_matches")
       .select("id", { count: "exact", head: true })
@@ -69,7 +69,7 @@ export async function generateTeams(formData: FormData) {
       .not("score_a", "is", null);
     if (playedCount) {
       throw new Error(
-        'Já tem placar lançado na fase de grupos desse pré-torneio. Use "Reiniciar fase de grupos" antes de gerar os times de novo.',
+        'Já tem placar lançado nesse torneio. Use "Reiniciar fase de grupos" antes de gerar os times de novo.',
       );
     }
   } else {
@@ -160,6 +160,11 @@ export async function generateTeams(formData: FormData) {
       .from("tournament_matches")
       .insert(pairs.map(([teamAId, teamBId]) => ({ event_id: eventId, team_a_id: teamAId, team_b_id: teamBId, stage: "group" })));
     if (matchesError) throw new Error(matchesError.message);
+  } else if (event.is_mini_torneio) {
+    // A tabela do mini torneio é criada pelo organizador na aba Confrontos.
+    // Ao gerar times novos, uma tabela antiga ainda sem placar deixa de valer.
+    const { error: clearMatchesError } = await supabase.from("tournament_matches").delete().eq("event_id", eventId);
+    if (clearMatchesError) throw new Error(clearMatchesError.message);
   }
 
   await supabase.from("events").update({ status: "teams_generated" }).eq("id", eventId);
@@ -462,7 +467,7 @@ export async function recordNormalMatch(formData: FormData) {
   }
 
   const [{ data: event }, { data: generation }] = await Promise.all([
-    supabase.from("events").select("is_pre_torneio").eq("id", eventId).maybeSingle(),
+    supabase.from("events").select("is_pre_torneio, is_mini_torneio").eq("id", eventId).maybeSingle(),
     supabase
       .from("team_generations")
       .select("id")
@@ -472,7 +477,9 @@ export async function recordNormalMatch(formData: FormData) {
       .maybeSingle(),
   ]);
   if (!event) throw new Error("Racha não encontrado.");
-  if (event.is_pre_torneio) throw new Error("Esse registro de confronto é exclusivo de rachas normais.");
+  if (event.is_pre_torneio || event.is_mini_torneio) {
+    throw new Error("Use a tabela automática para registrar os confrontos deste torneio.");
+  }
   if (!generation) throw new Error("Gere os times antes de registrar um confronto.");
 
   const { data: selectedTeams } = await supabase
@@ -523,13 +530,13 @@ export async function undoNormalMatch(formData: FormData) {
 
   const { data: confrontation } = await supabase
     .from("match_wins")
-    .select("id, loser_team_id, events(is_pre_torneio)")
+    .select("id, loser_team_id, events(is_pre_torneio, is_mini_torneio)")
     .eq("id", matchWinId)
     .eq("event_id", eventId)
     .maybeSingle();
 
-  const event = confrontation?.events as unknown as { is_pre_torneio: boolean } | null;
-  if (!confrontation?.loser_team_id || event?.is_pre_torneio) {
+  const event = confrontation?.events as unknown as { is_pre_torneio: boolean; is_mini_torneio: boolean } | null;
+  if (!confrontation?.loser_team_id || event?.is_pre_torneio || event?.is_mini_torneio) {
     throw new Error("Confronto normal não encontrado.");
   }
 
@@ -539,6 +546,57 @@ export async function undoNormalMatch(formData: FormData) {
   revalidatePath("/ranking");
   revalidatePath("/jogadores");
   revalidatePath("/perfil");
+}
+
+export async function generateMiniTournamentSchedule(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+
+  const [{ data: event, error: eventError }, { data: generation, error: generationError }] = await Promise.all([
+    supabase
+      .from("events")
+      .select("is_mini_torneio, status")
+      .eq("id", eventId)
+      .maybeSingle(),
+    supabase
+      .from("team_generations")
+      .select("id")
+      .eq("event_id", eventId)
+      .order("generated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (eventError) throw new Error(eventError.message);
+  if (generationError) throw new Error(generationError.message);
+  if (!event?.is_mini_torneio) throw new Error("Esse racha não está configurado como mini torneio.");
+  if (event.status === "finished" || event.status === "cancelled") {
+    throw new Error("Esse racha não aceita uma nova tabela de jogos.");
+  }
+  if (!generation) throw new Error("Gere os times antes de criar a tabela de jogos.");
+
+  const [{ data: teamRows, error: teamsError }, { count: existingCount, error: matchesError }] = await Promise.all([
+    supabase.from("teams").select("id").eq("generation_id", generation.id).order("team_number"),
+    supabase.from("tournament_matches").select("id", { count: "exact", head: true }).eq("event_id", eventId),
+  ]);
+  if (teamsError) throw new Error(teamsError.message);
+  if (matchesError) throw new Error(matchesError.message);
+  if ((existingCount ?? 0) > 0) throw new Error("A tabela desse mini torneio já foi gerada.");
+
+  const teamIds = (teamRows ?? []).map((team) => team.id);
+  if (teamIds.length < 4) throw new Error("O mini torneio precisa de pelo menos 4 times.");
+  const pairs = generateRoundRobinPairs(teamIds);
+  const { error } = await supabase.from("tournament_matches").insert(
+    pairs.map(([teamAId, teamBId]) => ({
+      event_id: eventId,
+      team_a_id: teamAId,
+      team_b_id: teamBId,
+      stage: "group",
+    })),
+  );
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/times`);
 }
 
 /**
@@ -645,18 +703,43 @@ export async function recordTournamentMatchScore(formData: FormData) {
     throw new Error("Vôlei não empata — os placares não podem ser iguais.");
   }
 
-  const { data: match, error: matchError } = await supabase
-    .from("tournament_matches")
-    .select("id, stage, team_a_id, team_b_id")
-    .eq("id", matchId)
-    .maybeSingle();
+  const [{ data: match, error: matchError }, { data: event, error: eventError }] = await Promise.all([
+    supabase
+      .from("tournament_matches")
+      .select("id, stage, team_a_id, team_b_id")
+      .eq("id", matchId)
+      .eq("event_id", eventId)
+      .maybeSingle(),
+    supabase
+      .from("events")
+      .select("is_pre_torneio, is_mini_torneio")
+      .eq("id", eventId)
+      .maybeSingle(),
+  ]);
   if (matchError) throw new Error(matchError.message);
+  if (eventError) throw new Error(eventError.message);
   if (!match) throw new Error("Confronto não encontrado.");
+  if (!event || (!event.is_pre_torneio && !event.is_mini_torneio)) {
+    throw new Error("Esse racha não usa a tabela de torneio.");
+  }
+  if (event.is_mini_torneio && match.stage === "final") {
+    const { data: bottomMatch, error: bottomMatchError } = await supabase
+      .from("tournament_matches")
+      .select("score_a, score_b")
+      .eq("event_id", eventId)
+      .eq("stage", "third_place")
+      .maybeSingle();
+    if (bottomMatchError) throw new Error(bottomMatchError.message);
+    if (!bottomMatch || bottomMatch.score_a == null || bottomMatch.score_b == null) {
+      throw new Error("Registre primeiro o jogo dos dois últimos antes da final.");
+    }
+  }
 
   const { error } = await supabase
     .from("tournament_matches")
     .update({ score_a: scoreA, score_b: scoreB, played_at: new Date().toISOString() })
-    .eq("id", matchId);
+    .eq("id", matchId)
+    .eq("event_id", eventId);
   if (error) throw new Error(error.message);
 
   // Cada confronto vencido conta pro ranking de vitórias igual um racha
@@ -664,20 +747,51 @@ export async function recordTournamentMatchScore(formData: FormData) {
   // aqui antes, cobrindo o caso de corrigir um placar já lançado.
   await supabase.from("match_wins").delete().eq("match_id", matchId);
   const winnerTeamId = scoreA > scoreB ? match.team_a_id : match.team_b_id;
+  const loserTeamId = winnerTeamId === match.team_a_id ? match.team_b_id : match.team_a_id;
+  let miniTournamentSnapshots = {};
+  if (event.is_mini_torneio) {
+    const { data: memberRows, error: memberError } = await supabase
+      .from("team_members")
+      .select("team_id, profile_id")
+      .in("team_id", [winnerTeamId, loserTeamId]);
+    if (memberError) throw new Error(memberError.message);
+    const winningProfileIds = (memberRows ?? [])
+      .filter((member) => member.team_id === winnerTeamId)
+      .map((member) => member.profile_id);
+    const losingProfileIds = (memberRows ?? [])
+      .filter((member) => member.team_id === loserTeamId)
+      .map((member) => member.profile_id);
+    if (!winningProfileIds.length || !losingProfileIds.length) {
+      throw new Error("Os dois times precisam ter jogadores antes do confronto.");
+    }
+    miniTournamentSnapshots = {
+      loser_team_id: loserTeamId,
+      winning_profile_ids: winningProfileIds,
+      losing_profile_ids: losingProfileIds,
+    };
+  }
   const { error: winError } = await supabase
     .from("match_wins")
-    .insert({ event_id: eventId, team_id: winnerTeamId, recorded_by: organizer.id, match_id: matchId });
+    .insert({
+      event_id: eventId,
+      team_id: winnerTeamId,
+      recorded_by: organizer.id,
+      match_id: matchId,
+      ...miniTournamentSnapshots,
+    });
   if (winError) throw new Error(winError.message);
 
   if (match.stage === "group") {
     await maybeCreateFinal(supabase, eventId);
-  } else if (match.stage === "final") {
+  } else if (match.stage === "final" && event.is_pre_torneio) {
     await reserveChampionTeam(supabase, eventId, matchId, organizer.id);
   }
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
   revalidatePath("/ranking");
+  revalidatePath("/jogadores");
+  revalidatePath("/perfil");
 }
 
 /**
