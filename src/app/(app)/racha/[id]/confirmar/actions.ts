@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireEventParticipant, requireOrganizer } from "@/lib/auth";
 import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 import { sendPushToProfiles } from "@/lib/push";
+import { isRegistrationOpen } from "@/lib/registrationSchedule";
 
 export async function setAttendance(formData: FormData) {
   const eventId = String(formData.get("eventId"));
@@ -16,12 +17,19 @@ export async function setAttendance(formData: FormData) {
     throw new Error("Só os organizadores podem confirmar presença de alguém na lista.");
   }
 
-  const { data: event } = await supabase.from("events").select("status").eq("id", eventId).maybeSingle();
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, official_list_open, registration_opens_at")
+    .eq("id", eventId)
+    .maybeSingle();
   if (event?.status === "finished") {
     throw new Error("Esse racha já terminou, não dá mais pra responder.");
   }
   if (event?.status === "cancelled") {
     throw new Error("Esse racha foi cancelado, não dá mais pra responder.");
+  }
+  if (status === "interested" && (!event || !isRegistrationOpen(event.registration_opens_at, event.official_list_open))) {
+    throw new Error("As inscrições desse racha ainda não abriram. Aguarde o fim da contagem regressiva.");
   }
 
   const { data: previous } = await supabase

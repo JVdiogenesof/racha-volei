@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
 import { RachaCapacityFields } from "@/components/RachaCapacityFields";
+import { RegistrationScheduleFields } from "@/components/RegistrationScheduleFields";
 import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
 
@@ -13,7 +14,7 @@ export default async function AdminRachasPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio",
+      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at",
     )
     .eq("community", community)
     .order("date", { ascending: false });
@@ -23,10 +24,18 @@ export default async function AdminRachasPage() {
   // semana, só ajustar o que mudou.
   const lastEvent = events?.[0] ?? null;
   let suggestedDate = "";
+  let suggestedRegistrationOpensAt: string | null = null;
   if (lastEvent) {
     const d = new Date(`${lastEvent.date}T00:00:00`);
     d.setDate(d.getDate() + 7);
     suggestedDate = d.toISOString().slice(0, 10);
+    if (lastEvent.registration_opens_at) {
+      const opening = new Date(lastEvent.registration_opens_at);
+      opening.setDate(opening.getDate() + 7);
+      suggestedRegistrationOpensAt = opening.toISOString();
+    } else {
+      suggestedRegistrationOpensAt = new Date(`${suggestedDate}T18:00:00-03:00`).toISOString();
+    }
   }
 
   return (
@@ -74,6 +83,7 @@ export default async function AdminRachasPage() {
             className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>
+        <RegistrationScheduleFields defaultOpensAt={suggestedRegistrationOpensAt} />
         <RachaCapacityFields
           defaultNumTeams={lastEvent?.num_teams ?? 2}
           defaultMaxPlayers={lastEvent?.max_players ?? null}

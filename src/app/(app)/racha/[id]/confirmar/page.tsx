@@ -25,6 +25,8 @@ import { PIX_KEY } from "@/lib/payment";
 import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
+import { isRegistrationOpen } from "@/lib/registrationSchedule";
+import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -40,7 +42,7 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots, community")
+        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -79,6 +81,7 @@ export default async function ConfirmarPresencaPage({
   const eventFinished = event.status === "finished";
   const eventCancelled = event.status === "cancelled";
   const listOpen = event.official_list_open;
+  const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
@@ -158,6 +161,8 @@ export default async function ConfirmarPresencaPage({
   const statusLabel =
     !canRespond
       ? "Modo visitante"
+      : !registrationOpen
+        ? "Inscrições em breve"
       : myStatus === "confirmed"
       ? "Confirmado"
       : myStatus === "interested"
@@ -179,6 +184,10 @@ export default async function ConfirmarPresencaPage({
           <p className="mt-1.5 text-sm text-white/50">Marque seu interesse. A confirmação final é feita pelos organizadores.</p>
         )}
       </div>
+
+      {!registrationOpen && event.registration_opens_at && !eventFinished && !eventCancelled && (
+        <RegistrationCountdown opensAt={event.registration_opens_at} />
+      )}
 
       {!eventFinished && !eventCancelled && (
         <ConfirmedCounter
@@ -250,6 +259,10 @@ export default async function ConfirmarPresencaPage({
             className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
           />
         </div>
+      ) : !registrationOpen ? (
+        <p className="rounded-xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-4 py-4 text-center text-sm text-fuchsia-100/80">
+          A inscrição ainda está fechada. O botão para colocar seu nome aparecerá automaticamente quando o cronômetro zerar.
+        </p>
       ) : (
         <div className="flex gap-3">
           <InterestButton
@@ -269,7 +282,7 @@ export default async function ConfirmarPresencaPage({
         </div>
       )}
 
-      {canRespond && !eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
+      {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             💰 Pagamento de <strong>R$ {Number(event.price_per_player).toFixed(2)}</strong> via Pix:{" "}

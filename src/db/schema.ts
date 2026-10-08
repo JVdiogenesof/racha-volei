@@ -145,6 +145,7 @@ export const events = pgTable("events", {
   // rachas nascem em fase de interesse; o organizador monta a lista de
   // confirmados manualmente e só a publica quando estiver pronta.
   officialListOpen: boolean("official_list_open").notNull().default(true),
+  registrationOpensAt: timestamp("registration_opens_at", { withTimezone: true, mode: "string" }),
   // Até dois "Jogadores Destaque" escolhidos pelos organizadores depois que o
   // racha termina (sem votação, dois slots independentes).
   mvpProfileId: uuid("mvp_profile_id").references(() => profiles.id, { onDelete: "set null" }),

@@ -9,6 +9,8 @@ import { DeleteEventButton } from "./DeleteEventButton";
 import { CancelEventButton } from "./CancelEventButton";
 import { RachaCapacityFields } from "./RachaCapacityFields";
 import { teamFormatLabel } from "@/lib/rachaFormat";
+import { RegistrationScheduleFields } from "./RegistrationScheduleFields";
+import { registrationInputParts } from "@/lib/registrationSchedule";
 
 type EventData = {
   id: string;
@@ -24,6 +26,7 @@ type EventData = {
   official_list_open: boolean;
   is_pre_torneio: boolean;
   is_mini_torneio: boolean;
+  registration_opens_at: string | null;
 };
 
 export function EventListItem({
@@ -39,6 +42,7 @@ export function EventListItem({
 }) {
   const [editing, setEditing] = useState(false);
   const statusInfo = EVENT_STATUS_LABELS[event.status];
+  const registrationSchedule = registrationInputParts(event.registration_opens_at);
 
   return (
     <div className="rounded-lg border border-white/10">
@@ -69,6 +73,11 @@ export function EventListItem({
             }`}
           >
             {event.official_list_open ? "Lista de confirmados publicada" : "Fase de interesse"}
+          </span>
+        )}
+        {event.registration_opens_at && (
+          <span className="shrink-0 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-2.5 py-1 text-xs font-medium text-fuchsia-100">
+            Abre {new Date(event.registration_opens_at).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit" })} às {registrationSchedule.time}
           </span>
         )}
         <span
@@ -127,6 +136,7 @@ export function EventListItem({
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
+          <RegistrationScheduleFields defaultOpensAt={event.registration_opens_at} />
           <RachaCapacityFields
             defaultNumTeams={event.num_teams}
             defaultMaxPlayers={event.max_players}

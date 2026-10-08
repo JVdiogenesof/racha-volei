@@ -7,6 +7,19 @@ import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
 import { getActiveCommunity } from "@/lib/community";
 import type { EventGameStyle } from "@/lib/eventGameStyle";
+import { registrationOpensAtFromForm } from "@/lib/registrationSchedule";
+
+function parseRegistrationSchedule(formData: FormData, eventDate: string, eventTime: string | null) {
+  const registrationOpensAt = registrationOpensAtFromForm(
+    String(formData.get("registrationOpenDate") ?? ""),
+    String(formData.get("registrationOpenTime") ?? ""),
+  );
+  const eventStartsAt = new Date(`${eventDate}T${eventTime ?? "23:59"}:00-03:00`);
+  if (new Date(registrationOpensAt).getTime() >= eventStartsAt.getTime()) {
+    throw new Error("As inscrições precisam abrir antes do início do racha.");
+  }
+  return registrationOpensAt;
+}
 
 function parseEventCapacity(formData: FormData) {
   const numTeams = Number(formData.get("numTeams") ?? 2);
@@ -46,6 +59,7 @@ export async function createEvent(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
+  const registrationOpensAt = parseRegistrationSchedule(formData, date, time);
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
@@ -70,6 +84,7 @@ export async function createEvent(formData: FormData) {
       community,
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
+      registration_opens_at: registrationOpensAt,
       created_by: organizer.id,
       official_list_open: false,
     })
@@ -105,6 +120,7 @@ export async function updateEvent(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
+  const registrationOpensAt = parseRegistrationSchedule(formData, date, time);
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
@@ -147,6 +163,7 @@ export async function updateEvent(formData: FormData) {
       newcomer_reserved_spots: newcomerReservedSpots,
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
+      registration_opens_at: registrationOpensAt,
     })
     .eq("id", eventId);
 

@@ -18,6 +18,8 @@ import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
+import { isRegistrationOpen } from "@/lib/registrationSchedule";
+import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -47,7 +49,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at")
         .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
@@ -170,6 +172,9 @@ export default async function HomePage() {
   const canRespondToNextEvent =
     profile.status === "approved" ||
     (profile.status === "guest" && profile.guest_for_event_id === proximoRacha?.id);
+  const registrationOpen = proximoRacha
+    ? isRegistrationOpen(proximoRacha.registration_opens_at, proximoRacha.official_list_open)
+    : false;
   const ultimoAviso = avisos?.[0] ?? null;
   const avisoAuthor = ultimoAviso
     ? (ultimoAviso.profiles as unknown as { full_name: string } | null)?.full_name
@@ -283,8 +288,21 @@ export default async function HomePage() {
             </div>
 
             <div className="space-y-2">
-              <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
-              <div className="grid grid-cols-2 gap-2">
+              {!registrationOpen && proximoRacha.registration_opens_at ? (
+                <>
+                  <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
+                  <Link
+                    href={`/racha/${proximoRacha.id}`}
+                    className="inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-white/15 px-3 text-sm font-semibold text-white/75 hover:bg-white/10"
+                  >
+                    Ver detalhes do racha
+                    <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                  </Link>
+                </>
+              ) : (
+                <>
+                <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
+                <div className="grid grid-cols-2 gap-2">
                 {!canRespondToNextEvent ? (
                   <Link
                     href={`/racha/${proximoRacha.id}/confirmar`}
@@ -325,7 +343,9 @@ export default async function HomePage() {
                   Ver lista
                   <ChevronRight className="h-4 w-4" strokeWidth={2} />
                 </Link>
-              </div>
+                </div>
+                </>
+              )}
             </div>
           </div>
         ) : (

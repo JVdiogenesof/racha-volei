@@ -6,6 +6,7 @@ import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { EmptyState } from "@/components/EmptyState";
+import { isRegistrationOpen, registrationInputParts } from "@/lib/registrationSchedule";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -45,7 +46,7 @@ export default async function RachaListPage() {
   const [{ data: events }, { data: attendanceRows }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio, is_mini_torneio")
+      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at")
       .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id),
@@ -130,6 +131,7 @@ function CurrentEventCard({
     location: string | null;
     is_pre_torneio: boolean;
     is_mini_torneio: boolean;
+    registration_opens_at: string | null;
     team_size: number;
   };
   indicator: AttendanceIndicatorData;
@@ -218,11 +220,14 @@ function EventRow({
     official_list_open: boolean;
     is_pre_torneio: boolean;
     is_mini_torneio: boolean;
+    registration_opens_at: string | null;
     team_size: number;
   };
   indicator: AttendanceIndicatorData;
 }) {
   const isArena = isNrSportTraining(event.location);
+  const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
+  const registrationSchedule = registrationInputParts(event.registration_opens_at);
 
   return (
     <div className="relative rounded-xl border border-white/10 px-3.5 py-3 hover:bg-white/5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-4">
@@ -278,6 +283,12 @@ function EventRow({
           <span className="flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
             <Medal className="h-3 w-3" strokeWidth={2} />
             Mini torneio
+          </span>
+        )}
+        {!registrationOpen && event.registration_opens_at && (
+          <span className="flex items-center gap-1 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-2.5 py-1 text-xs font-medium text-fuchsia-100">
+            <CalendarClock className="h-3 w-3" strokeWidth={2} />
+            Inscrições {new Date(event.registration_opens_at).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit" })} às {registrationSchedule.time}
           </span>
         )}
         {event.status === "open" && (
