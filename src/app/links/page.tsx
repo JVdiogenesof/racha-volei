@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ComponentType, SVGProps } from "react";
 import { ArrowUpRight, Clapperboard, Smartphone } from "lucide-react";
-import { LogoMark } from "@/components/Logo";
 
 export const metadata: Metadata = {
   title: "Links | Vôlei Por Amor",
@@ -50,8 +49,10 @@ export default function LinksPage() {
     <main className="relative isolate flex min-h-[100svh] items-center justify-center overflow-hidden bg-[#12062d] px-4 py-8 text-white sm:px-6">
       <div aria-hidden="true" className="absolute inset-0 -z-30 bg-[radial-gradient(80%_44%_at_50%_0%,#8748e5_0%,rgba(83,39,166,.75)_42%,transparent_74%),linear-gradient(155deg,#351078_0%,#17053f_52%,#090719_100%)]" />
       <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-20 h-52 bg-[linear-gradient(115deg,transparent_18%,rgba(255,255,255,.13)_49%,transparent_80%)] opacity-60" />
-      <div aria-hidden="true" className="absolute left-1/2 top-[54%] -z-20 w-[min(118vw,46rem)] -translate-x-1/2 -translate-y-1/2 opacity-[.10] grayscale brightness-200">
-        <LogoMark className="h-auto w-full" />
+      <div aria-hidden="true" className="absolute left-1/2 top-[53%] -z-20 w-[min(124vw,50rem)] -translate-x-1/2 -translate-y-1/2 opacity-[.16] mix-blend-screen">
+        {/* A logo oficial também forma a marca d’água por trás dos acessos. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-vpa-oficial.jpg" alt="" className="h-auto w-full rounded-[3rem] object-contain" />
       </div>
       <div aria-hidden="true" className="absolute -left-20 top-1/3 -z-20 h-56 w-56 rounded-full bg-fuchsia-400/25 blur-3xl" />
       <div aria-hidden="true" className="absolute -right-24 bottom-1/4 -z-20 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
