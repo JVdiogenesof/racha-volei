@@ -15,14 +15,14 @@ export function RegistrationScheduleFields({ defaultOpensAt }: { defaultOpensAt?
           <p className="text-xs leading-relaxed text-white/50">
             Até esse momento, todos verão a contagem regressiva. No horário escolhido, o botão para colocar o nome é liberado automaticamente.
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block text-xs font-medium text-white/65">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block min-w-0 text-xs font-medium text-white/65">
               Data
-              <input type="date" name="registrationOpenDate" defaultValue={defaults.date} required className="mt-1 block w-full rounded-lg border border-white/15 px-3 py-2" />
+              <input type="date" name="registrationOpenDate" defaultValue={defaults.date} required className="mt-1 block min-w-0 w-full rounded-lg border border-white/15 px-3 py-2" />
             </label>
-            <label className="block text-xs font-medium text-white/65">
+            <label className="block min-w-0 text-xs font-medium text-white/65">
               Horário
-              <input type="time" name="registrationOpenTime" defaultValue={defaults.time} required className="mt-1 block w-full rounded-lg border border-white/15 px-3 py-2" />
+              <input type="time" name="registrationOpenTime" defaultValue={defaults.time} required className="mt-1 block min-w-0 w-full rounded-lg border border-white/15 px-3 py-2" />
             </label>
           </div>
           <p className="mt-2 text-[11px] text-white/35">Horário de Fortaleza. Vocês podem alterar esse agendamento depois.</p>
