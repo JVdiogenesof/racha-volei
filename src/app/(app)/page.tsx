@@ -45,7 +45,7 @@ export default async function HomePage() {
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: proximoRacha }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
+  const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
     await Promise.all([
       supabase
         .from("events")
@@ -55,8 +55,8 @@ export default async function HomePage() {
         .neq("status", "finished")
         .neq("status", "cancelled")
         .order("date", { ascending: true })
-        .limit(1)
-        .maybeSingle(),
+        .order("time", { ascending: true })
+        .limit(6),
       supabase
         .from("announcements")
         .select("id, title, body, image_url, created_at, profiles(full_name)")
@@ -79,6 +79,17 @@ export default async function HomePage() {
         .limit(1)
         .maybeSingle(),
     ]);
+
+  const proximoRacha = upcomingRachas?.[0] ?? null;
+  const secondaryScheduledCandidates = (upcomingRachas ?? [])
+    .slice(1)
+    .filter(
+      (event) =>
+        event.registration_opens_at &&
+        !isRegistrationOpen(event.registration_opens_at, event.official_list_open),
+    );
+  const secondaryScheduledRacha =
+    secondaryScheduledCandidates.find((event) => event.is_pre_torneio) ?? secondaryScheduledCandidates[0] ?? null;
 
   let recentChampion: { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] } | null = null;
   if (recentFinal) {
@@ -356,6 +367,52 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {secondaryScheduledRacha?.registration_opens_at && (
+        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-[#29174f] via-[#211442] to-[#15102d] p-4 shadow-lg shadow-black/15">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/12 text-amber-200">
+                  {secondaryScheduledRacha.is_pre_torneio ? <Trophy className="h-4.5 w-4.5" strokeWidth={2} /> : <CalendarDays className="h-4.5 w-4.5" strokeWidth={2} />}
+                </span>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Próxima abertura</p>
+                  <h2 className="font-bold text-white">
+                    {secondaryScheduledRacha.is_pre_torneio
+                      ? "Pré-torneio agendado"
+                      : secondaryScheduledRacha.is_mini_torneio
+                        ? "Mini torneio agendado"
+                        : "Próximo racha agendado"}
+                  </h2>
+                </div>
+                {secondaryScheduledRacha.is_pre_torneio && (
+                  <span className="rounded-full bg-amber-400/12 px-2.5 py-1 text-xs font-semibold text-amber-200">Pré-torneio</span>
+                )}
+              </div>
+              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/55">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5 text-purple-200" strokeWidth={2} />
+                  {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}
+                </span>
+                {secondaryScheduledRacha.time && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 text-purple-200" strokeWidth={2} />
+                    {secondaryScheduledRacha.time.slice(0, 5)}
+                  </span>
+                )}
+              </p>
+            </div>
+            <Link href={`/racha/${secondaryScheduledRacha.id}`} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-white/12 px-3 text-xs font-semibold text-white/70 hover:bg-white/8">
+              Ver racha
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
+            </Link>
+          </div>
+          <div className="mt-3">
+            <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
+          </div>
+        </section>
+      )}
 
       <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-xl shadow-purple-950/20">
           <div className={`relative overflow-hidden bg-black ${community === "sand" ? "aspect-[8/5]" : "aspect-video"}`}>
