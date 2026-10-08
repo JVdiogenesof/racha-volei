@@ -30,7 +30,7 @@ function TikTokIcon(props: IconProps) {
 
 function AppIcon({ className }: IconProps) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/logo-vpa-oficial.jpg" alt="" className={`${className ?? "h-5 w-5"} rounded-md object-cover`} />;
+  return <img src="/logo-vpa-oficial.jpg" alt="" className="h-full w-full rounded-2xl object-cover" />;
 }
 
 type BioLink = {
@@ -43,7 +43,7 @@ type BioLink = {
 };
 
 const links: BioLink[] = [
-  { href: "/", label: "Entrar no app", detail: "Rachas, times e rankings", icon: AppIcon, internal: true, accent: "bg-white text-[#31116d]" },
+  { href: "/", label: "Entrar no app", detail: "Rachas, times e rankings", icon: AppIcon, internal: true, accent: "bg-transparent text-[#31116d]" },
   { href: "https://www.instagram.com/rachavoleiporamor/", label: "Instagram", detail: "@rachavoleiporamor", icon: InstagramIcon, accent: "bg-gradient-to-br from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white" },
   { href: "https://www.tiktok.com/@rachavoleiporamor", label: "TikTok", detail: "@rachavoleiporamor", icon: TikTokIcon, accent: "bg-[#080808] text-white ring-1 ring-cyan-200/35" },
   { href: "https://drive.google.com/drive/folders/1NC15vjykfEVVpdKAdS0WBl7dZqTIC8xI", label: "Vídeos e momentos", detail: "Veja os lances da galera", icon: Clapperboard, accent: "bg-violet-400 text-[#1d0d4b]" },
