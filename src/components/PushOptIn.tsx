@@ -4,15 +4,9 @@ import { useEffect, useState } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 import { useToast } from "./Toast";
 import { savePushSubscription, deletePushSubscription } from "@/app/(app)/perfil/actions";
+import { getCurrentPushSubscription, subscribeToPush, supportsPushNotifications } from "@/lib/pushClient";
 
 type Status = "checking" | "unsupported" | "denied" | "off" | "on";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
 
 export function PushOptIn() {
   const [status, setStatus] = useState<Status>("checking");
@@ -21,7 +15,7 @@ export function PushOptIn() {
 
   useEffect(() => {
     async function check() {
-      if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+      if (!supportsPushNotifications()) {
         setStatus("unsupported");
         return;
       }
@@ -30,8 +24,7 @@ export function PushOptIn() {
         return;
       }
       try {
-        const registration = await navigator.serviceWorker.getRegistration("/sw.js");
-        const subscription = await registration?.pushManager.getSubscription();
+        const subscription = await getCurrentPushSubscription();
         setStatus(subscription ? "on" : "off");
       } catch {
         setStatus("off");
@@ -55,12 +48,7 @@ export function PushOptIn() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
+      const subscription = await subscribeToPush(publicKey);
 
       await savePushSubscription(subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } });
       setStatus("on");
@@ -75,8 +63,7 @@ export function PushOptIn() {
   async function handleDeactivate() {
     setBusy(true);
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/sw.js");
-      const subscription = await registration?.pushManager.getSubscription();
+      const subscription = await getCurrentPushSubscription();
       if (subscription) {
         await deletePushSubscription(subscription.endpoint);
         await subscription.unsubscribe();
