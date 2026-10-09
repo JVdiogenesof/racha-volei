@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
-import { SHIRT_FITS, SHIRT_MODELS, SHIRT_SIZES, SHIRT_ORDER_STATUS_LABELS } from "@/lib/shirts";
+import { SHIRT_FITS, SHIRT_MODELS, isValidShirtSize, SHIRT_ORDER_STATUS_LABELS, type ShirtFit, type ShirtModel } from "@/lib/shirts";
 
 function revalidateShirtFinance() {
   revalidatePath("/admin/camisas");
@@ -169,7 +169,7 @@ export async function updateShirtOrder(formData: FormData) {
   if (!(fit in SHIRT_FITS)) throw new Error("Escolha uma modelagem válida.");
   if (!shirtName || shirtName.length > 20) throw new Error("O nome deve ter entre 1 e 20 caracteres.");
   if (!/^\d{1,2}$/.test(shirtNumberText)) throw new Error("Escolha um número entre 0 e 99.");
-  if (!(SHIRT_SIZES as readonly string[]).includes(size)) throw new Error("Escolha um tamanho válido.");
+  if (!isValidShirtSize(model as ShirtModel, fit as ShirtFit, size)) throw new Error("Escolha um tamanho válido para este modelo.");
   if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new Error("A quantidade deve ficar entre 1 e 20.");
 
   const supabase = await createClient();

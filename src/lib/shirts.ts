@@ -100,7 +100,17 @@ export function getShirtCollectionImage(community: Community) {
   return community === "sand" ? "/camisas/colecao-areia-vpa.webp" : "/camisas/colecao-vpa-v2.webp";
 }
 export const SHIRT_SIZES = ["PP", "P", "M", "G", "GG"] as const;
-export type ShirtSize = (typeof SHIRT_SIZES)[number];
+export const SLEEVE_SHIRT_SIZES = [...SHIRT_SIZES, "EG"] as const;
+export type ShirtSize = (typeof SLEEVE_SHIRT_SIZES)[number];
+
+/** EG é exclusivo da modelagem tradicional da camisa com manga. */
+export function getShirtSizes(model: ShirtModel, fit: ShirtFit | "" = ""): readonly ShirtSize[] {
+  return model === "sleeve" && fit === "regular" ? SLEEVE_SHIRT_SIZES : SHIRT_SIZES;
+}
+
+export function isValidShirtSize(model: ShirtModel, fit: ShirtFit, size: string): size is ShirtSize {
+  return getShirtSizes(model, fit).includes(size as ShirtSize);
+}
 
 export function formatShirtNumber(value: number) {
   return String(value).padStart(2, "0");
