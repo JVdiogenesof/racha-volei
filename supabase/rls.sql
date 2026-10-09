@@ -162,6 +162,8 @@ alter table shirt_finance_transactions enable row level security;
 alter table player_balance_entries enable row level security;
 alter table finance_transactions enable row level security;
 alter table finance_reminders enable row level security;
+alter table event_payment_intents enable row level security;
+alter table event_payment_transfers enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
@@ -240,6 +242,19 @@ create policy "payments_select" on payments for select to authenticated using (t
 create policy "payments_write" on payments for all to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+
+-- Reservas de Pix: a pessoa só enxerga a própria reserva, enquanto
+-- organizadores acompanham tudo. Escritas acontecem apenas pelas funções
+-- controladas e, futuramente, pelo webhook autenticado do provedor.
+create policy "event_payment_intents_select_owner_or_organizer" on event_payment_intents for select to authenticated
+  using (profile_id = (select auth.uid()) or payer_profile_id = (select auth.uid()) or (select public.is_organizer()));
+
+create policy "event_payment_transfers_select_participant_or_organizer" on event_payment_transfers for select to authenticated
+  using (
+    from_profile_id = (select auth.uid())
+    or to_profile_id = (select auth.uid())
+    or (select public.is_organizer())
+  );
 
 -- Caixa, saldos individuais e agenda financeira são internos. Somente
 -- organizadores podem consultar ou alterar, inclusive pela Data API.
