@@ -5,8 +5,8 @@ export function RegistrationScheduleFields({ defaultOpensAt }: { defaultOpensAt?
   const defaults = registrationInputParts(defaultOpensAt ?? null);
 
   return (
-    <fieldset className="sm:col-span-2 rounded-xl border border-fuchsia-300/20 bg-fuchsia-400/[0.06] p-4">
-      <legend className="px-1 text-sm font-semibold text-white">Abertura das inscrições</legend>
+    <div className="sm:col-span-2 rounded-xl border border-fuchsia-300/20 bg-fuchsia-400/[0.06] p-4">
+      <p className="px-1 text-sm font-semibold text-white">Abertura das inscrições</p>
       <div className="flex items-start gap-3">
         <span className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fuchsia-400/10 text-fuchsia-200">
           <CalendarClock className="h-4.5 w-4.5" strokeWidth={2} />
@@ -28,6 +28,6 @@ export function RegistrationScheduleFields({ defaultOpensAt }: { defaultOpensAt?
           <p className="mt-2 text-[11px] text-white/35">Horário de Fortaleza. Vocês podem alterar esse agendamento depois.</p>
         </div>
       </div>
-    </fieldset>
+    </div>
   );
 }

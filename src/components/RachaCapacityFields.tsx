@@ -40,8 +40,10 @@ export function RachaCapacityFields({
 
   return (
     <>
-      <fieldset className="sm:col-span-2 rounded-xl border border-purple-300/15 bg-purple-400/5 p-4">
-        <legend className="px-1 text-sm font-semibold text-white">Estilo dos jogos</legend>
+      <fieldset className="sm:col-span-2">
+        <legend className="sr-only">Estilo dos jogos</legend>
+        <div className="rounded-xl border border-purple-300/15 bg-purple-400/5 p-4">
+        <p className="px-1 text-sm font-semibold text-white" aria-hidden="true">Estilo dos jogos</p>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
           {[
             {
@@ -103,6 +105,7 @@ export function RachaCapacityFields({
               </label>
             );
           })}
+        </div>
         </div>
       </fieldset>
 
