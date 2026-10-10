@@ -4,6 +4,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { currentMonthKey, formatMonthLabel, getMonthlyReport, normalizeMonthKey, type MonthlyReportPlayer } from "@/lib/monthlyReport";
 import { MonthlyReportArts } from "@/components/MonthlyReportArts";
+import { FormSelect } from "@/components/FormSelect";
 
 const RANKING_CONFIG = [
   { id: "performance" as const, label: "Aproveitamento", icon: Percent, value: (player: MonthlyReportPlayer) => player.percentage === null ? "—" : `${player.percentage}%`, detail: (player: MonthlyReportPlayer) => `${player.performanceWins}V · ${player.losses}D` },
@@ -31,12 +32,11 @@ export default async function AdminResumoPage({ searchParams }: { searchParams: 
           <h1 className="flex items-center gap-2 text-2xl font-bold text-white"><BarChart3 className="h-6 w-6 text-purple-300" /> Análise mensal · {COMMUNITY_INFO[community].shortLabel}</h1>
           <p className="mt-1 text-sm text-white/60">Todos os rankings do mês, dados individuais e artes prontas para publicar.</p>
         </div>
-        <form className="flex items-center gap-2" action="/admin/resumo">
-          <label htmlFor="month" className="text-xs font-bold uppercase tracking-wide text-white/45">Mês</label>
-          <select id="month" name="month" defaultValue={report.monthKey} className="min-h-11 rounded-xl border border-white/15 bg-[#171039] px-3 text-sm font-semibold capitalize text-white transition focus:border-purple-300/50 focus:outline-none">
+        <form className="flex items-end gap-2" action="/admin/resumo">
+          <FormSelect id="month" label="Mês" icon={CalendarDays} name="month" defaultValue={report.monthKey} className="capitalize font-semibold">
             {availableMonths.map((key) => <option key={key} value={key}>{formatMonthLabel(key)}</option>)}
-          </select>
-          <button type="submit" className="min-h-11 rounded-xl bg-white/10 px-3 text-sm font-bold text-white hover:bg-white/15">Ver</button>
+          </FormSelect>
+          <button type="submit" className="min-h-10 rounded-xl bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/15">Ver</button>
         </form>
       </div>
 

@@ -5,6 +5,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
+import { FormSelect } from "@/components/FormSelect";
 import { DeleteReserveEntryButton } from "@/components/DeleteReserveEntryButton";
 import { EndGuestAccessButton } from "@/components/EndGuestAccessButton";
 import { InviteToEventForm } from "@/components/InviteToEventForm";
@@ -192,9 +193,9 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 
 function FilterSelect({ name, defaultValue, label, options, compact = false }: { name: string; defaultValue: string; label: string; options: string[][]; compact?: boolean }) {
   return (
-    <select name={name} defaultValue={defaultValue} className={`${compact ? "min-h-10" : "min-h-11 w-full"} rounded-xl border border-white/15 bg-[#1c1233] px-3 text-sm text-white/75 transition focus:border-purple-300/50 focus:outline-none`}>
+    <FormSelect name={name} defaultValue={defaultValue} className={compact ? "min-h-8 py-1" : undefined}>
       <option value="">{label}</option>
       {options.map(([value, optionLabel]) => <option key={value} value={value}>{optionLabel}</option>)}
-    </select>
+    </FormSelect>
   );
 }

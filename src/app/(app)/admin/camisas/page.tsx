@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { ArrowDownRight, ArrowLeft, ArrowUpRight, CheckCircle2, ChevronDown, Clock, CircleDollarSign, Package, PackageCheck, Shirt, FileDown, Wallet, Ruler, Users, Search, X } from "lucide-react";
+import { ArrowDownRight, ArrowLeft, ArrowLeftRight, ArrowUpRight, CalendarDays, CheckCircle2, ChevronDown, Clock, CircleDollarSign, FileText, Package, PackageCheck, Shirt, FileDown, Wallet, Ruler, User, Users, Search, X } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
+import { FormField } from "@/components/FormField";
+import { FormSelect } from "@/components/FormSelect";
 import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { ShirtOrderStatusControl } from "@/components/ShirtOrderStatusControl";
 import { shirtGroupMatchesView, type ShirtListView, type ShirtOrderStatus } from "@/lib/shirts";
@@ -117,12 +119,12 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
     </div>
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div><h3 className="font-black text-white">Nova movimentação manual</h3><p className="text-xs text-white/45">Registre uma entrada, como a parte paga pelo Vidal, ou uma saída deste caixa.</p></div></div>
       <ActionForm action={addManualShirtFinanceTransaction} successMessage="Movimentação das camisas registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-xs font-semibold text-white/60">Tipo<select name="transactionType" className="field"><option value="income">Entrada</option><option value="expense">Saída</option></select></label>
-        <label className="text-xs font-semibold text-white/60">Pessoa opcional<select name="profileId" defaultValue="" className="field"><option value="">Sem pessoa vinculada</option>{shirtProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.fullName}</option>)}</select></label>
-        <label className="text-xs font-semibold text-white/60">Valor<input name="amount" inputMode="decimal" required placeholder="0,00" className="field" /></label>
-        <label className="text-xs font-semibold text-white/60">Data<input type="date" name="transactionDate" defaultValue={today} required className="field" /></label>
-        <label className="text-xs font-semibold text-white/60 sm:col-span-2">Descrição<input name="description" maxLength={160} required placeholder="Ex.: Vidal pagou parte das camisas" className="field" /></label>
-        <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white hover:bg-purple-400 sm:col-span-2">Registrar movimentação</button>
+        <FormSelect label="Tipo" icon={ArrowLeftRight} name="transactionType"><option value="income">Entrada</option><option value="expense">Saída</option></FormSelect>
+        <FormSelect label="Pessoa" icon={User} optional name="profileId" defaultValue=""><option value="">Sem pessoa vinculada</option>{shirtProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.fullName}</option>)}</FormSelect>
+        <FormField label="Valor" icon={CircleDollarSign} name="amount" inputMode="decimal" required placeholder="0,00" />
+        <FormField label="Data" icon={CalendarDays} type="date" name="transactionDate" defaultValue={today} required />
+        <div className="sm:col-span-2"><FormField label="Descrição" icon={FileText} name="description" maxLength={160} required placeholder="Ex.: Vidal pagou parte das camisas" /></div>
+        <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white transition hover:bg-purple-400 sm:col-span-2">Registrar movimentação</button>
       </ActionForm>
     </div>
     <details className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.04] p-4">
@@ -148,8 +150,12 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
     {listView && <section className="space-y-3">
       <form action="/admin/camisas" className="flex gap-2">
         <input type="hidden" name="view" value={listView} />
-        <label className="min-w-0 flex-1"><span className="sr-only">Buscar pessoa ou nome na camisa</span><input type="search" name="q" defaultValue={params.q ?? ""} placeholder="Buscar pessoa..." className="field" /></label>
-        <button type="submit" aria-label="Buscar pedido" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5"><Search className="h-4 w-4" /></button>
+        <label className="relative min-w-0 flex-1">
+          <span className="sr-only">Buscar pessoa ou nome na camisa</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
+          <input type="search" name="q" defaultValue={params.q ?? ""} placeholder="Buscar pessoa..." className="field pl-9" />
+        </label>
+        <button type="submit" aria-label="Buscar pedido" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/5 transition hover:bg-white/10"><Search className="h-4 w-4" /></button>
       </form>
       <p className="text-xs text-white/45">{selected.length} {selected.length === 1 ? "pessoa" : "pessoas"} · Peças da mesma pessoa ficam juntas.</p>
       <div className="grid items-start gap-2 lg:grid-cols-2">{selected.map((group) => {

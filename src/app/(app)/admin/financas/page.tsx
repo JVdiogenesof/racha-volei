@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, CalendarClock, Check, CircleDollarSign, ClipboardCheck, History, RotateCcw, WalletCards, X } from "lucide-react";
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, CalendarClock, CalendarDays, CalendarRange, Check, CircleDollarSign, ClipboardCheck, FileText, History, Link2, PenLine, RotateCcw, StickyNote, Tag, WalletCards, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
@@ -6,6 +6,8 @@ import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { PlayerBalanceForm } from "@/components/PlayerBalanceForm";
 import { AnimatedMetric } from "@/components/AnimatedMetric";
+import { FormField } from "@/components/FormField";
+import { FormSelect } from "@/components/FormSelect";
 import { addFinanceReminder, addFinanceTransaction, addPlayerBalance, applyPlayerBalance, reversePlayerBalance, toggleFinanceReminder, voidFinanceTransaction } from "./actions";
 
 type ProfileRow = { id: string; full_name: string; avatar_url: string | null; status: string };
@@ -84,8 +86,12 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
     </section>
 
     <form method="get" className="mt-5 flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:max-w-md">
-      <label className="min-w-0 flex-1"><span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-white/40">Mês da leitura</span><select name="month" defaultValue={selectedMonth} className="field capitalize">{availableMonths.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}</select></label>
-      <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-xs font-black text-white hover:bg-purple-400">Filtrar</button>
+      <div className="min-w-0 flex-1">
+        <FormSelect label="Mês da leitura" icon={CalendarRange} name="month" defaultValue={selectedMonth} className="capitalize">
+          {availableMonths.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}
+        </FormSelect>
+      </div>
+      <button type="submit" className="min-h-10 rounded-xl bg-purple-500 px-4 text-xs font-black text-white transition hover:bg-purple-400">Filtrar</button>
     </form>
 
     <section className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
@@ -126,14 +132,25 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
 
     <section className="mt-7 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
       <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Nova movimentação manual</h2><p className="text-xs text-white/40">Patrocínio, aluguel, medalhas ou outra entrada e saída.</p></div></div><ActionForm action={addFinanceTransaction} successMessage="Movimentação registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label><Label>Tipo</Label><select name="transactionType" className="field"><option value="income">Entrada</option><option value="expense">Saída</option></select></label>
-        <label><Label>Categoria</Label><select name="category" className="field"><option value="sponsorship">Patrocínio</option><option value="court_rental">Aluguel da quadra</option><option value="medals">Medalhas</option><option value="other">Outro</option></select></label>
-        <label><Label>Valor</Label><input name="amount" inputMode="decimal" required placeholder="0,00" className="field" /></label><label><Label>Data</Label><input type="date" name="transactionDate" defaultValue={today} required className="field" /></label>
-        <label className="sm:col-span-2"><Label>Vincular a um racha</Label><select name="eventId" defaultValue="" className="field"><option value="">Caixa geral · sem racha específico</option>{events.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}</select><span className="mt-1 block text-[10px] text-white/35">Vincule aluguel, medalha ou outra despesa para calcular a sobra daquele racha.</span></label>
-        <label className="sm:col-span-2"><Label>Descrição</Label><input name="description" maxLength={160} required placeholder="Ex.: pagamento do aluguel da NR" className="field" /></label><label className="sm:col-span-2"><Label>Observação opcional</Label><input name="notes" maxLength={500} className="field" /></label><button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white sm:col-span-2 hover:bg-purple-400">Registrar movimentação</button>
+        <FormSelect label="Tipo" icon={ArrowLeftRight} name="transactionType"><option value="income">Entrada</option><option value="expense">Saída</option></FormSelect>
+        <FormSelect label="Categoria" icon={Tag} name="category"><option value="sponsorship">Patrocínio</option><option value="court_rental">Aluguel da quadra</option><option value="medals">Medalhas</option><option value="other">Outro</option></FormSelect>
+        <FormField label="Valor" icon={CircleDollarSign} name="amount" inputMode="decimal" required placeholder="0,00" />
+        <FormField label="Data" icon={CalendarDays} type="date" name="transactionDate" defaultValue={today} required />
+        <div className="sm:col-span-2">
+          <FormSelect label="Vincular a um racha" icon={Link2} name="eventId" defaultValue=""><option value="">Caixa geral · sem racha específico</option>{events.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}</FormSelect>
+          <span className="mt-1 block text-[10px] text-white/35">Vincule aluguel, medalha ou outra despesa para calcular a sobra daquele racha.</span>
+        </div>
+        <div className="sm:col-span-2"><FormField label="Descrição" icon={FileText} name="description" maxLength={160} required placeholder="Ex.: pagamento do aluguel da NR" /></div>
+        <div className="sm:col-span-2"><FormField label="Observação" icon={StickyNote} optional name="notes" maxLength={500} /></div>
+        <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white transition sm:col-span-2 hover:bg-purple-400">Registrar movimentação</button>
       </ActionForm></div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-amber-200" /><div><h2 className="font-black text-white">Agenda financeira</h2><p className="text-xs text-white/40">Contas e tarefas que não podem ser esquecidas.</p></div></div><ActionForm action={addFinanceReminder} successMessage="Lembrete criado!" resetOnSuccess className="mt-4 grid grid-cols-[1fr_auto] gap-2"><input name="title" required maxLength={140} placeholder="Ex.: pagar medalhas" className="field min-w-0" /><input type="date" name="dueDate" className="field w-[8.7rem]" /><input name="notes" maxLength={500} placeholder="Observação opcional" className="field col-span-2" /><button type="submit" className="col-span-2 min-h-10 rounded-xl bg-amber-300/15 text-xs font-black text-amber-100 hover:bg-amber-300/25">Adicionar à agenda</button></ActionForm>
+      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-amber-200" /><div><h2 className="font-black text-white">Agenda financeira</h2><p className="text-xs text-white/40">Contas e tarefas que não podem ser esquecidas.</p></div></div><ActionForm action={addFinanceReminder} successMessage="Lembrete criado!" resetOnSuccess className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+        <FormField label="Título" icon={PenLine} name="title" required maxLength={140} placeholder="Ex.: pagar medalhas" />
+        <div className="w-[8.7rem]"><FormField label="Prazo" icon={CalendarDays} optional type="date" name="dueDate" /></div>
+        <div className="col-span-2"><FormField label="Observação" icon={StickyNote} optional name="notes" maxLength={500} /></div>
+        <button type="submit" className="col-span-2 min-h-10 rounded-xl bg-amber-300/15 text-xs font-black text-amber-100 transition hover:bg-amber-300/25">Adicionar à agenda</button>
+      </ActionForm>
         <div className="mt-4 space-y-2">{reminders.length ? reminders.map((reminder) => <div key={reminder.id} className={`flex items-start gap-3 rounded-xl border p-3 ${reminder.completed ? "border-white/5 bg-white/[0.015] opacity-55" : "border-white/10 bg-black/10"}`}><ActionForm action={toggleFinanceReminder} successMessage={reminder.completed ? "Lembrete reaberto." : "Lembrete concluído!"}><input type="hidden" name="reminderId" value={reminder.id} /><input type="hidden" name="completed" value={reminder.completed ? "false" : "true"} /><button type="submit" className={`grid h-8 w-8 place-items-center rounded-full border ${reminder.completed ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-white/15 text-white/30 hover:text-emerald-200"}`}>{reminder.completed ? <Check className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}</button></ActionForm><div className="min-w-0"><p className={`text-sm font-semibold text-white ${reminder.completed ? "line-through" : ""}`}>{reminder.title}</p>{reminder.due_date && <p className="mt-0.5 text-[10px] font-bold text-amber-200/70">Prazo: {formatDate(reminder.due_date)}</p>}{reminder.notes && <p className="mt-1 text-xs leading-5 text-white/40">{reminder.notes}</p>}</div></div>) : <p className="py-4 text-center text-xs text-white/30">Agenda vazia.</p>}</div>
       </div>
     </section>
@@ -146,5 +163,4 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
 
 function Stat({ icon: Icon, label, value, color }: { icon: typeof WalletCards; label: string; value: string; color: string }) { return <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4"><Icon className={`h-5 w-5 ${color}`} /><AnimatedMetric className="mt-2 block truncate text-base font-bold text-white sm:text-xl" value={value} /><span className="mt-1 block text-[9px] font-semibold uppercase leading-tight tracking-wide text-white/40 sm:text-[10px]">{label}</span></div>; }
 function MiniValue({ label, value, color }: { label: string; value: string; color: string }) { return <div className="rounded-xl bg-black/10 p-2"><p className="text-[9px] font-black uppercase tracking-wide text-white/35">{label}</p><p className={`mt-1 truncate text-sm font-black ${color}`}>{value}</p></div>; }
-function Label({ children }: { children: React.ReactNode }) { return <span className="mb-1.5 block text-xs font-semibold text-white/55">{children}</span>; }
 function Empty({ text }: { text: string }) { return <div className="mt-3 rounded-2xl border border-dashed border-white/10 p-8 text-center"><WalletCards className="mx-auto h-8 w-8 text-white/20" /><p className="mt-3 font-semibold text-white/50">{text}</p></div>; }
