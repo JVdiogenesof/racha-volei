@@ -197,6 +197,25 @@ export async function completePixRefund(formData: FormData) {
   revalidatePath("/admin/financas");
 }
 
+export async function transferPixSpot(formData: FormData) {
+  const eventId = String(formData.get("eventId"));
+  const toProfileId = String(formData.get("toProfileId"));
+  if (!toProfileId) throw new Error("Escolha quem vai receber a vaga.");
+
+  const profile = await requireEventParticipant(eventId);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("transfer_event_pix_spot", {
+    p_event_id: eventId,
+    p_to_profile_id: toProfileId,
+  });
+  if (error) throw new Error(error.message);
+
+  await removeFromCurrentTeam(supabase, eventId, profile.id);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
 export async function setEventSetterRole(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();

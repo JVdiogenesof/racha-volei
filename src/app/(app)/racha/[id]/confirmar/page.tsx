@@ -22,7 +22,7 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { cancelPixAttendance, completePixRefund, demoteToInterested, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus } from "./actions";
+import { cancelPixAttendance, completePixRefund, demoteToInterested, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -109,6 +109,7 @@ export default async function ConfirmarPresencaPage({
       ? confirmados.length >= eventCapacity
       : regularConfirmedCount >= memberCapacity;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
+  const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
   const addDirectOptions = (approvedProfiles ?? [])
     .filter((p) => !confirmedIds.has(p.id))
@@ -287,6 +288,21 @@ export default async function ConfirmarPresencaPage({
                   <input type="hidden" name="eventId" value={id} />
                   <input type="hidden" name="choice" value="balance" />
                   <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha</button>
+                </ActionForm>
+              )}
+              {transferCandidates.length > 0 && (
+                <ActionForm action={transferPixSpot} successMessage="Vaga transferida e registrada. Combine o pagamento diretamente com a pessoa escolhida.">
+                  <input type="hidden" name="eventId" value={id} />
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <select name="toProfileId" required defaultValue="" className="min-h-10 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white">
+                      <option value="" disabled>Escolher pessoa interessada</option>
+                      {transferCandidates.map((candidate) => {
+                        const candidateProfile = candidate.profiles as unknown as { full_name: string } | null;
+                        return <option key={candidate.profile_id} value={candidate.profile_id}>{candidateProfile?.full_name ?? "Jogador"}</option>;
+                      })}
+                    </select>
+                    <button className="inline-flex min-h-10 items-center justify-center rounded-lg border border-purple-200/30 bg-purple-400/15 px-3 text-sm font-semibold text-purple-100 hover:bg-purple-400/25">Transferir vaga</button>
+                  </div>
                 </ActionForm>
               )}
             </div>
