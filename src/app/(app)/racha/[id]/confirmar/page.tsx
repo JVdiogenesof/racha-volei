@@ -22,7 +22,7 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { setAttendance, setOfficialListOpen, setPaymentStatus, setEventSetterRole, promoteToConfirmed, demoteToInterested, removeAttendance } from "./actions";
+import { cancelPixAttendance, completePixRefund, demoteToInterested, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -79,11 +79,21 @@ export default async function ConfirmarPresencaPage({
   if (!event) notFound();
   if (event.community !== selectedCommunity) notFound();
 
+  const [{ data: myPayment }, { data: refundRequests }] = await Promise.all([
+    supabase.from("payments").select("paid, payment_source").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+    profile.is_organizer
+      ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
+      : Promise.resolve({ data: null }),
+  ]);
+
   const eventFinished = event.status === "finished";
   const eventCancelled = event.status === "cancelled";
   const listOpen = event.official_list_open;
   const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
+  const pixCancellationDeadline = new Date(`${event.date}T00:00:00-03:00`);
+  pixCancellationDeadline.setDate(pixCancellationDeadline.getDate() - 1);
+  const isBeforePixCancellationDeadline = new Date() < pixCancellationDeadline;
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
   const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
@@ -254,11 +264,39 @@ export default async function ConfirmarPresencaPage({
       ) : myStatus === "confirmed" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
           <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
-          <CancelAttendanceButton
-            eventId={id}
-            action={setAttendance}
-            className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
-          />
+          {myPayment?.paid && myPayment.payment_source === "pix" ? (
+            <div className="ml-auto flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:ml-auto sm:w-auto sm:border-0 sm:pt-0">
+              {isBeforePixCancellationDeadline ? (
+                <>
+                  <p className="text-xs text-emerald-100/75">Até {pixCancellationDeadline.toLocaleDateString("pt-BR")} às 00:00, você pode escolher saldo ou reembolso.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada: o valor virou saldo para outro racha.">
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="choice" value="balance" />
+                      <button className="inline-flex min-h-10 items-center rounded-lg border border-emerald-200/25 bg-emerald-400/15 px-3 text-sm font-semibold text-emerald-100 hover:bg-emerald-400/25">Desistir e ficar com saldo</button>
+                    </ActionForm>
+                    <ActionForm action={cancelPixAttendance} successMessage="Pedido de reembolso enviado aos organizadores.">
+                      <input type="hidden" name="eventId" value={id} />
+                      <input type="hidden" name="choice" value="refund" />
+                      <button className="inline-flex min-h-10 items-center rounded-lg border border-white/15 bg-white/5 px-3 text-sm font-semibold text-white/80 hover:bg-white/10">Pedir reembolso</button>
+                    </ActionForm>
+                  </div>
+                </>
+              ) : (
+                <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada. Como o prazo passou, o pagamento permanece no caixa do racha.">
+                  <input type="hidden" name="eventId" value={id} />
+                  <input type="hidden" name="choice" value="balance" />
+                  <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha</button>
+                </ActionForm>
+              )}
+            </div>
+          ) : (
+            <CancelAttendanceButton
+              eventId={id}
+              action={setAttendance}
+              className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 disabled:opacity-50"
+            />
+          )}
         </div>
       ) : !registrationOpen ? (
         <p className="rounded-xl border border-fuchsia-300/20 bg-fuchsia-400/10 px-4 py-4 text-center text-sm text-fuchsia-100/80">
@@ -295,6 +333,25 @@ export default async function ConfirmarPresencaPage({
           </p>
           <CopyPixButton pixKey={PIX_KEY} className="ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/10" />
         </div>
+      )}
+
+      {profile.is_organizer && (refundRequests ?? []).length > 0 && (
+        <section className="rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4">
+          <h2 className="text-sm font-black text-amber-100">Reembolsos Pix pendentes</h2>
+          <div className="mt-3 space-y-2">
+            {(refundRequests ?? []).map((request) => {
+              const person = request.profiles as unknown as { full_name: string } | null;
+              return <div key={request.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-3 py-2.5">
+                <p className="text-sm text-white"><strong>{person?.full_name ?? "Jogador"}</strong> · R$ {Number(request.amount).toFixed(2)}</p>
+                <ActionForm action={completePixRefund} successMessage="Reembolso registrado no caixa.">
+                  <input type="hidden" name="intentId" value={request.id} />
+                  <input type="hidden" name="eventId" value={id} />
+                  <button className="inline-flex min-h-10 items-center rounded-lg bg-amber-300 px-3 text-sm font-bold text-amber-950 hover:bg-amber-200">Registrar reembolso enviado</button>
+                </ActionForm>
+              </div>;
+            })}
+          </div>
+        </section>
       )}
 
       {profile.is_organizer && (

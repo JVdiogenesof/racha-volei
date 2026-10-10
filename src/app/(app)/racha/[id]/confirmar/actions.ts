@@ -163,6 +163,40 @@ export async function setPaymentStatus(formData: FormData) {
   revalidatePath("/admin/financas");
 }
 
+export async function cancelPixAttendance(formData: FormData) {
+  const eventId = String(formData.get("eventId"));
+  const choice = String(formData.get("choice"));
+  if (choice !== "balance" && choice !== "refund") throw new Error("Escolha de desistência inválida.");
+
+  const profile = await requireEventParticipant(eventId);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cancel_event_pix_payment", {
+    p_event_id: eventId,
+    p_choice: choice,
+  });
+  if (error) throw new Error(error.message);
+
+  await removeFromCurrentTeam(supabase, eventId, profile.id);
+  const outcome = data?.[0]?.outcome;
+  if (outcome === "balance") {
+    revalidatePath("/admin/financas");
+  }
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
+export async function completePixRefund(formData: FormData) {
+  await requireOrganizer();
+  const intentId = String(formData.get("intentId"));
+  const eventId = String(formData.get("eventId"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("complete_event_pix_refund", { p_intent_id: intentId });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath("/admin/financas");
+}
+
 export async function setEventSetterRole(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
