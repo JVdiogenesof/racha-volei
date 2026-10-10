@@ -167,44 +167,61 @@ alter table event_payment_transfers enable row level security;
 
 -- profiles: sempre pode ver a própria linha; só vê as demais se já for aprovado.
 create policy "profiles_select" on profiles for select to authenticated
-  using (id = auth.uid() or public.is_approved());
+  using (id = (select auth.uid()) or (select public.is_approved()));
 
-create policy "profiles_insert_visitor_self" on profiles for insert to authenticated
-  with check (id = auth.uid() and status = 'visitor' and is_organizer = false and approved_by is null and guest_for_event_id is null);
-
--- organizador cria um perfil "guest" pra alguém de fora que ele chamou da
--- lista de reserva pra jogar um racha específico.
-create policy "profiles_insert_guest_by_organizer" on profiles for insert to authenticated
-  with check (public.is_organizer() and status = 'guest');
+-- Visitante se cadastrando e organizador chamando um "guest" da reserva são
+-- as duas únicas formas de insert em profiles — unificadas numa única policy
+-- (em vez de duas policies permissivas separadas) porque o Postgres avalia
+-- toda policy permissiva da mesma ação, então ter duas sempre custava duas
+-- checagens por insert.
+create policy "profiles_insert" on profiles for insert to authenticated
+  with check (
+    (id = (select auth.uid()) and status = 'visitor' and is_organizer = false and approved_by is null and guest_for_event_id is null)
+    or ((select public.is_organizer()) and status = 'guest')
+  );
 
 -- edição: a própria pessoa (campos privilegiados são bloqueados pelo trigger acima)
 -- ou qualquer organizador editando qualquer perfil.
 create policy "profiles_update" on profiles for update to authenticated
-  using (public.is_organizer() or (id = auth.uid() and public.can_edit_own_profile()))
-  with check (public.is_organizer() or (id = auth.uid() and public.can_edit_own_profile()));
+  using ((select public.is_organizer()) or (id = (select auth.uid()) and (select public.can_edit_own_profile())))
+  with check ((select public.is_organizer()) or (id = (select auth.uid()) and (select public.can_edit_own_profile())));
 
 -- apagar perfil só é permitido pra "guest" (acesso expirado se apaga sozinho,
 -- ou organizador encerra na mão) -- nunca apaga membro de verdade por aqui.
 create policy "profiles_delete_guest" on profiles for delete to authenticated
-  using (status = 'guest' and (id = auth.uid() or public.is_organizer()));
+  using (status = 'guest' and (id = (select auth.uid()) or (select public.is_organizer())));
 
 -- self_ratings: transparência total pra leitura; só o próprio dono escreve.
+-- Dividido em insert/update/delete (em vez de "for all") pra não duplicar a
+-- policy de select acima — as duas eram avaliadas em toda leitura.
 create policy "self_ratings_select" on self_ratings for select to authenticated using (true);
-create policy "self_ratings_write" on self_ratings for all to authenticated
-  using ((profile_id = auth.uid() and public.can_edit_own_profile()) or public.is_organizer())
-  with check ((profile_id = auth.uid() and public.can_edit_own_profile()) or public.is_organizer());
+create policy "self_ratings_insert" on self_ratings for insert to authenticated
+  with check ((profile_id = (select auth.uid()) and (select public.can_edit_own_profile())) or (select public.is_organizer()));
+create policy "self_ratings_update" on self_ratings for update to authenticated
+  using ((profile_id = (select auth.uid()) and (select public.can_edit_own_profile())) or (select public.is_organizer()))
+  with check ((profile_id = (select auth.uid()) and (select public.can_edit_own_profile())) or (select public.is_organizer()));
+create policy "self_ratings_delete" on self_ratings for delete to authenticated
+  using ((profile_id = (select auth.uid()) and (select public.can_edit_own_profile())) or (select public.is_organizer()));
 
 -- organizer_ratings: transparência total pra leitura; só organizador escreve.
 create policy "organizer_ratings_select" on organizer_ratings for select to authenticated using (true);
-create policy "organizer_ratings_write" on organizer_ratings for all to authenticated
+create policy "organizer_ratings_insert" on organizer_ratings for insert to authenticated
+  with check (public.is_organizer() and rated_by = (select auth.uid()));
+create policy "organizer_ratings_update" on organizer_ratings for update to authenticated
   using (public.is_organizer())
-  with check (public.is_organizer() and rated_by = auth.uid());
+  with check (public.is_organizer() and rated_by = (select auth.uid()));
+create policy "organizer_ratings_delete" on organizer_ratings for delete to authenticated
+  using (public.is_organizer());
 
 -- rating_weights: todo mundo lê, só organizador ajusta.
 create policy "rating_weights_select" on rating_weights for select to authenticated using (true);
-create policy "rating_weights_write" on rating_weights for all to authenticated
+create policy "rating_weights_insert" on rating_weights for insert to authenticated
+  with check (public.is_organizer());
+create policy "rating_weights_update" on rating_weights for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+create policy "rating_weights_delete" on rating_weights for delete to authenticated
+  using (public.is_organizer());
 
 -- events: todo mundo lê, só organizador cria/edita/apaga.
 -- Separado em 3 políticas (em vez de "for all") porque o WITH CHECK de uma
@@ -213,7 +230,7 @@ create policy "rating_weights_write" on rating_weights for all to authenticated
 create policy "events_select" on events for select to authenticated using (true);
 
 create policy "events_insert" on events for insert to authenticated
-  with check (public.is_organizer() and created_by = auth.uid());
+  with check (public.is_organizer() and created_by = (select auth.uid()));
 
 create policy "events_update" on events for update to authenticated
   using (public.is_organizer())
@@ -225,23 +242,35 @@ create policy "events_delete" on events for delete to authenticated
 -- attendance: todo mundo lê (lista de confirmados é pública pro grupo);
 -- cada um confirma/desmarca a própria presença; organizador pode mexer em qualquer uma.
 create policy "attendance_select" on attendance for select to authenticated using (true);
-create policy "attendance_write" on attendance for all to authenticated
-  using (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)))
-  with check (public.is_organizer() or (profile_id = auth.uid() and public.can_participate_in_event(event_id)));
+create policy "attendance_insert" on attendance for insert to authenticated
+  with check (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.can_participate_in_event(event_id))));
+create policy "attendance_update" on attendance for update to authenticated
+  using (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.can_participate_in_event(event_id))))
+  with check (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.can_participate_in_event(event_id))));
+create policy "attendance_delete" on attendance for delete to authenticated
+  using (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.can_participate_in_event(event_id))));
 
 -- A função de levantador pode ser ajustada por racha sem alterar o perfil.
 -- Todos veem a escalação, mas só organizadores podem mudá-la.
 alter table event_setter_overrides enable row level security;
 create policy "event_setter_overrides_select" on event_setter_overrides for select to authenticated using (true);
-create policy "event_setter_overrides_write" on event_setter_overrides for all to authenticated
+create policy "event_setter_overrides_insert" on event_setter_overrides for insert to authenticated
+  with check (public.is_organizer() and changed_by = (select auth.uid()));
+create policy "event_setter_overrides_update" on event_setter_overrides for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer() and changed_by = (select auth.uid()));
+create policy "event_setter_overrides_delete" on event_setter_overrides for delete to authenticated
+  using (public.is_organizer());
 
 -- payments: leitura aberta ao grupo; só organizador marca pagamento.
 create policy "payments_select" on payments for select to authenticated using (true);
-create policy "payments_write" on payments for all to authenticated
+create policy "payments_insert" on payments for insert to authenticated
+  with check (public.is_organizer());
+create policy "payments_update" on payments for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+create policy "payments_delete" on payments for delete to authenticated
+  using (public.is_organizer());
 
 -- Reservas de Pix: a pessoa só enxerga a própria reserva, enquanto
 -- organizadores acompanham tudo. Escritas acontecem apenas pelas funções
@@ -288,32 +317,48 @@ create policy "shirt_finance_transactions_update_organizer" on shirt_finance_tra
 
 -- times gerados: leitura aberta; só organizador gera/edita.
 create policy "team_generations_select" on team_generations for select to authenticated using (true);
-create policy "team_generations_write" on team_generations for all to authenticated
+create policy "team_generations_insert" on team_generations for insert to authenticated
+  with check (public.is_organizer() and generated_by = (select auth.uid()));
+create policy "team_generations_update" on team_generations for update to authenticated
   using (public.is_organizer())
-  with check (public.is_organizer() and generated_by = auth.uid());
+  with check (public.is_organizer() and generated_by = (select auth.uid()));
+create policy "team_generations_delete" on team_generations for delete to authenticated
+  using (public.is_organizer());
 
 create policy "teams_select" on teams for select to authenticated using (true);
-create policy "teams_write" on teams for all to authenticated
+create policy "teams_insert" on teams for insert to authenticated
+  with check (public.is_organizer());
+create policy "teams_update" on teams for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+create policy "teams_delete" on teams for delete to authenticated
+  using (public.is_organizer());
 
 create policy "team_members_select" on team_members for select to authenticated using (true);
-create policy "team_members_write" on team_members for all to authenticated
+create policy "team_members_insert" on team_members for insert to authenticated
+  with check (public.is_organizer());
+create policy "team_members_update" on team_members for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+create policy "team_members_delete" on team_members for delete to authenticated
+  using (public.is_organizer());
 
 -- avisos: mural aberto pra leitura; só organizador publica.
 create policy "announcements_select" on announcements for select to authenticated using (true);
-create policy "announcements_write" on announcements for all to authenticated
+create policy "announcements_insert" on announcements for insert to authenticated
+  with check (public.is_organizer() and created_by = (select auth.uid()));
+create policy "announcements_update" on announcements for update to authenticated
   using (public.is_organizer())
-  with check (public.is_organizer() and created_by = auth.uid());
+  with check (public.is_organizer() and created_by = (select auth.uid()));
+create policy "announcements_delete" on announcements for delete to authenticated
+  using (public.is_organizer());
 
 -- mvp_votes: leitura aberta (pra calcular o resultado); cada um só registra o próprio
 -- voto (não pode editar/apagar depois de votado, evita "cabo eleitoral" mudando de ideia
 -- só pra favorecer alguém após ver o placar parcial).
 create policy "mvp_votes_select" on mvp_votes for select to authenticated using (true);
 create policy "mvp_votes_insert" on mvp_votes for insert to authenticated
-  with check (voter_profile_id = auth.uid() and public.can_participate_in_event(event_id));
+  with check (voter_profile_id = (select auth.uid()) and (select public.can_participate_in_event(event_id)));
 
 -- match_wins: leitura aberta (alimenta o ranking de vitórias); só organizador registra/apaga.
 create policy "match_wins_select" on match_wins for select to authenticated using (true);
@@ -326,19 +371,19 @@ create policy "match_wins_delete" on match_wins for delete to authenticated
 -- só organizador cria/apaga ajuste manual.
 create policy "ranking_adjustments_select" on ranking_adjustments for select to authenticated using (true);
 create policy "ranking_adjustments_insert" on ranking_adjustments for insert to authenticated
-  with check (public.is_organizer() and created_by = auth.uid());
+  with check (public.is_organizer() and created_by = (select auth.uid()));
 create policy "ranking_adjustments_delete" on ranking_adjustments for delete to authenticated
   using (public.is_organizer());
 
 -- reserve_list: cada um só vê/edita a própria linha; organizador vê e mexe em todas
 -- (precisa ver o telefone de todo mundo pra poder chamar quando sobrar vaga).
 create policy "reserve_list_select" on reserve_list for select to authenticated
-  using (auth_user_id = auth.uid() or public.is_organizer());
+  using (auth_user_id = (select auth.uid()) or public.is_organizer());
 create policy "reserve_list_insert" on reserve_list for insert to authenticated
-  with check (auth_user_id = auth.uid());
+  with check (auth_user_id = (select auth.uid()));
 create policy "reserve_list_update" on reserve_list for update to authenticated
-  using (auth_user_id = auth.uid() or public.is_organizer())
-  with check (auth_user_id = auth.uid() or public.is_organizer());
+  using (auth_user_id = (select auth.uid()) or public.is_organizer())
+  with check (auth_user_id = (select auth.uid()) or public.is_organizer());
 create policy "reserve_list_delete" on reserve_list for delete to authenticated
   using (public.is_organizer());
 
@@ -348,9 +393,9 @@ create policy "reserve_list_delete" on reserve_list for delete to authenticated
 -- organizadores. Só dono ou organizador cria/apaga uma inscrição.
 create policy "push_subscriptions_select" on push_subscriptions for select to authenticated using (true);
 create policy "push_subscriptions_insert" on push_subscriptions for insert to authenticated
-  with check (profile_id = auth.uid() and public.is_full_member());
+  with check (profile_id = (select auth.uid()) and (select public.is_full_member()));
 create policy "push_subscriptions_delete" on push_subscriptions for delete to authenticated
-  using ((profile_id = auth.uid() and public.is_full_member()) or public.is_organizer());
+  using ((profile_id = (select auth.uid()) and (select public.is_full_member())) or public.is_organizer());
 
 -- tournament_reserved_players: leitura aberta (vira uma vitrine pública de
 -- quem já garantiu vaga no torneio); só organizador insere/apaga (finalizar
@@ -358,7 +403,7 @@ create policy "push_subscriptions_delete" on push_subscriptions for delete to au
 -- da action, que já roda como o organizador autenticado).
 create policy "tournament_reserved_players_select" on tournament_reserved_players for select to authenticated using (true);
 create policy "tournament_reserved_players_insert" on tournament_reserved_players for insert to authenticated
-  with check (public.is_organizer() and added_by = auth.uid());
+  with check (public.is_organizer() and added_by = (select auth.uid()));
 create policy "tournament_reserved_players_delete" on tournament_reserved_players for delete to authenticated
   using (public.is_organizer());
 
@@ -366,9 +411,13 @@ create policy "tournament_reserved_players_delete" on tournament_reserved_player
 -- pré-torneio -- leitura aberta (alimenta a classificação pra todo mundo);
 -- só organizador lança/edita/apaga placar.
 create policy "tournament_matches_select" on tournament_matches for select to authenticated using (true);
-create policy "tournament_matches_write" on tournament_matches for all to authenticated
+create policy "tournament_matches_insert" on tournament_matches for insert to authenticated
+  with check (public.is_organizer());
+create policy "tournament_matches_update" on tournament_matches for update to authenticated
   using (public.is_organizer())
   with check (public.is_organizer());
+create policy "tournament_matches_delete" on tournament_matches for delete to authenticated
+  using (public.is_organizer());
 
 -- Pedidos das camisas: cada membro vê e altera o próprio pedido enquanto ele
 -- está pendente. Organizadores veem tudo e são os únicos que marcam pagamento.
@@ -429,15 +478,15 @@ create trigger guard_shirt_order_fulfillment before insert or update or delete o
 revoke all on function public.guard_shirt_order_fulfillment() from public;
 
 create policy "shirt_orders_select" on shirt_orders for select to authenticated
-  using (profile_id = auth.uid() or public.is_organizer());
+  using (profile_id = (select auth.uid()) or public.is_organizer());
 create policy "shirt_orders_insert_own" on shirt_orders for insert to authenticated
-  with check (profile_id = auth.uid() and public.is_full_member()
+  with check (profile_id = (select auth.uid()) and (select public.is_full_member())
     and not paid and not half_paid and paid_at is null and marked_by is null);
 create policy "shirt_orders_update_own_or_organizer" on shirt_orders for update to authenticated
-  using (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member()))
-  with check (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member()));
+  using (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.is_full_member())))
+  with check (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.is_full_member())));
 create policy "shirt_orders_delete_own_or_organizer" on shirt_orders for delete to authenticated
-  using (public.is_organizer() or (profile_id = auth.uid() and public.is_full_member() and not paid and not half_paid));
+  using (public.is_organizer() or (profile_id = (select auth.uid()) and (select public.is_full_member()) and not paid and not half_paid));
 
 
 -- Storage: bucket "avisos" (crie manualmente no painel Supabase > Storage,
