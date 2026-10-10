@@ -8,7 +8,13 @@ import { registrationInputParts } from "@/lib/registrationSchedule";
 const DATE_TIME_INPUT_CLASS =
   "mt-1 block w-full min-w-0 max-w-full min-h-10 appearance-none rounded-lg border border-white/15 px-3 py-2 text-left [&::-webkit-date-and-time-value]:text-left";
 
-export function RegistrationScheduleFields({ defaultOpensAt }: { defaultOpensAt?: string | null }) {
+export function RegistrationScheduleFields({
+  defaultOpensAt,
+  required = true,
+}: {
+  defaultOpensAt?: string | null;
+  required?: boolean;
+}) {
   const defaults = registrationInputParts(defaultOpensAt ?? null);
 
   return (
@@ -25,14 +31,16 @@ export function RegistrationScheduleFields({ defaultOpensAt }: { defaultOpensAt?
       <div className="mt-3 grid min-w-0 gap-3 sm:grid-cols-2">
         <label className="block min-w-0 text-xs font-medium text-white/65">
           Data
-          <input type="date" name="registrationOpenDate" defaultValue={defaults.date} required className={DATE_TIME_INPUT_CLASS} />
+          <input type="date" name="registrationOpenDate" defaultValue={defaults.date} required={required} className={DATE_TIME_INPUT_CLASS} />
         </label>
         <label className="block min-w-0 text-xs font-medium text-white/65">
           Horário
-          <input type="time" name="registrationOpenTime" defaultValue={defaults.time} required className={DATE_TIME_INPUT_CLASS} />
+          <input type="time" name="registrationOpenTime" defaultValue={defaults.time} required={required} className={DATE_TIME_INPUT_CLASS} />
         </label>
       </div>
-      <p className="mt-2 text-[11px] text-white/35">Horário de Fortaleza. Vocês podem alterar esse agendamento depois.</p>
+      <p className="mt-2 text-[11px] text-white/35">
+        Horário de Fortaleza. {required ? "Escolha quando a lista será aberta." : "Se deixar os dois campos vazios, o agendamento atual será mantido."}
+      </p>
     </div>
   );
 }

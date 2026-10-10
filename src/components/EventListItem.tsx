@@ -142,7 +142,7 @@ export function EventListItem({
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
-          <RegistrationScheduleFields defaultOpensAt={event.registration_opens_at} />
+          <RegistrationScheduleFields defaultOpensAt={event.registration_opens_at} required={false} />
           <RachaCapacityFields
             defaultNumTeams={event.num_teams}
             defaultMaxPlayers={event.max_players}

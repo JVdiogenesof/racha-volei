@@ -9,15 +9,19 @@ import { getActiveCommunity } from "@/lib/community";
 import type { EventGameStyle } from "@/lib/eventGameStyle";
 import { registrationOpensAtFromForm } from "@/lib/registrationSchedule";
 
+function validateRegistrationSchedule(registrationOpensAt: string, eventDate: string, eventTime: string | null) {
+  const eventStartsAt = new Date(`${eventDate}T${eventTime ?? "23:59"}:00-03:00`);
+  if (new Date(registrationOpensAt).getTime() >= eventStartsAt.getTime()) {
+    throw new Error("As inscrições precisam abrir antes do início do racha.");
+  }
+}
+
 function parseRegistrationSchedule(formData: FormData, eventDate: string, eventTime: string | null) {
   const registrationOpensAt = registrationOpensAtFromForm(
     String(formData.get("registrationOpenDate") ?? ""),
     String(formData.get("registrationOpenTime") ?? ""),
   );
-  const eventStartsAt = new Date(`${eventDate}T${eventTime ?? "23:59"}:00-03:00`);
-  if (new Date(registrationOpensAt).getTime() >= eventStartsAt.getTime()) {
-    throw new Error("As inscrições precisam abrir antes do início do racha.");
-  }
+  validateRegistrationSchedule(registrationOpensAt, eventDate, eventTime);
   return registrationOpensAt;
 }
 
@@ -122,7 +126,24 @@ export async function updateEvent(formData: FormData) {
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
-  const registrationOpensAt = parseRegistrationSchedule(formData, date, time);
+  const registrationOpenDate = String(formData.get("registrationOpenDate") ?? "");
+  const registrationOpenTime = String(formData.get("registrationOpenTime") ?? "");
+  if ((registrationOpenDate && !registrationOpenTime) || (!registrationOpenDate && registrationOpenTime)) {
+    throw new Error("Preencha data e horário da abertura, ou deixe os dois em branco para manter o agendamento atual.");
+  }
+
+  const { data: currentEvent, error: currentEventError } = await supabase
+    .from("events")
+    .select("registration_opens_at")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (currentEventError) throw new Error(currentEventError.message);
+  if (!currentEvent) throw new Error("Racha não encontrado.");
+
+  const registrationOpensAt = registrationOpenDate && registrationOpenTime
+    ? parseRegistrationSchedule(formData, date, time)
+    : currentEvent.registration_opens_at;
+  if (registrationOpensAt) validateRegistrationSchedule(registrationOpensAt, date, time);
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
