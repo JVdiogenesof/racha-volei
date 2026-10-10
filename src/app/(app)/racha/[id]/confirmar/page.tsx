@@ -27,6 +27,7 @@ import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
+import { PixReservationButton } from "@/components/PixReservationButton";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -42,7 +43,7 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at")
+        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -265,12 +266,16 @@ export default async function ConfirmarPresencaPage({
         </p>
       ) : (
         <div className="flex gap-3">
-          <InterestButton
-            eventId={id}
-            price={event.price_per_player ? Number(event.price_per_player) : null}
-            isFull={isFull}
-            action={setAttendance}
-          />
+          {event.pix_payment_enabled && event.price_per_player ? (
+            <PixReservationButton eventId={id} hasInterest={myStatus === "interested"} isFull={isFull} action={setAttendance} />
+          ) : (
+            <InterestButton
+              eventId={id}
+              price={event.price_per_player ? Number(event.price_per_player) : null}
+              isFull={isFull}
+              action={setAttendance}
+            />
+          )}
           <ActionForm action={setAttendance} successMessage="Você marcou que não vai.">
             <input type="hidden" name="eventId" value={id} />
             <input type="hidden" name="status" value="declined" />
@@ -282,7 +287,7 @@ export default async function ConfirmarPresencaPage({
         </div>
       )}
 
-      {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && myStatus !== "confirmed" && (
+      {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && !event.pix_payment_enabled && myStatus !== "confirmed" && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             💰 Pagamento de <strong>R$ {Number(event.price_per_player).toFixed(2)}</strong> via Pix:{" "}

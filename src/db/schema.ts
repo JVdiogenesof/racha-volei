@@ -135,6 +135,7 @@ export const events = pgTable("events", {
   numTeams: integer("num_teams").notNull().default(2),
   teamSize: integer("team_size").notNull().default(6),
   pricePerPlayer: numeric("price_per_player", { precision: 8, scale: 2 }),
+  pixPaymentEnabled: boolean("pix_payment_enabled").notNull().default(false),
   // Vagas de confirmados (opcional). Sem limite quando null — só usado pra
   // avisar quem marcar interesse depois que a lista já estiver cheia.
   maxPlayers: integer("max_players"),

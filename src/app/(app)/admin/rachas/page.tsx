@@ -14,7 +14,7 @@ export default async function AdminRachasPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, date, time, location, num_teams, team_size, price_per_player, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at",
+      "id, date, time, location, num_teams, team_size, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at",
     )
     .eq("community", community)
     .order("date", { ascending: false });
@@ -62,6 +62,13 @@ export default async function AdminRachasPage() {
           />
           {lastEvent && <p className="mt-1 text-xs text-white/40">Sugerido: uma semana depois do último racha.</p>}
         </div>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/5 p-4 sm:col-span-2">
+          <input type="checkbox" name="pixPaymentEnabled" value="true" className="mt-0.5 h-4 w-4" />
+          <span>
+            <span className="block text-sm font-semibold text-white">Ativar Pix automático neste racha</span>
+            <span className="mt-1 block text-xs text-white/50">A pessoa reserva a vaga por 5 minutos, paga por QR Code ou copia e cola e entra na lista automaticamente.</span>
+          </span>
+        </label>
         <div>
           <label className="block text-sm font-medium text-white">
             Horário <span className="text-white/40">(opcional)</span>

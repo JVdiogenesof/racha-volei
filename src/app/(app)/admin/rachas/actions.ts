@@ -63,6 +63,7 @@ export async function createEvent(formData: FormData) {
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
+  const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
   const isPreTorneio = gameStyle === "pre_tournament";
   const isMiniTorneio = gameStyle === "mini_tournament";
 
@@ -79,6 +80,7 @@ export async function createEvent(formData: FormData) {
       num_teams: numTeams,
       team_size: teamSize,
       price_per_player: pricePerPlayer,
+      pix_payment_enabled: pixPaymentEnabled,
       max_players: maxPlayers,
       newcomer_reserved_spots: newcomerReservedSpots,
       community,
@@ -124,6 +126,7 @@ export async function updateEvent(formData: FormData) {
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
+  const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
   const isPreTorneio = gameStyle === "pre_tournament";
   const isMiniTorneio = gameStyle === "mini_tournament";
 
@@ -159,6 +162,7 @@ export async function updateEvent(formData: FormData) {
       num_teams: numTeams,
       team_size: teamSize,
       price_per_player: pricePerPlayer,
+      pix_payment_enabled: pixPaymentEnabled,
       max_players: maxPlayers,
       newcomer_reserved_spots: newcomerReservedSpots,
       is_pre_torneio: isPreTorneio,

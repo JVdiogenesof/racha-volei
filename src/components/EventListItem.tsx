@@ -20,6 +20,7 @@ type EventData = {
   num_teams: number;
   team_size: number;
   price_per_player: number | null;
+  pix_payment_enabled: boolean;
   max_players: number | null;
   newcomer_reserved_spots: number;
   status: string;
@@ -119,6 +120,13 @@ export function EventListItem({
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/5 p-3 sm:col-span-2">
+            <input type="checkbox" name="pixPaymentEnabled" value="true" defaultChecked={event.pix_payment_enabled} className="mt-0.5 h-4 w-4" />
+            <span>
+              <span className="block text-sm font-semibold text-white">Pix automático</span>
+              <span className="mt-0.5 block text-xs text-white/50">Reserva de 5 minutos e confirmação automática após o pagamento.</span>
+            </span>
+          </label>
           <div>
             <label className="block text-xs font-medium text-white/60">Horário</label>
             <input
