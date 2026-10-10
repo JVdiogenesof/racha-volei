@@ -1,4 +1,4 @@
-import { UserRoundCheck } from "lucide-react";
+import { Percent, UserRoundCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -6,6 +6,7 @@ import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { PlayerRatingEditor } from "@/components/PlayerRatingEditor";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
+import { FormField } from "@/components/FormField";
 import { restoreMember, setRatingWeights } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
 
@@ -40,36 +41,36 @@ export default async function AdminJogadoresPage() {
         </p>
       </div>
 
-      <section className="rounded-xl border border-white/10 p-6">
+      <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
         <h2 className="font-semibold text-white">Peso da nota</h2>
-        <ActionForm action={setRatingWeights} successMessage="Peso atualizado!" className="mt-4 flex flex-wrap items-end gap-4">
-          <div>
-            <label className="block text-xs font-medium text-white/60">Peso da autoavaliação</label>
-            <input
+        <ActionForm action={setRatingWeights} successMessage="Peso atualizado!" className="mt-3.5 flex flex-wrap items-end gap-3">
+          <div className="w-36">
+            <FormField
+              label="Autoavaliação"
+              icon={Percent}
               type="number"
               name="selfWeight"
               defaultValue={weights.selfWeight}
               step={0.1}
               min={0}
               max={1}
-              className="mt-1 w-28 rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-white/60">Peso do organizador</label>
-            <input
+          <div className="w-36">
+            <FormField
+              label="Organizador"
+              icon={Percent}
               type="number"
               name="organizerWeight"
               defaultValue={weights.organizerWeight}
               step={0.1}
               min={0}
               max={1}
-              className="mt-1 w-28 rounded-lg border border-white/15 px-3 py-2"
             />
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
+            className="min-h-10 rounded-xl bg-brand-purple px-4 text-sm font-semibold text-white transition hover:bg-brand-purple-dark"
           >
             Salvar peso
           </button>

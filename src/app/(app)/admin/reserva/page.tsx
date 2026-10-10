@@ -100,7 +100,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           <label className="relative sm:col-span-2">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
-            <input name="q" defaultValue={single(filters.q)} placeholder="Nome, @, telefone ou bairro" className="min-h-11 w-full rounded-xl border border-white/10 bg-black/10 pl-9 pr-3 text-sm text-white placeholder:text-white/35" />
+            <input name="q" defaultValue={single(filters.q)} placeholder="Nome, @, telefone ou bairro" className="min-h-11 w-full rounded-xl border border-white/15 bg-white/[0.03] pl-9 pr-3 text-sm text-white placeholder:text-white/35 transition focus:border-purple-300/50 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_rgba(196,181,253,0.14)] focus:outline-none" />
           </label>
           <FilterSelect name="level" defaultValue={level} label="Todos os níveis" options={[["beginner", "Iniciante"], ["intermediate", "Intermediário"], ["advanced", "Avançado"]]} />
           <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Todos os bairros" options={neighborhoods.map((item) => [item, item])} />
@@ -192,7 +192,7 @@ function SummaryStat({ label, value }: { label: string; value: number }) {
 
 function FilterSelect({ name, defaultValue, label, options, compact = false }: { name: string; defaultValue: string; label: string; options: string[][]; compact?: boolean }) {
   return (
-    <select name={name} defaultValue={defaultValue} className={`${compact ? "min-h-10" : "min-h-11 w-full"} rounded-xl border border-white/10 bg-[#1c1233] px-3 text-sm text-white/75`}>
+    <select name={name} defaultValue={defaultValue} className={`${compact ? "min-h-10" : "min-h-11 w-full"} rounded-xl border border-white/15 bg-[#1c1233] px-3 text-sm text-white/75 transition focus:border-purple-300/50 focus:outline-none`}>
       <option value="">{label}</option>
       {options.map(([value, optionLabel]) => <option key={value} value={value}>{optionLabel}</option>)}
     </select>

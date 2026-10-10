@@ -49,18 +49,19 @@ body {
   min-height: 2.75rem;
   width: 100%;
   border-radius: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.1);
-  background: rgb(0 0 0 / 0.12);
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background: rgb(255 255 255 / 0.03);
   padding: 0.625rem 0.75rem;
   color: white;
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
 }
 
 .field:focus {
-  border-color: rgb(196 181 253 / 0.55);
-  background: rgb(255 255 255 / 0.04);
+  border-color: rgb(196 181 253 / 0.5);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: 0 0 0 3px rgb(196 181 253 / 0.14);
 }
 
 .field::placeholder { color: rgb(255 255 255 / 0.28); }
