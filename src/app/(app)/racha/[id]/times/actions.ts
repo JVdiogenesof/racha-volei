@@ -7,7 +7,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { balanceTeams, type PlayerInput } from "@/lib/balanceTeams";
-import { varySimulatedTeams } from "@/lib/teamSimulation";
+import { teamCompositionSignature, varySimulatedTeams } from "@/lib/teamSimulation";
 import { assignTeamNames } from "@/lib/teamNames";
 import { generateRoundRobinPairs, computeStandings } from "@/lib/torneioStandings";
 import { sendPushToProfiles } from "@/lib/push";
@@ -284,11 +284,16 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
   });
   const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
 
-  const result = varySimulatedTeams(
-    balanceTeams(players, event.num_teams, event.team_size),
-    players,
-    previousSignature,
-  );
+  // Cada simulação começa por uma nova escalação equilibrada. Caso o sorteio
+  // ainda repita a formação que estava aberta, tenta novas combinações antes
+  // de recorrer à troca equilibrada já existente.
+  let baseTeams = balanceTeams(players, event.num_teams, event.team_size);
+  for (let attempt = 0; attempt < 12 && previousSignature && teamCompositionSignature(baseTeams) === previousSignature; attempt += 1) {
+    baseTeams = balanceTeams(players, event.num_teams, event.team_size);
+  }
+  const result = previousSignature && teamCompositionSignature(baseTeams) === previousSignature
+    ? varySimulatedTeams(baseTeams, players, previousSignature)
+    : baseTeams;
   const teamNames = assignTeamNames(result.length);
 
   return result.map((t, index) => {

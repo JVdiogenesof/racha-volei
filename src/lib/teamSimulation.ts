@@ -1,9 +1,9 @@
 import type { PlayerInput, TeamResult } from "./balanceTeams";
 
 export function teamCompositionSignature(teams: TeamResult[]): string {
-  return [...teams]
-    .sort((a, b) => a.teamNumber - b.teamNumber)
+  return teams
     .map((team) => [...team.memberProfileIds].sort().join(","))
+    .sort()
     .join("|");
 }
 

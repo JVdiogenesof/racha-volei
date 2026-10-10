@@ -13,6 +13,7 @@ import { Avatar } from "@/components/Avatar";
 import { NormalMatchRecorder } from "@/components/NormalMatchRecorder";
 import { ExportTeamsButton } from "@/components/ExportTeamsButton";
 import { ShareTeamsArtButton } from "@/components/ShareTeamsArtButton";
+import { ShareConfrontationsArtButton } from "@/components/ShareConfrontationsArtButton";
 import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
@@ -393,7 +394,10 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       <h2 className="font-semibold text-white">Fase de grupos</h2>
                       <p className="text-xs text-white/40">{groupMatches.filter((match) => match.scoreA != null && match.scoreB != null).length} de {groupMatches.length} partidas concluídas</p>
                     </div>
-                    {canManage && <ResetGroupStageButton eventId={id} action={resetGroupStage} isPreTournament={event.is_pre_torneio} />}
+                    <div className="flex items-center gap-1.5">
+                      {canManage && <ShareConfrontationsArtButton eventId={id} eventDate={event.date} compact />}
+                      {canManage && <ResetGroupStageButton eventId={id} action={resetGroupStage} isPreTournament={event.is_pre_torneio} />}
+                    </div>
                   </div>
                   <div className="mt-3 grid gap-2 lg:grid-cols-2">
                     {groupMatches.map((match, index) => (
@@ -452,7 +456,18 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             ) : (
-              <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+              <div className="space-y-3">
+                {canManage && normalConfrontations.length > 0 && (
+                  <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
+                    <div>
+                      <h2 className="font-semibold text-white">Arte dos confrontos</h2>
+                      <p className="text-xs text-white/45">Envie os duelos já realizados para a galera.</p>
+                    </div>
+                    <ShareConfrontationsArtButton eventId={id} eventDate={event.date} />
+                  </section>
+                )}
+                <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+              </div>
             )
           }
           standingsContent={
