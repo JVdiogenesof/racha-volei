@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Medal, Pencil, X, Trophy } from "lucide-react";
+import { Calendar, Clock, Medal, MapPin, Pencil, QrCode, Wallet, X, Trophy } from "lucide-react";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { ActionForm } from "./ActionForm";
 import { DeleteEventButton } from "./DeleteEventButton";
@@ -11,6 +11,8 @@ import { RachaCapacityFields } from "./RachaCapacityFields";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { RegistrationScheduleFields } from "./RegistrationScheduleFields";
 import { registrationInputParts } from "@/lib/registrationSchedule";
+import { FormField } from "./FormField";
+import { ToggleCard } from "./ToggleCard";
 
 type EventData = {
   id: string;
@@ -105,43 +107,28 @@ export function EventListItem({
           action={updateEvent}
           successMessage="Racha atualizado!"
           onSuccess={() => setEditing(false)}
-          className="grid gap-4 border-t border-white/10 p-4 sm:grid-cols-2"
+          className="grid gap-3.5 border-t border-white/10 p-4 sm:grid-cols-2"
         >
           <input type="hidden" name="eventId" value={event.id} />
-          <div>
-            <label className="block text-xs font-medium text-white/60">Data</label>
-            <input
-              type="date"
-              name="date"
-              defaultValue={event.date}
-              required
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
+          <FormField label="Data" icon={Calendar} type="date" name="date" defaultValue={event.date} required />
+          <FormField
+            label="Horário"
+            icon={Clock}
+            optional
+            type="time"
+            name="time"
+            defaultValue={event.time?.slice(0, 5) ?? ""}
+          />
+          <div className="sm:col-span-2">
+            <FormField label="Local" icon={MapPin} optional name="location" defaultValue={event.location ?? ""} />
           </div>
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/5 p-3 sm:col-span-2">
-            <input type="checkbox" name="pixPaymentEnabled" value="true" defaultChecked={event.pix_payment_enabled} className="mt-0.5 h-4 w-4" />
-            <span>
-              <span className="block text-sm font-semibold text-white">Pix automático</span>
-              <span className="mt-0.5 block text-xs text-white/50">Reserva de 5 minutos e confirmação automática após o pagamento.</span>
-            </span>
-          </label>
-          <div>
-            <label className="block text-xs font-medium text-white/60">Horário</label>
-            <input
-              type="time"
-              name="time"
-              defaultValue={event.time?.slice(0, 5) ?? ""}
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-white/60">Local</label>
-            <input
-              name="location"
-              defaultValue={event.location ?? ""}
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
-          </div>
+          <ToggleCard
+            name="pixPaymentEnabled"
+            icon={QrCode}
+            title="Pix automático"
+            description="Reserva de 5 minutos e confirmação automática após o pagamento."
+            defaultChecked={event.pix_payment_enabled}
+          />
           <RegistrationScheduleFields defaultOpensAt={event.registration_opens_at} required={false} />
           <RachaCapacityFields
             defaultNumTeams={event.num_teams}
@@ -151,21 +138,21 @@ export function EventListItem({
             defaultIsPreTorneio={event.is_pre_torneio}
             defaultIsMiniTorneio={event.is_mini_torneio}
           />
-          <div>
-            <label className="block text-xs font-medium text-white/60">Valor por jogador (R$)</label>
-            <input
-              type="number"
-              name="pricePerPlayer"
-              step={0.5}
-              min={0}
-              defaultValue={event.price_per_player ?? ""}
-              className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-            />
-          </div>
+          <FormField
+            label="Valor por jogador"
+            icon={Wallet}
+            optional
+            type="number"
+            name="pricePerPlayer"
+            step={0.5}
+            min={0}
+            prefix="R$"
+            defaultValue={event.price_per_player ?? ""}
+          />
           <div className="sm:col-span-2">
             <button
               type="submit"
-              className="rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
+              className="rounded-xl bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-purple-dark"
             >
               Salvar alterações
             </button>

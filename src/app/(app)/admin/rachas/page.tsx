@@ -1,8 +1,11 @@
+import { Calendar, Clock, MapPin, QrCode, Wallet } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { EventListItem } from "@/components/EventListItem";
 import { RachaCapacityFields } from "@/components/RachaCapacityFields";
 import { RegistrationScheduleFields } from "@/components/RegistrationScheduleFields";
+import { FormField } from "@/components/FormField";
+import { ToggleCard } from "@/components/ToggleCard";
 import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
 
@@ -49,47 +52,40 @@ export default async function AdminRachasPage() {
 
       <form
         action={createEvent}
-        className="grid gap-4 rounded-xl border border-white/10 p-6 sm:grid-cols-2"
+        className="grid gap-3.5 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2"
       >
-        <div>
-          <label className="block text-sm font-medium text-white">Data</label>
-          <input
-            type="date"
-            name="date"
-            defaultValue={suggestedDate}
-            required
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          />
-          {lastEvent && <p className="mt-1 text-xs text-white/40">Sugerido: uma semana depois do último racha.</p>}
-        </div>
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-emerald-300/15 bg-emerald-400/5 p-4 sm:col-span-2">
-          <input type="checkbox" name="pixPaymentEnabled" value="true" className="mt-0.5 h-4 w-4" />
-          <span>
-            <span className="block text-sm font-semibold text-white">Ativar Pix automático neste racha</span>
-            <span className="mt-1 block text-xs text-white/50">A pessoa reserva a vaga por 5 minutos, paga por QR Code ou copia e cola e entra na lista automaticamente.</span>
-          </span>
-        </label>
-        <div>
-          <label className="block text-sm font-medium text-white">
-            Horário <span className="text-white/40">(opcional)</span>
-          </label>
-          <input
-            type="time"
-            name="time"
-            defaultValue={lastEvent?.time?.slice(0, 5) ?? ""}
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-white">
-            Local <span className="text-white/40">(opcional)</span>
-          </label>
-          <input
+        <FormField
+          label="Data"
+          icon={Calendar}
+          type="date"
+          name="date"
+          defaultValue={suggestedDate}
+          required
+          hint={lastEvent ? "Sugerido: uma semana depois do último racha." : undefined}
+        />
+        <FormField
+          label="Horário"
+          icon={Clock}
+          optional
+          type="time"
+          name="time"
+          defaultValue={lastEvent?.time?.slice(0, 5) ?? ""}
+        />
+        <div className="sm:col-span-2">
+          <FormField
+            label="Local"
+            icon={MapPin}
+            optional
             name="location"
             defaultValue={lastEvent?.location ?? ""}
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
           />
         </div>
+        <ToggleCard
+          name="pixPaymentEnabled"
+          icon={QrCode}
+          title="Ativar Pix automático neste racha"
+          description="A pessoa reserva a vaga por 5 minutos, paga por QR Code ou copia e cola e entra na lista automaticamente."
+        />
         <RegistrationScheduleFields defaultOpensAt={suggestedRegistrationOpensAt} />
         <RachaCapacityFields
           defaultNumTeams={lastEvent?.num_teams ?? 2}
@@ -97,23 +93,21 @@ export default async function AdminRachasPage() {
           defaultTeamSize={lastEvent?.team_size ?? 6}
           defaultNewcomerReservedSpots={lastEvent?.newcomer_reserved_spots ?? 0}
         />
-        <div>
-          <label className="block text-sm font-medium text-white">
-            Valor por jogador (R$) <span className="text-white/40">(opcional)</span>
-          </label>
-          <input
-            type="number"
-            name="pricePerPlayer"
-            step={0.5}
-            min={0}
-            defaultValue={lastEvent?.price_per_player ?? ""}
-            className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"
-          />
-        </div>
+        <FormField
+          label="Valor por jogador"
+          icon={Wallet}
+          optional
+          type="number"
+          name="pricePerPlayer"
+          step={0.5}
+          min={0}
+          prefix="R$"
+          defaultValue={lastEvent?.price_per_player ?? ""}
+        />
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-lg bg-brand-purple px-4 py-2 font-medium text-white hover:bg-brand-purple-dark"
+            className="rounded-xl bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-purple-dark"
           >
             Criar racha
           </button>
