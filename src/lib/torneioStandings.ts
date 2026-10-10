@@ -26,15 +26,44 @@ export type StandingRow = {
   balance: number;
 };
 
-/** Todos os pares únicos entre os times -- "todos contra todos" pra N times. */
+/**
+ * Todos os pares únicos entre os times em rodadas intercaladas.
+ *
+ * Dentro de cada rodada um time joga no máximo uma vez. Ao juntar as rodadas,
+ * um time pode aparecer no fim de uma e no início da próxima, mas nunca em
+ * três partidas seguidas. Isso deixa o todos contra todos mais justo e dá
+ * tempo para cada equipe respirar entre os jogos.
+ */
 export function generateRoundRobinPairs(teamIds: string[]): [string, string][] {
+  if (teamIds.length < 2) return [];
+
+  const rotation: (string | null)[] = teamIds.length % 2 === 0
+    ? [...teamIds]
+    : [...teamIds, null];
   const pairs: [string, string][] = [];
-  for (let i = 0; i < teamIds.length; i++) {
-    for (let j = i + 1; j < teamIds.length; j++) {
-      pairs.push([teamIds[i], teamIds[j]]);
+
+  for (let round = 0; round < rotation.length - 1; round += 1) {
+    for (let index = 0; index < rotation.length / 2; index += 1) {
+      const teamA = rotation[index];
+      const teamB = rotation[rotation.length - 1 - index];
+      if (teamA && teamB) pairs.push([teamA, teamB]);
     }
+
+    // Mantém o primeiro time fixo e gira os outros, que é o método clássico
+    // de tabela todos contra todos.
+    const fixedTeam = rotation[0];
+    const rotatingTeams = rotation.slice(1);
+    const lastTeam = rotatingTeams.pop();
+    if (lastTeam !== undefined) rotatingTeams.unshift(lastTeam);
+    rotation.splice(0, rotation.length, fixedTeam, ...rotatingTeams);
   }
+
   return pairs;
+}
+
+/** Chave estável para aplicar a ordem da tabela aos confrontos já gravados. */
+export function roundRobinPairKey(teamAId: string, teamBId: string) {
+  return [teamAId, teamBId].sort().join(":");
 }
 
 function playedMatches(matches: TournamentMatch[]) {

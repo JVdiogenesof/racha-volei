@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
+import { generateRoundRobinPairs, roundRobinPairKey } from "@/lib/torneioStandings";
 
 export const dynamic = "force-dynamic";
 
@@ -133,9 +134,19 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       .select("id, stage, team_a_id, team_b_id, score_a, score_b")
       .eq("event_id", id);
     if (error) return new Response("Não foi possível carregar a tabela de jogos", { status: 500 });
-    const order = { group: 0, third_place: 1, final: 2 } as const;
+    const stageOrder = { group: 0, third_place: 1, final: 2 } as const;
+    const groupOrder = new Map(
+      generateRoundRobinPairs((teamRows ?? []).map((team) => team.id))
+        .map(([teamAId, teamBId], index) => [roundRobinPairKey(teamAId, teamBId), index]),
+    );
     confrontations = (matchRows ?? [])
-      .sort((a, b) => order[a.stage as keyof typeof order] - order[b.stage as keyof typeof order])
+      .sort((first, second) => {
+        const stageDifference = stageOrder[first.stage as keyof typeof stageOrder] - stageOrder[second.stage as keyof typeof stageOrder];
+        if (stageDifference !== 0) return stageDifference;
+        if (first.stage !== "group" || second.stage !== "group") return 0;
+        return (groupOrder.get(roundRobinPairKey(first.team_a_id, first.team_b_id)) ?? Number.MAX_SAFE_INTEGER)
+          - (groupOrder.get(roundRobinPairKey(second.team_a_id, second.team_b_id)) ?? Number.MAX_SAFE_INTEGER);
+      })
       .map((match) => ({
         id: match.id,
         stage: match.stage,

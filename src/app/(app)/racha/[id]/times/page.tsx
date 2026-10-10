@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
-import { computeStandings } from "@/lib/torneioStandings";
+import { computeStandings, generateRoundRobinPairs, roundRobinPairKey } from "@/lib/torneioStandings";
 import { PlayerActionSelect } from "@/components/PlayerActionSelect";
 import { AddToTeamSelect } from "@/components/AddToTeamSelect";
 import { SetterBadge } from "@/components/SetterBadge";
@@ -176,7 +176,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
         scoreA: m.score_a,
         scoreB: m.score_b,
       });
-      groupMatches = (matchRows ?? []).filter((m) => m.stage === "group").map(toMatch);
+      const groupOrder = new Map(
+        generateRoundRobinPairs((teamRows ?? []).map((team) => team.id))
+          .map(([teamAId, teamBId], index) => [roundRobinPairKey(teamAId, teamBId), index]),
+      );
+      groupMatches = (matchRows ?? [])
+        .filter((m) => m.stage === "group")
+        .map(toMatch)
+        .sort((first, second) => (
+          (groupOrder.get(roundRobinPairKey(first.teamAId, first.teamBId)) ?? Number.MAX_SAFE_INTEGER)
+          - (groupOrder.get(roundRobinPairKey(second.teamAId, second.teamBId)) ?? Number.MAX_SAFE_INTEGER)
+        ));
       finalMatch = (matchRows ?? []).filter((m) => m.stage === "final").map(toMatch)[0] ?? null;
       thirdPlaceMatch = (matchRows ?? []).filter((m) => m.stage === "third_place").map(toMatch)[0] ?? null;
 
