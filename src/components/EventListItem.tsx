@@ -102,11 +102,9 @@ export function EventListItem({
 
       {editing && (
         <ActionForm
-          action={async (formData) => {
-            await updateEvent(formData);
-            setEditing(false);
-          }}
+          action={updateEvent}
           successMessage="Racha atualizado!"
+          onSuccess={() => setEditing(false)}
           className="grid gap-4 border-t border-white/10 p-4 sm:grid-cols-2"
         >
           <input type="hidden" name="eventId" value={event.id} />

@@ -20,6 +20,7 @@ export function ActionForm({
   children,
   className,
   resetOnSuccess = false,
+  onSuccess,
 }: {
   action: ActionFn;
   successMessage: string | ((formData: FormData) => string);
@@ -31,6 +32,9 @@ export function ActionForm({
    * como está (padrão), senão o campo fica em branco em vez de mostrar o
    * valor que acabou de ser salvo. */
   resetOnSuccess?: boolean;
+  /** Executa depois que o aviso de sucesso foi disparado. Útil para fechar
+   * um editor sem desmontar o formulário antes do toast aparecer. */
+  onSuccess?: () => void;
 }) {
   const { showToast } = useToast();
   const router = useRouter();
@@ -47,6 +51,7 @@ export function ActionForm({
         showToast(typeof successMessage === "function" ? successMessage(formData) : successMessage);
         if (resetOnSuccess) form.reset();
         router.refresh();
+        onSuccess?.();
       } catch (err) {
         showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
       }

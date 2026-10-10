@@ -38,12 +38,27 @@ export function RachaCapacityFields({
 
   const teamCapacity = numTeams * teamSize;
 
+  function selectGameStyle(style: EventGameStyle) {
+    setGameStyle(style);
+    if (style === "pre_tournament") {
+      setNumTeams(PRE_TORNEIO_TEAMS);
+      setTeamSize(6);
+      setMaxPlayersTouched(false);
+      setMaxPlayers(PRE_TORNEIO_TEAMS * 6);
+    } else if (style === "mini_tournament" && numTeams < 4) {
+      setNumTeams(4);
+      setMaxPlayersTouched(false);
+      setMaxPlayers(4 * teamSize);
+    }
+  }
+
   return (
     <>
       <fieldset className="sm:col-span-2">
         <legend className="sr-only">Estilo dos jogos</legend>
         <div className="rounded-xl border border-purple-300/15 bg-purple-400/5 p-4">
         <p className="px-1 text-sm font-semibold text-white" aria-hidden="true">Estilo dos jogos</p>
+        <input type="hidden" name="gameStyle" value={gameStyle} />
         <div className="mt-2 grid gap-2 sm:grid-cols-3">
           {[
             {
@@ -71,38 +86,21 @@ export function RachaCapacityFields({
             const Icon = option.icon;
             const active = gameStyle === option.value;
             return (
-              <label
+              <button
+                type="button"
                 key={option.value}
-                className={`cursor-pointer rounded-xl border p-3 transition active:scale-[0.98] ${
+                aria-pressed={active}
+                onClick={() => selectGameStyle(option.value)}
+                className={`cursor-pointer rounded-xl border p-3 text-left transition active:scale-[0.98] ${
                   active ? option.activeClass : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]"
                 }`}
               >
-                <input
-                  type="radio"
-                  name="gameStyle"
-                  value={option.value}
-                  checked={active}
-                  onChange={() => {
-                    setGameStyle(option.value);
-                    if (option.value === "pre_tournament") {
-                      setNumTeams(PRE_TORNEIO_TEAMS);
-                      setTeamSize(6);
-                      setMaxPlayersTouched(false);
-                      setMaxPlayers(PRE_TORNEIO_TEAMS * 6);
-                    } else if (option.value === "mini_tournament" && numTeams < 4) {
-                      setNumTeams(4);
-                      setMaxPlayersTouched(false);
-                      setMaxPlayers(4 * teamSize);
-                    }
-                  }}
-                  className="sr-only"
-                />
                 <span className="flex items-center gap-2 text-sm font-bold text-white">
                   <Icon className="h-4 w-4" strokeWidth={2} />
                   {option.label}
                 </span>
                 <span className="mt-1.5 block text-xs leading-relaxed text-white/50">{option.description}</span>
-              </label>
+              </button>
             );
           })}
         </div>
