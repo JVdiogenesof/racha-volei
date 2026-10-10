@@ -22,7 +22,7 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { cancelPixAttendance, completePixRefund, demoteToInterested, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { cancelPixAttendance, completePixRefund, demoteToInterested, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -559,7 +559,7 @@ export default async function ConfirmarPresencaPage({
                           </button>
                         </ActionForm>
                       )}
-                      <ActionForm
+                      {!(hasPaid && paymentSource === "pix") && <ActionForm
                         action={setPaymentStatus}
                         successMessage={hasPaid ? `${p?.full_name ?? "Jogador"}: pagamento desmarcado.` : `${p?.full_name ?? "Jogador"}: pagamento confirmado!`}
                         className="min-w-0 sm:shrink-0"
@@ -580,8 +580,55 @@ export default async function ConfirmarPresencaPage({
                           <CircleDollarSign className="h-4 w-4" strokeWidth={hasPaid ? 2.5 : 2} />
                           <span className="sm:hidden">{hasPaid ? "Pago" : "Pendente"}</span>
                         </button>
-                      </ActionForm>
-                      {!eventFinished && !eventCancelled && (
+                      </ActionForm>}
+                      {hasPaid && paymentSource === "pix" && !eventFinished && !eventCancelled && (
+                        <details className="col-span-2 rounded-lg border border-emerald-300/20 bg-emerald-400/5 p-2.5 sm:col-span-full">
+                          <summary className="cursor-pointer list-none text-xs font-semibold text-emerald-200">Controle Pix do organizador</summary>
+                          <p className="mt-1 text-[11px] leading-relaxed text-white/50">Use apenas quando precisar resolver uma exceção. As ações preservam o registro financeiro; uma transferência é combinada entre as pessoas fora do app.</p>
+                          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                            {isBeforePixCancellationDeadline ? (
+                              <>
+                                <ActionForm action={organizerResolvePixAttendance} successMessage="Desistência registrada: o valor virou saldo da pessoa.">
+                                  <input type="hidden" name="eventId" value={id} />
+                                  <input type="hidden" name="profileId" value={a.profile_id} />
+                                  <input type="hidden" name="choice" value="balance" />
+                                  <button className="min-h-9 w-full rounded-lg border border-emerald-300/20 bg-emerald-400/10 px-2 text-xs font-semibold text-emerald-100 hover:bg-emerald-400/20">Desistência → saldo</button>
+                                </ActionForm>
+                                <ActionForm action={organizerResolvePixAttendance} successMessage="Pedido de reembolso criado para os administradores.">
+                                  <input type="hidden" name="eventId" value={id} />
+                                  <input type="hidden" name="profileId" value={a.profile_id} />
+                                  <input type="hidden" name="choice" value="refund" />
+                                  <button className="min-h-9 w-full rounded-lg border border-white/15 bg-white/5 px-2 text-xs font-semibold text-white/80 hover:bg-white/10">Desistência → reembolso</button>
+                                </ActionForm>
+                              </>
+                            ) : (
+                              <ActionForm action={organizerResolvePixAttendance} successMessage="Vaga liberada. Como o prazo passou, o Pix continua no caixa do racha.">
+                                <input type="hidden" name="eventId" value={id} />
+                                <input type="hidden" name="profileId" value={a.profile_id} />
+                                <input type="hidden" name="choice" value="late_cancel" />
+                                <button className="min-h-9 w-full rounded-lg border border-amber-300/25 bg-amber-400/10 px-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/20">Liberar vaga fora do prazo</button>
+                              </ActionForm>
+                            )}
+                            {transferCandidates.length > 0 && (
+                              <ActionForm action={organizerTransferPixSpot} successMessage="Vaga transferida e registrada. O acerto entre as pessoas é feito fora do app." className="sm:col-span-2">
+                                <input type="hidden" name="eventId" value={id} />
+                                <input type="hidden" name="fromProfileId" value={a.profile_id} />
+                                <div className="flex gap-2">
+                                  <select name="toProfileId" required defaultValue="" className="min-h-9 min-w-0 flex-1 rounded-lg border border-white/15 bg-brand-navy px-2 text-xs text-white">
+                                    <option value="" disabled>Transferir para interessado</option>
+                                    {transferCandidates.map((candidate) => {
+                                      const candidateProfile = candidate.profiles as unknown as { full_name: string } | null;
+                                      return <option key={candidate.profile_id} value={candidate.profile_id}>{candidateProfile?.full_name ?? "Jogador"}</option>;
+                                    })}
+                                  </select>
+                                  <button className="min-h-9 rounded-lg border border-purple-300/25 bg-purple-400/10 px-2 text-xs font-semibold text-purple-100 hover:bg-purple-400/20">Transferir</button>
+                                </div>
+                              </ActionForm>
+                            )}
+                          </div>
+                        </details>
+                      )}
+                      {!eventFinished && !eventCancelled && !(hasPaid && paymentSource === "pix") && (
                         <ActionForm action={demoteToInterested} successMessage="Voltou pra interessados." className="min-w-0 sm:shrink-0">
                           <input type="hidden" name="eventId" value={id} />
                           <input type="hidden" name="profileId" value={a.profile_id} />
@@ -596,7 +643,7 @@ export default async function ConfirmarPresencaPage({
                           </button>
                         </ActionForm>
                       )}
-                      <div className="min-w-0 sm:shrink-0">
+                      {!(hasPaid && paymentSource === "pix") && <div className="min-w-0 sm:shrink-0">
                         <RemoveAttendanceButton
                           eventId={id}
                           profileId={a.profile_id}
@@ -604,7 +651,7 @@ export default async function ConfirmarPresencaPage({
                           action={removeAttendance}
                           showMobileLabel
                         />
-                      </div>
+                      </div>}
                       </div>
                     </details>
                   )}

@@ -92,6 +92,19 @@ export async function demoteToInterested(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
 
+  const { data: paidPixIntent, error: paidPixError } = await supabase
+    .from("event_payment_intents")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId)
+    .eq("status", "paid")
+    .eq("provider", "mercado_pago")
+    .maybeSingle();
+  if (paidPixError) throw new Error(paidPixError.message);
+  if (paidPixIntent) {
+    throw new Error("Essa vaga foi paga no Pix automático. Use o controle Pix para registrar saldo, reembolso, desistência fora do prazo ou transferência.");
+  }
+
   const { error } = await supabase
     .from("attendance")
     .update({ status: "interested" })
@@ -197,6 +210,30 @@ export async function completePixRefund(formData: FormData) {
   revalidatePath("/admin/financas");
 }
 
+export async function organizerResolvePixAttendance(formData: FormData) {
+  await requireOrganizer();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+  const choice = String(formData.get("choice"));
+  if (choice !== "balance" && choice !== "refund" && choice !== "late_cancel") {
+    throw new Error("Escolha de desistência inválida.");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("organizer_resolve_event_pix_payment", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+    p_choice: choice,
+  });
+  if (error) throw new Error(error.message);
+
+  await removeFromCurrentTeam(supabase, eventId, profileId);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
+  revalidatePath("/admin/financas");
+}
+
 export async function transferPixSpot(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const toProfileId = String(formData.get("toProfileId"));
@@ -211,6 +248,27 @@ export async function transferPixSpot(formData: FormData) {
   if (error) throw new Error(error.message);
 
   await removeFromCurrentTeam(supabase, eventId, profile.id);
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath(`/racha/${eventId}/times`);
+}
+
+export async function organizerTransferPixSpot(formData: FormData) {
+  await requireOrganizer();
+  const eventId = String(formData.get("eventId"));
+  const fromProfileId = String(formData.get("fromProfileId"));
+  const toProfileId = String(formData.get("toProfileId"));
+  if (!toProfileId) throw new Error("Escolha quem vai receber a vaga.");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("organizer_transfer_event_pix_spot", {
+    p_event_id: eventId,
+    p_from_profile_id: fromProfileId,
+    p_to_profile_id: toProfileId,
+  });
+  if (error) throw new Error(error.message);
+
+  await removeFromCurrentTeam(supabase, eventId, fromProfileId);
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath(`/racha/${eventId}/times`);
@@ -259,6 +317,19 @@ export async function removeAttendance(formData: FormData) {
   const supabase = await createClient();
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
+
+  const { data: paidPixIntent, error: paidPixError } = await supabase
+    .from("event_payment_intents")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId)
+    .eq("status", "paid")
+    .eq("provider", "mercado_pago")
+    .maybeSingle();
+  if (paidPixError) throw new Error(paidPixError.message);
+  if (paidPixIntent) {
+    throw new Error("Essa vaga foi paga no Pix automático. Use o controle Pix para preservar o histórico financeiro antes de remover a pessoa.");
+  }
 
   const { error } = await supabase
     .from("attendance")
