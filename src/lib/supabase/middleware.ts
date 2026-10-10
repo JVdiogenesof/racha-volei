@@ -2,7 +2,15 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { PROFILE_COLUMNS, USER_ID_HEADER, PROFILE_HEADER } from "./session-headers";
 
-const PUBLIC_PATHS = ["/login", "/links", "/auth/callback", "/privacidade", "/manifest.json", "/sw.js"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/links",
+  "/auth/callback",
+  "/api/payments/mercado-pago/webhook",
+  "/privacidade",
+  "/manifest.json",
+  "/sw.js",
+];
 const ONBOARDING_PATHS = ["/cadastro", "/aguardando-aprovacao"];
 const RESERVE_PATH = "/lista-de-reserva";
 
