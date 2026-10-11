@@ -1,4 +1,5 @@
 import type { MonthlyReport, MonthlyReportPlayer } from "@/lib/monthlyReport";
+import { computeIndexScore } from "@/lib/rankings";
 
 export type MonthlySelectionPlayer = MonthlyReportPlayer & {
   monthlyIndex: number;
@@ -19,7 +20,9 @@ function roundOne(value: number) {
 /**
  * Forma a seleção mensal sem gravar uma escolha permanente no banco.
  * O Índice VPA mensal vale 60%, vitórias 20%, presença 10% e destaques 10%.
- * Dentro do Índice VPA, mantemos a regra pública: 70% aproveitamento e 30% presença.
+ * Dentro do Índice VPA, usamos a mesma fórmula dinâmica do ranking geral
+ * (computeIndexScore): o aproveitamento encolhe com poucas partidas e o peso
+ * da presença cresce pra quem é mais assíduo no mês.
  */
 export function getMonthlySelection(report: MonthlyReport): MonthlySelection {
   if (!report.unlocked || !report.players.length) {
@@ -28,14 +31,15 @@ export function getMonthlySelection(report: MonthlyReport): MonthlySelection {
 
   const maxWins = Math.max(1, ...report.players.map((player) => player.wins));
   const maxMvp = Math.max(1, ...report.players.map((player) => player.mvp));
-  const eventCount = Math.max(1, report.finishedEvents.length);
+  const attendanceLeader = Math.max(1, ...report.players.map((player) => player.attendance));
 
   const scored = report.players
     .filter((player) => player.attendance > 0)
     .map((player) => {
-      const attendancePercentage = Math.min(100, (player.attendance / eventCount) * 100);
-      const performancePercentage = player.percentage ?? 0;
-      const monthlyIndex = performancePercentage * 0.7 + attendancePercentage * 0.3;
+      const { attendancePercentage, indexScore: monthlyIndex } = computeIndexScore(
+        { matches: player.matches, percentage: player.percentage ?? 0, attendance: player.attendance },
+        attendanceLeader,
+      );
       const winsPercentage = (player.wins / maxWins) * 100;
       const mvpPercentage = (player.mvp / maxMvp) * 100;
       const selectionScore = monthlyIndex * 0.6 + winsPercentage * 0.2 + attendancePercentage * 0.1 + mvpPercentage * 0.1;
