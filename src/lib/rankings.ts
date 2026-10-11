@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
 import type { Community } from "./community";
+import { monthRange } from "./monthlyReport";
 
 export type RankingMetric = "attendance" | "mvp" | "wins";
 
@@ -16,15 +17,52 @@ export type PerformanceStats = {
 };
 
 export const PERFORMANCE_MIN_ATTENDANCE = 3;
-export const PERFORMANCE_RESULT_WEIGHT = 0.7;
-export const PERFORMANCE_ATTENDANCE_WEIGHT = 0.3;
 
-export async function getRankingCounts(supabase: SupabaseClient, community: Community = "court") {
-  const { data: communityEvents } = await supabase
+// O Índice VPA usa duas ideias pra ficar mais justo com amostra pequena:
+// 1) o aproveitamento "encolhe" em direção a 50% (resultado neutro de um jogo
+//    de 2 times) enquanto o jogador tem poucas partidas -- uma sequência boa
+//    em poucos jogos não pesa como se fosse sustentada por muitos jogos;
+// 2) o peso da presença no índice não é fixo: ele cresce conforme o jogador
+//    se aproxima da assiduidade do jogador mais presente, então quem vai a
+//    mais rachas tem a presença valorizada de forma ainda maior.
+export const INDEX_BASE_PERCENTAGE = 50;
+export const INDEX_CONFIDENCE_MATCHES = 8;
+export const INDEX_ATTENDANCE_WEIGHT_MIN = 0.3;
+export const INDEX_ATTENDANCE_WEIGHT_MAX = 0.5;
+
+export function computeIndexScore(
+  stats: { matches: number; percentage: number; attendance: number },
+  attendanceLeader: number,
+) {
+  const attendanceRatio = attendanceLeader > 0 ? Math.min(1, Math.max(0, stats.attendance) / attendanceLeader) : 0;
+  const attendancePercentage = Math.round(attendanceRatio * 100);
+
+  const confidence = stats.matches / (stats.matches + INDEX_CONFIDENCE_MATCHES);
+  const adjustedPercentage = confidence * stats.percentage + (1 - confidence) * INDEX_BASE_PERCENTAGE;
+
+  const attendanceWeight =
+    INDEX_ATTENDANCE_WEIGHT_MIN + (INDEX_ATTENDANCE_WEIGHT_MAX - INDEX_ATTENDANCE_WEIGHT_MIN) * attendanceRatio;
+  const resultWeight = 1 - attendanceWeight;
+
+  const indexScore = Math.round((adjustedPercentage * resultWeight + attendancePercentage * attendanceWeight) * 10) / 10;
+  return { attendancePercentage, indexScore };
+}
+
+export async function getRankingCounts(
+  supabase: SupabaseClient,
+  community: Community = "court",
+  monthKey?: string,
+) {
+  let eventsQuery = supabase
     .from("events")
     .select("id, date, status, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .order("date", { ascending: false });
+  if (monthKey) {
+    const { start, nextStart } = monthRange(monthKey);
+    eventsQuery = eventsQuery.gte("date", start).lt("date", nextStart);
+  }
+  const { data: communityEvents } = await eventsQuery;
   const finishedEvents = (communityEvents ?? []).filter((event) => event.status === "finished");
   const finishedEventIds = (finishedEvents ?? []).map((e) => e.id);
   const communityEventIds = (communityEvents ?? []).map((event) => event.id);
@@ -39,7 +77,20 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
         .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids, events(is_pre_torneio)")
         .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
-      supabase.from("ranking_adjustments").select("profile_id, metric, delta").eq("community", community),
+      (() => {
+        let adjustmentsQuery = supabase
+          .from("ranking_adjustments")
+          .select("profile_id, metric, delta")
+          .eq("community", community);
+        // Ajustes manuais não têm racha associado, então quando a visão é de
+        // um mês específico só aplicamos os lançados dentro daquele mês --
+        // senão uma correção lifetime distorceria a liderança histórica.
+        if (monthKey) {
+          const { start, nextStart } = monthRange(monthKey);
+          adjustmentsQuery = adjustmentsQuery.gte("created_at", start).lt("created_at", nextStart);
+        }
+        return adjustmentsQuery;
+      })(),
     ]);
 
   // Só conta presença de racha já encerrado, e só quem de fato ficou
@@ -128,17 +179,13 @@ export async function getRankingCounts(supabase: SupabaseClient, community: Comm
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
   }
 
-  // O Índice VPA evita que uma amostra muito pequena domine o ranking:
-  // 70% vêm do aproveitamento e 30% da presença relativa ao líder de assiduidade.
   // Com menos de 3 rachas encerrados, o jogador aparece como "em classificação".
   const attendanceLeader = Math.max(1, ...attendance.values());
   for (const [profileId, stats] of performance) {
     stats.attendance = Math.max(0, attendance.get(profileId) ?? 0);
-    stats.attendancePercentage = Math.min(100, Math.round((stats.attendance / attendanceLeader) * 100));
-    stats.indexScore = Math.round(
-      (stats.percentage * PERFORMANCE_RESULT_WEIGHT +
-        stats.attendancePercentage * PERFORMANCE_ATTENDANCE_WEIGHT) * 10,
-    ) / 10;
+    const { attendancePercentage, indexScore } = computeIndexScore(stats, attendanceLeader);
+    stats.attendancePercentage = attendancePercentage;
+    stats.indexScore = indexScore;
     stats.eligible = stats.attendance >= PERFORMANCE_MIN_ATTENDANCE;
   }
 

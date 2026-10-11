@@ -8,7 +8,7 @@ import { AnimatedMetric } from "./AnimatedMetric";
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
 const CONFIG: Record<RankingId, { label: string; shortLabel: string; unit: string; description: string; icon: LucideIcon }> = {
-  performance: { label: "Índice VPA", shortLabel: "Índice VPA", unit: "pontos", description: "Classificação justa: 70% do aproveitamento + 30% da presença em relação ao jogador mais assíduo. São necessários 3 rachas encerrados para entrar nas posições.", icon: Percent },
+  performance: { label: "Índice VPA", shortLabel: "Índice VPA", unit: "pontos", description: "Classificação dinâmica: o aproveitamento é ajustado pela quantidade de partidas jogadas (poucas partidas pesam menos) e a presença entra com um peso que cresce pra quem é mais assíduo. São necessários 3 rachas encerrados para entrar nas posições.", icon: Percent },
   wins: { label: "Mais vitórias", shortLabel: "Vitórias", unit: "vitórias", description: "Total de confrontos vencidos por cada jogador.", icon: Crown },
   mvp: { label: "Jogador Destaque", shortLabel: "Destaques", unit: "vezes", description: "Quantidade de vezes em que a pessoa foi eleita destaque do racha.", icon: Trophy },
   attendance: { label: "Mais presença", shortLabel: "Presenças", unit: "presenças", description: "Participações confirmadas em rachas que já foram encerrados.", icon: CalendarCheck },

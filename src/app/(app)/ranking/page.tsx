@@ -1,20 +1,27 @@
+import { CalendarRange } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE } from "@/lib/rankings";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
+import { formatMonthLabel, normalizeMonthKey } from "@/lib/monthlyReport";
+import { FormSelect } from "@/components/FormSelect";
 
-export default async function RankingPage() {
+export default async function RankingPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const currentProfile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(currentProfile);
+  const requestedMonth = (await searchParams).month;
+  const monthKey = requestedMonth && requestedMonth !== "all" ? normalizeMonthKey(requestedMonth) : undefined;
 
-  const [{ data: profiles }, counts] = await Promise.all([
+  const [{ data: profiles }, { data: monthEvents }, counts] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]),
-    getRankingCounts(supabase, community),
+    supabase.from("events").select("date").eq("community", community).order("date", { ascending: false }),
+    getRankingCounts(supabase, community, monthKey),
   ]);
 
+  const availableMonths = [...new Set((monthEvents ?? []).map((event) => event.date.slice(0, 7)))].sort().reverse();
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
   function buildRanking(rawCounts: Map<string, number>): RankingEntry[] {
@@ -62,9 +69,22 @@ export default async function RankingPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Ranking · {community === "sand" ? "Areia" : "Quadra"}</h1>
-        <p className="mt-1 text-sm text-white/60">Compare resultados e acompanhe sua posição em cada categoria.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Ranking · {community === "sand" ? "Areia" : "Quadra"}</h1>
+          <p className="mt-1 text-sm text-white/60">
+            {monthKey
+              ? `Classificação de ${formatMonthLabel(monthKey)}.`
+              : "Compare resultados e acompanhe sua posição em cada categoria desde o início."}
+          </p>
+        </div>
+        <form className="flex items-end gap-2" action="/ranking">
+          <FormSelect id="month" label="Período" icon={CalendarRange} name="month" defaultValue={monthKey ?? "all"} className="capitalize font-semibold">
+            <option value="all">Geral (desde o início)</option>
+            {availableMonths.map((key) => <option key={key} value={key}>{formatMonthLabel(key)}</option>)}
+          </FormSelect>
+          <button type="submit" className="min-h-10 rounded-xl bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/15">Ver</button>
+        </form>
       </div>
       <RankingTabs
         currentProfileId={currentProfile.id}
