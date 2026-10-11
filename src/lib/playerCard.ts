@@ -1,4 +1,4 @@
-import type { PerformanceStats } from "./rankings";
+import type { SeasonPlayerScore } from "./seasonRanking";
 
 export type PlayerRankingPositions = {
   attendance: number | null;
@@ -24,24 +24,23 @@ export function getPlayerRankingPositions(
     attendance: Map<string, number>;
     mvp: Map<string, number>;
     wins: Map<string, number>;
-    performance: Map<string, PerformanceStats>;
   },
+  season: Map<string, SeasonPlayerScore>,
   profileId: string,
   eligibleProfileIds: string[],
 ): PlayerRankingPositions {
   const eligibleIds = new Set(eligibleProfileIds);
-  const playerPerformance = counts.performance.get(profileId);
+  const playerSeason = season.get(profileId);
 
-  const performance = playerPerformance?.matches && playerPerformance.eligible
+  // Mesma base do ranking da temporada (média dos meses jogados), pra posição
+  // mostrada no cartão do jogador bater com a da tela de Ranking.
+  const performance = playerSeason?.eligible
     ? 1 +
-      [...counts.performance.entries()].filter(([otherId, stats]) => {
-        if (!eligibleIds.has(otherId) || !stats.matches || !stats.eligible) return false;
+      [...season.entries()].filter(([otherId, stats]) => {
+        if (!eligibleIds.has(otherId) || !stats.eligible) return false;
         return (
-          stats.indexScore > playerPerformance.indexScore ||
-          (stats.indexScore === playerPerformance.indexScore && stats.percentage > playerPerformance.percentage) ||
-          (stats.indexScore === playerPerformance.indexScore &&
-            stats.percentage === playerPerformance.percentage &&
-            stats.wins > playerPerformance.wins)
+          stats.averageIndex > playerSeason.averageIndex ||
+          (stats.averageIndex === playerSeason.averageIndex && stats.totalWins > playerSeason.totalWins)
         );
       }).length
     : null;

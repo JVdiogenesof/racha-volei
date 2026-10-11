@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getRankingCounts } from "@/lib/rankings";
+import { getSeasonRanking } from "@/lib/seasonRanking";
 import { getFeaturedAchievements, getPlayerAchievements } from "@/lib/achievements";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { imageUrlToDataUrl } from "@/lib/serverImageData";
@@ -40,15 +41,18 @@ export async function GET(request: Request) {
   if (!profile) return new Response("Perfil não encontrado", { status: 404 });
 
   const community = await getActiveCommunity(profile);
-  const [rankingCounts, { data: approvedProfiles }] = await Promise.all([
+  const [rankingCounts, seasonScores, { data: approvedProfiles }] = await Promise.all([
     getRankingCounts(supabase, community),
+    getSeasonRanking(supabase, community),
     supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
   ]);
 
   const attendance = rankingCounts.attendance.get(profile.id) ?? 0;
   const wins = rankingCounts.wins.get(profile.id) ?? 0;
   const mvp = rankingCounts.mvp.get(profile.id) ?? 0;
-  const performance = rankingCounts.performance.get(profile.id);
+  const season = seasonScores.get(profile.id);
+  const seasonMatches = season ? season.totalWins + season.totalLosses : 0;
+  const seasonPercentage = season && seasonMatches > 0 ? Math.round((season.totalWins / seasonMatches) * 100) : null;
   const streak = rankingCounts.streaks.get(profile.id) ?? 0;
   const achievementStats = { attendance, wins, mvp, streak, isSetter: profile.is_setter };
   const achievements = getPlayerAchievements(achievementStats);
@@ -56,6 +60,7 @@ export async function GET(request: Request) {
   const achievementCount = achievements.filter((achievement) => achievement.unlocked).length;
   const rankings = getPlayerRankingPositions(
     rankingCounts,
+    seasonScores,
     profile.id,
     (approvedProfiles ?? []).map((item) => item.id),
   );
@@ -68,7 +73,7 @@ export async function GET(request: Request) {
     { label: "JOGADOR DESTAQUE", value: String(mvp), rank: rankings.mvp },
     {
       label: "APROVEITAMENTO",
-      value: performance ? `${performance.percentage}%` : "—",
+      value: seasonPercentage !== null ? `${seasonPercentage}%` : "—",
       rank: rankings.performance,
     },
   ];

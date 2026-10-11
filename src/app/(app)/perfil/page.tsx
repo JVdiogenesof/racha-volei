@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
 import { getRankingCounts } from "@/lib/rankings";
+import { getSeasonRanking } from "@/lib/seasonRanking";
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementGallery } from "@/components/AchievementGallery";
@@ -16,10 +17,11 @@ export default async function PerfilPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
-  const [{ self, organizer }, weights, rankingCounts, { data: approvedProfiles }] = await Promise.all([
+  const [{ self, organizer }, weights, rankingCounts, seasonScores, { data: approvedProfiles }] = await Promise.all([
     getPlayerRatings(supabase, profile.id),
     getRatingWeights(supabase),
     getRankingCounts(supabase, community),
+    getSeasonRanking(supabase, community),
     supabase.from("profiles").select("id").eq("status", "approved").contains("communities", [community]),
   ]);
 
@@ -28,7 +30,9 @@ export default async function PerfilPage() {
   const attendanceCount = rankingCounts.attendance.get(profile.id) ?? 0;
   const mvpCount = rankingCounts.mvp.get(profile.id) ?? 0;
   const winsCount = rankingCounts.wins.get(profile.id) ?? 0;
-  const performance = rankingCounts.performance.get(profile.id);
+  const season = seasonScores.get(profile.id);
+  const seasonMatches = season ? season.totalWins + season.totalLosses : 0;
+  const seasonPercentage = season && seasonMatches > 0 ? Math.round((season.totalWins / seasonMatches) * 100) : null;
   const streak = rankingCounts.streaks.get(profile.id) ?? 0;
 
   const myStats = [
@@ -36,8 +40,8 @@ export default async function PerfilPage() {
     { label: "Vezes destaque", value: mvpCount, icon: Trophy },
     { label: "Vitórias", value: winsCount, icon: Crown },
     {
-      label: performance ? `${performance.wins}V · ${performance.losses}D` : "Sem confrontos",
-      value: performance ? `${performance.percentage}%` : "—",
+      label: season ? `${season.totalWins}V · ${season.totalLosses}D` : "Sem confrontos",
+      value: seasonPercentage !== null ? `${seasonPercentage}%` : "—",
       icon: Percent,
     },
   ];
@@ -51,6 +55,7 @@ export default async function PerfilPage() {
   const achievements = getPlayerAchievements(achievementStats);
   const rankingPositions = getPlayerRankingPositions(
     rankingCounts,
+    seasonScores,
     profile.id,
     (approvedProfiles ?? []).map((item) => item.id),
   );
@@ -71,7 +76,7 @@ export default async function PerfilPage() {
           attendance: attendanceCount,
           wins: winsCount,
           mvp: mvpCount,
-          performance: performance?.percentage ?? null,
+          performance: seasonPercentage,
         }}
         rankings={rankingPositions}
         achievements={featuredAchievements.map(({ title, emoji }) => ({ title, emoji }))}
