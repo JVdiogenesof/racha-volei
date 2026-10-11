@@ -56,19 +56,27 @@ export function computeIndexScore(
   return { attendancePercentage, indexScore };
 }
 
+export type RankingDateRange = { start: string; nextStart: string };
+
 export async function getRankingCounts(
   supabase: SupabaseClient,
   community: Community = "court",
-  monthKey?: string,
+  // Aceita uma chave de mês ("2026-11") pra filtrar um mês só, ou um range
+  // explícito de datas -- usado pela temporada pra tratar um período que
+  // cobre mais de um mês de calendário (ex.: o período de lançamento, que
+  // junta set+out) como uma única amostra.
+  monthKeyOrRange?: string | RankingDateRange,
 ) {
+  const range: RankingDateRange | undefined =
+    typeof monthKeyOrRange === "string" ? monthRange(monthKeyOrRange) : monthKeyOrRange;
+
   let eventsQuery = supabase
     .from("events")
     .select("id, date, status, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .order("date", { ascending: false });
-  if (monthKey) {
-    const { start, nextStart } = monthRange(monthKey);
-    eventsQuery = eventsQuery.gte("date", start).lt("date", nextStart);
+  if (range) {
+    eventsQuery = eventsQuery.gte("date", range.start).lt("date", range.nextStart);
   }
   const { data: communityEvents } = await eventsQuery;
   const finishedEvents = (communityEvents ?? []).filter((event) => event.status === "finished");
@@ -91,11 +99,10 @@ export async function getRankingCounts(
           .select("profile_id, metric, delta")
           .eq("community", community);
         // Ajustes manuais não têm racha associado, então quando a visão é de
-        // um mês específico só aplicamos os lançados dentro daquele mês --
+        // um período específico só aplicamos os lançados dentro dele --
         // senão uma correção lifetime distorceria a liderança histórica.
-        if (monthKey) {
-          const { start, nextStart } = monthRange(monthKey);
-          adjustmentsQuery = adjustmentsQuery.gte("created_at", start).lt("created_at", nextStart);
+        if (range) {
+          adjustmentsQuery = adjustmentsQuery.gte("created_at", range.start).lt("created_at", range.nextStart);
         }
         return adjustmentsQuery;
       })(),
