@@ -245,6 +245,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const tournamentPlayedCount = [...groupMatches, finalMatch, thirdPlaceMatch].filter(
     (match) => match?.scoreA != null && match?.scoreB != null,
   ).length;
+  const groupStageComplete = groupMatches.length > 0 && groupMatches.every(
+    (match) => match.scoreA != null && match.scoreB != null,
+  );
   const bottomMatchComplete = thirdPlaceMatch?.scoreA != null && thirdPlaceMatch.scoreB != null;
   const showActionDock = Boolean(generation) || canManage;
 
@@ -398,6 +401,36 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   </section>
                 )}
 
+                {event.is_mini_torneio && groupMatches.length > 0 && (
+                  <section className="rounded-xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/[0.09] to-purple-500/[0.08] p-3.5 sm:p-4">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <h2 className="font-semibold text-white">Classificação ao vivo</h2>
+                        <p className="text-xs text-white/50">Os dois primeiros vão para a final. Os dois últimos jogam entre si.</p>
+                      </div>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${groupStageComplete ? "bg-emerald-400/15 text-emerald-200" : "bg-cyan-400/15 text-cyan-100"}`}>
+                        {groupStageComplete ? "DEFINIDA" : "PARCIAL"}
+                      </span>
+                    </div>
+                    <ol className="mt-3 space-y-2">
+                      {standings.map((standing, index) => {
+                        const advancesToFinal = index < 2;
+                        const playsBottomMatch = index >= standings.length - 2;
+                        return (
+                          <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-2.5 ${advancesToFinal ? "border-amber-300/25 bg-amber-400/[0.08]" : "border-white/10 bg-black/10"}`}>
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${advancesToFinal ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/50"}`}>{index + 1}</span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-white">{standing.name}</p>
+                              <p className={`mt-0.5 text-[10px] font-bold ${advancesToFinal ? "text-amber-200/85" : "text-white/45"}`}>{advancesToFinal ? "VAI PARA A FINAL" : playsBottomMatch ? "JOGO DOS DOIS ÚLTIMOS" : "CLASSIFICAÇÃO PARCIAL"}</p>
+                            </div>
+                            <div className="text-right text-xs text-white/60"><strong className="text-white">{standing.wins}V</strong><span className="mx-1 text-white/20">•</span>{standing.pointsFor} pts</div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </section>
+                )}
+
                 {groupMatches.length > 0 && <section className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
@@ -486,7 +519,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 <div className="flex items-end justify-between gap-3">
                   <div>
                     <h2 className="font-semibold text-white">Classificação</h2>
-                    <p className="text-xs text-white/40">Os dois primeiros avançam para a final.</p>
+                    <p className="text-xs text-white/40">{event.is_mini_torneio ? "Os dois primeiros vão para a final. Os dois últimos jogam entre si." : "Os dois primeiros avançam para a final."}</p>
                   </div>
                   <span className="text-xs text-white/35">{tournamentPlayedCount} jogos</span>
                 </div>
@@ -494,7 +527,11 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   {standings.map((standing, index) => (
                     <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_repeat(3,auto)] items-center gap-3 rounded-xl border px-3 py-3 ${index < 2 ? "border-amber-300/20 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${index < 2 ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/45"}`}>{index + 1}</span>
-                      <div className="min-w-0"><p className="truncate text-sm font-semibold text-white">{standing.name}</p>{index < 2 && <p className="text-[10px] font-bold text-amber-200/70">CLASSIFICADO</p>}</div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{standing.name}</p>
+                        {index < 2 && <p className="text-[10px] font-bold text-amber-200/70">{event.is_mini_torneio ? "VAI PARA A FINAL" : "CLASSIFICADO"}</p>}
+                        {event.is_mini_torneio && index >= standings.length - 2 && <p className="text-[10px] font-bold text-white/40">JOGO DOS DOIS ÚLTIMOS</p>}
+                      </div>
                       <Stat label="V" value={standing.wins} />
                       <Stat label="Saldo" value={`${standing.balance > 0 ? "+" : ""}${standing.balance}`} />
                       <Stat label="Pontos" value={standing.pointsFor} />
