@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
@@ -54,6 +55,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     year: "numeric",
   });
   const communityLabel = event.community === "sand" ? "RACHA DE AREIA" : "RACHA DE QUADRA";
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", _request.url).toString();
 
   return new ImageResponse(
     (
@@ -72,6 +74,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           fontFamily: "sans-serif",
         }}
       >
+        <ArtWatermark src={watermarkUrl} />
         <div style={{ position: "absolute", top: "-110px", right: "-90px", width: "390px", height: "390px", display: "flex", borderRadius: "999px", border: "2px solid rgba(255,255,255,.08)" }} />
         <div style={{ position: "absolute", bottom: "140px", left: "-150px", width: "430px", height: "430px", display: "flex", borderRadius: "999px", border: "2px solid rgba(196,181,253,.07)" }} />
 

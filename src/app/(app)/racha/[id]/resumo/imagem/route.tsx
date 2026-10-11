@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { getEventSummary } from "@/lib/eventSummary";
 import { embedAvatarUrls } from "@/lib/serverImageData";
@@ -37,6 +38,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
   });
   const displayedPlayers = await embedAvatarUrls(summary.players.slice(0, 24));
   const hiddenPlayers = Math.max(0, summary.players.length - displayedPlayers.length);
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", _request.url).toString();
   return new ImageResponse(
     (
       <div
@@ -54,6 +56,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           fontFamily: "sans-serif",
         }}
       >
+        <ArtWatermark src={watermarkUrl} />
         <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
         <div
           style={{

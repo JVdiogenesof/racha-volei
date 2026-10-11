@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
@@ -65,6 +66,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const weekday = date.toLocaleDateString("pt-BR", { weekday: "long" });
   const dateLabel = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "long" });
   const logoUrl = new URL("/logo.png", request.url).toString();
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
 
   return new ImageResponse(
     (
@@ -83,6 +85,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
           fontFamily: "sans-serif",
         }}
       >
+        <ArtWatermark src={watermarkUrl} />
         <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
         <div
           style={{

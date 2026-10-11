@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
@@ -18,7 +19,7 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
+function renderTeamsArt(data: TeamsArtData, logoUrl: string, watermarkUrl: string) {
   const date = new Date(`${data.date}T12:00:00`);
   const dateLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   const displayedTeams = data.teams.slice(0, 6);
@@ -28,6 +29,7 @@ function renderTeamsArt(data: TeamsArtData, logoUrl: string) {
 
   return new ImageResponse(
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", padding: "180px 58px 150px", color: "white", backgroundImage: "radial-gradient(circle at 94% 5%, rgba(167,139,250,.42), transparent 30%), radial-gradient(circle at 2% 92%, rgba(37,99,235,.26), transparent 33%), linear-gradient(155deg, #48218a 0%, #251052 46%, #0c0d2a 100%)", fontFamily: "sans-serif" }}>
+      <ArtWatermark src={watermarkUrl} />
       <div style={{ position: "absolute", right: "-170px", top: "250px", width: "500px", height: "500px", display: "flex", borderRadius: "999px", border: "3px solid rgba(255,255,255,.045)" }} />
       <div style={{ position: "absolute", left: "-160px", bottom: "80px", width: "430px", height: "430px", display: "flex", borderRadius: "999px", border: "3px solid rgba(196,181,253,.05)" }} />
 
@@ -135,5 +137,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     isPreTournament: event.is_pre_torneio,
     teams: (teamRows ?? []).map((team) => ({ id: team.id, teamNumber: team.team_number, name: team.name, members: players.filter((player) => player.teamId === team.id) })),
   };
-  return renderTeamsArt(data, new URL("/logo.png", request.url).toString());
+  return renderTeamsArt(data, new URL("/logo.png", request.url).toString(), new URL("/logo-vpa-oficial.jpg", request.url).toString());
 }

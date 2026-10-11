@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 import { computeStandings } from "@/lib/torneioStandings";
 import { createClient } from "@/lib/supabase/server";
@@ -102,9 +103,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     .filter((entry): entry is { place: 1 | 2 | 3 | 4; team: ResultTeam } => Boolean(entry.team));
   const dateLabel = new Date(`${event.date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
   const formatLabel = event.is_pre_torneio ? "PRÉ-TORNEIO VPA" : "MINI TORNEIO VPA";
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
 
   return new ImageResponse(
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "238px 58px 102px", color: "white", backgroundImage: "radial-gradient(circle at 92% 4%, rgba(251,191,36,.24), transparent 25%), radial-gradient(circle at 4% 88%, rgba(124,58,237,.45), transparent 32%), linear-gradient(155deg, #43207f 0%, #24104e 47%, #0b0d28 100%)", fontFamily: "sans-serif" }}>
+      <ArtWatermark src={watermarkUrl} />
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
         <div style={{ width: "106px", height: "106px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "34px", background: "rgba(251,191,36,.13)", border: "1px solid rgba(252,211,77,.4)", fontSize: "57px" }}>🏆</div>
         <span style={{ marginTop: "20px", color: "#fcd34d", fontSize: "19px", fontWeight: 900, letterSpacing: "4px" }}>{formatLabel}</span>

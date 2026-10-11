@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { getRankingCounts } from "@/lib/rankings";
 import { getSeasonRanking } from "@/lib/seasonRanking";
@@ -65,6 +66,7 @@ export async function GET(request: Request) {
     (approvedProfiles ?? []).map((item) => item.id),
   );
   const logoUrl = new URL("/logo.png", request.url).toString();
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
   const avatarDataUrl = await imageUrlToDataUrl(profile.avatar_url);
 
   const stats = [
@@ -95,6 +97,7 @@ export async function GET(request: Request) {
           fontFamily: "sans-serif",
         }}
       >
+        <ArtWatermark src={watermarkUrl} />
         <div style={{ position: "absolute", right: "-140px", top: "180px", width: "470px", height: "470px", display: "flex", borderRadius: "999px", border: "3px solid rgba(255,255,255,.045)" }} />
         <div style={{ position: "absolute", left: "-170px", bottom: "150px", width: "510px", height: "510px", display: "flex", borderRadius: "999px", border: "3px solid rgba(196,181,253,.055)" }} />
 

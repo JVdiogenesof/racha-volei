@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { requireOrganizer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveCommunity } from "@/lib/community";
@@ -75,10 +76,11 @@ function Footer() {
   return <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.55)", fontSize: "16px", letterSpacing: "1px" }}><span>UM MÊS DE JOGO, RESENHA E EVOLUÇÃO</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>;
 }
 
-function OverviewArt({ report, logoUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; logoUrl: string }) {
+function OverviewArt({ report, logoUrl, watermarkUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; logoUrl: string; watermarkUrl: string }) {
   const communityLabel = report.community === "sand" ? "Areia" : "Quadra";
   return (
     <div style={baseStyle(report.community)}>
+      <ArtWatermark src={watermarkUrl} />
       <div style={{ position: "absolute", right: "-160px", top: "320px", width: "480px", height: "480px", display: "flex", borderRadius: "999px", border: "3px solid rgba(255,255,255,.04)" }} />
       <Header logoUrl={logoUrl} title="RESUMO DO MÊS" subtitle={`${report.monthLabel} · ciclo completo com ${report.finishedEvents.length} rachas`} communityLabel={communityLabel} />
 
@@ -112,7 +114,7 @@ function OverviewArt({ report, logoUrl }: { report: Awaited<ReturnType<typeof ge
   );
 }
 
-function RankingArt({ report, metric, logoUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; metric: MonthlyReportMetric; logoUrl: string }) {
+function RankingArt({ report, metric, logoUrl, watermarkUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; metric: MonthlyReportMetric; logoUrl: string; watermarkUrl: string }) {
   const config = CONFIG[metric];
   const players = report.rankings[metric];
   const leaders = players.slice(0, 3);
@@ -123,6 +125,7 @@ function RankingArt({ report, metric, logoUrl }: { report: Awaited<ReturnType<ty
 
   return (
     <div style={baseStyle(report.community)}>
+      <ArtWatermark src={watermarkUrl} />
       <Header logoUrl={logoUrl} title={config.title} subtitle={`${report.monthLabel} · ranking mensal completo`} communityLabel={communityLabel} />
       <div style={{ minHeight: 0, display: "flex", flex: 1, flexDirection: "column", justifyContent: "flex-start" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "20px", marginTop: "50px" }}>
@@ -156,9 +159,10 @@ function renderMonthlyArt(
   report: Awaited<ReturnType<typeof getMonthlyReport>>,
   art: ArtId,
   logoUrl: string,
+  watermarkUrl: string,
 ) {
   return new ImageResponse(
-    art === "overview" ? <OverviewArt report={report} logoUrl={logoUrl} /> : <RankingArt report={report} metric={art} logoUrl={logoUrl} />,
+    art === "overview" ? <OverviewArt report={report} logoUrl={logoUrl} watermarkUrl={watermarkUrl} /> : <RankingArt report={report} metric={art} logoUrl={logoUrl} watermarkUrl={watermarkUrl} />,
     { width: 1080, height: 1920 },
   );
 }
@@ -181,7 +185,8 @@ export async function GET(request: Request) {
   }
 
   const logoUrl = new URL("/logo.png", request.url).toString();
-  const image = renderMonthlyArt(report, art, logoUrl);
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
+  const image = renderMonthlyArt(report, art, logoUrl, watermarkUrl);
   image.headers.set("Cache-Control", "private, no-store");
   image.headers.set("Content-Disposition", `inline; filename="vpa-resumo-${monthKey}-${art}.png"`);
   return image;

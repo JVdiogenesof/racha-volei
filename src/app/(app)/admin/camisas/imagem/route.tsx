@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { getShirtModels, shirtOrderStatusLabel, type ShirtOrderStatus, groupShirtOrders, SHIRT_FITS, SHIRT_PAYMENT_LABELS, shirtPayment, type ShirtFit, SHIRT_MODELS, SHIRT_SIZES, formatShirtNumber, type ShirtModel } from "@/lib/shirts";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
@@ -56,9 +57,11 @@ export async function GET(request: Request) {
   const imageHeight = Math.max(1600, 1040 + Math.ceil(groups.length / 2) * 210);
   const collectionUrl = new URL(getShirtModels(community)[model].image.replace(".webp", "-export.jpg"), request.url).toString();
   const logoUrl = new URL("/logo.png", request.url).toString();
+  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
 
   return new ImageResponse(
     <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", padding: "58px", color: "white", backgroundImage: "radial-gradient(circle at 90% 5%, rgba(196,181,253,.3), transparent 28%), linear-gradient(155deg, #4c1d95 0%, #251044 42%, #10061f 100%)", fontFamily: "sans-serif" }}>
+      <ArtWatermark src={watermarkUrl} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
