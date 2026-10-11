@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { computeStandings } from "@/lib/torneioStandings";
 import { Avatar } from "@/components/Avatar";
+import { ShareFinalResultArtButton } from "@/components/ShareFinalResultArtButton";
 import { getActiveCommunity } from "@/lib/community";
 
 type ResultTeam = {
@@ -160,6 +161,7 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
           <p className="mt-4 text-xs font-bold tracking-[0.25em] text-amber-300 uppercase">{tournamentLabel}</p>
           <h1 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Resultado final</h1>
           <p className="mt-2 text-sm text-white/60">{dateLabel}</p>
+          <ShareFinalResultArtButton eventId={id} eventDate={event.date} />
         </div>
       </header>
 
