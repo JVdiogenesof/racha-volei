@@ -275,7 +275,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               <Trophy className="h-5 w-5" />
             </Link>
           )}
-          {canRegenerate && event.official_list_open && (
+          {canRegenerate && (event.official_list_open || generation) && (
             <ActionForm action={generateTeams} successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}>
               <input type="hidden" name="eventId" value={id} />
               <button type="submit" aria-label={generation ? "Gerar times novamente" : "Gerar times"} title={generation ? "Gerar times novamente" : "Gerar times"} className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-purple text-white hover:bg-brand-purple-dark">

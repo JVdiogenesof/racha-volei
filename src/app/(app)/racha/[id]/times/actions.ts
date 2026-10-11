@@ -57,7 +57,19 @@ export async function generateTeams(formData: FormData) {
   if (event.status === "finished" || event.status === "cancelled") {
     throw new Error("Esse racha não aceita uma nova geração de times.");
   }
-  if (!event.official_list_open) {
+  const { data: existingGeneration, error: generationError } = await supabase
+    .from("team_generations")
+    .select("id")
+    .eq("event_id", eventId)
+    .order("generated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (generationError) throw new Error(generationError.message);
+
+  // Depois que os times existem, o organizador ainda pode refazê-los mesmo
+  // com a lista fechada. Isso é necessário para corrigir uma mudança antes
+  // do primeiro placar; os bloqueios de resultados abaixo continuam valendo.
+  if (!event.official_list_open && !existingGeneration) {
     throw new Error("Abra a lista oficial antes de gerar os times.");
   }
 
