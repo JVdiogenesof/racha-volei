@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, type ReactNode } from "react";
-import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
@@ -70,6 +70,7 @@ export function Leaderboard({
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
                 const isFirst = place === 0;
+                const insideCutoff = Boolean(cutoff) && place + 1 <= (cutoff?.slots ?? 0);
                 return (
                   <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
                     <span
@@ -77,11 +78,22 @@ export function Leaderboard({
                     >
                       <AnimatedMetric value={`${place + 1}º`} />
                     </span>
-                    <Avatar src={entry.avatarUrl} name={entry.fullName} size={isFirst ? "lg" : "md"} />
+                    <Avatar
+                      src={entry.avatarUrl}
+                      name={entry.fullName}
+                      size={isFirst ? "lg" : "md"}
+                      ring={insideCutoff ? "ring-emerald-400/70" : undefined}
+                    />
                     <p className="mt-2 w-full break-words text-sm font-medium text-white">
                       {entry.fullName}
                     </p>
                     {entry.profileId === currentProfileId && <span className="mt-1 rounded-full bg-purple-400/15 px-2 py-0.5 text-[9px] font-black text-purple-200">VOCÊ</span>}
+                    {insideCutoff && (
+                      <span className="mt-1 flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-300">
+                        <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
+                        Classificado
+                      </span>
+                    )}
                     <p className="text-xs text-white/60">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
@@ -96,6 +108,7 @@ export function Leaderboard({
             <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
               {rest.map((entry, i) => {
                 const rankedPosition = entry.ranked === false ? null : rankedEntries.indexOf(entry) + 1;
+                const insideCutoff = Boolean(cutoff) && rankedPosition !== null && rankedPosition <= cutoff!.slots;
                 const outsideCutoff = cutoffScore !== null && rankedPosition !== null && rankedPosition > cutoff!.slots;
                 const gap = outsideCutoff ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
                 return (
@@ -107,15 +120,21 @@ export function Leaderboard({
                         <span className="h-px flex-1 bg-emerald-300/30" />
                       </li>
                     )}
-                    <li className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}>
+                    <li
+                      className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${
+                        insideCutoff ? "border-l-2 border-emerald-400/60 bg-emerald-400/[0.06]" : ""
+                      } ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}
+                    >
                       <span className="flex min-w-0 items-center gap-2">
-                        <AnimatedMetric className="w-6 shrink-0 text-center text-white/40" value={rankedPosition ? `${rankedPosition}º` : "—"} />
-                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
+                        <AnimatedMetric className={`w-6 shrink-0 text-center ${insideCutoff ? "text-emerald-300" : "text-white/40"}`} value={rankedPosition ? `${rankedPosition}º` : "—"} />
+                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/70" : undefined} />
                         <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
+                        {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" strokeWidth={2.5} />}
                       </span>
                       <span className="max-w-[52%] shrink-0 text-right text-white/60">
                         <AnimatedMetric className="block font-semibold" value={entry.displayValue ?? `${entry.count} ${unit}`} />
                         {entry.detail && <span className="mt-0.5 block text-[10px] leading-tight text-white/35">{entry.detail}</span>}
+                        {insideCutoff && <span className="mt-0.5 block text-[10px] font-bold leading-tight text-emerald-300/80">classificado</span>}
                         {gap !== null && gap > 0 && <span className="mt-0.5 block text-[10px] font-bold leading-tight text-amber-300/80">faltam {gap.toFixed(1)} pts p/ vaga</span>}
                       </span>
                     </li>

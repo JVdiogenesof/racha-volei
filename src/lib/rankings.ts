@@ -16,7 +16,10 @@ export type PerformanceStats = {
   eligible: boolean;
 };
 
-export const PERFORMANCE_MIN_ATTENDANCE = 3;
+// Mínimo de partidas (vitórias + derrotas) disputadas pra entrar na
+// classificação do Índice VPA -- antes era medido em presenças, mas o
+// critério real de amostra mínima é quantos confrontos a pessoa já jogou.
+export const PERFORMANCE_MIN_MATCHES = 2;
 
 // Vagas provisórias do torneio oficial de abril/2027 que vêm do Índice VPA
 // geral (o resto das vagas é via pré-torneio). Número ainda não fechado com
@@ -192,7 +195,7 @@ export async function getRankingCounts(
     const { attendancePercentage, indexScore } = computeIndexScore(stats, attendanceLeader);
     stats.attendancePercentage = attendancePercentage;
     stats.indexScore = indexScore;
-    stats.eligible = stats.attendance >= PERFORMANCE_MIN_ATTENDANCE;
+    stats.eligible = stats.matches >= PERFORMANCE_MIN_MATCHES;
   }
 
   return { attendance, mvp, wins, performance, streaks };

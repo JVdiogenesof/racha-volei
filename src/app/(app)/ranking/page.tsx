@@ -1,7 +1,7 @@
 import { CalendarRange } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
+import { getRankingCounts, PERFORMANCE_MIN_MATCHES, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -55,7 +55,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
         detail: stats.eligible
           ? `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres.`
-          : `${stats.attendance}/${PERFORMANCE_MIN_ATTENDANCE} rachas · ${stats.percentage}% atual`,
+          : `${stats.matches}/${PERFORMANCE_MIN_MATCHES} partidas · ${stats.percentage}% atual`,
         ranked: stats.eligible,
       }];
     })

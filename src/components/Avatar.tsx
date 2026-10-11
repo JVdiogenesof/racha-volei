@@ -12,13 +12,17 @@ export function Avatar({
   name,
   size = "md",
   streak,
+  ring,
 }: {
   src?: string | null;
   name: string;
   size?: keyof typeof SIZES;
   /** Sequência de rachas seguidos confirmado -- só exibe o badge a partir de STREAK_THRESHOLD. */
   streak?: number;
+  /** Cor do anel ao redor do avatar (classe Tailwind). Padrão: branco translúcido. */
+  ring?: string;
 }) {
+  const ringClass = ring ?? "ring-white/15";
   const initials = name
     .split(" ")
     .filter(Boolean)
@@ -35,12 +39,12 @@ export function Avatar({
         <img
           src={src}
           alt={name}
-          className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ring-white/15`}
+          className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ${ringClass}`}
           referrerPolicy="no-referrer"
         />
       ) : (
         <span
-          className={`avatar-photo flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ring-white/15`}
+          className={`avatar-photo flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ${ringClass}`}
         >
           {initials || "?"}
         </span>
