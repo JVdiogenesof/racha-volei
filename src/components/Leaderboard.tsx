@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, type ReactNode } from "react";
-import { BarChart3, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Trophy } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
@@ -17,10 +17,11 @@ export type RankingEntry = {
   ranked?: boolean;
 };
 
-const MEDAL_BADGE = [
-  "border-yellow-300 bg-yellow-500/20 text-yellow-300",
-  "border-white/15 bg-white/10 text-white/70",
-  "border-orange-300 bg-orange-500/20 text-orange-300",
+// Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
+const PODIUM_STYLE = [
+  { height: "h-12", bar: "from-yellow-300/35 to-yellow-500/5", border: "border-yellow-300/40", text: "text-yellow-300" },
+  { height: "h-9", bar: "from-white/25 to-white/0", border: "border-white/25", text: "text-white/75" },
+  { height: "h-7", bar: "from-orange-300/30 to-orange-500/0", border: "border-orange-300/35", text: "text-orange-300" },
 ];
 
 export function Leaderboard({
@@ -44,7 +45,7 @@ export function Leaderboard({
   const classifyingEntries = ranking.filter((entry) => entry.ranked === false);
   const podium = rankedEntries.slice(0, 3);
   const remainingEntries = [...rankedEntries.slice(3), ...classifyingEntries];
-  // Com corte ativo, garante que a linha (e pelo menos 1-2 pessoas depois dela)
+  // Com corte ativo, garante que a linha (e pelo menos 2 pessoas depois dela)
   // fique visível sem precisar clicar em "ver todo mundo".
   const cutoffIndexInRest = cutoff && cutoff.slots > 3 ? cutoff.slots - 3 : null;
   const defaultRestCount = cutoffIndexInRest ? Math.max(7, cutoffIndexInRest + 2) : 7;
@@ -52,54 +53,62 @@ export function Leaderboard({
   const hasMore = remainingEntries.length > defaultRestCount;
   const podiumOrder = [podium[1], podium[0], podium[2]];
   const cutoffScore = cutoff && rankedEntries.length >= cutoff.slots ? rankedEntries[cutoff.slots - 1].count : null;
+  const leaderCount = Math.max(0.0001, rankedEntries[0]?.count ?? 0);
 
   return (
-    <section className="min-w-0 rounded-xl border border-white/10 p-4 sm:p-6">
-      <div className="flex items-center gap-2 text-white">
-        {icon}
-        <h2 className="font-semibold">{title}</h2>
-      </div>
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+      <header className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
+        <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-white">
+          {icon}
+          <span className="truncate">{title}</span>
+        </h2>
+        <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-white/50">
+          {rankedEntries.length} {rankedEntries.length === 1 ? "pessoa" : "pessoas"}
+        </span>
+      </header>
 
       {!ranking.length ? (
-        <div className="mt-4"><EmptyState compact icon={<BarChart3 className="h-5 w-5" />} title="Ranking sendo formado" description="Os resultados aparecem aqui conforme os rachas e confrontos forem registrados." /></div>
+        <div className="p-4"><EmptyState compact icon={<BarChart3 className="h-5 w-5" />} title="Ranking sendo formado" description="Os resultados aparecem aqui conforme os rachas e confrontos forem registrados." /></div>
       ) : (
         <>
           {podium.length > 0 && (
-            <div className="mt-6 grid grid-cols-3 items-end gap-1.5 sm:gap-3">
+            <div className="grid grid-cols-3 items-end gap-1.5 px-3 pt-5 sm:gap-3 sm:px-6">
               {podiumOrder.map((entry, slot) => {
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
                 const isFirst = place === 0;
+                const style = PODIUM_STYLE[place];
                 const insideCutoff = Boolean(cutoff) && place + 1 <= (cutoff?.slots ?? 0);
+                const isMe = entry.profileId === currentProfileId;
                 return (
                   <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
-                    <span
-                      className={`mb-1 rounded-full border px-1.5 py-0.5 text-[10px] font-bold sm:px-2 sm:py-0.5 sm:text-xs ${MEDAL_BADGE[place]}`}
-                    >
-                      <AnimatedMetric value={`${place + 1}º`} />
-                    </span>
-                    <Avatar
-                      src={entry.avatarUrl}
-                      name={entry.fullName}
-                      size={isFirst ? "lg" : "md"}
-                      ring={insideCutoff ? "ring-emerald-400/70" : undefined}
-                    />
-                    <p className="mt-1.5 line-clamp-2 w-full px-0.5 text-[11px] font-medium leading-tight text-white sm:text-sm">
-                      {entry.fullName}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
-                      {entry.profileId === currentProfileId && <span className="rounded-full bg-purple-400/15 px-1.5 py-0.5 text-[8px] font-black text-purple-200">VOCÊ</span>}
-                      {insideCutoff && (
-                        <span className="flex items-center gap-0.5 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-emerald-300">
-                          <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={2.5} />
-                          Classificado
-                        </span>
-                      )}
+                    <div className="relative">
+                      {isFirst && <Crown className="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 text-yellow-300" strokeWidth={2.25} fill="currentColor" fillOpacity={0.25} />}
+                      <Avatar
+                        src={entry.avatarUrl}
+                        name={entry.fullName}
+                        size={isFirst ? "lg" : "md"}
+                        ring={insideCutoff ? "ring-emerald-400/70" : undefined}
+                      />
                     </div>
-                    <p className="mt-1 text-[11px] text-white/60 sm:text-xs">
+                    <p className="mt-1.5 line-clamp-2 w-full px-0.5 text-[11px] font-semibold leading-tight text-white sm:text-sm">
+                      {entry.fullName}
+                      {isMe && <span className="ml-1 align-middle text-[8px] font-black text-purple-200">VOCÊ</span>}
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-bold text-white/70 sm:text-xs">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
-                    {entry.detail && <p className="mt-0.5 line-clamp-1 px-0.5 text-[9px] text-white/40">{entry.detail}</p>}
+                    {entry.detail && <p className="line-clamp-1 w-full px-0.5 text-[9px] leading-tight text-white/35">{entry.detail}</p>}
+                    <div
+                      className={`mt-1.5 flex w-full items-start justify-center gap-1 rounded-t-lg border border-b-0 bg-gradient-to-b pt-1 ${style.height} ${style.bar} ${style.border}`}
+                    >
+                      <span className={`text-sm font-black leading-none ${style.text}`}>
+                        <AnimatedMetric value={`${place + 1}º`} />
+                      </span>
+                      {insideCutoff && (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-300" strokeWidth={2.5} aria-label="Classificado" />
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -107,43 +116,60 @@ export function Leaderboard({
           )}
 
           {rest.length > 0 && (
-            <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
+            <ul className="border-t border-white/10 px-2 py-1 sm:px-4">
               {rest.map((entry, i) => {
                 const rankedPosition = entry.ranked === false ? null : rankedEntries.indexOf(entry) + 1;
                 const insideCutoff = Boolean(cutoff) && rankedPosition !== null && rankedPosition <= cutoff!.slots;
                 const outsideCutoff = cutoffScore !== null && rankedPosition !== null && rankedPosition > cutoff!.slots;
                 const gap = outsideCutoff ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
+                const isMe = entry.profileId === currentProfileId;
+                const progress = rankedPosition ? Math.max(4, Math.min(100, (entry.count / leaderCount) * 100)) : 0;
                 return (
                   <Fragment key={entry.profileId}>
                     {cutoffIndexInRest !== null && i === cutoffIndexInRest && (
-                      <li className="flex items-center gap-2 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-300/80">
-                        <span className="h-px flex-1 bg-emerald-300/30" />
-                        {cutoff!.label}
-                        <span className="h-px flex-1 bg-emerald-300/30" />
+                      <li className="my-1.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-emerald-300">
+                        <span className="h-px flex-1 border-t border-dashed border-emerald-300/40" />
+                        <span className="flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-2 py-0.5">
+                          <Trophy className="h-3 w-3" strokeWidth={2.5} />
+                          {cutoff!.label}
+                        </span>
+                        <span className="h-px flex-1 border-t border-dashed border-emerald-300/40" />
                       </li>
                     )}
                     <li
-                      className={`min-w-0 rounded-lg px-2 py-2.5 text-sm ${
-                        insideCutoff ? "border-l-2 border-emerald-400/60 bg-emerald-400/[0.06]" : ""
-                      } ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}
+                      className={`relative my-0.5 min-w-0 overflow-hidden rounded-xl px-2 py-1.5 ${
+                        isMe ? "bg-purple-400/12 ring-1 ring-purple-300/25" : insideCutoff ? "bg-emerald-400/[0.05]" : "hover:bg-white/[0.03]"
+                      }`}
                     >
-                      <div className="flex min-w-0 items-center justify-between gap-2">
-                        <span className="flex min-w-0 flex-1 items-center gap-2">
-                          <AnimatedMetric className={`w-5 shrink-0 text-center text-xs sm:w-6 sm:text-sm ${insideCutoff ? "text-emerald-300" : "text-white/40"}`} value={rankedPosition ? `${rankedPosition}º` : "—"} />
-                          <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/70" : undefined} />
-                          <span className="min-w-0 truncate text-white">{entry.fullName}</span>
-                          {entry.profileId === currentProfileId && <span className="shrink-0 text-[9px] font-black text-purple-200">VOCÊ</span>}
-                          {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" strokeWidth={2.5} />}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className={`w-6 shrink-0 text-center text-xs font-black ${insideCutoff ? "text-emerald-300" : "text-white/35"}`}>
+                          {rankedPosition ? `${rankedPosition}º` : "—"}
                         </span>
-                        <AnimatedMetric className="shrink-0 pl-2 text-right font-semibold text-white/60" value={entry.displayValue ?? `${entry.count} ${unit}`} />
-                      </div>
-                      {(entry.detail || insideCutoff || (gap !== null && gap > 0)) && (
-                        <div className="mt-1 flex items-center justify-between gap-2 pl-7 sm:pl-8">
-                          <span className={`min-w-0 truncate text-[10px] font-bold leading-tight ${insideCutoff ? "text-emerald-300/80" : gap !== null && gap > 0 ? "text-amber-300/80" : "invisible"}`}>
-                            {insideCutoff ? "classificado" : gap !== null && gap > 0 ? `faltam ${gap.toFixed(1)} pts p/ vaga` : "—"}
-                          </span>
-                          {entry.detail && <span className="shrink-0 pl-2 text-right text-[10px] leading-tight text-white/35">{entry.detail}</span>}
+                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/60" : undefined} />
+                        <div className="min-w-0 flex-1">
+                          <p className="flex min-w-0 items-center gap-1 text-[13px] font-medium leading-tight text-white">
+                            <span className="truncate">{entry.fullName}</span>
+                            {isMe && <span className="shrink-0 text-[8px] font-black text-purple-200">VOCÊ</span>}
+                          </p>
+                          {entry.detail && <p className="truncate text-[10px] leading-tight text-white/35">{entry.detail}</p>}
                         </div>
+                        <div className="shrink-0 text-right">
+                          <p className="flex items-center justify-end gap-1 text-[13px] font-bold leading-tight text-white/80">
+                            {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" strokeWidth={2.5} aria-label="Classificado" />}
+                            <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
+                          </p>
+                          {gap !== null && gap > 0 && (
+                            <p className="text-[10px] font-bold leading-tight text-amber-300/85">−{gap.toFixed(1)} p/ vaga</p>
+                          )}
+                        </div>
+                      </div>
+                      {rankedPosition !== null && (
+                        <span className="mt-1 block h-0.5 overflow-hidden rounded-full bg-white/[0.06]">
+                          <span
+                            className={`block h-full rounded-full ${insideCutoff ? "bg-emerald-400/60" : "bg-purple-300/40"}`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </span>
                       )}
                     </li>
                   </Fragment>
@@ -156,17 +182,17 @@ export function Leaderboard({
             <button
               type="button"
               onClick={() => setShowAll((v) => !v)}
-              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/10 py-2 text-sm font-medium text-white/70 hover:bg-white/5"
+              className="flex w-full items-center justify-center gap-1.5 border-t border-white/10 py-2.5 text-xs font-semibold text-white/60 transition hover:bg-white/5 hover:text-white"
             >
               {showAll ? (
                 <>
                   Ver menos
-                  <ChevronUp className="h-4 w-4" strokeWidth={2} />
+                  <ChevronUp className="h-3.5 w-3.5" strokeWidth={2} />
                 </>
               ) : (
                 <>
                   Ver todo mundo ({ranking.length})
-                  <ChevronDown className="h-4 w-4" strokeWidth={2} />
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2} />
                 </>
               )}
             </button>

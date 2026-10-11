@@ -1,4 +1,4 @@
-import { CalendarRange } from "lucide-react";
+import { CalendarRange, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
@@ -99,22 +99,27 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         );
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Ranking · {community === "sand" ? "Areia" : "Quadra"}</h1>
-          <p className="mt-1 text-sm text-white/60">
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2 text-xl font-bold text-white">
+            <Trophy className="h-5 w-5 shrink-0 text-purple-300" strokeWidth={2.25} />
+            Ranking · {community === "sand" ? "Areia" : "Quadra"}
+          </h1>
+          <p className="mt-0.5 text-xs leading-snug text-white/55">
             {isSeasonView
-              ? "Índice VPA da temporada classificatória: a média dos meses jogados, pra todo mundo competir de igual pra igual."
-              : `Foto de ${formatMonthLabel(monthKey!)} isolada, só pra conferir como estava aquele mês.`}
+              ? "Temporada classificatória: média dos meses jogados, pra todo mundo competir de igual pra igual."
+              : `Foto isolada de ${formatMonthLabel(monthKey!)}, só pra conferir como estava aquele mês.`}
           </p>
         </div>
-        <form className="flex items-end gap-2" action="/ranking">
-          <FormSelect id="month" label="Período" icon={CalendarRange} name="month" defaultValue={monthKey ?? "season"} className="capitalize font-semibold">
+        <form className="flex shrink-0 items-center gap-1.5" action="/ranking">
+          <FormSelect id="month" aria-label="Período" name="month" defaultValue={monthKey ?? "season"} className="min-w-[11rem] capitalize text-xs font-semibold">
             <option value="season">Temporada (desde {formatMonthLabel(SEASON_START_MONTH)})</option>
             {availableMonths.map((key) => <option key={key} value={key}>{formatMonthLabel(key)}</option>)}
           </FormSelect>
-          <button type="submit" className="min-h-10 rounded-xl bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/15">Ver</button>
+          <button type="submit" aria-label="Ver período" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15">
+            <CalendarRange className="h-4 w-4" strokeWidth={2.25} />
+          </button>
         </form>
       </div>
       <RankingTabs
