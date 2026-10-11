@@ -187,7 +187,7 @@ export async function getRankingCounts(
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
   }
 
-  // Com menos de 3 rachas encerrados, o jogador aparece como "em classificação".
+  // Com menos de PERFORMANCE_MIN_ATTENDANCE presenças, o jogador aparece como "em classificação".
   const attendanceLeader = Math.max(1, ...attendance.values());
   for (const [profileId, stats] of performance) {
     stats.attendance = Math.max(0, attendance.get(profileId) ?? 0);

@@ -1,7 +1,8 @@
 import { CalendarRange } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
+import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
+import { getSeasonRanking, SEASON_MIN_MONTHS, SEASON_START_MONTH } from "@/lib/seasonRanking";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -13,15 +14,23 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const supabase = await createClient();
   const community = await getActiveCommunity(currentProfile);
   const requestedMonth = (await searchParams).month;
-  const monthKey = requestedMonth && requestedMonth !== "all" ? normalizeMonthKey(requestedMonth) : undefined;
+  // "season" (padrão) é a temporada classificatória pro torneio -- média dos
+  // meses jogados desde SEASON_START_MONTH. Um mês específico é só uma foto
+  // daquele período isolado, pra curiosidade histórica.
+  const monthKey = requestedMonth && requestedMonth !== "season" ? normalizeMonthKey(requestedMonth) : undefined;
+  const isSeasonView = !monthKey;
 
-  const [{ data: profiles }, { data: monthEvents }, counts] = await Promise.all([
+  const [{ data: profiles }, { data: monthEvents }, counts, seasonScores] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]),
     supabase.from("events").select("date").eq("community", community).order("date", { ascending: false }),
     getRankingCounts(supabase, community, monthKey),
+    isSeasonView ? getSeasonRanking(supabase, community) : Promise.resolve(null),
   ]);
 
-  const availableMonths = [...new Set((monthEvents ?? []).map((event) => event.date.slice(0, 7)))].sort().reverse();
+  const availableMonths = [...new Set((monthEvents ?? []).map((event) => event.date.slice(0, 7)))]
+    .filter((key) => key >= SEASON_START_MONTH)
+    .sort()
+    .reverse();
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
   function buildRanking(rawCounts: Map<string, number>): RankingEntry[] {
@@ -43,29 +52,51 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const attendanceRanking = buildRanking(counts.attendance);
   const mvpRanking = buildRanking(counts.mvp);
   const winsRanking = buildRanking(counts.wins);
-  const performanceRanking: RankingEntry[] = [...counts.performance.entries()]
-    .flatMap(([profileId, stats]) => {
-      const profile = profileById.get(profileId);
-      if (!profile || !stats.matches) return [];
-      return [{
-        profileId,
-        count: stats.indexScore,
-        fullName: profile.full_name,
-        avatarUrl: profile.avatar_url,
-        displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
-        detail: stats.eligible
-          ? `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres.`
-          : `${stats.attendance}/${PERFORMANCE_MIN_ATTENDANCE} rachas · ${stats.percentage}% atual`,
-        ranked: stats.eligible,
-      }];
-    })
-    .sort(
-      (a, b) =>
-        Number(b.ranked !== false) - Number(a.ranked !== false) ||
-        b.count - a.count ||
-        (counts.performance.get(b.profileId)?.percentage ?? 0) - (counts.performance.get(a.profileId)?.percentage ?? 0) ||
-        (counts.performance.get(b.profileId)?.wins ?? 0) - (counts.performance.get(a.profileId)?.wins ?? 0),
-    );
+
+  const performanceRanking: RankingEntry[] = seasonScores
+    ? [...seasonScores.entries()]
+        .flatMap(([profileId, season]) => {
+          const profile = profileById.get(profileId);
+          if (!profile) return [];
+          return [{
+            profileId,
+            count: season.averageIndex,
+            fullName: profile.full_name,
+            avatarUrl: profile.avatar_url,
+            displayValue: season.eligible ? `${season.averageIndex.toFixed(1)} pts` : "Em classificação",
+            detail: season.eligible
+              ? `média de ${season.monthsPlayed} ${season.monthsPlayed === 1 ? "mês" : "meses"} · ${season.totalWins}V · ${season.totalLosses}D · ${season.totalAttendance} pres.`
+              : `${season.monthsPlayed}/${SEASON_MIN_MONTHS} meses jogados`,
+            ranked: season.eligible,
+          }];
+        })
+        .sort(
+          (a, b) =>
+            Number(b.ranked !== false) - Number(a.ranked !== false) ||
+            b.count - a.count ||
+            (seasonScores.get(b.profileId)?.totalWins ?? 0) - (seasonScores.get(a.profileId)?.totalWins ?? 0),
+        )
+    : [...counts.performance.entries()]
+        .flatMap(([profileId, stats]) => {
+          const profile = profileById.get(profileId);
+          if (!profile || !stats.matches) return [];
+          return [{
+            profileId,
+            count: stats.indexScore,
+            fullName: profile.full_name,
+            avatarUrl: profile.avatar_url,
+            displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
+            detail: `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres. (${formatMonthLabel(monthKey!)})`,
+            ranked: stats.eligible,
+          }];
+        })
+        .sort(
+          (a, b) =>
+            Number(b.ranked !== false) - Number(a.ranked !== false) ||
+            b.count - a.count ||
+            (counts.performance.get(b.profileId)?.percentage ?? 0) - (counts.performance.get(a.profileId)?.percentage ?? 0) ||
+            (counts.performance.get(b.profileId)?.wins ?? 0) - (counts.performance.get(a.profileId)?.wins ?? 0),
+        );
 
   return (
     <div className="space-y-5">
@@ -73,14 +104,14 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         <div>
           <h1 className="text-2xl font-bold text-white">Ranking · {community === "sand" ? "Areia" : "Quadra"}</h1>
           <p className="mt-1 text-sm text-white/60">
-            {monthKey
-              ? `Classificação de ${formatMonthLabel(monthKey)}.`
-              : "Compare resultados e acompanhe sua posição em cada categoria desde o início."}
+            {isSeasonView
+              ? "Índice VPA da temporada classificatória: a média dos meses jogados, pra todo mundo competir de igual pra igual."
+              : `Foto de ${formatMonthLabel(monthKey!)} isolada, só pra conferir como estava aquele mês.`}
           </p>
         </div>
         <form className="flex items-end gap-2" action="/ranking">
-          <FormSelect id="month" label="Período" icon={CalendarRange} name="month" defaultValue={monthKey ?? "all"} className="capitalize font-semibold">
-            <option value="all">Geral (desde o início)</option>
+          <FormSelect id="month" label="Período" icon={CalendarRange} name="month" defaultValue={monthKey ?? "season"} className="capitalize font-semibold">
+            <option value="season">Temporada (desde {formatMonthLabel(SEASON_START_MONTH)})</option>
             {availableMonths.map((key) => <option key={key} value={key}>{formatMonthLabel(key)}</option>)}
           </FormSelect>
           <button type="submit" className="min-h-10 rounded-xl bg-white/10 px-3 text-sm font-bold text-white transition hover:bg-white/15">Ver</button>
@@ -89,7 +120,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
       <RankingTabs
         currentProfileId={currentProfile.id}
         rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
-        qualifying={monthKey ? undefined : { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL }}
+        qualifying={isSeasonView ? { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL } : undefined}
       />
     </div>
   );

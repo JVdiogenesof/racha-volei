@@ -8,7 +8,7 @@ import { AnimatedMetric } from "./AnimatedMetric";
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
 const CONFIG: Record<RankingId, { label: string; shortLabel: string; unit: string; description: string; icon: LucideIcon }> = {
-  performance: { label: "Índice VPA", shortLabel: "Índice VPA", unit: "pontos", description: "Classificação dinâmica: o aproveitamento é ajustado pela quantidade de partidas jogadas (poucas partidas pesam menos) e a presença entra com um peso que cresce pra quem é mais assíduo. São necessárias 2 presenças confirmadas em rachas encerrados para entrar nas posições.", icon: Percent },
+  performance: { label: "Índice VPA", shortLabel: "Índice VPA", unit: "pontos", description: "Classificação dinâmica da temporada: cada mês é calculado como uma amostra própria (aproveitamento ajustado pela quantidade de partidas, presença relativa ao mais assíduo do mês) e a nota final é a média dos meses jogados -- assim quem entrar depois compete de igual pra igual. São necessárias 2 presenças no mês pra ele contar, e 2 meses jogados para entrar na classificação.", icon: Percent },
   wins: { label: "Mais vitórias", shortLabel: "Vitórias", unit: "vitórias", description: "Total de confrontos vencidos por cada jogador.", icon: Crown },
   mvp: { label: "Jogador Destaque", shortLabel: "Destaques", unit: "vezes", description: "Quantidade de vezes em que a pessoa foi eleita destaque do racha.", icon: Trophy },
   attendance: { label: "Mais presença", shortLabel: "Presenças", unit: "presenças", description: "Participações confirmadas em rachas que já foram encerrados.", icon: CalendarCheck },
