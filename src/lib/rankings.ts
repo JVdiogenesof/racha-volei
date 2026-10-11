@@ -18,6 +18,12 @@ export type PerformanceStats = {
 
 export const PERFORMANCE_MIN_ATTENDANCE = 3;
 
+// Vagas provisórias do torneio oficial de abril/2027 que vêm do Índice VPA
+// geral (o resto das vagas é via pré-torneio). Número ainda não fechado com
+// o organizador -- é só mudar aqui quando decidirem o valor final.
+export const TOURNAMENT_QUALIFYING_SLOTS = 12;
+export const TOURNAMENT_QUALIFYING_LABEL = "Vagas · Torneio oficial de abril/2027";
+
 // O Índice VPA usa duas ideias pra ficar mais justo com amostra pequena:
 // 1) o aproveitamento "encolhe" em direção a 50% (resultado neutro de um jogo
 //    de 2 times) enquanto o jogador tem poucas partidas -- uma sequência boa

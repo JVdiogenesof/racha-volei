@@ -17,14 +17,18 @@ const CONFIG: Record<RankingId, { label: string; shortLabel: string; unit: strin
 export function RankingTabs({
   currentProfileId,
   rankings,
+  qualifying,
 }: {
   currentProfileId: string;
   rankings: Record<RankingId, RankingEntry[]>;
+  /** Corte de vagas pro torneio oficial, mostrado só na aba do Índice VPA. */
+  qualifying?: { slots: number; label: string };
 }) {
   const [active, setActive] = useState<RankingId>("performance");
   const ids = Object.keys(CONFIG) as RankingId[];
   const activeConfig = CONFIG[active];
   const ActiveIcon = activeConfig.icon;
+  const cutoff = active === "performance" ? qualifying : undefined;
 
   function currentEntry(id: RankingId) {
     const ranking = rankings[id];
@@ -85,7 +89,10 @@ export function RankingTabs({
 
       <div className="flex items-start gap-2 rounded-xl border border-purple-300/15 bg-purple-400/[0.06] px-3.5 py-3">
         <ActiveIcon className="mt-0.5 h-4 w-4 shrink-0 text-purple-200" />
-        <p className="text-xs leading-relaxed text-white/55">{activeConfig.description}</p>
+        <p className="text-xs leading-relaxed text-white/55">
+          {activeConfig.description}
+          {cutoff && <span className="mt-1 block font-semibold text-emerald-300/80">As {cutoff.slots} primeiras posições garantem vaga no torneio oficial de abril/2027 (número provisório).</span>}
+        </p>
       </div>
 
       <Leaderboard
@@ -94,6 +101,7 @@ export function RankingTabs({
         unit={activeConfig.unit}
         ranking={rankings[active]}
         currentProfileId={currentProfileId}
+        cutoff={cutoff}
       />
     </div>
   );

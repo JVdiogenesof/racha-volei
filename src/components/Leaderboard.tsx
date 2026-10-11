@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
@@ -29,21 +29,29 @@ export function Leaderboard({
   unit,
   ranking,
   currentProfileId,
+  cutoff,
 }: {
   title: string;
   icon: ReactNode;
   unit: string;
   ranking: RankingEntry[];
   currentProfileId?: string;
+  /** Marca visualmente a linha de corte de uma quantidade fixa de vagas (ex: classificação pra um torneio). */
+  cutoff?: { slots: number; label: string };
 }) {
   const [showAll, setShowAll] = useState(false);
   const rankedEntries = ranking.filter((entry) => entry.ranked !== false);
   const classifyingEntries = ranking.filter((entry) => entry.ranked === false);
   const podium = rankedEntries.slice(0, 3);
   const remainingEntries = [...rankedEntries.slice(3), ...classifyingEntries];
-  const rest = showAll ? remainingEntries : remainingEntries.slice(0, 7);
-  const hasMore = remainingEntries.length > 7;
+  // Com corte ativo, garante que a linha (e pelo menos 1-2 pessoas depois dela)
+  // fique visível sem precisar clicar em "ver todo mundo".
+  const cutoffIndexInRest = cutoff && cutoff.slots > 3 ? cutoff.slots - 3 : null;
+  const defaultRestCount = cutoffIndexInRest ? Math.max(7, cutoffIndexInRest + 2) : 7;
+  const rest = showAll ? remainingEntries : remainingEntries.slice(0, defaultRestCount);
+  const hasMore = remainingEntries.length > defaultRestCount;
   const podiumOrder = [podium[1], podium[0], podium[2]];
+  const cutoffScore = cutoff && rankedEntries.length >= cutoff.slots ? rankedEntries[cutoff.slots - 1].count : null;
 
   return (
     <section className="min-w-0 rounded-xl border border-white/10 p-4 sm:p-6">
@@ -86,20 +94,32 @@ export function Leaderboard({
 
           {rest.length > 0 && (
             <ul className="mt-6 divide-y divide-white/10 border-t border-white/10">
-              {rest.map((entry) => {
+              {rest.map((entry, i) => {
                 const rankedPosition = entry.ranked === false ? null : rankedEntries.indexOf(entry) + 1;
+                const outsideCutoff = cutoffScore !== null && rankedPosition !== null && rankedPosition > cutoff!.slots;
+                const gap = outsideCutoff ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
                 return (
-                  <li key={entry.profileId} className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}>
-                    <span className="flex min-w-0 items-center gap-2">
-                      <AnimatedMetric className="w-6 shrink-0 text-center text-white/40" value={rankedPosition ? `${rankedPosition}º` : "—"} />
-                      <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
-                      <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
-                    </span>
-                    <span className="max-w-[52%] shrink-0 text-right text-white/60">
-                      <AnimatedMetric className="block font-semibold" value={entry.displayValue ?? `${entry.count} ${unit}`} />
-                      {entry.detail && <span className="mt-0.5 block text-[10px] leading-tight text-white/35">{entry.detail}</span>}
-                    </span>
-                  </li>
+                  <Fragment key={entry.profileId}>
+                    {cutoffIndexInRest !== null && i === cutoffIndexInRest && (
+                      <li className="flex items-center gap-2 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-300/80">
+                        <span className="h-px flex-1 bg-emerald-300/30" />
+                        {cutoff!.label}
+                        <span className="h-px flex-1 bg-emerald-300/30" />
+                      </li>
+                    )}
+                    <li className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <AnimatedMetric className="w-6 shrink-0 text-center text-white/40" value={rankedPosition ? `${rankedPosition}º` : "—"} />
+                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" />
+                        <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
+                      </span>
+                      <span className="max-w-[52%] shrink-0 text-right text-white/60">
+                        <AnimatedMetric className="block font-semibold" value={entry.displayValue ?? `${entry.count} ${unit}`} />
+                        {entry.detail && <span className="mt-0.5 block text-[10px] leading-tight text-white/35">{entry.detail}</span>}
+                        {gap !== null && gap > 0 && <span className="mt-0.5 block text-[10px] font-bold leading-tight text-amber-300/80">faltam {gap.toFixed(1)} pts p/ vaga</span>}
+                      </span>
+                    </li>
+                  </Fragment>
                 );
               })}
             </ul>

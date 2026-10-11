@@ -1,7 +1,7 @@
 import { CalendarRange } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE } from "@/lib/rankings";
+import { getRankingCounts, PERFORMANCE_MIN_ATTENDANCE, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -89,6 +89,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
       <RankingTabs
         currentProfileId={currentProfile.id}
         rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
+        qualifying={monthKey ? undefined : { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL }}
       />
     </div>
   );
