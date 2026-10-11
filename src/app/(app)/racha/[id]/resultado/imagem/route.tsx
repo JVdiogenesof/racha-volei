@@ -2,10 +2,11 @@ import { ImageResponse } from "next/og";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 import { computeStandings } from "@/lib/torneioStandings";
 import { createClient } from "@/lib/supabase/server";
+import { embedAvatarUrls } from "@/lib/serverImageData";
 
 export const dynamic = "force-dynamic";
 
-type ResultTeam = { id: string; name: string; members: string[] };
+type ResultTeam = { id: string; name: string; members: { fullName: string; avatarUrl: string | null }[] };
 type MatchRow = {
   stage: "group" | "final" | "third_place";
   team_a_id: string;
@@ -23,6 +24,10 @@ const placementStyles = {
 
 function shortName(name: string, limit = 30) {
   return name.length > limit ? `${name.slice(0, limit - 1)}…` : name;
+}
+
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -46,16 +51,26 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (teamsError || matchesError) return new Response("Não foi possível carregar o pódio", { status: 500 });
   const teamIds = (teamRows ?? []).map((team) => team.id);
   const { data: memberRows, error: membersError } = teamIds.length
-    ? await supabase.from("team_members").select("team_id, profiles(full_name)").in("team_id", teamIds)
+    ? await supabase.from("team_members").select("team_id, profile_id, profiles(full_name, avatar_url)").in("team_id", teamIds)
     : { data: [], error: null };
   if (membersError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
+
+  const members = await embedAvatarUrls((memberRows ?? []).map((member) => {
+    const profile = member.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+    return {
+      id: member.profile_id,
+      teamId: member.team_id,
+      fullName: profile?.full_name ?? "Jogador",
+      avatarUrl: profile?.avatar_url ?? null,
+    };
+  }));
 
   const teams: ResultTeam[] = (teamRows ?? []).map((team) => ({
     id: team.id,
     name: team.name || `Time ${team.team_number}`,
-    members: (memberRows ?? [])
-      .filter((member) => member.team_id === team.id)
-      .map((member) => (member.profiles as unknown as { full_name: string } | null)?.full_name ?? "Jogador"),
+    members: members
+      .filter((member) => member.teamId === team.id)
+      .map((member) => ({ fullName: member.fullName, avatarUrl: member.avatarUrl })),
   }));
   const matches = (matchRows ?? []) as MatchRow[];
   const finalMatch = matches.find((match) => match.stage === "final");
@@ -89,17 +104,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const formatLabel = event.is_pre_torneio ? "PRÉ-TORNEIO VPA" : "MINI TORNEIO VPA";
 
   return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "130px 58px 88px", color: "white", backgroundImage: "radial-gradient(circle at 92% 4%, rgba(251,191,36,.24), transparent 25%), radial-gradient(circle at 4% 88%, rgba(124,58,237,.45), transparent 32%), linear-gradient(155deg, #43207f 0%, #24104e 47%, #0b0d28 100%)", fontFamily: "sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ color: "#fcd34d", fontSize: "20px", fontWeight: 900, letterSpacing: "4px" }}>{formatLabel}</span>
-          <span style={{ marginTop: "10px", fontSize: "58px", fontWeight: 900, lineHeight: 1 }}>PÓDIO FINAL</span>
-          <span style={{ marginTop: "12px", color: "rgba(255,255,255,.65)", fontSize: "22px", textTransform: "capitalize" }}>{dateLabel}</span>
-        </div>
-        <div style={{ width: "116px", height: "116px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "34px", background: "rgba(251,191,36,.13)", border: "1px solid rgba(252,211,77,.4)", fontSize: "64px" }}>🏆</div>
+    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "238px 58px 102px", color: "white", backgroundImage: "radial-gradient(circle at 92% 4%, rgba(251,191,36,.24), transparent 25%), radial-gradient(circle at 4% 88%, rgba(124,58,237,.45), transparent 32%), linear-gradient(155deg, #43207f 0%, #24104e 47%, #0b0d28 100%)", fontFamily: "sans-serif" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <div style={{ width: "106px", height: "106px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "34px", background: "rgba(251,191,36,.13)", border: "1px solid rgba(252,211,77,.4)", fontSize: "57px" }}>🏆</div>
+        <span style={{ marginTop: "20px", color: "#fcd34d", fontSize: "19px", fontWeight: 900, letterSpacing: "4px" }}>{formatLabel}</span>
+        <span style={{ marginTop: "10px", fontSize: "56px", fontWeight: 900, lineHeight: 1 }}>PÓDIO FINAL</span>
+        <span style={{ marginTop: "12px", color: "rgba(255,255,255,.65)", fontSize: "21px", textTransform: "capitalize" }}>{dateLabel}</span>
       </div>
 
-      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", marginTop: "38px", gap: "16px" }}>
+      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", marginTop: "34px", gap: "14px" }}>
         {placements.map(({ place, team }) => {
           const style = placementStyles[place];
           return (
@@ -114,7 +127,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "17px" }}>
                 {team.members.slice(0, 8).map((member, index) => (
-                  <span key={`${member}-${index}`} style={{ padding: "8px 11px", borderRadius: "999px", background: "rgba(4,3,20,.25)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.9)", fontSize: "16px", fontWeight: 700 }}>{shortName(member, 19)}</span>
+                  <div key={`${member.fullName}-${index}`} style={{ display: "flex", alignItems: "center", padding: "5px 10px 5px 5px", borderRadius: "999px", background: "rgba(4,3,20,.25)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.9)", fontSize: "16px", fontWeight: 700 }}>
+                    {member.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={member.avatarUrl} alt="" width={30} height={30} style={{ borderRadius: "999px", objectFit: "cover", border: "1px solid rgba(255,255,255,.2)" }} />
+                    ) : (
+                      <span style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(124,58,237,.48)", color: "#ede9fe", fontSize: "10px", fontWeight: 900 }}>{initials(member.fullName)}</span>
+                    )}
+                    <span style={{ marginLeft: "7px" }}>{shortName(member.fullName, 17)}</span>
+                  </div>
                 ))}
               </div>
             </div>
