@@ -65,7 +65,7 @@ export function Leaderboard({
       ) : (
         <>
           {podium.length > 0 && (
-            <div className="mt-6 grid grid-cols-3 items-end gap-2 sm:gap-3">
+            <div className="mt-6 grid grid-cols-3 items-end gap-1.5 sm:gap-3">
               {podiumOrder.map((entry, slot) => {
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
@@ -74,7 +74,7 @@ export function Leaderboard({
                 return (
                   <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
                     <span
-                      className={`mb-1.5 rounded-full border px-2 py-0.5 text-xs font-bold ${MEDAL_BADGE[place]}`}
+                      className={`mb-1 rounded-full border px-1.5 py-0.5 text-[10px] font-bold sm:px-2 sm:py-0.5 sm:text-xs ${MEDAL_BADGE[place]}`}
                     >
                       <AnimatedMetric value={`${place + 1}º`} />
                     </span>
@@ -84,20 +84,22 @@ export function Leaderboard({
                       size={isFirst ? "lg" : "md"}
                       ring={insideCutoff ? "ring-emerald-400/70" : undefined}
                     />
-                    <p className="mt-2 w-full break-words text-sm font-medium text-white">
+                    <p className="mt-1.5 line-clamp-2 w-full px-0.5 text-[11px] font-medium leading-tight text-white sm:text-sm">
                       {entry.fullName}
                     </p>
-                    {entry.profileId === currentProfileId && <span className="mt-1 rounded-full bg-purple-400/15 px-2 py-0.5 text-[9px] font-black text-purple-200">VOCÊ</span>}
-                    {insideCutoff && (
-                      <span className="mt-1 flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-300">
-                        <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
-                        Classificado
-                      </span>
-                    )}
-                    <p className="text-xs text-white/60">
+                    <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
+                      {entry.profileId === currentProfileId && <span className="rounded-full bg-purple-400/15 px-1.5 py-0.5 text-[8px] font-black text-purple-200">VOCÊ</span>}
+                      {insideCutoff && (
+                        <span className="flex items-center gap-0.5 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-emerald-300">
+                          <CheckCircle2 className="h-2.5 w-2.5" strokeWidth={2.5} />
+                          Classificado
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-[11px] text-white/60 sm:text-xs">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
-                    {entry.detail && <p className="mt-0.5 text-[10px] text-white/40">{entry.detail}</p>}
+                    {entry.detail && <p className="mt-0.5 line-clamp-1 px-0.5 text-[9px] text-white/40">{entry.detail}</p>}
                   </div>
                 );
               })}
@@ -121,22 +123,28 @@ export function Leaderboard({
                       </li>
                     )}
                     <li
-                      className={`flex min-w-0 items-center justify-between gap-2 rounded-lg px-2 py-2.5 text-sm ${
+                      className={`min-w-0 rounded-lg px-2 py-2.5 text-sm ${
                         insideCutoff ? "border-l-2 border-emerald-400/60 bg-emerald-400/[0.06]" : ""
                       } ${entry.profileId === currentProfileId ? "bg-purple-400/10 ring-1 ring-purple-300/15" : ""}`}
                     >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <AnimatedMetric className={`w-6 shrink-0 text-center ${insideCutoff ? "text-emerald-300" : "text-white/40"}`} value={rankedPosition ? `${rankedPosition}º` : "—"} />
-                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/70" : undefined} />
-                        <span className="min-w-0 break-words text-white">{entry.fullName}{entry.profileId === currentProfileId && <span className="ml-1 text-[9px] font-black text-purple-200">VOCÊ</span>}</span>
-                        {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" strokeWidth={2.5} />}
-                      </span>
-                      <span className="max-w-[52%] shrink-0 text-right text-white/60">
-                        <AnimatedMetric className="block font-semibold" value={entry.displayValue ?? `${entry.count} ${unit}`} />
-                        {entry.detail && <span className="mt-0.5 block text-[10px] leading-tight text-white/35">{entry.detail}</span>}
-                        {insideCutoff && <span className="mt-0.5 block text-[10px] font-bold leading-tight text-emerald-300/80">classificado</span>}
-                        {gap !== null && gap > 0 && <span className="mt-0.5 block text-[10px] font-bold leading-tight text-amber-300/80">faltam {gap.toFixed(1)} pts p/ vaga</span>}
-                      </span>
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <AnimatedMetric className={`w-5 shrink-0 text-center text-xs sm:w-6 sm:text-sm ${insideCutoff ? "text-emerald-300" : "text-white/40"}`} value={rankedPosition ? `${rankedPosition}º` : "—"} />
+                          <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/70" : undefined} />
+                          <span className="min-w-0 truncate text-white">{entry.fullName}</span>
+                          {entry.profileId === currentProfileId && <span className="shrink-0 text-[9px] font-black text-purple-200">VOCÊ</span>}
+                          {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-300" strokeWidth={2.5} />}
+                        </span>
+                        <AnimatedMetric className="shrink-0 pl-2 text-right font-semibold text-white/60" value={entry.displayValue ?? `${entry.count} ${unit}`} />
+                      </div>
+                      {(entry.detail || insideCutoff || (gap !== null && gap > 0)) && (
+                        <div className="mt-1 flex items-center justify-between gap-2 pl-7 sm:pl-8">
+                          <span className={`min-w-0 truncate text-[10px] font-bold leading-tight ${insideCutoff ? "text-emerald-300/80" : gap !== null && gap > 0 ? "text-amber-300/80" : "invisible"}`}>
+                            {insideCutoff ? "classificado" : gap !== null && gap > 0 ? `faltam ${gap.toFixed(1)} pts p/ vaga` : "—"}
+                          </span>
+                          {entry.detail && <span className="shrink-0 pl-2 text-right text-[10px] leading-tight text-white/35">{entry.detail}</span>}
+                        </div>
+                      )}
                     </li>
                   </Fragment>
                 );
