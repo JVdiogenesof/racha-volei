@@ -17,7 +17,8 @@ export function ArtWatermark({ src }: ArtWatermarkProps) {
         width: "100%",
         height: "100%",
         objectFit: "cover",
-        objectPosition: "center",
+        // A arte é quadrada e os Stories são verticais; este ponto compensa o recorte lateral.
+        objectPosition: "56% center",
         opacity: 0.09,
       }}
     />
