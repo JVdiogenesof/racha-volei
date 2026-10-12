@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AtSign, BadgeCheck, CalendarDays, CheckCircle2, Circle, MapPin, Phone, Search, UserCheck, UsersRound, Waypoints } from "lucide-react";
+import { SlidersHorizontal, AtSign, BadgeCheck, CalendarDays, CheckCircle2, Circle, MapPin, Phone, Search, UserCheck, UsersRound, Waypoints } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
@@ -86,47 +86,59 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Cadastros · {community === "sand" ? "Areia" : "Quadra"}</h1>
-        <p className="mt-1 text-sm text-white/55">Encontre, compare e chame pessoas da reserva sem perder o histórico.</p>
-      </div>
+      <header>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · {community === "sand" ? "Areia" : "Quadra"}</p>
+        <h1 className="mt-0.5 text-2xl font-black text-white">Cadastros</h1>
+      </header>
 
-      <section className="grid grid-cols-3 gap-2">
+      <section className="grid grid-cols-3 gap-1.5">
         <SummaryStat label="Na reserva" value={rows?.length ?? 0} />
-        <SummaryStat label="Nunca chamados" value={neverInvitedCount} />
+        <SummaryStat label="Nunca chamados" value={neverInvitedCount} warn />
         <SummaryStat label="Convites feitos" value={totalInvitations} />
       </section>
 
-      <form action="/admin/reserva" method="get" className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:p-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
-          <label className="relative sm:col-span-2">
+      <form action="/admin/reserva" method="get" className="space-y-2">
+        <div className="flex gap-2">
+          <label className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
             <input name="q" defaultValue={single(filters.q)} placeholder="Nome, @, telefone ou bairro" className="min-h-11 w-full rounded-xl border border-white/15 bg-white/[0.03] pl-9 pr-3 text-sm text-white placeholder:text-white/35 transition focus:border-purple-300/50 focus:bg-white/[0.05] focus:shadow-[0_0_0_3px_rgba(196,181,253,0.14)] focus:outline-none" />
           </label>
-          <FilterSelect name="level" defaultValue={level} label="Todos os níveis" options={[["beginner", "Iniciante"], ["intermediate", "Intermediário"], ["advanced", "Avançado"]]} />
-          <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Todos os bairros" options={neighborhoods.map((item) => [item, item])} />
-          <FilterSelect name="role" defaultValue={role} label="Todas as funções" options={[["setter", "Levantadores"], ["attacker", "Não levantadores"]]} />
-          <FilterSelect name="invitations" defaultValue={invitations} label="Todos os convites" options={[["never", "Nunca chamado"], ["once", "Chamado 1 vez"], ["multiple", "Chamado 2+ vezes"]]} />
+          <button type="submit" className="min-h-11 rounded-xl bg-brand-purple px-4 text-sm font-semibold text-white hover:bg-brand-purple-dark">Buscar</button>
         </div>
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <FilterSelect name="sort" defaultValue={sort} label="Mais recentes" options={[["oldest", "Mais antigos"], ["name", "Ordem alfabética"], ["most_invited", "Mais chamados"]]} compact />
-            <span className="text-xs text-white/40">{filteredRows.length} resultado{filteredRows.length === 1 ? "" : "s"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/admin/reserva" className="rounded-lg px-3 py-2 text-xs font-semibold text-white/55 hover:bg-white/5 hover:text-white">Limpar</Link>
-            <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
-          </div>
+
+        <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
+          <QuickChip href="/admin/reserva" active={!query && !level && !neighborhood && !role && !invitations} label={`Todos · ${rows?.length ?? 0}`} />
+          <QuickChip href="/admin/reserva?invitations=never" active={invitations === "never" && !query && !level && !neighborhood && !role} label={`Nunca chamados · ${neverInvitedCount}`} />
+          <QuickChip href="/admin/reserva?role=setter" active={role === "setter" && !query && !level && !neighborhood && !invitations} label="Levantadores" />
+          <QuickChip href="/admin/reserva?level=beginner" active={level === "beginner" && !query && !neighborhood && !role && !invitations} label="Iniciantes" />
         </div>
+
+        <details className="rounded-xl border border-white/10 bg-white/[0.02]" open={Boolean(level || neighborhood || role || (invitations && sort !== "recent"))}>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-white/55">
+            <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-300" />Mais filtros</span>
+            <span className="text-white/35">{filteredRows.length} resultado{filteredRows.length === 1 ? "" : "s"}</span>
+          </summary>
+          <div className="grid gap-2 border-t border-white/10 p-3 sm:grid-cols-2 lg:grid-cols-5">
+            <FilterSelect name="level" defaultValue={level} label="Todos os níveis" options={[["beginner", "Iniciante"], ["intermediate", "Intermediário"], ["advanced", "Avançado"]]} />
+            <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Todos os bairros" options={neighborhoods.map((item) => [item, item])} />
+            <FilterSelect name="role" defaultValue={role} label="Todas as funções" options={[["setter", "Levantadores"], ["attacker", "Não levantadores"]]} />
+            <FilterSelect name="invitations" defaultValue={invitations} label="Todos os convites" options={[["never", "Nunca chamado"], ["once", "Chamado 1 vez"], ["multiple", "Chamado 2+ vezes"]]} />
+            <FilterSelect name="sort" defaultValue={sort} label="Mais recentes" options={[["oldest", "Mais antigos"], ["name", "Ordem alfabética"], ["most_invited", "Mais chamados"]]} />
+            <div className="flex items-center justify-end gap-2 sm:col-span-2 lg:col-span-5">
+              <Link href="/admin/reserva" className="rounded-lg px-3 py-2 text-xs font-semibold text-white/55 hover:bg-white/5 hover:text-white">Limpar</Link>
+              <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
+            </div>
+          </div>
+        </details>
       </form>
 
-      <ul className="grid gap-3 md:grid-cols-2">
+      <ul className="grid gap-2.5 md:grid-cols-2">
         {filteredRows.map((row) => {
           const waitingProfile = profileById.get(row.auth_user_id);
           const guestEventId = waitingProfile?.guest_for_event_id;
           const invitationCount = invitationCountFor(row);
           return (
-            <li key={row.id} className="rounded-2xl border border-white/10 bg-white/[0.025] p-3 sm:p-4">
+            <li key={row.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
               <div className="flex min-w-0 items-start gap-3">
                 <Avatar src={waitingProfile?.avatar_url} name={row.full_name} size="md" />
                 <div className="min-w-0 flex-1">
@@ -187,8 +199,12 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
   );
 }
 
-function SummaryStat({ label, value }: { label: string; value: number }) {
-  return <div className="rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2.5 text-center"><strong className="block text-lg text-white">{value}</strong><span className="text-[10px] font-semibold uppercase tracking-wide text-white/40">{label}</span></div>;
+function SummaryStat({ label, value, warn = false }: { label: string; value: number; warn?: boolean }) {
+  return <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-2 py-2 text-center"><strong className={`block text-lg font-black leading-tight tabular-nums ${warn && value > 0 ? "text-amber-300" : "text-white"}`}>{value}</strong><span className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</span></div>;
+}
+
+function QuickChip({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return <Link href={href} className={`inline-flex min-h-8 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-[11.5px] font-bold transition ${active ? "border-purple-300/35 bg-purple-400/20 text-purple-50" : "border-white/10 bg-white/[0.035] text-white/55 hover:text-white"}`}>{label}</Link>;
 }
 
 function FilterSelect({ name, defaultValue, label, options, compact = false }: { name: string; defaultValue: string; label: string; options: string[][]; compact?: boolean }) {

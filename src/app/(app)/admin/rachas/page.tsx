@@ -42,17 +42,16 @@ export default async function AdminRachasPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Criar racha de {community === "sand" ? "areia" : "quadra"}</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Depois de criado, o racha aparece pra todo mundo confirmar presença.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <header>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · {community === "sand" ? "Areia" : "Quadra"}</p>
+        <h1 className="mt-0.5 text-2xl font-black text-white">Criar racha</h1>
+        <p className="mt-1 text-xs text-white/50">Depois de criado, o racha aparece pra todo mundo confirmar presença. O formulário já vem igual ao último, uma semana depois.</p>
+      </header>
 
       <form
         action={createEvent}
-        className="grid gap-3.5 rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:grid-cols-2"
+        className="grid gap-3.5 rounded-2xl border border-white/10 bg-white/[0.035] p-3.5 sm:grid-cols-2 sm:p-4"
       >
         <FormField
           label="Data"
@@ -107,7 +106,7 @@ export default async function AdminRachasPage() {
         <div className="sm:col-span-2">
           <button
             type="submit"
-            className="rounded-xl bg-brand-purple px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-purple-dark"
+            className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-4 text-sm font-bold text-white transition hover:bg-brand-purple-dark sm:w-auto"
           >
             Criar racha
           </button>
@@ -115,8 +114,8 @@ export default async function AdminRachasPage() {
       </form>
 
       <section>
-        <h2 className="font-semibold text-white">Rachas criados</h2>
-        <div className="mt-3 space-y-2">
+        <h2 className="px-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/40">Rachas criados · {events?.length ?? 0}</h2>
+        <div className="mt-2 space-y-1.5">
           {events?.map((e) => (
             <EventListItem
               key={e.id}

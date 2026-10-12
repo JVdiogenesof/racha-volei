@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, CalendarClock, CalendarDays, CalendarRange, Check, CircleDollarSign, ClipboardCheck, FileText, History, Link2, PenLine, RotateCcw, StickyNote, Tag, WalletCards, X } from "lucide-react";
+import { ChevronDown, ArrowDownRight, ArrowLeftRight, ArrowUpRight, CalendarClock, CalendarDays, CalendarRange, Check, CircleDollarSign, ClipboardCheck, FileText, History, Link2, PenLine, RotateCcw, StickyNote, Tag, WalletCards, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
@@ -75,17 +75,16 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
   const today = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
 
   return <div className="min-w-0 pb-10">
-    <header className="flex items-start gap-3">
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/10 text-emerald-200"><WalletCards className="h-6 w-6" /></span>
-      <div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/70">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-1 text-2xl font-black text-white">Caixa e saldos</h1><p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">Entradas, despesas, saldo antecipado das pessoas e lembretes dos administradores.</p></div>
+    <header>
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Controle interno · {COMMUNITY_INFO[community].shortLabel}</p><h1 className="mt-0.5 text-2xl font-black text-white">Caixa e saldos</h1>
     </header>
 
-    <section className="relative mt-5 overflow-hidden rounded-3xl border border-emerald-300/20 bg-gradient-to-br from-emerald-400/15 via-cyan-400/[0.06] to-purple-500/10 p-5 shadow-lg shadow-emerald-950/10 sm:p-6">
+    <section className="relative mt-4 overflow-hidden rounded-2xl border border-emerald-300/20 bg-gradient-to-br from-emerald-400/15 via-cyan-400/[0.06] to-purple-500/10 p-3.5 sm:p-5">
       <div className="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-emerald-300/10 blur-2xl" />
-      <div className="relative flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200"><CircleDollarSign className="h-6 w-6" /></span><div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/65">Total no caixa geral agora</p><strong className={`mt-1 block truncate text-3xl font-black sm:text-4xl ${cashTotal >= 0 ? "text-white" : "text-red-200"}`}>{money.format(cashTotal)}</strong><p className="mt-1 text-xs text-white/45">Atualizado com pagamentos, patrocínios, saldos e despesas. Camisas ficam em outro caixa.</p></div></div>
+      <div className="relative flex items-center gap-4"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-400/15 text-emerald-200"><CircleDollarSign className="h-6 w-6" /></span><div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200/65">Total no caixa geral agora</p><strong className={`mt-1 block truncate text-2xl font-black sm:text-4xl ${cashTotal >= 0 ? "text-white" : "text-red-200"}`}>{money.format(cashTotal)}</strong><p className="mt-1 text-xs text-white/45">Atualizado com pagamentos, patrocínios, saldos e despesas. Camisas ficam em outro caixa.</p></div></div>
     </section>
 
-    <form method="get" className="mt-5 flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:max-w-md">
+    <form method="get" className="mt-3 flex items-end gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 sm:max-w-md">
       <div className="min-w-0 flex-1">
         <FormSelect label="Mês da leitura" icon={CalendarRange} name="month" defaultValue={selectedMonth} className="capitalize">
           {availableMonths.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}
@@ -94,7 +93,7 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
       <button type="submit" className="min-h-10 rounded-xl bg-purple-500 px-4 text-xs font-black text-white transition hover:bg-purple-400">Filtrar</button>
     </form>
 
-    <section className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+    <section className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
       <Stat icon={ArrowUpRight} label="Entradas" value={money.format(monthIncome)} color="text-emerald-300" />
       <Stat icon={ArrowDownRight} label="Saídas" value={money.format(monthExpense)} color="text-red-300" />
       <Stat icon={CircleDollarSign} label="Saldo" value={money.format(monthIncome - monthExpense)} color={monthIncome - monthExpense >= 0 ? "text-cyan-200" : "text-red-300"} />
@@ -113,10 +112,10 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
       })}</div> : <p className="p-7 text-center text-sm text-white/40">Nenhum racha encontrado neste mês.</p>}
     </section>
 
-    <section className="mt-6 rounded-2xl border border-emerald-300/15 bg-emerald-400/[0.045] p-4 sm:p-5">
-      <div className="flex items-center gap-2"><WalletCards className="h-5 w-5 text-emerald-200" /><div><h2 className="font-black text-white">Adicionar saldo a uma pessoa</h2><p className="text-xs text-white/45">O saldo fica em reais e pode pagar um racha futuro inteiro.</p></div></div>
-      <PlayerBalanceForm action={addPlayerBalance} players={selectableProfiles.map((profile) => ({ id: profile.id, fullName: profile.full_name }))} />
-    </section>
+    <details className="group mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-400/[0.045]">
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-3.5"><WalletCards className="h-5 w-5 text-emerald-200" /><div className="min-w-0 flex-1"><h2 className="text-sm font-black text-white">Adicionar saldo a uma pessoa</h2><p className="text-xs text-white/45">O saldo fica em reais e pode pagar um racha futuro inteiro.</p></div><ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" /></summary>
+      <div className="px-3.5 pb-3.5"><PlayerBalanceForm action={addPlayerBalance} players={selectableProfiles.map((profile) => ({ id: profile.id, fullName: profile.full_name }))} /></div>
+    </details>
 
     <section className="mt-7">
       <div className="flex items-end justify-between gap-3"><div><h2 className="font-black text-white">Saldos disponíveis</h2><p className="mt-1 text-xs text-white/45">{holders.length} pessoas · total reservado de {money.format(totalPlayerBalance)}</p></div><span className="rounded-full bg-emerald-400/10 px-3 py-1.5 text-xs font-black text-emerald-200">{money.format(totalPlayerBalance)}</span></div>
@@ -130,8 +129,8 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
       })}</div> : <Empty text="Nenhuma pessoa possui saldo disponível." />}
     </section>
 
-    <section className="mt-7 grid gap-4 xl:grid-cols-[1.15fr_.85fr]">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div><h2 className="font-black text-white">Nova movimentação manual</h2><p className="text-xs text-white/40">Patrocínio, aluguel, medalhas ou outra entrada e saída.</p></div></div><ActionForm action={addFinanceTransaction} successMessage="Movimentação registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
+    <section className="mt-3 grid items-start gap-3 xl:grid-cols-[1.15fr_.85fr]">
+      <details className="group h-fit rounded-2xl border border-white/10 bg-white/[0.025]"><summary className="flex cursor-pointer list-none items-center gap-2 p-3.5"><CircleDollarSign className="h-5 w-5 text-purple-300" /><div className="min-w-0 flex-1"><h2 className="text-sm font-black text-white">Nova movimentação manual</h2><p className="text-xs text-white/40">Patrocínio, aluguel, medalhas ou outra entrada e saída.</p></div><ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" /></summary><div className="px-3.5 pb-3.5"><ActionForm action={addFinanceTransaction} successMessage="Movimentação registrada!" resetOnSuccess className="mt-4 grid gap-3 sm:grid-cols-2">
         <FormSelect label="Tipo" icon={ArrowLeftRight} name="transactionType"><option value="income">Entrada</option><option value="expense">Saída</option></FormSelect>
         <FormSelect label="Categoria" icon={Tag} name="category"><option value="sponsorship">Patrocínio</option><option value="court_rental">Aluguel da quadra</option><option value="medals">Medalhas</option><option value="other">Outro</option></FormSelect>
         <FormField label="Valor" icon={CircleDollarSign} name="amount" inputMode="decimal" required placeholder="0,00" />
@@ -143,16 +142,16 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
         <div className="sm:col-span-2"><FormField label="Descrição" icon={FileText} name="description" maxLength={160} required placeholder="Ex.: pagamento do aluguel da NR" /></div>
         <div className="sm:col-span-2"><FormField label="Observação" icon={StickyNote} optional name="notes" maxLength={500} /></div>
         <button type="submit" className="min-h-11 rounded-xl bg-purple-500 px-4 text-sm font-black text-white transition sm:col-span-2 hover:bg-purple-400">Registrar movimentação</button>
-      </ActionForm></div>
+      </ActionForm></div></details>
 
-      <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 sm:p-5"><div className="flex items-center gap-2"><CalendarClock className="h-5 w-5 text-amber-200" /><div><h2 className="font-black text-white">Agenda financeira</h2><p className="text-xs text-white/40">Contas e tarefas que não podem ser esquecidas.</p></div></div><ActionForm action={addFinanceReminder} successMessage="Lembrete criado!" resetOnSuccess className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+      <details className="group h-fit rounded-2xl border border-white/10 bg-white/[0.025]" open={reminders.some((item) => !item.completed)}><summary className="flex cursor-pointer list-none items-center gap-2 p-3.5"><CalendarClock className="h-5 w-5 text-amber-200" /><div className="min-w-0 flex-1"><h2 className="text-sm font-black text-white">Agenda financeira</h2><p className="text-xs text-white/40">Contas e tarefas que não podem ser esquecidas.</p></div><ChevronDown className="h-4 w-4 text-white/40 transition group-open:rotate-180" /></summary><div className="px-3.5 pb-3.5"><ActionForm action={addFinanceReminder} successMessage="Lembrete criado!" resetOnSuccess className="mt-4 grid grid-cols-[1fr_auto] gap-2">
         <FormField label="Título" icon={PenLine} name="title" required maxLength={140} placeholder="Ex.: pagar medalhas" />
         <div className="w-[8.7rem]"><FormField label="Prazo" icon={CalendarDays} optional type="date" name="dueDate" /></div>
         <div className="col-span-2"><FormField label="Observação" icon={StickyNote} optional name="notes" maxLength={500} /></div>
         <button type="submit" className="col-span-2 min-h-10 rounded-xl bg-amber-300/15 text-xs font-black text-amber-100 transition hover:bg-amber-300/25">Adicionar à agenda</button>
       </ActionForm>
         <div className="mt-4 space-y-2">{reminders.length ? reminders.map((reminder) => <div key={reminder.id} className={`flex items-start gap-3 rounded-xl border p-3 ${reminder.completed ? "border-white/5 bg-white/[0.015] opacity-55" : "border-white/10 bg-black/10"}`}><ActionForm action={toggleFinanceReminder} successMessage={reminder.completed ? "Lembrete reaberto." : "Lembrete concluído!"}><input type="hidden" name="reminderId" value={reminder.id} /><input type="hidden" name="completed" value={reminder.completed ? "false" : "true"} /><button type="submit" className={`grid h-8 w-8 place-items-center rounded-full border ${reminder.completed ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-200" : "border-white/15 text-white/30 hover:text-emerald-200"}`}>{reminder.completed ? <Check className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}</button></ActionForm><div className="min-w-0"><p className={`text-sm font-semibold text-white ${reminder.completed ? "line-through" : ""}`}>{reminder.title}</p>{reminder.due_date && <p className="mt-0.5 text-[10px] font-bold text-amber-200/70">Prazo: {formatDate(reminder.due_date)}</p>}{reminder.notes && <p className="mt-1 text-xs leading-5 text-white/40">{reminder.notes}</p>}</div></div>) : <p className="py-4 text-center text-xs text-white/30">Agenda vazia.</p>}</div>
-      </div>
+      </div></details>
     </section>
 
     <section className="mt-7 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"><div className="flex items-center justify-between gap-3 border-b border-white/10 p-4"><div className="flex items-center gap-2"><History className="h-5 w-5 text-purple-300" /><div><h2 className="font-black capitalize text-white">Extrato de {formatMonth(selectedMonth)}</h2><p className="text-xs text-white/40">As camisas ficam fora deste caixa e aparecem somente na área de pedidos.</p></div></div><span className="text-xs font-black text-white/35">{displayTransactions.filter((row) => !row.voided_at).length}</span></div>
