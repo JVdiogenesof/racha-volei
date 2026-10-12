@@ -49,15 +49,18 @@ export function ConfirmedCounter({
 
   if (compact) {
     return (
-      <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-1.5">
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-white">
-            <Users className="h-4 w-4 text-purple-300" />
-            {count}{maxPlayers != null ? `/${maxPlayers}` : ""} confirmados
-          </p>
-          {totalSlotsRemaining !== null && <span className={`text-xs font-semibold ${isFull ? "text-red-300" : "text-green-300"}`}>{isFull ? "Lista completa" : `${totalSlotsRemaining} vaga${totalSlotsRemaining === 1 ? "" : "s"} livre${totalSlotsRemaining === 1 ? "" : "s"}`}</span>}
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px] text-white/60">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Users className="h-3.5 w-3.5 text-purple-300" strokeWidth={2.25} />
+            Lista confirmada
+          </span>
+          <span className="flex items-center gap-2">
+            {totalSlotsRemaining !== null && <span className={`font-semibold ${isFull ? "text-red-300" : "text-green-300"}`}>{isFull ? "Lista completa" : `${totalSlotsRemaining} vaga${totalSlotsRemaining === 1 ? "" : "s"} livre${totalSlotsRemaining === 1 ? "" : "s"}`}</span>}
+            <b className="tabular-nums text-white">{count}{maxPlayers != null ? ` / ${maxPlayers}` : ""}</b>
+          </span>
         </div>
-        {pct !== null && <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-white/10"><div className={`h-full rounded-full ${isFull ? "bg-red-400" : "bg-brand-purple"}`} style={{ width: `${pct}%` }} /></div>}
+        {pct !== null && <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="img" aria-label={`${count} de ${maxPlayers} vagas preenchidas`}><div className={`h-full rounded-full transition-all ${isFull ? "bg-red-400" : "bg-gradient-to-r from-violet-400 to-purple-300"}`} style={{ width: `${pct}%` }} /></div>}
       </div>
     );
   }

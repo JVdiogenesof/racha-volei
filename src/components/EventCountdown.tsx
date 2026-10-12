@@ -37,7 +37,7 @@ export function EventCountdown({ startIso, isInProgress, compact = false }: { st
   }
 
   if (countdown === undefined) {
-    return <div className={`${compact ? "h-10" : "h-[74px]"} animate-pulse rounded-xl bg-white/5`} aria-hidden="true" />;
+    return <div className={`${compact ? "h-[52px]" : "h-[74px]"} animate-pulse rounded-xl bg-white/5`} aria-hidden="true" />;
   }
 
   if (countdown === null) {
@@ -57,10 +57,13 @@ export function EventCountdown({ startIso, isInProgress, compact = false }: { st
 
   if (compact) {
     return (
-      <div className="flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/10 px-3 text-sm text-white/60" aria-live="polite">
-        <Timer className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
-        Começa em
-        <strong className="text-white">{countdown.days}d {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}min</strong>
+      <div className="grid grid-cols-3 gap-1.5" aria-live="polite" aria-label="Contagem regressiva para o racha">
+        {units.map((unit) => (
+          <div key={unit.label} className="rounded-xl bg-black/25 px-1 pb-1 pt-1.5 text-center">
+            <strong className="block text-lg font-extrabold leading-tight tabular-nums text-white">{String(unit.value).padStart(2, "0")}</strong>
+            <span className="block text-[9px] font-semibold uppercase tracking-[0.08em] text-white/40">{unit.label}</span>
+          </div>
+        ))}
       </div>
     );
   }

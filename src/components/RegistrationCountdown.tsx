@@ -53,7 +53,7 @@ export function RegistrationCountdown({ opensAt, compact = false }: { opensAt: s
         <AlarmClock className="h-4 w-4" strokeWidth={2} />
         Inscrições abrem em
       </p>
-      <div className={`mt-3 grid grid-cols-4 ${compact ? "gap-1.5" : "gap-2"}`} aria-live="polite">
+      <div className={`${compact ? "mt-2" : "mt-3"} grid grid-cols-4 ${compact ? "gap-1.5" : "gap-2"}`} aria-live="polite">
         {units.map((unit) => (
           <div key={unit.label} className="rounded-xl border border-white/8 bg-black/15 px-1.5 py-2 text-center">
             <strong className={`${compact ? "text-lg" : "text-2xl"} block leading-none text-white`}>{String(unit.value).padStart(2, "0")}</strong>
@@ -61,7 +61,7 @@ export function RegistrationCountdown({ opensAt, compact = false }: { opensAt: s
           </div>
         ))}
       </div>
-      <p className="mt-3 text-center text-xs text-white/45">Prepare-se: o botão para colocar o nome libera sozinho.</p>
+      <p className={`${compact ? "mt-2" : "mt-3"} text-center text-xs text-white/45`}>{compact ? "O botão libera sozinho quando abrir." : "Prepare-se: o botão para colocar o nome libera sozinho."}</p>
     </section>
   );
 }

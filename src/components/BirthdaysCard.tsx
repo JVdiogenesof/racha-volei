@@ -4,17 +4,17 @@ import { birthdaysThisMonth, type BirthdayProfile } from "@/lib/birthdays";
 
 const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "long" });
 
-export function BirthdaysCard({ profiles }: { profiles: BirthdayProfile[] }) {
+export function BirthdaysCard({ profiles, embedded = false }: { profiles: BirthdayProfile[]; embedded?: boolean }) {
   const entries = birthdaysThisMonth(profiles);
   const monthName = MONTH_LABEL.format(new Date());
   const today = entries.filter((p) => p.isToday);
   const restOfMonth = entries.filter((p) => !p.isToday);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <section className={embedded ? "p-3.5" : "rounded-2xl border border-white/10 bg-white/5 p-5"}>
       <div className="flex items-center gap-2">
-        <Cake className="h-5 w-5 text-purple-300" strokeWidth={2} />
-        <h2 className="font-semibold text-white">
+        <Cake className={embedded ? "h-4 w-4 text-purple-300" : "h-5 w-5 text-purple-300"} strokeWidth={2} />
+        <h2 className={embedded ? "text-sm font-bold text-white" : "font-semibold text-white"}>
           Aniversariantes de {monthName}
         </h2>
       </div>

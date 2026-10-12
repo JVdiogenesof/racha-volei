@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Medal, Users, Zap, Shirt } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Medal, Users, Zap, Shirt, Gauge, CheckCircle2, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -20,6 +20,8 @@ import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
+import { getSeasonRanking, SEASON_MIN_MONTHS } from "@/lib/seasonRanking";
+import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -45,7 +47,7 @@ export default async function HomePage() {
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
   const today = new Date().toISOString().slice(0, 10);
-  const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }] =
+  const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }, seasonScores] =
     await Promise.all([
       supabase
         .from("events")
@@ -78,6 +80,8 @@ export default async function HomePage() {
         .order("played_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      // Posição do jogador no Índice VPA da temporada (faixa "Sua posição").
+      profile.status === "approved" ? getSeasonRanking(supabase, community) : Promise.resolve(null),
     ]);
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
@@ -195,256 +199,294 @@ export default async function HomePage() {
     ultimoAviso && ultimoAviso.body.length > 100 ? `${ultimoAviso.body.slice(0, 100).trim()}…` : ultimoAviso?.body;
   const birthdayCount = birthdaysThisMonth(birthdayProfiles ?? []).length;
 
+  // Mesma base do Ranking: só entra quem é aprovado na comunidade e já tem os
+  // meses mínimos da temporada; empate resolve por vitórias.
+  const approvedIds = new Set((birthdayProfiles ?? []).map((item) => item.id));
+  const rankedSeason = seasonScores
+    ? [...seasonScores.values()]
+        .filter((item) => item.eligible && approvedIds.has(item.profileId))
+        .sort((a, b) => b.averageIndex - a.averageIndex || b.totalWins - a.totalWins)
+    : [];
+  const mySeason = seasonScores?.get(profile.id) ?? null;
+  const myRankIndex = rankedSeason.findIndex((item) => item.profileId === profile.id);
+  const myPosition = myRankIndex >= 0 ? myRankIndex + 1 : null;
+  const cutoffScore = rankedSeason.length >= TOURNAMENT_QUALIFYING_SLOTS ? rankedSeason[TOURNAMENT_QUALIFYING_SLOTS - 1].averageIndex : null;
+  const myQualified = myPosition !== null && myPosition <= TOURNAMENT_QUALIFYING_SLOTS;
+  const myGap = myPosition !== null && !myQualified && cutoffScore !== null && mySeason
+    ? Math.max(0, Math.round((cutoffScore - mySeason.averageIndex) * 10) / 10)
+    : null;
+
+  const firstName = profile.full_name.split(" ")[0];
+  const preTorneio = Boolean(proximoRacha?.is_pre_torneio);
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">VPA · {community === "sand" ? "Racha de Areia" : "Racha de Quadra"}</p>
-          <h1 className="mt-0.5 text-2xl font-bold text-white sm:text-3xl">Fala, {profile.full_name.split(" ")[0]}! 🏐</h1>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">VPA · {community === "sand" ? "Racha de Areia" : "Racha de Quadra"}</p>
+          <h1 className="mt-0.5 truncate text-[22px] font-extrabold leading-tight text-white sm:text-3xl">Fala, {firstName}!</h1>
         </div>
-        <Link href="/racha" className="inline-flex items-center gap-1 text-sm font-medium text-purple-300 hover:underline">Ver rachas <ChevronRight className="h-4 w-4" /></Link>
+        <div className="flex shrink-0 gap-1.5">
+          <Link href="/ranking" aria-label="Ver ranking" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-purple-200 transition hover:bg-white/10">
+            <Trophy className="h-[18px] w-[18px]" strokeWidth={2.25} />
+          </Link>
+          <Link href="/racha" aria-label="Ver rachas" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-purple-200 transition hover:bg-white/10">
+            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2.25} />
+          </Link>
+        </div>
       </div>
 
       <section
         className={
-          proximoRacha?.is_pre_torneio
-            ? "relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/18 via-[#352354] to-[#171136] p-4 shadow-xl shadow-black/15"
-            : "relative overflow-hidden rounded-2xl border border-purple-300/20 bg-gradient-to-br from-[#51339a] via-[#2f205e] to-[#171136] p-4 shadow-xl shadow-black/15"
+          preTorneio
+            ? "relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-400/18 via-[#352354] to-[#171136] p-3 shadow-xl shadow-black/15"
+            : "relative overflow-hidden rounded-2xl border border-purple-300/20 bg-gradient-to-br from-[#51339a] via-[#2f205e] to-[#171136] p-3 shadow-xl shadow-black/15"
         }
       >
         <span className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-purple-300/10 blur-2xl" />
-        <div className="relative flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={
-                proximoRacha?.is_pre_torneio
-                  ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300"
-                  : "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-purple-100"
-              }
-            >
-              {proximoRacha?.is_pre_torneio ? (
-                <Trophy className="h-4.5 w-4.5" strokeWidth={2} />
-              ) : (
-                <CalendarDays className="h-4.5 w-4.5" strokeWidth={2} />
-              )}
+        <div className="relative flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span
+            className={
+              preTorneio
+                ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-amber-400/20 text-amber-300"
+                : "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-white/12 text-purple-100"
+            }
+          >
+            {preTorneio ? <Trophy className="h-4 w-4" strokeWidth={2.25} /> : <CalendarDays className="h-4 w-4" strokeWidth={2.25} />}
+          </span>
+          <h2 className="text-sm font-bold text-white">Próximo racha</h2>
+          {preTorneio && (
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300">Pré-torneio</span>
+          )}
+          {proximoRacha?.is_mini_torneio && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/15 px-2 py-0.5 text-[10px] font-bold text-cyan-100">
+              <Medal className="h-3 w-3" />
+              Mini torneio
             </span>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Próxima partida</p>
-              <h2 className="font-bold">Próximo racha</h2>
-            </div>
-            {proximoRacha?.is_pre_torneio && (
-              <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
-                Pré-torneio
-              </span>
-            )}
-            {proximoRacha?.is_mini_torneio && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-medium text-cyan-100">
-                <Medal className="h-3 w-3" />
-                Mini torneio
-              </span>
-            )}
-            {proximoRacha && (
-              <span className="inline-flex items-center rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-purple-100">
-                {teamFormatLabel(proximoRacha.team_size)}
-              </span>
-            )}
-          </div>
+          )}
+          {proximoRacha && (
+            <span className="rounded-full bg-white/12 px-2 py-0.5 text-[10px] font-bold text-purple-100">
+              {teamFormatLabel(proximoRacha.team_size)}
+            </span>
+          )}
           {proximoRacha && myStatus === "confirmed" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-300/15 bg-green-400/15 px-2.5 py-1 text-[11px] font-bold text-green-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
-                Confirmado
-              </span>
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-green-400/15 px-2 py-0.5 text-[10px] font-bold text-green-200">
+              <CheckCircle2 className="h-3 w-3" strokeWidth={2.75} />
+              Confirmado
+            </span>
           )}
         </div>
 
         {proximoRacha ? (
-          <div className="relative mt-3 grid gap-3 border-t border-white/10 pt-3 md:grid-cols-[1.05fr_0.95fr]">
-            <div className="space-y-2">
-              {proximoRacha.time && (
-                <EventCountdown
-                  startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
-                  isInProgress={isInProgress}
-                  compact
-                />
-              )}
+          <div className="relative mt-2.5 space-y-2.5">
+            {proximoRacha.time && (
+              <EventCountdown
+                startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
+                isInProgress={isInProgress}
+                compact
+              />
+            )}
 
-              <div className="flex flex-wrap gap-1.5 text-xs text-white/75">
-                <p className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
-                  <CalendarDays className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
-                  {new Date(`${proximoRacha.date}T00:00:00`).toLocaleDateString("pt-BR", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "2-digit",
-                  })}
+            <div className={`grid gap-1.5 ${rachaLevel !== null ? "grid-cols-2" : "grid-cols-[1fr_1fr_1.5fr]"}`}>
+              <div className="min-w-0 rounded-[10px] bg-white/[0.07] px-2.5 py-1.5">
+                <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/40"><CalendarDays className="h-2.5 w-2.5" strokeWidth={2.75} />Data</p>
+                <p className="truncate text-[13px] font-semibold capitalize text-white">
+                  {new Date(`${proximoRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
                 </p>
-                {proximoRacha.time && (
-                  <p className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
-                    <Clock className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
-                    {proximoRacha.time.slice(0, 5)}
-                  </p>
-                )}
-                {proximoRacha.location && (
-                  <p className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
-                    <MapPin className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
-                    <span className="min-w-0 truncate">{proximoRacha.location}</span>
-                  </p>
-                )}
-                {rachaLevel !== null && (
-                  <div className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-2">
-                    <Star className="h-4 w-4 shrink-0 text-purple-200" strokeWidth={2} />
-                    <RachaLevelBadge level={rachaLevel} />
-                  </div>
-                )}
               </div>
+              {proximoRacha.time && (
+                <div className="min-w-0 rounded-[10px] bg-white/[0.07] px-2.5 py-1.5">
+                  <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/40"><Clock className="h-2.5 w-2.5" strokeWidth={2.75} />Hora</p>
+                  <p className="truncate text-[13px] font-semibold text-white">{proximoRacha.time.slice(0, 5)}</p>
+                </div>
+              )}
+              {proximoRacha.location && (
+                <div className={`min-w-0 rounded-[10px] bg-white/[0.07] px-2.5 py-1.5 ${rachaLevel !== null ? "col-span-2" : ""}`}>
+                  <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/40"><MapPin className="h-2.5 w-2.5" strokeWidth={2.75} />Local</p>
+                  <p className="truncate text-[13px] font-semibold text-white">{proximoRacha.location}</p>
+                </div>
+              )}
+              {rachaLevel !== null && (
+                <div className="col-span-2 flex items-center gap-1.5 rounded-[10px] bg-white/[0.07] px-2.5 py-1.5">
+                  <Star className="h-3.5 w-3.5 shrink-0 text-purple-200" strokeWidth={2.25} />
+                  <RachaLevelBadge level={rachaLevel} />
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              {!registrationOpen && proximoRacha.registration_opens_at ? (
-                <>
-                  <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
-                  <Link
-                    href={`/racha/${proximoRacha.id}`}
-                    className="inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-white/15 px-3 text-sm font-semibold text-white/75 hover:bg-white/10"
-                  >
-                    Ver detalhes do racha
-                    <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                  </Link>
-                </>
-              ) : (
-                <>
-                <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
-                <div className="grid grid-cols-2 gap-2">
-                {!canRespondToNextEvent ? (
-                  <Link
-                    href={`/racha/${proximoRacha.id}/confirmar`}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/15"
-                  >
-                    <Users className="h-4 w-4" strokeWidth={2} />
-                    Acompanhar
-                  </Link>
-                ) : myStatus === "confirmed" ? (
-                  <Link
-                    href={`/racha/${proximoRacha.id}`}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
-                  >
-                    <Zap className="h-4 w-4" strokeWidth={2} />
-                    Abrir racha
-                  </Link>
-                ) : myStatus === "interested" ? (
-                  <Link
-                    href={`/racha/${proximoRacha.id}/confirmar`}
-                    className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
-                  >
-                    <ThumbsUp className="h-4 w-4" strokeWidth={2} />
-                    Ver interesse
-                  </Link>
-                ) : (
-                  <InterestButton
-                    eventId={proximoRacha.id}
-                    price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
-                    isFull={isFull}
-                    action={setAttendance}
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark disabled:opacity-50"
-                  />
-                )}
+            {!registrationOpen && proximoRacha.registration_opens_at ? (
+              <>
+                <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
                 <Link
-                  href={`/racha/${proximoRacha.id}/confirmar`}
-                  className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-white/15 px-3 text-center text-sm font-semibold text-white/80 hover:bg-white/10"
+                  href={`/racha/${proximoRacha.id}`}
+                  className="inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-white/15 px-3 text-sm font-semibold text-white/75 hover:bg-white/10"
                 >
-                  Ver lista
+                  Ver detalhes do racha
                   <ChevronRight className="h-4 w-4" strokeWidth={2} />
                 </Link>
+              </>
+            ) : (
+              <>
+                <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
+                <div className="grid grid-cols-[1fr_auto] gap-2">
+                  {!canRespondToNextEvent ? (
+                    <Link
+                      href={`/racha/${proximoRacha.id}/confirmar`}
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/15"
+                    >
+                      <Users className="h-4 w-4" strokeWidth={2.25} />
+                      Acompanhar
+                    </Link>
+                  ) : myStatus === "confirmed" ? (
+                    <Link
+                      href={`/racha/${proximoRacha.id}`}
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
+                    >
+                      <Zap className="h-4 w-4" strokeWidth={2.25} />
+                      Abrir racha
+                    </Link>
+                  ) : myStatus === "interested" ? (
+                    <Link
+                      href={`/racha/${proximoRacha.id}/confirmar`}
+                      className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark"
+                    >
+                      <ThumbsUp className="h-4 w-4" strokeWidth={2.25} />
+                      Ver interesse
+                    </Link>
+                  ) : (
+                    <InterestButton
+                      eventId={proximoRacha.id}
+                      price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
+                      isFull={isFull}
+                      action={setAttendance}
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white shadow-lg shadow-purple-950/25 hover:bg-brand-purple-dark disabled:opacity-50"
+                    />
+                  )}
+                  <Link
+                    href={`/racha/${proximoRacha.id}/confirmar`}
+                    className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl border border-white/15 px-3.5 text-center text-sm font-semibold text-white/80 hover:bg-white/10"
+                  >
+                    Ver lista
+                    <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
+                  </Link>
                 </div>
-                </>
-              )}
-            </div>
+              </>
+            )}
           </div>
         ) : (
-          <div className="relative mt-3 rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-5 text-center">
-            <CalendarDays className="mx-auto h-8 w-8 text-white/25" strokeWidth={1.5} />
-            <p className="mt-3 font-medium text-white/70">Nenhum racha marcado ainda.</p>
-            <p className="mt-1 text-sm text-white/40">O próximo evento vai aparecer aqui.</p>
+          <div className="relative mt-2.5 rounded-xl border border-dashed border-white/15 bg-black/10 px-4 py-5 text-center">
+            <CalendarDays className="mx-auto h-7 w-7 text-white/25" strokeWidth={1.5} />
+            <p className="mt-2 text-sm font-medium text-white/70">Nenhum racha marcado ainda.</p>
+            <p className="mt-0.5 text-xs text-white/40">O próximo evento vai aparecer aqui.</p>
           </div>
         )}
       </section>
 
       {secondaryScheduledRacha?.registration_opens_at && (
-        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-[#29174f] via-[#211442] to-[#15102d] p-4 shadow-lg shadow-black/15">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/12 text-amber-200">
-                  {secondaryScheduledRacha.is_pre_torneio ? <Trophy className="h-4.5 w-4.5" strokeWidth={2} /> : <CalendarDays className="h-4.5 w-4.5" strokeWidth={2} />}
-                </span>
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/40">Próxima abertura</p>
-                  <h2 className="font-bold text-white">
-                    {secondaryScheduledRacha.is_pre_torneio
-                      ? "Pré-torneio agendado"
-                      : secondaryScheduledRacha.is_mini_torneio
-                        ? "Mini torneio agendado"
-                        : "Próximo racha agendado"}
-                  </h2>
-                </div>
-                {secondaryScheduledRacha.is_pre_torneio && (
-                  <span className="rounded-full bg-amber-400/12 px-2.5 py-1 text-xs font-semibold text-amber-200">Pré-torneio</span>
-                )}
-              </div>
-              <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/55">
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5 text-purple-200" strokeWidth={2} />
-                  {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" })}
+        <section className="overflow-hidden rounded-2xl border border-amber-300/20 bg-gradient-to-br from-[#29174f] via-[#211442] to-[#15102d] p-3 shadow-lg shadow-black/15">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-amber-400/12 text-amber-200">
+              {secondaryScheduledRacha.is_pre_torneio ? <Trophy className="h-4 w-4" strokeWidth={2.25} /> : <CalendarDays className="h-4 w-4" strokeWidth={2.25} />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/40">Próxima abertura</p>
+              <h2 className="truncate text-sm font-bold text-white">
+                {secondaryScheduledRacha.is_pre_torneio
+                  ? "Pré-torneio agendado"
+                  : secondaryScheduledRacha.is_mini_torneio
+                    ? "Mini torneio agendado"
+                    : "Próximo racha agendado"}
+              </h2>
+              <p className="flex flex-wrap items-center gap-x-2.5 text-[11px] text-white/55">
+                <span className="inline-flex items-center gap-1 capitalize">
+                  <CalendarDays className="h-3 w-3 text-purple-200" strokeWidth={2.25} />
+                  {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" })}
                 </span>
                 {secondaryScheduledRacha.time && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-purple-200" strokeWidth={2} />
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-purple-200" strokeWidth={2.25} />
                     {secondaryScheduledRacha.time.slice(0, 5)}
                   </span>
                 )}
               </p>
             </div>
-            <Link href={`/racha/${secondaryScheduledRacha.id}`} className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-white/12 px-3 text-xs font-semibold text-white/70 hover:bg-white/8">
-              Ver racha
-              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2} />
+            <Link href={`/racha/${secondaryScheduledRacha.id}`} aria-label="Ver racha agendado" className="inline-flex min-h-9 shrink-0 items-center gap-0.5 rounded-xl border border-white/12 px-2.5 text-xs font-semibold text-white/75 hover:bg-white/10">
+              Ver
+              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
             </Link>
           </div>
-          <div className="mt-3">
+          <div className="mt-2.5">
             <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
           </div>
         </section>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#28134d] via-[#1b0c35] to-[#10071f] shadow-xl shadow-purple-950/20">
-          <div className={`relative overflow-hidden bg-black ${community === "sand" ? "aspect-[8/5]" : "aspect-video"}`}>
-            {community === "sand" ? (
-              <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
-            ) : (
-              <AutoPlayShirtVideo />
-            )}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-transparent to-black/20" />
-            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/45 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur sm:left-5 sm:top-5">
-              <Sparkles className="h-3.5 w-3.5" />
-              Lançamento oficial
-            </span>
-          </div>
-          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-purple-300">
-                <Sparkles className="h-3.5 w-3.5" />
-                Nova coleção VPA
+      {profile.status === "approved" && (
+        <Link
+          href="/ranking"
+          className="flex min-w-0 items-center gap-3 rounded-2xl border border-purple-300/20 bg-gradient-to-r from-purple-500/15 to-transparent px-3 py-2.5 transition hover:border-purple-300/35"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-400/20 text-purple-100">
+            <Gauge className="h-[18px] w-[18px]" strokeWidth={2.25} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-white/40">Sua posição · Índice VPA</p>
+            {myPosition !== null && mySeason ? (
+              <p className="flex items-baseline gap-2 text-white">
+                <span className="text-xl font-black leading-tight">{myPosition}º</span>
+                <span className="truncate text-xs font-medium text-white/55">{mySeason.averageIndex.toFixed(1)} pts</span>
               </p>
-              <h2 className="mt-1 text-xl font-black text-white">A nova pele do nosso racha</h2>
-              <p className="mt-1 text-sm text-white/55">Conheça os modelos e escolha sua nova camisa do VPA.</p>
+            ) : (
+              <p className="truncate text-sm font-semibold leading-snug text-white/75">
+                {mySeason
+                  ? `Em classificação · ${mySeason.monthsPlayed}/${SEASON_MIN_MONTHS} meses jogados`
+                  : "Jogue um racha pra entrar no ranking"}
+              </p>
+            )}
+          </div>
+          {myQualified ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Classificado
+            </span>
+          ) : myGap !== null && myGap > 0 ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-300">
+              <Target className="h-3.5 w-3.5" strokeWidth={2.5} />
+              −{myGap.toFixed(1)} p/ vaga
+            </span>
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+          )}
+        </Link>
+      )}
+
+      <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-[#10071f] shadow-xl shadow-purple-950/20">
+        <div className={`relative overflow-hidden bg-black ${community === "sand" ? "aspect-[8/5]" : "aspect-video"}`}>
+          {community === "sand" ? (
+            <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
+          ) : (
+            <AutoPlayShirtVideo />
+          )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-[#130827]/40 to-transparent" />
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-purple-200/25 bg-black/45 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-purple-100 backdrop-blur">
+            <Sparkles className="h-3 w-3" strokeWidth={2.5} />
+            Nova coleção
+          </span>
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 p-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[15px] font-extrabold leading-tight text-white">A nova pele do nosso racha</h2>
+              <p className="truncate text-[11px] text-white/70">Veja os modelos e peça a sua camisa</p>
             </div>
             <Link
               href="/camisas"
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-purple px-4 text-sm font-bold text-white shadow-lg shadow-purple-950/30 hover:bg-brand-purple-dark"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-xs font-bold text-white shadow-lg shadow-purple-950/40 hover:bg-brand-purple-dark"
             >
-              <Shirt className="h-4 w-4" />
-              Ver modelos e pedidos
-              <ArrowRight className="h-4 w-4" />
+              <Shirt className="h-3.5 w-3.5" strokeWidth={2.25} />
+              Ver modelos
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
             </Link>
           </div>
+        </div>
       </section>
 
       {recentChampion && (
@@ -474,34 +516,34 @@ export default async function HomePage() {
       <HomeCommunityTabs
         birthdayCount={birthdayCount}
         announcementContent={
-          <div className="p-1">
-            <div className="flex justify-end">
-              <Link href="/avisos" className="inline-flex items-center gap-1 text-xs font-medium text-purple-300 hover:underline">Ver todos <ArrowRight className="h-3.5 w-3.5" /></Link>
-            </div>
+          <div className="p-2.5">
             {ultimoAviso ? (
-              <Link href="/avisos" className="mt-1.5 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10">
+              <Link href="/avisos" className="flex items-center gap-3 rounded-xl p-1.5 transition hover:bg-white/5">
                 {ultimoAviso.image_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={ultimoAviso.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
+                  <img src={ultimoAviso.image_url} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-purple/20 text-purple-200"><Megaphone className="h-5 w-5" /></span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-purple/25 text-purple-200"><Megaphone className="h-[18px] w-[18px]" strokeWidth={2.25} /></span>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-semibold text-white">{ultimoAviso.title}</p>
-                    {avisoIsNew && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-purple/25 px-2 py-0.5 text-[9px] font-bold text-purple-200"><Sparkles className="h-2.5 w-2.5" /> Novo</span>}
+                    <p className="truncate text-[13px] font-bold text-white">{ultimoAviso.title}</p>
+                    {avisoIsNew && <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-purple/30 px-1.5 py-0.5 text-[8px] font-extrabold text-purple-200"><Sparkles className="h-2.5 w-2.5" /> NOVO</span>}
                   </div>
-                  <p className="mt-0.5 truncate text-xs text-white/55">{avisoPreview}</p>
-                  <p className="mt-1 text-[11px] text-white/35">{avisoAuthor} · {relativeDate(ultimoAviso.created_at)}</p>
+                  <p className="truncate text-[11px] text-white/55">{avisoPreview}</p>
+                  <p className="text-[10px] text-white/35">{avisoAuthor} · {relativeDate(ultimoAviso.created_at)}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
               </Link>
             ) : (
-              <p className="mt-2 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/50">Nenhum aviso ainda.</p>
+              <p className="rounded-xl p-2 text-sm text-white/50">Nenhum aviso ainda.</p>
             )}
+            <Link href="/avisos" className="mt-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold text-purple-300 hover:underline">
+              Ver todos os avisos <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
         }
-        birthdaysContent={<BirthdaysCard profiles={birthdayProfiles ?? []} />}
+        birthdaysContent={<BirthdaysCard profiles={birthdayProfiles ?? []} embedded />}
       />
     </div>
   );
