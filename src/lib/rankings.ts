@@ -16,9 +16,9 @@ export type PerformanceStats = {
   eligible: boolean;
 };
 
-// Mínimo de presenças confirmadas em rachas encerrados pra entrar na
-// classificação do Índice VPA.
-export const PERFORMANCE_MIN_ATTENDANCE = 2;
+// Mínimo de presenças confirmadas em rachas encerrados (por período) pra o
+// período contar no Índice VPA -- 1 racha já basta.
+export const PERFORMANCE_MIN_ATTENDANCE = 1;
 
 // Vagas provisórias do torneio oficial de abril/2027 que vêm do Índice VPA
 // geral (o resto das vagas é via pré-torneio). Número ainda não fechado com
