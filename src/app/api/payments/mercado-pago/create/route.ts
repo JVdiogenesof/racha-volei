@@ -29,7 +29,9 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (intentError || !storedIntent) throw new Error(intentError?.message || "Reserva não encontrada.");
 
-    const externalReference = storedIntent.provider_reference || `vpa_${body.eventId}_${storedIntent.id}`;
+    // O Mercado Pago aceita no máximo 64 caracteres aqui; só o id da reserva
+    // (que já identifica o racha) cabe com folga.
+    const externalReference = storedIntent.provider_reference || `vpa_${storedIntent.id}`;
     const order = storedIntent.provider_order_id
       ? await getMercadoPagoOrder(storedIntent.provider_order_id)
       : await createPixOrder({
