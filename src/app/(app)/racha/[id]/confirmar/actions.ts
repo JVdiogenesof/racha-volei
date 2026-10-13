@@ -86,6 +86,74 @@ export async function promoteToConfirmed(formData: FormData) {
   revalidatePath(`/racha/${eventId}`);
 }
 
+export async function lockGuaranteedSpot(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+  const note = String(formData.get("note") ?? "");
+  if (!profileId) throw new Error("Escolha uma pessoa para garantir a vaga.");
+
+  const { error } = await supabase.rpc("lock_event_participant", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+    p_note: note || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+}
+
+export async function releaseGuaranteedSpot(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+
+  const { error } = await supabase.rpc("release_locked_event_participant", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+}
+
+export async function grantPreTournamentException(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+  const reason = String(formData.get("reason") ?? "");
+  if (!profileId) throw new Error("Escolha a pessoa que terá a exceção.");
+
+  const { error } = await supabase.rpc("grant_pre_tournament_exception", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+    p_reason: reason || null,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+}
+
+export async function revokePreTournamentException(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const eventId = String(formData.get("eventId"));
+  const profileId = String(formData.get("profileId"));
+
+  const { error } = await supabase.rpc("revoke_pre_tournament_exception", {
+    p_event_id: eventId,
+    p_profile_id: profileId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+}
+
 export async function demoteToInterested(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

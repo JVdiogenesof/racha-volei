@@ -17,6 +17,7 @@ export function PixReservationButton({
   hasInterest,
   isFull,
   blockedReason,
+  guaranteedSpot = false,
   action,
 }: {
   eventId: string;
@@ -24,6 +25,8 @@ export function PixReservationButton({
   isFull: boolean;
   /** Impede gerar Pix quando a cota exclusiva da pessoa já foi preenchida. */
   blockedReason?: string | null;
+  /** A organização já ocupou esta vaga; o Pix só conclui o pagamento. */
+  guaranteedSpot?: boolean;
   action: (formData: FormData) => Promise<void> | void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -54,7 +57,7 @@ export function PixReservationButton({
     }
     startTransition(async () => {
       try {
-        if (!hasInterest) {
+        if (!hasInterest && !guaranteedSpot) {
           const formData = new FormData();
           formData.set("eventId", eventId);
           formData.set("status", "interested");
@@ -136,7 +139,7 @@ export function PixReservationButton({
       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 disabled:opacity-60"
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : hasInterest ? "Reservar e pagar por Pix" : "Tenho interesse e quero pagar"}
+      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : guaranteedSpot ? "Pagar vaga garantida por Pix" : hasInterest ? "Reservar e pagar por Pix" : "Tenho interesse e quero pagar"}
     </button>
   );
 }
