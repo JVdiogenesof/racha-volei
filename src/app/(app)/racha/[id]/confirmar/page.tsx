@@ -230,6 +230,7 @@ export default async function ConfirmarPresencaPage({
           maxPlayers={eventCapacity}
           initialConfirmedCount={confirmados.length}
           initialSetterCount={setterConfirmedCount}
+          showFullCapacity={profile.is_organizer}
         />
       )}
 

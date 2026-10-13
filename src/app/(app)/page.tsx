@@ -327,7 +327,7 @@ export default async function HomePage() {
               </>
             ) : (
               <>
-                <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact />
+                <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                   {!canRespondToNextEvent ? (
                     <Link
