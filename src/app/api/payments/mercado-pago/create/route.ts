@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       .maybeSingle();
     if (intentError || !storedIntent) throw new Error(intentError?.message || "Reserva não encontrada.");
 
-    const externalReference = storedIntent.provider_reference || `vpa:${body.eventId}:${storedIntent.id}`;
+    const externalReference = storedIntent.provider_reference || `vpa_${body.eventId}_${storedIntent.id}`;
     const order = storedIntent.provider_order_id
       ? await getMercadoPagoOrder(storedIntent.provider_order_id)
       : await createPixOrder({

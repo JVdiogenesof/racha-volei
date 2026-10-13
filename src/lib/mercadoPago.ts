@@ -25,7 +25,7 @@ type MercadoPagoErrorBody = {
   errors?: Array<{
     code?: string;
     message?: string;
-    details?: string;
+    details?: string | string[];
   }>;
 };
 
@@ -50,7 +50,11 @@ async function mercadoPagoRequest(path: string, init: RequestInit) {
   if (!response.ok) {
     const errorBody = body as MercadoPagoErrorBody | null;
     const providerError = errorBody?.errors?.[0];
-    const message = providerError?.message || providerError?.details || errorBody?.message || errorBody?.error;
+    const details = Array.isArray(providerError?.details) ? providerError.details.join(", ") : providerError?.details;
+    const base = providerError?.message || details || errorBody?.message || errorBody?.error;
+    // O Mercado Pago costuma dizer só "Invalid value for property"; o campo
+    // problemático vem em details, então vai junto na mensagem.
+    const message = base && details && base !== details ? `${base} (${details})` : base;
     console.error("[mercado-pago] Requisição recusada pelo provedor", {
       path,
       status: response.status,
