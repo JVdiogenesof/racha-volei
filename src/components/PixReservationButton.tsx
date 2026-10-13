@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, Copy, Loader2, QrCode } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
+import { CopyPixButton } from "./CopyPixButton";
+import { PIX_KEY } from "@/lib/payment";
 
 type PixData = {
   qrCode: string;
@@ -31,6 +33,9 @@ export function PixReservationButton({
 }) {
   const [isPending, startTransition] = useTransition();
   const [pix, setPix] = useState<PixData | null>(null);
+  // Se o provedor falhar, a pessoa não fica sem saída: mostramos a chave Pix
+  // manual do grupo e a organização confirma o nome na lista.
+  const [failure, setFailure] = useState<string | null>(null);
   const [now, setNow] = useState(0);
   const { showToast } = useToast();
   const router = useRouter();
@@ -71,10 +76,14 @@ export function PixReservationButton({
         const payload = (await response.json()) as PixData & { error?: string };
         if (!response.ok || payload.error) throw new Error(payload.error || "Não foi possível gerar o Pix.");
         setNow(Date.now());
+        setFailure(null);
         setPix(payload);
         router.refresh();
       } catch (error) {
-        showToast(error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.");
+        const message = error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.";
+        showToast(message);
+        setFailure(message);
+        router.refresh();
       }
     });
   }
@@ -127,6 +136,29 @@ export function PixReservationButton({
           </a>
         </div>
         <p className="mt-3 text-xs text-white/55">Após pagar, sua confirmação aparece automaticamente.</p>
+      </section>
+    );
+  }
+
+  if (failure) {
+    return (
+      <section className="w-full rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4">
+        <p className="text-sm font-bold text-amber-100">Não conseguimos gerar o QR Code agora.</p>
+        <p className="mt-1 text-xs leading-relaxed text-amber-50/80">
+          Seu interesse está registrado. Pague pela chave Pix abaixo e avise a organização para confirmar seu nome na lista.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2.5">
+          <span className="min-w-0 flex-1 break-all text-sm font-semibold text-white">{PIX_KEY}</span>
+          <CopyPixButton pixKey={PIX_KEY} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-400" />
+        </div>
+        <p className="mt-2 text-[11px] text-amber-50/60">Detalhe: {failure}</p>
+        <button
+          type="button"
+          onClick={() => setFailure(null)}
+          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+        >
+          Tentar gerar o QR Code de novo
+        </button>
       </section>
     );
   }
