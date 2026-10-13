@@ -48,9 +48,22 @@ export function PixReservationButton({
 
   useEffect(() => {
     if (!pix) return;
-    const refresh = window.setInterval(() => router.refresh(), 4000);
+    // A cada 4s confere o pagamento direto no Mercado Pago, sem depender só do
+    // aviso (webhook), e atualiza a lista quando a vaga for confirmada.
+    const refresh = window.setInterval(async () => {
+      try {
+        await fetch("/api/payments/mercado-pago/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId }),
+        });
+      } catch {
+        // tenta de novo no próximo ciclo
+      }
+      router.refresh();
+    }, 4000);
     return () => window.clearInterval(refresh);
-  }, [pix, router]);
+  }, [pix, router, eventId]);
 
   const seconds = pix ? Math.max(0, Math.ceil((new Date(pix.reservationExpiresAt).getTime() - now) / 1000)) : 0;
   const timerText = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;

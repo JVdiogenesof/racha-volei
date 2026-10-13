@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { getMercadoPagoOrder, isApprovedMercadoPagoOrder } from "@/lib/mercadoPago";
+import { settleMercadoPagoOrder } from "@/lib/mercadoPagoSettle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,35 +37,7 @@ export async function POST(request: Request) {
   if (!orderId || !hasValidSignature(request, orderId)) return new Response(null, { status: 401 });
 
   try {
-    const order = await getMercadoPagoOrder(orderId);
-    if (!isApprovedMercadoPagoOrder(order)) return new Response(null, { status: 200 });
-
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY ausente.");
-    const supabase = createServiceClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data: intent, error: intentError } = await supabase
-      .from("event_payment_intents")
-      .select("id")
-      .eq("provider", "mercado_pago")
-      .eq("provider_order_id", orderId)
-      .maybeSingle();
-    if (intentError || !intent) return new Response(null, { status: 200 });
-
-    const { error } = await supabase.rpc("complete_event_pix_payment", {
-      p_intent_id: intent.id,
-      p_provider_order_id: orderId,
-    });
-    if (error?.message.includes("reserva já expirou")) {
-      const { error: creditError } = await supabase.rpc("credit_late_event_pix_payment", {
-        p_intent_id: intent.id,
-        p_provider_order_id: orderId,
-      });
-      if (creditError) throw new Error(creditError.message);
-    } else if (error) {
-      throw new Error(error.message);
-    }
+    await settleMercadoPagoOrder(orderId);
     return new Response(null, { status: 200 });
   } catch (error) {
     console.error("Mercado Pago webhook failed", error instanceof Error ? error.message : error);
