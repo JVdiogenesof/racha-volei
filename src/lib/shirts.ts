@@ -1,7 +1,7 @@
 import type { Community } from "@/lib/community";
 
-// Altere para false quando uma encomenda de camisas for encerrada.
-export const SHIRT_ORDERS_OPEN = true;
+// Pedidos temporariamente encerrados; os pedidos e o painel administrativo seguem disponíveis.
+export const SHIRT_ORDERS_OPEN = false;
 
 export type ShirtModelInfo = {
   label: string;
