@@ -18,7 +18,14 @@ function hasValidSignature(request: Request, orderId: string) {
   const timestamp = values.get("ts");
   const supplied = values.get("v1");
   if (!timestamp || !supplied) return false;
-  const manifest = `id:${orderId.toLowerCase()};request-id:${requestId ?? ""};ts:${timestamp};`;
+  // O Mercado Pago pede que campos ausentes sejam omitidos do manifesto, em
+  // vez de assinados como string vazia. Assim a confirmação continua válida
+  // mesmo numa tentativa de webhook sem x-request-id.
+  const manifest = [
+    `id:${orderId.toLowerCase()};`,
+    ...(requestId ? [`request-id:${requestId};`] : []),
+    `ts:${timestamp};`,
+  ].join("");
   const expected = createHmac("sha256", secret).update(manifest).digest("hex");
   const expectedBuffer = Buffer.from(expected, "hex");
   const suppliedBuffer = Buffer.from(supplied, "hex");
