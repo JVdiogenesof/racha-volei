@@ -5,9 +5,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  let eventId: string | undefined;
   try {
     const body = (await request.json()) as { eventId?: string };
     if (!body.eventId) return Response.json({ error: "Racha inválido." }, { status: 400 });
+    eventId = body.eventId;
 
     const supabase = await createClient();
     const { data: auth } = await supabase.auth.getUser();
@@ -53,6 +55,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível iniciar o pagamento Pix.";
+    // Não registra credenciais, QR Code nem dados pessoais. Esta trilha é
+    // essencial para diagnosticar uma falha do provedor sem impedir que a
+    // pessoa tente gerar a cobrança novamente.
+    console.error("[pix-create] Não foi possível criar a cobrança", {
+      eventId,
+      message,
+    });
     return Response.json({ error: message }, { status: 400 });
   }
 }
