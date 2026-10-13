@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, type ReactNode } from "react";
-import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Trophy } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Minus, Sparkles, TrendingDown, TrendingUp, Trophy } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
@@ -15,6 +15,9 @@ export type RankingEntry = {
   detail?: string;
   /** false mantém a pessoa visível, mas fora das posições e do pódio. */
   ranked?: boolean;
+  /** Movimento desde o racha anterior, usado pelo Índice VPA vivo. */
+  trend?: "up" | "down" | "same" | "new";
+  positionChange?: number | null;
 };
 
 // Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
@@ -23,6 +26,14 @@ const PODIUM_STYLE = [
   { height: "h-9", bar: "from-white/25 to-white/0", border: "border-white/25", text: "text-white/75" },
   { height: "h-7", bar: "from-orange-300/30 to-orange-500/0", border: "border-orange-300/35", text: "text-orange-300" },
 ];
+
+function TrendBadge({ entry }: { entry: RankingEntry }) {
+  if (!entry.trend) return null;
+  if (entry.trend === "new") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-sky-200"><Sparkles className="h-3 w-3" />novo</span>;
+  if (entry.trend === "up") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-300"><TrendingUp className="h-3 w-3" />+{entry.positionChange}</span>;
+  if (entry.trend === "down") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-rose-300"><TrendingDown className="h-3 w-3" />{entry.positionChange}</span>;
+  return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-white/35"><Minus className="h-3 w-3" />estável</span>;
+}
 
 export function Leaderboard({
   title,
@@ -99,6 +110,7 @@ export function Leaderboard({
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
                     {entry.detail && <p className="line-clamp-1 w-full px-0.5 text-[9px] leading-tight text-white/35">{entry.detail}</p>}
+                    <TrendBadge entry={entry} />
                     <div
                       className={`mt-1.5 flex w-full items-start justify-center gap-1 rounded-t-lg border border-b-0 bg-gradient-to-b pt-1 ${style.height} ${style.bar} ${style.border}`}
                     >
@@ -158,6 +170,7 @@ export function Leaderboard({
                             {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" strokeWidth={2.5} aria-label="Classificado" />}
                             <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                           </p>
+                          <TrendBadge entry={entry} />
                           {gap !== null && gap > 0 && (
                             <p className="text-[10px] font-bold leading-tight text-amber-300/85">−{gap.toFixed(1)} p/ vaga</p>
                           )}

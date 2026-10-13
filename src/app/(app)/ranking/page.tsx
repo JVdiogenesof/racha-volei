@@ -2,7 +2,7 @@ import { CalendarRange, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
-import { getSeasonRanking, SEASON_MIN_MONTHS, SEASON_START_MONTH } from "@/lib/seasonRanking";
+import { getSeasonRanking, INDEX_MIN_EVENTS, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -14,9 +14,8 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const supabase = await createClient();
   const community = await getActiveCommunity(currentProfile);
   const requestedMonth = (await searchParams).month;
-  // "season" (padrão) é a temporada classificatória pro torneio -- média dos
-  // meses jogados desde SEASON_START_MONTH. Um mês específico é só uma foto
-  // daquele período isolado, pra curiosidade histórica.
+  // A visão principal é a janela viva dos últimos rachas. Um mês específico
+  // continua disponível como foto histórica daquele período.
   const monthKey = requestedMonth && requestedMonth !== "season" ? normalizeMonthKey(requestedMonth) : undefined;
   const isSeasonView = !monthKey;
 
@@ -65,9 +64,11 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             avatarUrl: profile.avatar_url,
             displayValue: season.eligible ? `${season.averageIndex.toFixed(1)} pts` : "Em classificação",
             detail: season.eligible
-              ? `média de ${season.monthsPlayed} ${season.monthsPlayed === 1 ? "mês" : "meses"} · ${season.totalWins}V · ${season.totalLosses}D · ${season.totalAttendance} pres.`
-              : `${season.monthsPlayed}/${SEASON_MIN_MONTHS} meses jogados`,
+              ? `${season.eventsPlayed}/${ROLLING_INDEX_EVENT_COUNT} rachas · ${season.totalWins}V · ${season.totalLosses}D${season.progressBonus ? ` · +${season.progressBonus.toFixed(1)} evolução` : ""}`
+              : `${season.eventsPlayed}/${INDEX_MIN_EVENTS} rachas para classificação`,
             ranked: season.eligible,
+            trend: season.trend,
+            positionChange: season.positionChange,
           }];
         })
         .sort(
@@ -108,13 +109,13 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
           </h1>
           <p className="mt-0.5 text-xs leading-snug text-white/55">
             {isSeasonView
-              ? "Temporada classificatória: média dos meses jogados, pra todo mundo competir de igual pra igual."
+              ? `Índice VPA vivo: últimos ${ROLLING_INDEX_EVENT_COUNT} rachas, com peso maior para os ${Math.min(4, ROLLING_INDEX_EVENT_COUNT)} mais recentes.`
               : `Foto isolada de ${formatMonthLabel(monthKey!)}, só pra conferir como estava aquele mês.`}
           </p>
         </div>
         <form className="flex shrink-0 items-center gap-1.5" action="/ranking">
           <FormSelect id="month" aria-label="Período" name="month" defaultValue={monthKey ?? "season"} className="min-w-[11rem] capitalize text-xs font-semibold">
-            <option value="season">Temporada (desde {formatMonthLabel(SEASON_START_MONTH)})</option>
+            <option value="season">Índice VPA · últimos {ROLLING_INDEX_EVENT_COUNT} rachas</option>
             {availableMonths.map((key) => <option key={key} value={key}>{formatMonthLabel(key)}</option>)}
           </FormSelect>
           <button type="submit" aria-label="Ver período" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/15">

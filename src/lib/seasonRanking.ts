@@ -1,132 +1,207 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "./community";
-import { getRankingCounts } from "./rankings";
-import { currentMonthKey, monthRange } from "./monthlyReport";
+import { getPresentProfileIdsByEvent } from "./presence";
+import { INDEX_BASE_PERCENTAGE, INDEX_CONFIDENCE_MATCHES } from "./rankings";
 
-// A temporada classificatória pro torneio oficial de abril/2027 passou a
-// contar a partir de setembro/2026. Em vez de acumular desde o início do
-// app, cada período agora é uma amostra própria (mesma fórmula do Índice
-// VPA, só escopada ao período) e a nota da temporada é a média das amostras
-// jogadas -- assim um jogador que entrar em 2027 compete de igual pra
-// igual, só precisando manter uma boa média nos períodos em que jogou.
-//
-// Setembro e outubro de 2026 são tratados como um único "período de
-// lançamento": a funcionalidade entrou em vigor no meio do caminho, então
-// em vez de calcular um índice pra cada mês e tirar a média dos dois (o que
-// penalizaria quem teve um mês bom e um mediano só por causa de quando a
-// mudança nasceu), os dois meses são somados e viram UM índice só -- que já
-// conta como os 2 meses mínimos da temporada por cobrir 2 meses de
-// calendário. A partir de novembro/2026, cada mês novo volta a ser uma
-// amostra independente, e a temporada cresce mês a mês normalmente.
+// A temporada continua sendo usada como referência do torneio oficial. O
+// Índice em si é uma janela viva: os oito últimos rachas deixam a tabela
+// responder à fase atual de cada jogador, sem apagar completamente a história.
 export const SEASON_START_MONTH = "2026-09";
-export const SEASON_MIN_MONTHS = 2;
+export const ROLLING_INDEX_EVENT_COUNT = 8;
+export const INDEX_MIN_EVENTS = 2;
+const RECENT_EVENT_COUNT = 4;
+const RECENT_EVENT_WEIGHT = 2.5;
+const OLDER_EVENT_WEIGHT = 1;
+const MAX_PROGRESS_BONUS = 5;
 
-const LAUNCH_PERIOD_START_MONTH = "2026-09";
-const LAUNCH_PERIOD_END_MONTH = "2026-10";
-const LAUNCH_PERIOD_MONTHS_COVERED = 2;
+export type RankingTrend = "up" | "down" | "same" | "new";
 
 export type SeasonPlayerScore = {
   profileId: string;
-  monthsPlayed: number;
+  eventsPlayed: number;
   averageIndex: number;
   totalWins: number;
   totalLosses: number;
   totalAttendance: number;
+  progressBonus: number;
+  trend: RankingTrend;
+  positionChange: number | null;
   eligible: boolean;
 };
 
-type SeasonPeriod = {
-  monthKey?: string;
-  range?: { start: string; nextStart: string };
-  monthsCovered: number;
-};
+type EventRow = { id: string; date: string; is_pre_torneio: boolean };
+type EventPlayerRecord = { present: boolean; wins: number; losses: number };
+type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange">;
 
-function nextMonthKey(monthKey: string): string {
-  const [year, month] = monthKey.split("-").map(Number);
-  const nextMonth = month === 12 ? 1 : month + 1;
-  const nextYear = month === 12 ? year + 1 : year;
-  return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
+function roundOne(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
-function monthsBetween(startMonth: string, endMonth: string): string[] {
-  const [startYear, startMonthNum] = startMonth.split("-").map(Number);
-  const [endYear, endMonthNum] = endMonth.split("-").map(Number);
-  const months: string[] = [];
-  let year = startYear;
-  let month = startMonthNum;
-  while (year < endYear || (year === endYear && month <= endMonthNum)) {
-    months.push(`${year}-${String(month).padStart(2, "0")}`);
-    month += 1;
-    if (month > 12) {
-      month = 1;
-      year += 1;
-    }
-  }
-  return months;
+function recordFor(records: Map<string, Map<string, EventPlayerRecord>>, eventId: string, profileId: string) {
+  const byProfile = records.get(eventId) ?? new Map<string, EventPlayerRecord>();
+  records.set(eventId, byProfile);
+  const record = byProfile.get(profileId) ?? { present: false, wins: 0, losses: 0 };
+  byProfile.set(profileId, record);
+  return record;
 }
 
-function buildSeasonPeriods(currentMonth: string): SeasonPeriod[] {
-  const launchRange = {
-    start: monthRange(LAUNCH_PERIOD_START_MONTH).start,
-    nextStart: monthRange(LAUNCH_PERIOD_END_MONTH).nextStart,
-  };
-  const periods: SeasonPeriod[] = [{ range: launchRange, monthsCovered: LAUNCH_PERIOD_MONTHS_COVERED }];
-
-  // Meses depois do período de lançamento, um a um -- fica vazio enquanto
-  // ainda estivermos dentro de set/out.
-  const extraMonths = monthsBetween(nextMonthKey(LAUNCH_PERIOD_END_MONTH), currentMonth);
-  for (const monthKey of extraMonths) {
-    periods.push({ monthKey, monthsCovered: 1 });
+function adjustedForm(events: EventRow[], records: Map<string, Map<string, EventPlayerRecord>>, profileId: string) {
+  let wins = 0;
+  let matches = 0;
+  for (const event of events) {
+    const record = records.get(event.id)?.get(profileId);
+    if (!record) continue;
+    wins += record.wins;
+    matches += record.wins + record.losses;
   }
-  return periods;
+  if (!matches) return null;
+  const percentage = (wins / matches) * 100;
+  const confidence = matches / (matches + INDEX_CONFIDENCE_MATCHES);
+  return confidence * percentage + (1 - confidence) * INDEX_BASE_PERCENTAGE;
+}
+
+function buildScores(events: EventRow[], records: Map<string, Map<string, EventPlayerRecord>>) {
+  const playerIds = new Set<string>();
+  for (const eventRecords of records.values()) {
+    for (const profileId of eventRecords.keys()) playerIds.add(profileId);
+  }
+
+  const recentStart = Math.max(0, events.length - RECENT_EVENT_COUNT);
+  const weights = events.map((_, index) => index >= recentStart ? RECENT_EVENT_WEIGHT : OLDER_EVENT_WEIGHT);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const recentEvents = events.slice(recentStart);
+  const olderEvents = events.slice(0, recentStart);
+  const scores = new Map<string, ScoreDraft>();
+
+  for (const profileId of playerIds) {
+    let weightedWins = 0;
+    let weightedMatches = 0;
+    let rawMatches = 0;
+    let totalWins = 0;
+    let totalLosses = 0;
+    let eventsPlayed = 0;
+    let attendedWeight = 0;
+
+    events.forEach((event, index) => {
+      const record = records.get(event.id)?.get(profileId);
+      if (!record) return;
+      const weight = weights[index];
+      if (record.present) {
+        eventsPlayed += 1;
+        attendedWeight += weight;
+      }
+      const matches = record.wins + record.losses;
+      weightedWins += record.wins * weight;
+      weightedMatches += matches * weight;
+      rawMatches += matches;
+      totalWins += record.wins;
+      totalLosses += record.losses;
+    });
+
+    const percentage = weightedMatches ? (weightedWins / weightedMatches) * 100 : INDEX_BASE_PERCENTAGE;
+    const confidence = rawMatches / (rawMatches + INDEX_CONFIDENCE_MATCHES);
+    const adjustedPerformance = confidence * percentage + (1 - confidence) * INDEX_BASE_PERCENTAGE;
+    const attendancePercentage = (attendedWeight / totalWeight) * 100;
+    const baseIndex = adjustedPerformance * 0.65 + attendancePercentage * 0.35;
+
+    const recentAttendance = recentEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
+    const olderAttendance = olderEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
+    const recentForm = adjustedForm(recentEvents, records, profileId);
+    const olderForm = adjustedForm(olderEvents, records, profileId);
+    // Evolução só bonifica quem voltou a jogar e realmente melhorou a forma.
+    const progressBonus = recentAttendance >= 2 && olderAttendance >= 1 && recentForm !== null && olderForm !== null
+      ? Math.min(MAX_PROGRESS_BONUS, Math.max(0, roundOne((recentForm - olderForm) * 0.15)))
+      : 0;
+
+    scores.set(profileId, {
+      profileId,
+      eventsPlayed,
+      totalAttendance: eventsPlayed,
+      totalWins,
+      totalLosses,
+      progressBonus,
+      averageIndex: roundOne(Math.min(100, baseIndex + progressBonus)),
+      eligible: eventsPlayed >= INDEX_MIN_EVENTS,
+    });
+  }
+
+  return scores;
+}
+
+function positionsFor(scores: Map<string, ScoreDraft>) {
+  const sorted = [...scores.values()]
+    .filter((score) => score.eligible)
+    .sort((a, b) => b.averageIndex - a.averageIndex || b.totalWins - a.totalWins || b.totalAttendance - a.totalAttendance || a.profileId.localeCompare(b.profileId));
+  return new Map(sorted.map((score, index) => [score.profileId, index + 1]));
 }
 
 export async function getSeasonRanking(
   supabase: SupabaseClient,
   community: Community = "court",
 ): Promise<Map<string, SeasonPlayerScore>> {
-  const periods = buildSeasonPeriods(currentMonthKey());
-  const periodCounts = await Promise.all(
-    periods.map((period) => getRankingCounts(supabase, community, period.monthKey ?? period.range)),
-  );
+  const { data: eventRows, error: eventError } = await supabase
+    .from("events")
+    .select("id, date, is_pre_torneio")
+    .eq("community", community)
+    .eq("status", "finished")
+    .order("date", { ascending: false })
+    .limit(ROLLING_INDEX_EVENT_COUNT);
+  if (eventError) throw new Error(eventError.message);
 
-  const scoresByProfile = new Map<string, number[]>();
-  const monthsCoveredByProfile = new Map<string, number>();
-  const sumsByProfile = new Map<string, { wins: number; losses: number; attendance: number }>();
+  const events = ([...(eventRows ?? [])] as EventRow[]).reverse();
+  if (!events.length) return new Map();
+  const eventIds = events.map((event) => event.id);
+  const [presentByEvent, { data: matchRows, error: matchError }] = await Promise.all([
+    getPresentProfileIdsByEvent(supabase, eventIds),
+    supabase
+      .from("match_wins")
+      .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+      .in("event_id", eventIds),
+  ]);
+  if (matchError) throw new Error(matchError.message);
 
-  periodCounts.forEach((counts, index) => {
-    const monthsCovered = periods[index].monthsCovered;
-    for (const [profileId, stats] of counts.performance) {
-      // Só conta o período se a pessoa teve presença mínima nele -- um
-      // período em que ela quase não apareceu não deveria entrar na média.
-      if (!stats.eligible) continue;
-      const scores = scoresByProfile.get(profileId) ?? [];
-      scores.push(stats.indexScore);
-      scoresByProfile.set(profileId, scores);
+  const teamIds = [...new Set((matchRows ?? []).flatMap((match) => [match.team_id, match.loser_team_id].filter((id): id is string => Boolean(id))))];
+  const { data: memberRows, error: membersError } = teamIds.length
+    ? await supabase.from("team_members").select("team_id, profile_id").in("team_id", teamIds)
+    : { data: [], error: null };
+  if (membersError) throw new Error(membersError.message);
 
-      monthsCoveredByProfile.set(profileId, (monthsCoveredByProfile.get(profileId) ?? 0) + monthsCovered);
+  const profileIdsByTeam = new Map<string, string[]>();
+  for (const member of memberRows ?? []) {
+    const members = profileIdsByTeam.get(member.team_id) ?? [];
+    members.push(member.profile_id);
+    profileIdsByTeam.set(member.team_id, members);
+  }
 
-      const sums = sumsByProfile.get(profileId) ?? { wins: 0, losses: 0, attendance: 0 };
-      sums.wins += stats.wins;
-      sums.losses += stats.losses;
-      sums.attendance += stats.attendance;
-      sumsByProfile.set(profileId, sums);
-    }
-  });
+  const records = new Map<string, Map<string, EventPlayerRecord>>();
+  for (const [eventId, presentProfiles] of presentByEvent) {
+    for (const profileId of presentProfiles) recordFor(records, eventId, profileId).present = true;
+  }
 
+  const eventById = new Map(events.map((event) => [event.id, event]));
+  for (const match of matchRows ?? []) {
+    // Pré-torneios entram pela presença; confrontos normais alimentam a forma.
+    if (eventById.get(match.event_id)?.is_pre_torneio || !match.loser_team_id) continue;
+    const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
+    const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
+    for (const profileId of winners) recordFor(records, match.event_id, profileId).wins += 1;
+    for (const profileId of losers) recordFor(records, match.event_id, profileId).losses += 1;
+  }
+
+  const currentScores = buildScores(events, records);
+  const previousScores = events.length > 1 ? buildScores(events.slice(0, -1), records) : new Map<string, ScoreDraft>();
+  const currentPositions = positionsFor(currentScores);
+  const previousPositions = positionsFor(previousScores);
   const result = new Map<string, SeasonPlayerScore>();
-  for (const [profileId, scores] of scoresByProfile) {
-    const monthsPlayed = monthsCoveredByProfile.get(profileId) ?? scores.length;
-    const averageIndex = Math.round((scores.reduce((sum, score) => sum + score, 0) / scores.length) * 10) / 10;
-    const sums = sumsByProfile.get(profileId) ?? { wins: 0, losses: 0, attendance: 0 };
+
+  for (const [profileId, score] of currentScores) {
+    const currentPosition = currentPositions.get(profileId);
+    const previousPosition = previousPositions.get(profileId);
+    const positionChange = currentPosition && previousPosition ? previousPosition - currentPosition : null;
     result.set(profileId, {
-      profileId,
-      monthsPlayed,
-      averageIndex,
-      totalWins: sums.wins,
-      totalLosses: sums.losses,
-      totalAttendance: sums.attendance,
-      eligible: monthsPlayed >= SEASON_MIN_MONTHS,
+      ...score,
+      trend: positionChange === null ? "new" : positionChange > 0 ? "up" : positionChange < 0 ? "down" : "same",
+      positionChange,
     });
   }
   return result;

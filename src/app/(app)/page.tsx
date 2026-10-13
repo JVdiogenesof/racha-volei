@@ -20,7 +20,7 @@ import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
-import { getSeasonRanking, SEASON_MIN_MONTHS } from "@/lib/seasonRanking";
+import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
 
 function hoursAgoIso(hours: number) {
@@ -199,8 +199,8 @@ export default async function HomePage() {
     ultimoAviso && ultimoAviso.body.length > 100 ? `${ultimoAviso.body.slice(0, 100).trim()}…` : ultimoAviso?.body;
   const birthdayCount = birthdaysThisMonth(birthdayProfiles ?? []).length;
 
-  // Mesma base do Ranking: só entra quem é aprovado na comunidade e já tem os
-  // meses mínimos da temporada; empate resolve por vitórias.
+  // Mesma base do Ranking: entra quem é aprovado na comunidade e já atingiu
+  // o mínimo de participações na janela viva do Índice VPA.
   const approvedIds = new Set((birthdayProfiles ?? []).map((item) => item.id));
   const rankedSeason = seasonScores
     ? [...seasonScores.values()]
@@ -439,7 +439,7 @@ export default async function HomePage() {
             ) : (
               <p className="truncate text-sm font-semibold leading-snug text-white/75">
                 {mySeason
-                  ? `Em classificação · ${mySeason.monthsPlayed}/${SEASON_MIN_MONTHS} meses jogados`
+                  ? `Em classificação · ${mySeason.eventsPlayed}/${INDEX_MIN_EVENTS} rachas jogados`
                   : "Jogue um racha pra entrar no ranking"}
               </p>
             )}
