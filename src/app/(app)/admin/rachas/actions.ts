@@ -51,6 +51,10 @@ function parseEventCapacity(formData: FormData) {
   ) {
     throw new Error("A quantidade de vagas para novatos não pode ultrapassar o total de vagas.");
   }
+  const setterReservedSpots = Math.max(1, Math.ceil(maxPlayers / 6));
+  if (newcomerReservedSpots + setterReservedSpots > maxPlayers) {
+    throw new Error(`Reserve no máximo ${maxPlayers - setterReservedSpots} vagas para novatos: ${setterReservedSpots} já ficam protegidas para levantadores.`);
+  }
 
   return { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle };
 }
@@ -157,20 +161,28 @@ export async function updateEvent(formData: FormData) {
 
   const { data: confirmedRows, error: confirmedError } = await supabase
     .from("attendance")
-    .select("profile_id, uses_newcomer_spot")
+    .select("profile_id, uses_newcomer_spot, uses_setter_spot")
     .eq("event_id", eventId)
     .eq("status", "confirmed");
   if (confirmedError) throw new Error(confirmedError.message);
 
   const confirmed = confirmedRows ?? [];
+  const setterCount = confirmed.filter((row) => row.uses_setter_spot).length;
   const newcomerCount = confirmed.filter((row) => row.uses_newcomer_spot).length;
-  const regularCount = confirmed.length - newcomerCount;
+  const regularCount = confirmed.length - setterCount - newcomerCount;
+  const setterReservedSpots = Math.max(1, Math.ceil(maxPlayers / 6));
   if (confirmed.length > maxPlayers) {
     throw new Error(`Já existem ${confirmed.length} confirmados. Aumente o total de vagas antes de salvar.`);
   }
-  if (regularCount > maxPlayers - newcomerReservedSpots) {
+  if (setterCount > setterReservedSpots) {
+    throw new Error(`Já existem ${setterCount} levantadores confirmados. Mantenha ao menos ${setterCount * 6} vagas ou ajuste a lista antes de salvar.`);
+  }
+  if (newcomerCount > newcomerReservedSpots) {
+    throw new Error(`Já existem ${newcomerCount} novatos usando vagas protegidas. Mantenha essa quantidade de vagas para novatos.`);
+  }
+  if (regularCount > maxPlayers - newcomerReservedSpots - setterReservedSpots) {
     throw new Error(
-      `Já existem ${regularCount} membros confirmados. Reduza as vagas de novatos ou aumente o total de vagas.`,
+      `Já existem ${regularCount} jogadores nas vagas comuns. Reduza as vagas protegidas ou aumente o total de vagas.`,
     );
   }
 

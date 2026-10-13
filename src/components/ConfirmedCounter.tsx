@@ -1,34 +1,44 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { Users, Volleyball } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export function ConfirmedCounter({
   eventId,
   maxPlayers: initialMaxPlayers,
   initialConfirmedCount,
+  initialSetterCount = 0,
   compact = false,
 }: {
   eventId: string;
   maxPlayers: number | null;
   initialConfirmedCount: number;
+  initialSetterCount?: number;
   compact?: boolean;
 }) {
   const [count, setCount] = useState(initialConfirmedCount);
+  const [setterCount, setSetterCount] = useState(initialSetterCount);
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
-    const [{ count: fresh }, { data: eventRow }] = await Promise.all([
+    const [{ count: fresh }, { count: freshSetters }, { data: eventRow }] = await Promise.all([
       supabase
         .from("attendance")
         .select("id", { count: "exact", head: true })
         .eq("event_id", eventId)
         .eq("status", "confirmed"),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "confirmed")
+        .eq("uses_setter_spot", true),
       supabase.from("events").select("max_players").eq("id", eventId).maybeSingle(),
     ]);
     if (fresh != null) setCount(fresh);
+    if (freshSetters != null) setSetterCount(freshSetters);
     if (eventRow) {
       setMaxPlayers(eventRow.max_players);
     }
@@ -44,6 +54,7 @@ export function ConfirmedCounter({
   }, [refresh]);
 
   const totalSlotsRemaining = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
+  const setterCapacity = maxPlayers != null ? Math.max(1, Math.ceil(maxPlayers / 6)) : null;
   const isFull = totalSlotsRemaining === 0;
   const pct = maxPlayers ? Math.min(100, Math.round((count / maxPlayers) * 100)) : null;
 
@@ -60,6 +71,12 @@ export function ConfirmedCounter({
             <b className="tabular-nums text-white">{count}{maxPlayers != null ? ` / ${maxPlayers}` : ""}</b>
           </span>
         </div>
+        {setterCapacity !== null && (
+          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium text-cyan-200/85">
+            <Volleyball className="h-3 w-3" strokeWidth={2.25} />
+            Levantadores: {setterCount}/{setterCapacity}
+          </p>
+        )}
         {pct !== null && <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="img" aria-label={`${count} de ${maxPlayers} vagas preenchidas`}><div className={`h-full rounded-full transition-all ${isFull ? "bg-red-400" : "bg-gradient-to-r from-violet-400 to-purple-300"}`} style={{ width: `${pct}%` }} /></div>}
       </div>
     );
@@ -85,6 +102,13 @@ export function ConfirmedCounter({
           </span>
         )}
       </div>
+      {setterCapacity !== null && (
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-cyan-200/85">
+          <Volleyball className="h-3.5 w-3.5" strokeWidth={2.25} />
+          Levantadores: <strong>{setterCount}/{setterCapacity}</strong>
+          <span className="text-white/40">· vagas protegidas automaticamente</span>
+        </p>
+      )}
       {pct !== null && (
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
           <div

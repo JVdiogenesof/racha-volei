@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Trophy, ArrowRight } from "lucide-react";
+import { Trophy, ArrowRight, BadgeCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
@@ -93,7 +93,7 @@ export default async function TorneiosVpaPage() {
                 ) : (
                   <>
                     <Trophy className="h-4 w-4 text-amber-400" strokeWidth={2} />
-                    Time campeão — Pré-Torneio de{" "}
+                    Campeão anterior · Pré-Torneio de{" "}
                     {group.date ? new Date(`${group.date}T00:00:00`).toLocaleDateString("pt-BR") : "data desconhecida"}
                   </>
                 )}
@@ -115,7 +115,13 @@ export default async function TorneiosVpaPage() {
                   className="flex items-center gap-3 rounded-lg border border-white/10 px-3 py-2.5"
                 >
                   <Avatar src={r.profiles?.avatar_url ?? null} name={r.profiles?.full_name ?? "?"} size="sm" />
-                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-white">{r.profiles?.full_name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-white">{r.profiles?.full_name}</p>
+                    <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                      <BadgeCheck className="h-3 w-3" strokeWidth={2.5} />
+                      Já classificado
+                    </span>
+                  </div>
                   {profile.is_organizer && (
                     <RemoveReservedPlayerButton
                       profileId={r.profile_id}

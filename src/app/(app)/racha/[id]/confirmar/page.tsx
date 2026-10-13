@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2 } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -49,7 +49,7 @@ export default async function ConfirmarPresencaPage({
         .maybeSingle(),
       supabase
         .from("attendance")
-        .select("profile_id, status, uses_newcomer_spot, profiles(full_name, avatar_url, is_setter)")
+        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, is_setter)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
       supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -100,6 +100,8 @@ export default async function ConfirmarPresencaPage({
   const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
   const regularConfirmedCount = confirmados.length - newcomerConfirmedCount;
   const eventCapacity = event.max_players ?? event.num_teams * event.team_size;
+  const setterCapacity = Math.max(1, Math.ceil(eventCapacity / 6));
+  const setterConfirmedCount = confirmados.filter((attendance) => attendance.uses_setter_spot).length;
   const memberCapacity = Math.max(0, eventCapacity - event.newcomer_reserved_spots);
   const regularSlotsRemaining = Math.max(
     0,
@@ -109,6 +111,7 @@ export default async function ConfirmarPresencaPage({
     profile.status === "guest"
       ? confirmados.length >= eventCapacity
       : regularConfirmedCount >= memberCapacity;
+  const setterSlotsFull = profile.is_setter && setterConfirmedCount >= setterCapacity;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
@@ -207,6 +210,7 @@ export default async function ConfirmarPresencaPage({
           eventId={id}
           maxPlayers={eventCapacity}
           initialConfirmedCount={confirmados.length}
+          initialSetterCount={setterConfirmedCount}
         />
       )}
 
@@ -320,9 +324,22 @@ export default async function ConfirmarPresencaPage({
           A inscrição ainda está fechada. O botão para colocar seu nome aparecerá automaticamente quando o cronômetro zerar.
         </p>
       ) : (
+        <div className="space-y-2">
+          {setterSlotsFull && (
+            <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
+              <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
+              As {setterCapacity} vagas reservadas para levantadores já foram preenchidas. Não gere Pix: se uma vaga de levantador for liberada, você poderá tentar de novo.
+            </p>
+          )}
         <div className="flex gap-3">
           {event.pix_payment_enabled && event.price_per_player ? (
-            <PixReservationButton eventId={id} hasInterest={myStatus === "interested"} isFull={isFull} action={setAttendance} />
+            <PixReservationButton
+              eventId={id}
+              hasInterest={myStatus === "interested"}
+              isFull={isFull}
+              blockedReason={setterSlotsFull ? `As ${setterCapacity} vagas reservadas para levantadores já foram preenchidas.` : null}
+              action={setAttendance}
+            />
           ) : (
             <InterestButton
               eventId={id}
@@ -339,6 +356,7 @@ export default async function ConfirmarPresencaPage({
               Não vou
             </button>
           </ActionForm>
+        </div>
         </div>
       )}
 
