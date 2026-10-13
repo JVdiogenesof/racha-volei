@@ -23,7 +23,7 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { cancelPixAttendance, completePixRefund, demoteToInterested, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, removeAttendance, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { cancelPixAttendance, completePixRefund, demoteToInterested, grantPreTournamentException, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -40,11 +40,11 @@ export default async function ConfirmarPresencaPage({
   const supabase = await createClient();
   const selectedCommunity = await getActiveCommunity(profile);
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }] =
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }, { data: lockedRows }, { data: qualificationExceptions }, { data: qualifiedPlayers }] =
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at")
+        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -62,6 +62,13 @@ export default async function ConfirmarPresencaPage({
         ? supabase.from("payments").select("profile_id, paid, payment_source").eq("event_id", id)
         : Promise.resolve({ data: null }),
       supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
+      supabase.from("event_locked_players").select("profile_id, note, profiles(full_name, avatar_url)").eq("event_id", id).order("locked_at", { ascending: true }),
+      profile.is_organizer
+        ? supabase.from("pre_tournament_eligibility_exceptions").select("profile_id, reason, profiles(full_name)").eq("event_id", id)
+        : Promise.resolve({ data: null }),
+      profile.is_organizer
+        ? supabase.from("tournament_reserved_players").select("profile_id, profiles(full_name)").eq("community", selectedCommunity)
+        : Promise.resolve({ data: null }),
     ]);
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
@@ -125,6 +132,18 @@ export default async function ConfirmarPresencaPage({
   const paymentSourceByProfile = new Map((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => [payment.profile_id, payment.payment_source]));
   const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
   const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const lockedProfileIds = new Set((lockedRows ?? []).map((row) => row.profile_id));
+  const qualificationExceptionIds = new Set((qualificationExceptions ?? []).map((row) => row.profile_id));
+  const guaranteedOptions = (approvedProfiles ?? [])
+    .filter((person) => !confirmedIds.has(person.id) && !lockedProfileIds.has(person.id))
+    .map((person) => ({ id: person.id, fullName: person.full_name }));
+  const qualifiedOptions = (qualifiedPlayers ?? [])
+    .filter((person) => !qualificationExceptionIds.has(person.profile_id))
+    .map((person) => ({
+      id: person.profile_id,
+      fullName: (person.profiles as unknown as { full_name: string } | null)?.full_name ?? "Jogador classificado",
+    }));
+  const myLockedSpot = lockedProfileIds.has(profile.id);
 
   function isSetterForEvent(attendance: (typeof confirmados)[number]) {
     const profileRow = attendance.profiles as unknown as { is_setter: boolean } | null;
@@ -269,7 +288,23 @@ export default async function ConfirmarPresencaPage({
         </p>
       ) : myStatus === "confirmed" ? (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
-          <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
+          <div>
+            <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
+            {myLockedSpot && !myPayment?.paid && (
+              <p className="mt-1 text-xs text-emerald-100/75">Sua vaga foi garantida pela organização. Falta apenas concluir o pagamento.</p>
+            )}
+          </div>
+          {myLockedSpot && !myPayment?.paid && event.pix_payment_enabled && event.price_per_player && (
+            <div className="ml-auto w-full sm:w-auto">
+              <PixReservationButton
+                eventId={id}
+                hasInterest
+                isFull={false}
+                action={setAttendance}
+                guaranteedSpot
+              />
+            </div>
+          )}
           {myPayment?.paid && myPayment.payment_source === "pix" ? (
             <div className="ml-auto flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:ml-auto sm:w-auto sm:border-0 sm:pt-0">
               {isBeforePixCancellationDeadline ? (
@@ -439,6 +474,65 @@ export default async function ConfirmarPresencaPage({
         >
           {!eventFinished && !eventCancelled && (
             <>
+              <section className="rounded-xl border border-emerald-300/20 bg-emerald-400/[0.07] p-3.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-emerald-100">Vagas garantidas</h3>
+                    <p className="mt-0.5 text-xs leading-relaxed text-emerald-100/60">Escolha as pessoas antes de abrir a lista. Elas já entram como confirmadas e só precisam concluir o Pix depois.</p>
+                  </div>
+                  <span className="shrink-0 rounded-full border border-emerald-200/20 bg-emerald-300/10 px-2 py-1 text-xs font-bold text-emerald-100">{(lockedRows ?? []).length}/{eventCapacity}</span>
+                </div>
+                {guaranteedOptions.length > 0 && (
+                  <ActionForm action={lockGuaranteedSpot} successMessage="Vaga garantida. A pessoa poderá pagar pelo próprio app.">
+                    <input type="hidden" name="eventId" value={id} />
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <select name="profileId" required defaultValue="" className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white">
+                        <option value="" disabled>Escolher pessoa</option>
+                        {guaranteedOptions.map((person) => <option key={person.id} value={person.id}>{person.fullName}</option>)}
+                      </select>
+                      <input name="note" placeholder="Observação opcional" className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white placeholder:text-white/35" />
+                      <button className="min-h-10 rounded-lg bg-emerald-500 px-3 text-sm font-bold text-white hover:bg-emerald-400">Garantir vaga</button>
+                    </div>
+                  </ActionForm>
+                )}
+                {(lockedRows ?? []).length > 0 && (
+                  <ul className="mt-3 space-y-2">
+                    {(lockedRows ?? []).map((row) => {
+                      const person = row.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+                      return <li key={row.profile_id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2">
+                        <Avatar src={person?.avatar_url ?? null} name={person?.full_name ?? "Jogador"} size="sm" />
+                        <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-white">{person?.full_name ?? "Jogador"}</p>{row.note && <p className="truncate text-xs text-white/45">{row.note}</p>}</div>
+                        <ActionForm action={releaseGuaranteedSpot} successMessage="Vaga garantida liberada.">
+                          <input type="hidden" name="eventId" value={id} /><input type="hidden" name="profileId" value={row.profile_id} />
+                          <button className="min-h-9 rounded-lg border border-white/15 px-2.5 text-xs font-semibold text-white/70 hover:bg-white/10">Liberar</button>
+                        </ActionForm>
+                      </li>;
+                    })}
+                  </ul>
+                )}
+              </section>
+
+              {event.is_pre_torneio && (
+                <section className="rounded-xl border border-amber-300/20 bg-amber-400/[0.07] p-3.5">
+                  <h3 className="font-semibold text-amber-100">Exceções de classificados</h3>
+                  <p className="mt-0.5 text-xs leading-relaxed text-amber-100/60">Quem já garantiu vaga no Torneio VPA fica bloqueado deste pré-torneio. Use apenas para uma premiação autorizada, como o Vitor.</p>
+                  {qualifiedOptions.length > 0 && (
+                    <ActionForm action={grantPreTournamentException} successMessage="Exceção liberada para este pré-torneio.">
+                      <input type="hidden" name="eventId" value={id} />
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <select name="profileId" required defaultValue="" className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white"><option value="" disabled>Escolher classificado</option>{qualifiedOptions.map((person) => <option key={person.id} value={person.id}>{person.fullName}</option>)}</select>
+                        <input name="reason" defaultValue="Premiação autorizada" className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white" />
+                        <button className="min-h-10 rounded-lg border border-amber-200/25 bg-amber-300/15 px-3 text-sm font-bold text-amber-100 hover:bg-amber-300/25">Liberar exceção</button>
+                      </div>
+                    </ActionForm>
+                  )}
+                  {(qualificationExceptions ?? []).length > 0 && <ul className="mt-3 space-y-2">{(qualificationExceptions ?? []).map((row) => {
+                    const person = row.profiles as unknown as { full_name: string } | null;
+                    return <li key={row.profile_id} className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/10 px-2.5 py-2"><p className="min-w-0 flex-1 truncate text-sm text-white"><strong>{person?.full_name ?? "Jogador"}</strong>{row.reason ? ` · ${row.reason}` : ""}</p><ActionForm action={revokePreTournamentException} successMessage="Exceção removida."><input type="hidden" name="eventId" value={id} /><input type="hidden" name="profileId" value={row.profile_id} /><button className="min-h-9 rounded-lg border border-white/15 px-2.5 text-xs font-semibold text-white/70 hover:bg-white/10">Remover</button></ActionForm></li>;
+                  })}</ul>}
+                </section>
+              )}
+
               <AddDirectToConfirmedForm action={promoteToConfirmed} eventId={id} players={addDirectOptions} />
               <QuickInviteReserveForm action={inviteToEvent} eventId={id} people={reserveOptions} />
             </>

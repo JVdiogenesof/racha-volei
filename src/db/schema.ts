@@ -481,6 +481,29 @@ export const tournamentReservedPlayers = pgTable("tournament_reserved_players", 
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("tournament_reserved_players_profile_community_unique").on(t.profileId, t.community)]);
 
+// Exceções pontuais para um pré-torneio. Servem, por exemplo, quando uma
+// vaga é usada como premiação e o organizador autoriza a pessoa a jogar mesmo
+// já estando classificada para o Torneio VPA.
+export const preTournamentEligibilityExceptions = pgTable("pre_tournament_eligibility_exceptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  grantedBy: uuid("granted_by").notNull().references(() => profiles.id),
+  reason: text("reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("pre_tournament_eligibility_exceptions_event_profile_unique").on(t.eventId, t.profileId)]);
+
+// Vaga garantida antes da abertura da lista. A pessoa já entra como
+// confirmada, mas continua com o pagamento pendente até concluir o Pix.
+export const eventLockedPlayers = pgTable("event_locked_players", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  lockedBy: uuid("locked_by").notNull().references(() => profiles.id),
+  note: text("note"),
+  lockedAt: timestamp("locked_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("event_locked_players_event_profile_unique").on(t.eventId, t.profileId)]);
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {
