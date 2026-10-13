@@ -595,6 +595,7 @@ export default async function ConfirmarPresencaPage({
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
               const paymentSource = paymentSourceByProfile.get(a.profile_id);
+              const hasGuaranteedSpot = lockedProfileIds.has(a.profile_id);
               const isSetter = isSetterForEvent(a);
               const ratingDetails = ratingDetailsFor(a.profile_id);
               const hasProvisionalGuestRating = a.uses_newcomer_spot && ratingDetails.provisional;
@@ -615,8 +616,10 @@ export default async function ConfirmarPresencaPage({
                         )}
                         {isSetter && <SetterBadge />}
                         {profile.is_organizer && (
-                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${hasPaid ? "border-green-400/25 bg-green-500/10 text-green-300" : "border-white/10 bg-white/5 text-white/40"}`}>
-                            {hasPaid ? paymentSource === "balance" ? "PAGO · SALDO" : "PAGO" : "PENDENTE"}
+                          <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${hasPaid ? "border-green-400/25 bg-green-500/10 text-green-300" : hasGuaranteedSpot ? "border-amber-300/25 bg-amber-400/10 text-amber-200" : "border-white/10 bg-white/5 text-white/55"}`}>
+                            {hasPaid
+                              ? paymentSource === "balance" ? "PAGO · SALDO" : "PAGO"
+                              : hasGuaranteedSpot ? "VAGA GARANTIDA · FALTA PAGAR" : "CONFIRMADO · PAGAMENTO PENDENTE"}
                           </span>
                         )}
                         {hasProvisionalGuestRating && (

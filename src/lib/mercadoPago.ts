@@ -19,6 +19,16 @@ export type MercadoPagoOrder = {
   transactions?: { payments?: MercadoPagoPayment[] };
 };
 
+type MercadoPagoErrorBody = {
+  message?: string;
+  error?: string;
+  errors?: Array<{
+    code?: string;
+    message?: string;
+    details?: string;
+  }>;
+};
+
 function accessToken() {
   const token = process.env.MERCADO_PAGO_ACCESS_TOKEN;
   if (!token) throw new Error("Os pagamentos Pix ainda não foram configurados.");
@@ -36,9 +46,17 @@ async function mercadoPagoRequest(path: string, init: RequestInit) {
     },
     cache: "no-store",
   });
-  const body = (await response.json().catch(() => null)) as MercadoPagoOrder | { message?: string; error?: string } | null;
+  const body = (await response.json().catch(() => null)) as MercadoPagoOrder | MercadoPagoErrorBody | null;
   if (!response.ok) {
-    const message = body && "message" in body ? body.message : body && "error" in body ? body.error : null;
+    const errorBody = body as MercadoPagoErrorBody | null;
+    const providerError = errorBody?.errors?.[0];
+    const message = providerError?.message || providerError?.details || errorBody?.message || errorBody?.error;
+    console.error("[mercado-pago] Requisição recusada pelo provedor", {
+      path,
+      status: response.status,
+      code: providerError?.code,
+      message: message || "Resposta sem mensagem",
+    });
     throw new Error(message || "Não foi possível gerar a cobrança Pix.");
   }
   return body as MercadoPagoOrder;
