@@ -37,6 +37,9 @@ export function RachaCapacityFields({
   );
 
   const teamCapacity = numTeams * teamSize;
+  const chosenCapacity = typeof maxPlayers === "number" ? maxPlayers : teamCapacity;
+  const setterReservedSpots = Math.max(1, Math.ceil(chosenCapacity / 6));
+  const maxNewcomerReservedSpots = Math.max(0, chosenCapacity - setterReservedSpots);
 
   function selectGameStyle(style: EventGameStyle) {
     setGameStyle(style);
@@ -197,7 +200,7 @@ export function RachaCapacityFields({
               Proteger vagas para novatos
             </span>
             <span className="mt-1 block text-xs text-white/45">
-              Essas vagas só podem ser ocupadas por pessoas chamadas da lista de reserva para este racha.
+              Essas vagas só podem ser ocupadas por pessoas chamadas da lista de reserva para este racha. Além delas, o sistema protege {setterReservedSpots} vaga{setterReservedSpots === 1 ? "" : "s"} para levantadores.
             </span>
           </span>
         </label>
@@ -209,7 +212,7 @@ export function RachaCapacityFields({
               name="newcomerReservedSpots"
               value={newcomerReservedSpots}
               min={1}
-              max={typeof maxPlayers === "number" ? maxPlayers : teamCapacity}
+              max={maxNewcomerReservedSpots}
               required
               onChange={(e) => setNewcomerReservedSpots(Number(e.target.value))}
               className="mt-1 w-full rounded-lg border border-white/15 px-3 py-2"

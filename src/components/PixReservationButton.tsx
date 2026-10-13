@@ -16,11 +16,14 @@ export function PixReservationButton({
   eventId,
   hasInterest,
   isFull,
+  blockedReason,
   action,
 }: {
   eventId: string;
   hasInterest: boolean;
   isFull: boolean;
+  /** Impede gerar Pix quando a cota exclusiva da pessoa já foi preenchida. */
+  blockedReason?: string | null;
   action: (formData: FormData) => Promise<void> | void;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -45,8 +48,8 @@ export function PixReservationButton({
   const timerText = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
   function startPayment() {
-    if (isFull) {
-      showToast("As vagas deste racha já foram reservadas.");
+    if (isFull || blockedReason) {
+      showToast(blockedReason || "As vagas deste racha já foram reservadas.");
       return;
     }
     startTransition(async () => {
@@ -128,12 +131,12 @@ export function PixReservationButton({
   return (
     <button
       type="button"
-      disabled={isPending || isFull}
+      disabled={isPending || isFull || Boolean(blockedReason)}
       onClick={startPayment}
       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 disabled:opacity-60"
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-      {isFull ? "Vagas reservadas" : hasInterest ? "Reservar e pagar por Pix" : "Tenho interesse e quero pagar"}
+      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : hasInterest ? "Reservar e pagar por Pix" : "Tenho interesse e quero pagar"}
     </button>
   );
 }

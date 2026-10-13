@@ -173,6 +173,10 @@ export const attendance = pgTable(
     // do organizador.
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     usesNewcomerSpot: boolean("uses_newcomer_spot").notNull().default(false),
+    // A vaga de levantador é bloqueada desde a reserva Pix e permanece
+    // identificada depois da confirmação, mesmo se o organizador ajustar a
+    // função da pessoa apenas para a formação dos times.
+    usesSetterSpot: boolean("uses_setter_spot").notNull().default(false),
   },
   (t) => [unique().on(t.eventId, t.profileId)],
 );
