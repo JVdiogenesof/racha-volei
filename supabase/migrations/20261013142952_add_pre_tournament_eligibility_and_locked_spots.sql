@@ -69,8 +69,8 @@ begin
   ) and not exists (
     select 1
     from public.pre_tournament_eligibility_exceptions eligible_exception
-    where exception.event_id = new.event_id
-      and exception.profile_id = new.profile_id
+    where eligible_exception.event_id = new.event_id
+      and eligible_exception.profile_id = new.profile_id
   ) then
     raise exception 'Você já está classificado(a) para o Torneio VPA e não pode entrar neste pré-torneio.';
   end if;
@@ -101,8 +101,8 @@ begin
   ) and not exists (
     select 1
     from public.pre_tournament_eligibility_exceptions eligible_exception
-    where exception.event_id = new.event_id
-      and exception.profile_id = new.profile_id
+    where eligible_exception.event_id = new.event_id
+      and eligible_exception.profile_id = new.profile_id
   ) then
     raise exception 'Você já está classificado(a) para o Torneio VPA e não pode gerar Pix para este pré-torneio.';
   end if;
@@ -251,3 +251,4 @@ grant execute on function public.lock_event_participant(uuid, uuid, text) to aut
 grant execute on function public.release_locked_event_participant(uuid, uuid) to authenticated;
 grant execute on function public.grant_pre_tournament_exception(uuid, uuid, text) to authenticated;
 grant execute on function public.revoke_pre_tournament_exception(uuid, uuid) to authenticated;
+
