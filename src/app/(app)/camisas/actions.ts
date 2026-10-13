@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
-import { SHIRT_MODELS, SHIRT_FITS, isValidShirtSize, type ShirtFit, type ShirtModel } from "@/lib/shirts";
+import { SHIRT_MODELS, SHIRT_FITS, SHIRT_ORDERS_OPEN, isValidShirtSize, type ShirtFit, type ShirtModel } from "@/lib/shirts";
 import { getActiveCommunity } from "@/lib/community";
 
 export type ShirtOrderState = { status: "idle" | "success" | "error"; message: string };
@@ -12,6 +12,7 @@ export async function saveShirtOrder(
   _previousState: ShirtOrderState,
   formData: FormData,
 ): Promise<ShirtOrderState> {
+  if (!SHIRT_ORDERS_OPEN) return { status: "error", message: "Os pedidos de camisa estão encerrados no momento." };
   const profile = await requireMember();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);

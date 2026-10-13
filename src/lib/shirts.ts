@@ -1,5 +1,8 @@
 import type { Community } from "@/lib/community";
 
+// Altere para true quando uma nova encomenda de camisas for aberta.
+export const SHIRT_ORDERS_OPEN = false;
+
 export type ShirtModelInfo = {
   label: string;
   image: string;

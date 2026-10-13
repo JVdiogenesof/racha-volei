@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
+import { CheckCircle2, CircleAlert, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_PRICES, shirtOrderTotal, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
+import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_ORDERS_OPEN, SHIRT_PRICES, shirtOrderTotal, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
 import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { getActiveCommunity } from "@/lib/community";
 import { ShirtOrderForm } from "@/components/ShirtOrderForm";
@@ -22,7 +22,7 @@ export default async function CamisasPage() {
   const { data, error } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, half_paid, fulfillment_status, fit, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as Order[];
-  const canOrder = profile.status === "approved";
+  const canOrder = profile.status === "approved" && SHIRT_ORDERS_OPEN;
 
   return (
     <div className="space-y-6">
@@ -31,9 +31,9 @@ export default async function CamisasPage() {
           <Image src={getShirtCollectionImage(community)} alt={`Coleção VPA ${community === "sand" ? "de areia" : "de quadra"} com os modelos de manga e regata`} fill priority sizes="(max-width: 1024px) 100vw, 960px" className={community === "sand" ? "object-contain object-center" : "object-cover"} />
           <div className="absolute inset-0 bg-gradient-to-t from-[#100620] via-transparent to-black/10" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/35 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur"><Sparkles className="h-3.5 w-3.5" />Nova coleção</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/35 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur">{SHIRT_ORDERS_OPEN ? <><Sparkles className="h-3.5 w-3.5" />Nova coleção</> : <><CircleAlert className="h-3.5 w-3.5" />Pedidos encerrados</>}</span>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-5xl">A nova pele do VPA</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">Escolha seu modelo, personalize nome e número e garanta sua nova camisa.</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75 sm:text-base">{SHIRT_ORDERS_OPEN ? "Escolha seu modelo, personalize nome e número e garanta sua nova camisa." : "A encomenda desta coleção foi encerrada. Acompanhe por aqui o andamento do seu pedido."}</p>
           </div>
         </div>
       </section>
@@ -81,7 +81,11 @@ export default async function CamisasPage() {
       )}
 
       {canOrder ? <ShirtOrderForm action={saveShirtOrder} existingOrders={orders} community={community} /> : (
-        <section className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.07] p-5 text-center"><Eye className="mx-auto h-7 w-7 text-purple-300" /><h2 className="mt-3 font-bold text-white">Conheça a nova camisa</h2><p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-white/55">Você pode ver toda a coleção. Quando seu acesso completo for liberado, o formulário de pedido aparecerá aqui.</p></section>
+        <section className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.07] p-5 text-center">
+          {SHIRT_ORDERS_OPEN ? <Eye className="mx-auto h-7 w-7 text-purple-300" /> : <CircleAlert className="mx-auto h-7 w-7 text-amber-200" />}
+          <h2 className="mt-3 font-bold text-white">{SHIRT_ORDERS_OPEN ? "Conheça a nova camisa" : "Pedidos de camisa encerrados"}</h2>
+          <p className="mx-auto mt-1 max-w-lg text-sm leading-6 text-white/55">{SHIRT_ORDERS_OPEN ? "Você pode ver toda a coleção. Quando seu acesso completo for liberado, o formulário de pedido aparecerá aqui." : "A encomenda desta coleção chegou ao fim. Os pedidos registrados continuam visíveis acima e serão acompanhados pelos organizadores."}</p>
+        </section>
       )}
     </div>
   );
