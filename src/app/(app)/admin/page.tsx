@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Award, BarChart3, Bell, CalendarPlus, ChevronRight, Clock, MapPin, Phone, Shirt, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { Award, BarChart3, Bell, CalendarPlus, ChevronRight, Clock, MapPin, Phone, Shirt, Users, WalletCards, UserRoundX, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
@@ -50,6 +50,7 @@ export default async function AdminPainelPage() {
     { href: "/admin/rachas", icon: CalendarPlus, title: "Criar racha", detail: "Já vem preenchido igual ao último" },
     { href: "/admin/ranking", icon: Award, title: "Ajustar ranking", detail: "Corrigir presença e vitórias" },
     { href: "/admin/financas", icon: WalletCards, title: "Finanças", detail: "Caixa e saldos" },
+    { href: "/admin/atividade", icon: UserRoundX, title: "Atividade", detail: "Presenças e tempo sem ir" },
     { href: "/admin/resumo", icon: BarChart3, title: "Resumo mensal", detail: "Artes prontas pra postar" },
   ];
 

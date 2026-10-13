@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Award, CalendarPlus, LayoutDashboard, Phone, Shirt, SlidersHorizontal, WalletCards, BarChart3 } from "lucide-react";
+import { Award, CalendarPlus, LayoutDashboard, Phone, Shirt, SlidersHorizontal, WalletCards, BarChart3, UserRoundX } from "lucide-react";
 
 const TABS = [
   { href: "/admin", label: "Painel", icon: LayoutDashboard, exact: true },
   { href: "/admin/reserva", label: "Cadastros", icon: Phone },
   { href: "/admin/rachas", label: "Rachas", icon: CalendarPlus },
   { href: "/admin/jogadores", label: "Notas", icon: SlidersHorizontal },
+  { href: "/admin/atividade", label: "Atividade", icon: UserRoundX },
   { href: "/admin/ranking", label: "Rankings", icon: Award },
   { href: "/admin/financas", label: "Finanças", icon: WalletCards },
   { href: "/admin/camisas", label: "Camisas", icon: Shirt },
