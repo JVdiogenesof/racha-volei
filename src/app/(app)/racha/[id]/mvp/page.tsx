@@ -52,19 +52,20 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
+      <header>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}</p>
+        <h1 className="mt-0.5 flex items-center gap-2 text-2xl font-black text-white">
           <Trophy className="h-6 w-6 text-purple-300" strokeWidth={2} />
-          Jogadores Destaque · {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR")}
+          Jogadores Destaque
         </h1>
-        <p className="mt-1 text-sm text-white/60">
+        <p className="mt-1 text-xs text-white/55">
           {!eventFinished
             ? "Libera depois que o organizador terminar o evento."
             : profile.is_organizer
               ? "Escolha até dois melhores jogadores desse racha."
               : "Os Jogadores Destaque são escolhidos pelos organizadores depois do racha."}
         </p>
-      </div>
+      </header>
 
       {!eventFinished ? (
         <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-6 text-center text-sm text-white/60">

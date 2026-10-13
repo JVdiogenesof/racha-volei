@@ -34,9 +34,9 @@ export function EventProgress({
             : 0;
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 px-3 py-4 sm:px-5" aria-label="Progresso do racha">
+    <section className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 sm:px-5" aria-label="Progresso do racha">
       <div className="relative">
-        <div className="absolute left-[10%] right-[10%] top-4 h-0.5 bg-white/10" aria-hidden="true">
+        <div className="absolute left-[10%] right-[10%] top-3.5 h-0.5 bg-white/10" aria-hidden="true">
           <span
             className="block h-full bg-gradient-to-r from-brand-purple to-purple-300 transition-[width] duration-500"
             style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
@@ -50,7 +50,7 @@ export function EventProgress({
             return (
               <li key={step.label} className="flex min-w-0 flex-col items-center text-center">
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
                     complete
                       ? "border-brand-purple bg-brand-purple text-white"
                       : active
@@ -60,7 +60,7 @@ export function EventProgress({
                 >
                   <Icon className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </span>
-                <span className={`mt-2 text-[9px] font-medium leading-tight sm:text-xs ${index <= currentStep ? "text-white/85" : "text-white/35"}`}>
+                <span className={`mt-1.5 text-[9px] font-medium leading-tight sm:text-xs ${index <= currentStep ? "text-white/85" : "text-white/35"}`}>
                   {step.label}
                 </span>
               </li>

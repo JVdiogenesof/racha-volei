@@ -151,21 +151,21 @@ export default async function ResultadoFinalPage({ params }: { params: Promise<{
         Voltar para o racha
       </Link>
 
-      <header className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 via-brand-purple/15 to-transparent px-5 py-8 text-center sm:px-8 sm:py-10">
+      <header className="relative overflow-hidden rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 via-brand-purple/15 to-transparent px-4 py-5 text-center sm:px-8 sm:py-8">
         <div aria-hidden className="absolute -left-16 -top-20 h-48 w-48 rounded-full bg-amber-400/15 blur-3xl" />
         <div aria-hidden className="absolute -bottom-20 -right-16 h-48 w-48 rounded-full bg-brand-purple/25 blur-3xl" />
         <div className="relative">
-          <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-400/20 ring-1 ring-amber-300/40">
-            <Trophy className="h-8 w-8 text-amber-300" strokeWidth={1.8} />
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-400/20 ring-1 ring-amber-300/40">
+            <Trophy className="h-6 w-6 text-amber-300" strokeWidth={1.8} />
           </span>
           <p className="mt-4 text-xs font-bold tracking-[0.25em] text-amber-300 uppercase">{tournamentLabel}</p>
-          <h1 className="mt-2 text-3xl font-extrabold text-white sm:text-4xl">Resultado final</h1>
+          <h1 className="mt-1 text-2xl font-black text-white sm:text-4xl">Resultado final</h1>
           <p className="mt-2 text-sm text-white/60">{dateLabel}</p>
           <ShareFinalResultArtButton eventId={id} eventDate={event.date} />
         </div>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {placements.map(({ place, team }) => (
           <PlacementCard key={team.id} place={place} team={team} />
         ))}

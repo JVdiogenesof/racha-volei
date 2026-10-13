@@ -253,15 +253,15 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className={`space-y-4 ${showActionDock ? "pb-40" : ""}`}>
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold text-white">Times e confrontos</h1>
-          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/60">{eventDateLabel}</span>
-          {event.is_pre_torneio && <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-xs font-bold text-amber-200">PRÉ-TORNEIO</span>}
-          {event.is_mini_torneio && <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-1 text-xs font-bold text-cyan-100"><Medal className="h-3 w-3" /> MINI TORNEIO</span>}
+      <header>
+        <Link href={`/racha/${id}`} className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300 hover:text-purple-200">← Racha · {eventDateLabel}</Link>
+        <div className="mt-0.5 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-black text-white">Times e confrontos</h1>
+          {event.is_pre_torneio && <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold text-amber-200">PRÉ-TORNEIO</span>}
+          {event.is_mini_torneio && <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold text-cyan-100"><Medal className="h-3 w-3" /> MINI TORNEIO</span>}
         </div>
-        <p className="mt-1.5 text-sm text-white/50">{event.num_teams} times · {teamFormatLabel(event.team_size)}</p>
-      </div>
+        <p className="mt-1 text-xs text-white/50">{event.num_teams} times · {teamFormatLabel(event.team_size)}</p>
+      </header>
 
       {showActionDock && (
         <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">

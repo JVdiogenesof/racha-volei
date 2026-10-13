@@ -36,8 +36,8 @@ export default async function RachaSummaryPage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-purple-300">Fim de jogo</p>
-        <h1 className="mt-1 text-2xl font-bold sm:text-3xl">Resumo do racha</h1>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Fim de jogo</p>
+        <h1 className="mt-0.5 text-2xl font-black sm:text-3xl">Resumo do racha</h1>
         <p className="mt-1 text-sm text-white/55">
           {dateLabel}{summary.event.location ? ` · ${summary.event.location}` : ""}
         </p>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, MapPin, Trophy, Medal, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
+import { Plus, MapPin, ChevronRight, Trophy, Medal, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -38,7 +38,9 @@ function getAttendanceIndicator({
   return null;
 }
 
-export default async function RachaListPage() {
+export default async function RachaListPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const { aba } = await searchParams;
+  const showPast = aba === "passados";
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
@@ -65,30 +67,39 @@ export default async function RachaListPage() {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Rachas de {community === "sand" ? "areia" : "quadra"}</h1>
+    <div className="space-y-4">
+      <header className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{community === "sand" ? "Areia" : "Quadra"}</p>
+          <h1 className="mt-0.5 text-2xl font-black text-white">Rachas</h1>
+        </div>
         {profile.is_organizer && (
-          <Link
-            href="/admin/rachas"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-purple px-4 py-2 text-sm font-medium text-white hover:bg-brand-purple-dark"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Criar racha
+          <Link href="/admin/rachas" aria-label="Criar racha" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-brand-purple px-3.5 text-sm font-bold text-white hover:bg-brand-purple-dark">
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            Criar
           </Link>
         )}
+      </header>
+
+      <div className="flex gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
+        <Link href="/racha" aria-current={!showPast ? "page" : undefined} className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition ${!showPast ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:text-white/75"}`}>
+          Próximos <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-black ${!showPast ? "bg-white/20" : "bg-white/[0.07]"}`}>{proximos.length + atuais.length}</span>
+        </Link>
+        <Link href="/racha?aba=passados" aria-current={showPast ? "page" : undefined} className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition ${showPast ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:text-white/75"}`}>
+          Passados <span className={`rounded-md px-1.5 py-0.5 text-[9px] font-black ${showPast ? "bg-white/20" : "bg-white/[0.07]"}`}>{passados.length}</span>
+        </Link>
       </div>
 
-      {atuais.length > 0 && (
+      {!showPast && atuais.length > 0 && (
         <section>
-          <div className="mb-3 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
               <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-400" />
             </span>
-            <h2 className="font-semibold text-white">Acontecendo agora</h2>
+            <h2 className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/50">Acontecendo agora</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {atuais.map((event) => (
               <CurrentEventCard key={event.id} event={event} indicator={indicatorFor(event)} />
             ))}
@@ -96,20 +107,22 @@ export default async function RachaListPage() {
         </section>
       )}
 
-      <section>
-        <h2 className="font-semibold text-white">Próximos</h2>
-        <div className="mt-3 space-y-2">
-          {!proximos.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Agenda livre no momento" description="Assim que o próximo racha for criado, ele aparecerá aqui com data, horário e confirmação." />}
-          {proximos.map((e) => (
-            <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
-          ))}
-        </div>
-      </section>
-
-      {passados.length > 0 && (
+      {!showPast && (
         <section>
-          <h2 className="font-semibold text-white">Passados</h2>
-          <div className="mt-3 space-y-2">
+          <h2 className="mb-2 px-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/40">Próximos</h2>
+          <div className="space-y-1.5">
+            {!proximos.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Agenda livre no momento" description="Assim que o próximo racha for criado, ele aparecerá aqui com data, horário e confirmação." />}
+            {proximos.map((e) => (
+              <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {showPast && (
+        <section>
+          <div className="space-y-1.5">
+            {!passados.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Nenhum racha passado" description="Os rachas encerrados aparecem aqui." />}
             {passados.map((e) => (
               <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
             ))}
@@ -139,8 +152,8 @@ function CurrentEventCard({
   const isArena = isNrSportTraining(event.location);
 
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-purple-300/25 bg-gradient-to-br from-[#5939a5] via-[#30205f] to-[#171136] p-5 shadow-xl shadow-black/20 sm:p-6">
-      <Link href={`/racha/${event.id}`} className="absolute inset-0 z-10 rounded-3xl" aria-label="Abrir racha em andamento" />
+    <div className="group relative overflow-hidden rounded-2xl border border-purple-300/25 bg-gradient-to-br from-[#5939a5] via-[#30205f] to-[#171136] p-3.5 shadow-xl shadow-black/20 sm:p-5">
+      <Link href={`/racha/${event.id}`} className="absolute inset-0 z-10 rounded-2xl" aria-label="Abrir racha em andamento" />
       <span className="pointer-events-none absolute -right-14 -top-20 h-56 w-56 rounded-full bg-purple-200/10 blur-2xl" />
       <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
@@ -163,7 +176,7 @@ function CurrentEventCard({
             )}
             {indicator && <AttendanceIndicator indicator={indicator} />}
           </div>
-          <h3 className="mt-4 text-2xl font-black text-white">Racha rolando agora</h3>
+          <h3 className="mt-3 text-xl font-black text-white">Racha rolando agora</h3>
           <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-purple-200">
             {teamFormatLabel(event.team_size)}
           </p>
@@ -198,7 +211,7 @@ function CurrentEventCard({
             </p>
           )}
         </div>
-        <span className="relative inline-flex items-center gap-2 self-end rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#281650] transition group-hover:bg-purple-100">
+        <span className="relative inline-flex items-center gap-2 self-end rounded-xl bg-white px-3.5 py-2.5 text-sm font-bold text-[#281650] transition group-hover:bg-purple-100">
           Abrir racha
           <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
         </span>
@@ -229,85 +242,62 @@ function EventRow({
   const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
   const registrationSchedule = registrationInputParts(event.registration_opens_at);
 
+  const dateObj = new Date(`${event.date}T00:00:00`);
+  const past = event.status === "finished" || event.status === "cancelled";
+  const statusInfo = EVENT_STATUS_LABELS[event.status];
+  const showStatus = !(event.status === "open" && !past);
+
   return (
-    <div className="relative rounded-xl border border-white/10 px-3.5 py-3 hover:bg-white/5 sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-4">
-      <Link href={`/racha/${event.id}`} className="absolute inset-0 rounded-lg" aria-label="Ver racha" />
-      <div className="flex min-w-0 items-center gap-3">
-        {isArena && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/nr-sport-training-logo.jpg"
-            alt="Logo da arena NR Sport Training"
-            className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-white/15"
-          />
-        )}
-        <div className="min-w-0">
-          <p className="font-medium text-white">
-            {new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR", {
-              weekday: "long",
-              day: "2-digit",
-              month: "2-digit",
-            })}
-            {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
-          </p>
-          <p className="mt-0.5 text-xs font-medium text-purple-300">{teamFormatLabel(event.team_size)}</p>
-          {indicator && <div className="mt-1.5"><AttendanceIndicator indicator={indicator} /></div>}
-          {event.location && (
-            <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-white/60">
-              <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-              <span className="truncate">{event.location}</span>
-              {isArena && (
-                <a
-                  href={NR_SPORT_TRAINING_MAPS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Ver no Google Maps"
-                  aria-label="Ver localização no Google Maps"
-                  className="relative z-10 shrink-0 rounded p-0.5 text-white/40 hover:text-purple-300"
-                >
-                  <MapIcon className="h-3.5 w-3.5" strokeWidth={2} />
-                </a>
-              )}
-            </p>
+    <div className={`relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 transition hover:bg-white/[0.06] ${past ? "opacity-85" : ""}`}>
+      <Link href={`/racha/${event.id}`} className="absolute inset-0 rounded-2xl" aria-label="Ver racha" />
+      <div className="w-12 shrink-0 rounded-xl bg-purple-400/15 py-1.5 text-center">
+        <strong className="block text-[17px] font-black leading-tight text-white">{dateObj.toLocaleDateString("pt-BR", { day: "2-digit" })}</strong>
+        <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-purple-200">{dateObj.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-bold capitalize text-white">
+          {dateObj.toLocaleDateString("pt-BR", { weekday: "long" })}
+          {event.time ? ` · ${event.time.slice(0, 5)}` : ""}
+        </p>
+        <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-white/55">
+          {isArena && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/nr-sport-training-logo.jpg" alt="Logo da arena NR Sport Training" className="h-4 w-4 shrink-0 rounded-full object-cover ring-1 ring-white/15" />
+          )}
+          <span className="truncate">{event.location ?? "Local a definir"} · {teamFormatLabel(event.team_size)}</span>
+          {isArena && (
+            <a href={NR_SPORT_TRAINING_MAPS_URL} target="_blank" rel="noopener noreferrer" title="Ver no Google Maps" aria-label="Ver localização no Google Maps" className="relative z-10 shrink-0 rounded p-0.5 text-white/40 hover:text-purple-300">
+              <MapIcon className="h-3.5 w-3.5" strokeWidth={2} />
+            </a>
+          )}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {indicator && <AttendanceIndicator indicator={indicator} />}
+          {event.is_pre_torneio && (
+            <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300"><Trophy className="h-3 w-3" strokeWidth={2} />Pré-torneio</span>
+          )}
+          {event.is_mini_torneio && (
+            <span className="flex items-center gap-1 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold text-cyan-200"><Medal className="h-3 w-3" strokeWidth={2} />Mini torneio</span>
+          )}
+          {!registrationOpen && event.registration_opens_at && (
+            <span className="flex items-center gap-1 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-2 py-0.5 text-[10px] font-bold text-fuchsia-100">
+              <CalendarClock className="h-3 w-3" strokeWidth={2} />
+              Inscrições {new Date(event.registration_opens_at).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit" })} às {registrationSchedule.time}
+            </span>
+          )}
+          {event.status === "open" && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"}`}>
+              {event.official_list_open ? "Lista publicada" : "Interesse"}
+            </span>
+          )}
+          {showStatus && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${statusInfo?.className ?? "bg-white/10 text-white/60"}`}>
+              {statusInfo?.label ?? event.status}
+            </span>
           )}
         </div>
       </div>
-      <div className="relative mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-2.5 sm:mt-0 sm:shrink-0 sm:border-0 sm:pt-0">
-        {event.is_pre_torneio && (
-          <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
-            <Trophy className="h-3 w-3" strokeWidth={2} />
-            Pré-torneio
-          </span>
-        )}
-        {event.is_mini_torneio && (
-          <span className="flex items-center gap-1 rounded-full bg-cyan-500/15 px-2.5 py-1 text-xs font-medium text-cyan-200">
-            <Medal className="h-3 w-3" strokeWidth={2} />
-            Mini torneio
-          </span>
-        )}
-        {!registrationOpen && event.registration_opens_at && (
-          <span className="flex items-center gap-1 rounded-full border border-fuchsia-300/20 bg-fuchsia-400/10 px-2.5 py-1 text-xs font-medium text-fuchsia-100">
-            <CalendarClock className="h-3 w-3" strokeWidth={2} />
-            Inscrições {new Date(event.registration_opens_at).toLocaleDateString("pt-BR", { timeZone: "America/Fortaleza", day: "2-digit", month: "2-digit" })} às {registrationSchedule.time}
-          </span>
-        )}
-        {event.status === "open" && (
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-              event.official_list_open ? "bg-blue-500/15 text-blue-300" : "bg-amber-500/15 text-amber-300"
-            }`}
-          >
-            {event.official_list_open ? "Lista de confirmados publicada" : "Interesse"}
-          </span>
-        )}
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-            EVENT_STATUS_LABELS[event.status]?.className ?? "bg-white/10 text-white/60"
-          }`}
-        >
-          {EVENT_STATUS_LABELS[event.status]?.label ?? event.status}
-        </span>
-      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
     </div>
   );
 }
@@ -315,8 +305,8 @@ function EventRow({
 function AttendanceIndicator({ indicator }: { indicator: NonNullable<AttendanceIndicatorData> }) {
   const Icon = indicator.icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${indicator.className}`}>
-      <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${indicator.className}`}>
+      <Icon className="h-3 w-3" strokeWidth={2.25} />
       {indicator.label}
     </span>
   );
