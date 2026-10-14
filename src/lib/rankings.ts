@@ -93,19 +93,13 @@ export async function getRankingCounts(
         .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids, events(is_pre_torneio)")
         .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
-      (() => {
-        let adjustmentsQuery = supabase
-          .from("ranking_adjustments")
-          .select("profile_id, metric, delta, event_id")
-          .eq("community", community);
-        // Ajustes manuais não têm racha associado, então quando a visão é de
-        // um período específico só aplicamos os lançados dentro dele --
-        // senão uma correção lifetime distorceria a liderança histórica.
-        if (range) {
-          adjustmentsQuery = adjustmentsQuery.gte("created_at", range.start).lt("created_at", range.nextStart);
-        }
-        return adjustmentsQuery;
-      })(),
+      // Os ajustes ligados a um racha entram pelo próprio racha (já filtrado pelo
+      // período); os sem racha só entram quando lançados dentro do período,
+      // senão uma correção lifetime distorceria a liderança histórica.
+      supabase
+        .from("ranking_adjustments")
+        .select("profile_id, metric, delta, event_id, created_at")
+        .eq("community", community),
     ]);
 
   // Só conta presença de racha já encerrado, e só quem de fato ficou
@@ -188,10 +182,35 @@ export async function getRankingCounts(
     for (const profileId of loserIds) addResult(profileId, false);
   }
 
+  // Ajustes manuais ligados a um racha:
+  //  - presença: soma na aba Presença e conta no Índice (ver seasonRanking);
+  //  - destaque: soma na aba Destaques;
+  //  - vitórias/derrotas: alimentam o Índice VPA (aqui só no aproveitamento do período).
+  // Ajustes sem racha só mexem nas abas de contagem.
+  const eventIdSet = new Set(communityEventIds);
   const byMetric: Record<RankingMetric, Map<string, number>> = { attendance, mvp, wins };
+  const bumpResult = (profileId: string, winsDelta: number, lossesDelta: number) => {
+    const current = performance.get(profileId) ?? {
+      wins: 0, losses: 0, matches: 0, percentage: 0, attendance: 0, attendancePercentage: 0, indexScore: 0, eligible: false,
+    };
+    current.wins = Math.max(0, current.wins + winsDelta);
+    current.losses = Math.max(0, current.losses + lossesDelta);
+    current.matches = current.wins + current.losses;
+    current.percentage = current.matches ? Math.round((current.wins / current.matches) * 100) : 0;
+    performance.set(profileId, current);
+  };
   for (const adj of adjustmentRows ?? []) {
-    // Ajustes ligados a um racha (event_id) e de derrotas alimentam só o Índice VPA.
-    if (adj.event_id) continue;
+    if (adj.event_id) {
+      if (!eventIdSet.has(adj.event_id)) continue;
+      if (adj.metric === "wins") bumpResult(adj.profile_id, adj.delta, 0);
+      else if (adj.metric === "losses") bumpResult(adj.profile_id, 0, adj.delta);
+      else if (adj.metric === "attendance" || adj.metric === "mvp") {
+        const target = byMetric[adj.metric as RankingMetric];
+        target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
+      }
+      continue;
+    }
+    if (range && (adj.created_at < range.start || adj.created_at >= range.nextStart)) continue;
     const target = byMetric[adj.metric as RankingMetric];
     if (!target) continue;
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);

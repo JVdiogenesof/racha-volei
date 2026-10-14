@@ -188,20 +188,31 @@ export async function getSeasonRanking(
     for (const profileId of losers) recordFor(records, match.event_id, profileId).losses += 1;
   }
 
-  // Ajustes manuais ligados a um racha da janela (vitórias e derrotas que não
-  // vieram dos confrontos registrados, como resultados de contas antigas).
+  // Ajustes manuais ligados a um racha da janela (feitos na tela de ajustes de
+  // ranking): vitórias e derrotas somam ao racha; presença positiva marca o
+  // jogador como presente e negativa tira a presença desse racha.
   const { data: adjustmentRows, error: adjustmentError } = await supabase
     .from("ranking_adjustments")
     .select("profile_id, metric, delta, event_id")
     .eq("community", community)
     .in("event_id", eventIds)
-    .in("metric", ["wins", "losses"]);
+    .in("metric", ["wins", "losses", "attendance"]);
   if (adjustmentError) throw new Error(adjustmentError.message);
+  const presenceDelta = new Map<string, number>();
   for (const adj of adjustmentRows ?? []) {
     if (!adj.event_id) continue;
+    if (adj.metric === "attendance") {
+      const key = `${adj.event_id}:${adj.profile_id}`;
+      presenceDelta.set(key, (presenceDelta.get(key) ?? 0) + adj.delta);
+      continue;
+    }
     const record = recordFor(records, adj.event_id, adj.profile_id);
     if (adj.metric === "wins") record.wins = Math.max(0, record.wins + adj.delta);
     else record.losses = Math.max(0, record.losses + adj.delta);
+  }
+  for (const [key, delta] of presenceDelta) {
+    const [eventId, profileId] = key.split(":");
+    if (delta !== 0) recordFor(records, eventId, profileId).present = delta > 0;
   }
 
   const currentScores = buildScores(events, records);
