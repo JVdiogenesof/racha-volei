@@ -96,7 +96,7 @@ export async function getRankingCounts(
       (() => {
         let adjustmentsQuery = supabase
           .from("ranking_adjustments")
-          .select("profile_id, metric, delta")
+          .select("profile_id, metric, delta, event_id")
           .eq("community", community);
         // Ajustes manuais não têm racha associado, então quando a visão é de
         // um período específico só aplicamos os lançados dentro dele --
@@ -190,7 +190,10 @@ export async function getRankingCounts(
 
   const byMetric: Record<RankingMetric, Map<string, number>> = { attendance, mvp, wins };
   for (const adj of adjustmentRows ?? []) {
+    // Ajustes ligados a um racha (event_id) e de derrotas alimentam só o Índice VPA.
+    if (adj.event_id) continue;
     const target = byMetric[adj.metric as RankingMetric];
+    if (!target) continue;
     target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
   }
 

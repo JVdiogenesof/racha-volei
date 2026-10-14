@@ -45,6 +45,7 @@ export const rankingMetricEnum = pgEnum("ranking_metric", [
   "attendance",
   "mvp",
   "wins",
+  "losses",
 ]);
 
 export const attendanceStatusEnum = pgEnum("attendance_status", [
@@ -396,6 +397,8 @@ export const rankingAdjustments = pgTable("ranking_adjustments", {
   community: text("community").notNull().default("court"),
   delta: integer("delta").notNull(),
   reason: text("reason"),
+  // Ajuste ligado a um racha: alimenta somente o Índice VPA daquele racha.
+  eventId: uuid("event_id").references(() => events.id, { onDelete: "cascade" }),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

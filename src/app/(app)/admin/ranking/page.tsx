@@ -12,6 +12,7 @@ const METRIC_LABELS: Record<string, string> = {
   attendance: "presença",
   mvp: "Jogador Destaque",
   wins: "vitória",
+  losses: "derrota",
 };
 
 export default async function AdminRankingPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {

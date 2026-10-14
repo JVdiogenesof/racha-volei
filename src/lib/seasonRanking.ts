@@ -188,6 +188,22 @@ export async function getSeasonRanking(
     for (const profileId of losers) recordFor(records, match.event_id, profileId).losses += 1;
   }
 
+  // Ajustes manuais ligados a um racha da janela (vitórias e derrotas que não
+  // vieram dos confrontos registrados, como resultados de contas antigas).
+  const { data: adjustmentRows, error: adjustmentError } = await supabase
+    .from("ranking_adjustments")
+    .select("profile_id, metric, delta, event_id")
+    .eq("community", community)
+    .in("event_id", eventIds)
+    .in("metric", ["wins", "losses"]);
+  if (adjustmentError) throw new Error(adjustmentError.message);
+  for (const adj of adjustmentRows ?? []) {
+    if (!adj.event_id) continue;
+    const record = recordFor(records, adj.event_id, adj.profile_id);
+    if (adj.metric === "wins") record.wins = Math.max(0, record.wins + adj.delta);
+    else record.losses = Math.max(0, record.losses + adj.delta);
+  }
+
   const currentScores = buildScores(events, records);
   const previousScores = events.length > 1 ? buildScores(events.slice(0, -1), records) : new Map<string, ScoreDraft>();
   const currentPositions = positionsFor(currentScores);
