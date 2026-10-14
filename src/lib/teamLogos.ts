@@ -15,3 +15,9 @@ function normalize(name: string | null | undefined) {
 export function teamBrandFor(name: string | null | undefined): TeamBrand | null {
   return BRANDS[normalize(name)] ?? null;
 }
+
+/** Ícone do coração do time (recorte da logo) para listas e confrontos. */
+export function teamIconFor(name: string | null | undefined): string | null {
+  const brand = teamBrandFor(name);
+  return brand ? brand.logo.replace(".png", "-escudo.png") : null;
+}

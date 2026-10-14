@@ -3,6 +3,7 @@ import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
+import { teamIconFor } from "@/lib/teamLogos";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,11 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
 }
 
-function renderTeamsArt(data: TeamsArtData, logoUrl: string, watermarkUrl: string) {
+function renderTeamsArt(data: TeamsArtData, logoUrl: string, watermarkUrl: string, origin: string) {
+  const iconOf = (name: string) => {
+    const icon = teamIconFor(name);
+    return icon ? new URL(icon, origin).toString() : null;
+  };
   const date = new Date(`${data.date}T12:00:00`);
   const dateLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   const displayedTeams = data.teams.slice(0, 6);
@@ -65,7 +70,13 @@ function renderTeamsArt(data: TeamsArtData, logoUrl: string, watermarkUrl: strin
         {displayedTeams.map((team) => (
           <div key={team.id} style={{ width: cardWidth, minHeight: "445px", display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: "24px", background: "rgba(6,4,25,.24)", border: "1px solid rgba(196,181,253,.2)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: compactCards ? "17px 18px" : "19px 22px", background: "linear-gradient(90deg, rgba(124,58,237,.42), rgba(124,58,237,.12))", borderBottom: "1px solid rgba(255,255,255,.09)" }}>
-              <span style={{ fontSize: compactCards ? "22px" : "25px", fontWeight: 900 }}>{team.name.toUpperCase()}</span>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                {iconOf(team.name) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={iconOf(team.name)!} alt="" width={Math.round((compactCards ? 38 : 44) * 1.8)} height={compactCards ? 38 : 44} style={{ marginRight: "12px", borderRadius: "8px" }} />
+                )}
+                <span style={{ fontSize: compactCards ? "22px" : "25px", fontWeight: 900 }}>{team.name.toUpperCase()}</span>
+              </div>
               <span style={{ width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(255,255,255,.1)", color: "#ddd6fe", fontSize: "16px", fontWeight: 900 }}>{team.members.length}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", padding: compactCards ? "12px 15px 15px" : "14px 18px 18px" }}>
@@ -137,5 +148,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     isPreTournament: event.is_pre_torneio,
     teams: (teamRows ?? []).map((team) => ({ id: team.id, teamNumber: team.team_number, name: team.name, members: players.filter((player) => player.teamId === team.id) })),
   };
-  return renderTeamsArt(data, new URL("/logo.png", request.url).toString(), new URL("/logo-vpa-oficial.jpg", request.url).toString());
+  return renderTeamsArt(data, new URL("/logo.png", request.url).toString(), new URL("/logo-vpa-oficial.jpg", request.url).toString(), request.url);
 }

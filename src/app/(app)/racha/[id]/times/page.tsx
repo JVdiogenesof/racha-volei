@@ -26,6 +26,7 @@ import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { teamDisplayName } from "@/lib/teamNames";
 import { teamBrandFor } from "@/lib/teamLogos";
+import { TeamBadge } from "@/components/TeamBadge";
 import { ShareTeamArtButton } from "@/components/ShareTeamArtButton";
 import {
   generateTeams,
@@ -435,7 +436,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                           <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-2.5 ${advancesToFinal ? "border-amber-300/25 bg-amber-400/[0.08]" : "border-white/10 bg-black/10"}`}>
                             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${advancesToFinal ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/50"}`}>{index + 1}</span>
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-white">{standing.name}</p>
+                              <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} /></p>
                               <p className={`mt-0.5 text-[10px] font-bold ${advancesToFinal ? "text-amber-200/85" : "text-white/45"}`}>{advancesToFinal ? "VAI PARA A FINAL" : playsBottomMatch ? "JOGO DOS DOIS ÚLTIMOS" : "CLASSIFICAÇÃO PARCIAL"}</p>
                             </div>
                             <div className="text-right text-xs text-white/60"><strong className="text-white">{standing.wins}V</strong><span className="mx-1 text-white/20">•</span>{standing.pointsFor} pts</div>
@@ -465,9 +466,9 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         <article key={match.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-white/35">Jogo {index + 1}</p>
                           <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-semibold text-white">
-                            <span>{teamLabelById.get(match.teamAId) ?? "?"}</span>
+                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamAId) ?? "?"} size={30} stacked /></span>
                             <span className="rounded-lg bg-white/5 px-2 py-1 text-base">{match.scoreA ?? "–"} × {match.scoreB ?? "–"}</span>
-                            <span>{teamLabelById.get(match.teamBId) ?? "?"}</span>
+                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamBId) ?? "?"} size={30} stacked /></span>
                           </div>
                         </article>
                       )
@@ -543,7 +544,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_repeat(3,auto)] items-center gap-3 rounded-xl border px-3 py-3 ${index < 2 ? "border-amber-300/20 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${index < 2 ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/45"}`}>{index + 1}</span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-white">{standing.name}</p>
+                        <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} /></p>
                         {index < 2 && <p className="text-[10px] font-bold text-amber-200/70">{event.is_mini_torneio ? "VAI PARA A FINAL" : "CLASSIFICADO"}</p>}
                         {event.is_mini_torneio && index >= standings.length - 2 && <p className="text-[10px] font-bold text-white/40">JOGO DOS DOIS ÚLTIMOS</p>}
                       </div>

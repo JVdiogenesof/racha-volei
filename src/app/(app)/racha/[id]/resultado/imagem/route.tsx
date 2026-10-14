@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ArtWatermark } from "@/components/ArtWatermark";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
+import { teamIconFor } from "@/lib/teamLogos";
 import { computeStandings } from "@/lib/torneioStandings";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
@@ -124,7 +125,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
                 <div style={{ width: place === 1 ? "66px" : "55px", height: place === 1 ? "66px" : "55px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(255,255,255,.11)", color: style.color, fontSize: place === 1 ? "34px" : "28px" }}>{style.icon}</div>
                 <div style={{ display: "flex", flexDirection: "column", marginLeft: "17px" }}>
                   <span style={{ color: style.color, fontSize: "16px", fontWeight: 900, letterSpacing: "2px" }}>{style.label}</span>
-                  <span style={{ marginTop: "4px", fontSize: place === 1 ? "35px" : "28px", fontWeight: 900 }}>{shortName(team.name)}</span>
+                  <div style={{ display: "flex", alignItems: "center", marginTop: "4px" }}>
+                    {teamIconFor(team.name) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={new URL(teamIconFor(team.name)!, request.url).toString()} alt="" width={Math.round((place === 1 ? 50 : 40) * 1.8)} height={place === 1 ? 50 : 40} style={{ marginRight: "12px", borderRadius: "8px" }} />
+                    )}
+                    <span style={{ fontSize: place === 1 ? "35px" : "28px", fontWeight: 900 }}>{shortName(team.name)}</span>
+                  </div>
                 </div>
                 <span style={{ marginLeft: "auto", color: "rgba(255,255,255,.56)", fontSize: "20px", fontWeight: 800 }}>{place}º</span>
               </div>
