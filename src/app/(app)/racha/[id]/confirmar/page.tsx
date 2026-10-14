@@ -291,11 +291,13 @@ export default async function ConfirmarPresencaPage({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
           <div>
             <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
-            {myLockedSpot && !myPayment?.paid && (
-              <p className="mt-1 text-xs text-emerald-100/75">Sua vaga foi garantida pela organização. Falta apenas concluir o pagamento.</p>
+            {!myPayment?.paid && (
+              <p className="mt-1 text-xs text-emerald-100/75">
+                {myLockedSpot ? "Sua vaga foi garantida pela organização. " : ""}Falta apenas concluir o pagamento.
+              </p>
             )}
           </div>
-          {myLockedSpot && !myPayment?.paid && event.pix_payment_enabled && event.price_per_player && (
+          {!myPayment?.paid && event.pix_payment_enabled && event.price_per_player && (
             <div className="ml-auto w-full sm:w-auto">
               <PixReservationButton
                 eventId={id}
