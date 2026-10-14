@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 import { TEAM_VICTORY_EVENT } from "./VictoryTeamCard";
 import { EmptyState } from "./EmptyState";
+import { TeamBadge } from "./TeamBadge";
 
 type TeamOption = { id: string; teamNumber: number; name: string };
 type Confrontation = {
@@ -144,7 +145,7 @@ export function NormalMatchRecorder({
                     className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-purple px-3 text-sm font-semibold text-white hover:bg-brand-purple-dark disabled:opacity-50"
                   >
                     <Trophy className="h-4 w-4" strokeWidth={2} />
-                    {pendingWinnerId === teamId ? "Registrando..." : labels.get(teamId)}
+                    {pendingWinnerId === teamId ? "Registrando..." : <TeamBadge name={labels.get(teamId) ?? ""} size={24} />}
                   </button>
                 ))}
               </div>
@@ -164,10 +165,10 @@ export function NormalMatchRecorder({
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-400/15 text-xs font-bold text-purple-200">
                   {confrontations.length - index}
                 </span>
-                <p className="min-w-0 flex-1 text-sm text-white">
-                  <strong>{labels.get(match.winnerTeamId) ?? "Time anterior"}</strong>
-                  <span className="text-white/45"> venceu o </span>
-                  {labels.get(match.loserTeamId) ?? "time anterior"}
+                <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white">
+                  <strong><TeamBadge name={labels.get(match.winnerTeamId) ?? "Time anterior"} size={22} /></strong>
+                  <span className="text-white/45">venceu o</span>
+                  <TeamBadge name={labels.get(match.loserTeamId) ?? "time anterior"} size={22} className="text-white/80" />
                 </p>
                 {isOrganizer && (
                   <button

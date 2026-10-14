@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionForm } from "./ActionForm";
+import { TeamBadge } from "./TeamBadge";
 
 export function TournamentMatchScoreForm({
   action,
@@ -31,7 +32,7 @@ export function TournamentMatchScoreForm({
       <input type="hidden" name="matchId" value={matchId} />
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
         <label className="min-w-0 text-center text-sm font-medium text-white">
-          <span className="mb-2 block break-words">{teamALabel}</span>
+          <span className="mb-2 flex justify-center"><TeamBadge name={teamALabel} size={34} stacked /></span>
           <input
             type="number"
             name="scoreA"
@@ -45,7 +46,7 @@ export function TournamentMatchScoreForm({
         </label>
         <span className="pb-3 text-white/40" aria-label="contra">×</span>
         <label className="min-w-0 text-center text-sm font-medium text-white">
-          <span className="mb-2 block break-words">{teamBLabel}</span>
+          <span className="mb-2 flex justify-center"><TeamBadge name={teamBLabel} size={34} stacked /></span>
           <input
             type="number"
             name="scoreB"

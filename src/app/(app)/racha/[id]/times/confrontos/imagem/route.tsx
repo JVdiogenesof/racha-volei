@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { ArtWatermark } from "@/components/ArtWatermark";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
+import { teamIconFor } from "@/lib/teamLogos";
 import { generateRoundRobinPairs, roundRobinPairKey } from "@/lib/torneioStandings";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,12 @@ function renderConfrontationsArt(
   },
   logoUrl: string,
   watermarkUrl: string,
+  origin: string,
 ) {
+  const iconOf = (name: string) => {
+    const icon = teamIconFor(name);
+    return icon ? new URL(icon, origin).toString() : null;
+  };
   const date = new Date(`${data.date}T12:00:00`);
   const dateLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
   const shownConfrontations = data.confrontations.slice(0, 12);
@@ -88,11 +94,17 @@ function renderConfrontationsArt(
                   <span style={{ color: match.stage === "final" ? "#fde68a" : "#c4b5fd", fontSize: "13px", fontWeight: 900, letterSpacing: "1.4px" }}>{stageLabel(match.stage, data.isMiniTournament)}</span>
                   <span style={{ marginTop: "5px", color: "rgba(255,255,255,.45)", fontSize: "14px", fontWeight: 700 }}>JOGO {index + 1}</span>
                 </div>
-                <span style={{ width: "250px", textAlign: "right", fontSize: compactRows ? "22px" : "25px", fontWeight: 800 }}>{formatName(match.teamA)}</span>
+                <div style={{ width: "250px", display: "flex", alignItems: "center", justifyContent: "flex-end" }}><span style={{ textAlign: "right", fontSize: compactRows ? "20px" : "23px", fontWeight: 800 }}>{formatName(match.teamA)}</span>{iconOf(match.teamA) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={iconOf(match.teamA)!} alt="" width={Math.round((compactRows ? 40 : 48) * 1.8)} height={compactRows ? 40 : 48} style={{ marginLeft: "10px", borderRadius: "8px" }} />
+                )}</div>
                 <div style={{ width: "132px", display: "flex", justifyContent: "center" }}>
                   <span style={{ minWidth: hasScore ? "84px" : "58px", padding: "10px 12px", textAlign: "center", borderRadius: "14px", background: hasScore ? "rgba(124,58,237,.43)" : "rgba(255,255,255,.08)", color: hasScore ? "white" : "#ddd6fe", fontSize: compactRows ? "20px" : "22px", fontWeight: 900 }}>{hasScore ? `${match.scoreA} × ${match.scoreB}` : "VS"}</span>
                 </div>
-                <span style={{ width: "250px", fontSize: compactRows ? "22px" : "25px", fontWeight: 800 }}>{formatName(match.teamB)}</span>
+                <div style={{ width: "250px", display: "flex", alignItems: "center" }}>{iconOf(match.teamB) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={iconOf(match.teamB)!} alt="" width={Math.round((compactRows ? 40 : 48) * 1.8)} height={compactRows ? 40 : 48} style={{ marginRight: "10px", borderRadius: "8px" }} />
+                )}<span style={{ fontSize: compactRows ? "20px" : "23px", fontWeight: 800 }}>{formatName(match.teamB)}</span></div>
               </div>
             );
           })}
@@ -184,5 +196,5 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     isPreTournament: event.is_pre_torneio,
     isMiniTournament: event.is_mini_torneio,
     confrontations,
-  }, new URL("/logo.png", request.url).toString(), new URL("/logo-vpa-oficial.jpg", request.url).toString());
+  }, new URL("/logo.png", request.url).toString(), new URL("/logo-vpa-oficial.jpg", request.url).toString(), request.url);
 }

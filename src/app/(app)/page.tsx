@@ -14,7 +14,7 @@ import { EventCountdown } from "@/components/EventCountdown";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
-import { AutoPlayShirtVideo } from "@/components/AutoPlayShirtVideo";
+import { TeamsCarousel } from "@/components/TeamsCarousel";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
@@ -460,13 +460,10 @@ export default async function HomePage() {
         </Link>
       )}
 
+      {community === "sand" ? (
       <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-[#10071f] shadow-xl shadow-purple-950/20">
-        <div className={`relative overflow-hidden bg-black ${community === "sand" ? "aspect-[8/5]" : "aspect-video"}`}>
-          {community === "sand" ? (
-            <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
-          ) : (
-            <AutoPlayShirtVideo />
-          )}
+        <div className={`relative overflow-hidden bg-black aspect-[8/5]`}>
+          <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-[#130827]/40 to-transparent" />
           <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-purple-200/25 bg-black/45 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-purple-100 backdrop-blur">
             <Sparkles className="h-3 w-3" strokeWidth={2.5} />
@@ -488,6 +485,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+      ) : (
+        <TeamsCarousel />
+      )}
 
       {recentChampion && (
         <RecentTournamentChampionCard
