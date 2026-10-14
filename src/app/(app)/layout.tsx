@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAppChromeData } from "@/lib/appChromeData";
 import { NavigationFeedback } from "@/components/NavigationFeedback";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { PaymentNotices } from "@/components/PaymentNotices";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -27,6 +28,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <NavBar profile={profile} activeCommunity={community} chromeData={chromeData} />
       {isVisitor && <VisitorModeBanner invited={profile.status === "guest"} />}
       <main className="mx-auto min-w-0 w-full max-w-5xl flex-1 px-4 py-6 pb-40 sm:py-8 sm:pb-40 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem]">
+        {profile.status !== "visitor" && <PaymentNotices profileId={profile.id} community={community} />}
         <BackButton />
         <PageTransition community={community}>{children}</PageTransition>
       </main>
