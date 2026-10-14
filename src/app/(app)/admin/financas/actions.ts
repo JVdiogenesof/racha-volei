@@ -80,6 +80,16 @@ export async function reversePlayerBalance(formData: FormData) {
   revalidateFinance();
 }
 
+export async function deletePlayerBalance(formData: FormData) {
+  await requireOrganizer();
+  const profileId = requiredText(formData, "profileId", "Pessoa", 50);
+  const community = requiredText(formData, "community", "Comunidade", 50);
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("delete_player_balance", { p_profile_id: profileId, p_community: community });
+  if (error) throw new Error(error.message);
+  revalidateFinance();
+}
+
 export async function addFinanceTransaction(formData: FormData) {
   const organizer = await requireOrganizer();
   const community = await getActiveCommunity(organizer);
