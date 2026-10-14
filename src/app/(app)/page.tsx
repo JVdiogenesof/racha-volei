@@ -236,6 +236,45 @@ export default async function HomePage() {
         </div>
       </div>
 
+      {profile.status === "approved" && (
+        <Link
+          href="/ranking"
+          className="flex min-w-0 items-center gap-3 rounded-2xl border border-purple-300/20 bg-gradient-to-r from-purple-500/15 to-transparent px-2.5 py-1.5 transition hover:border-purple-300/35"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-400/20 text-purple-100">
+            <Gauge className="h-4 w-4" strokeWidth={2.25} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-white/40">Sua posição · Índice VPA</p>
+            {myPosition !== null && mySeason ? (
+              <p className="flex items-baseline gap-2 text-white">
+                <span className="text-lg font-black leading-tight">{myPosition}º</span>
+                <span className="truncate text-xs font-medium text-white/55">{mySeason.averageIndex.toFixed(1)} pts</span>
+              </p>
+            ) : (
+              <p className="truncate text-sm font-semibold leading-snug text-white/75">
+                {mySeason
+                  ? `Em classificação · ${mySeason.eventsPlayed}/${INDEX_MIN_EVENTS} rachas jogados`
+                  : "Jogue um racha pra entrar no ranking"}
+              </p>
+            )}
+          </div>
+          {myQualified ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
+              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Classificado
+            </span>
+          ) : myGap !== null && myGap > 0 ? (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-300">
+              <Target className="h-3.5 w-3.5" strokeWidth={2.5} />
+              −{myGap.toFixed(1)} p/ vaga
+            </span>
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
+          )}
+        </Link>
+      )}
+
       <section
         className={
           preTorneio
@@ -419,45 +458,6 @@ export default async function HomePage() {
             <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
           </div>
         </section>
-      )}
-
-      {profile.status === "approved" && (
-        <Link
-          href="/ranking"
-          className="flex min-w-0 items-center gap-3 rounded-2xl border border-purple-300/20 bg-gradient-to-r from-purple-500/15 to-transparent px-3 py-2.5 transition hover:border-purple-300/35"
-        >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-400/20 text-purple-100">
-            <Gauge className="h-[18px] w-[18px]" strokeWidth={2.25} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-white/40">Sua posição · Índice VPA</p>
-            {myPosition !== null && mySeason ? (
-              <p className="flex items-baseline gap-2 text-white">
-                <span className="text-xl font-black leading-tight">{myPosition}º</span>
-                <span className="truncate text-xs font-medium text-white/55">{mySeason.averageIndex.toFixed(1)} pts</span>
-              </p>
-            ) : (
-              <p className="truncate text-sm font-semibold leading-snug text-white/75">
-                {mySeason
-                  ? `Em classificação · ${mySeason.eventsPlayed}/${INDEX_MIN_EVENTS} rachas jogados`
-                  : "Jogue um racha pra entrar no ranking"}
-              </p>
-            )}
-          </div>
-          {myQualified ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
-              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
-              Classificado
-            </span>
-          ) : myGap !== null && myGap > 0 ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-300">
-              <Target className="h-3.5 w-3.5" strokeWidth={2.5} />
-              −{myGap.toFixed(1)} p/ vaga
-            </span>
-          ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
-          )}
-        </Link>
       )}
 
       {community === "sand" ? (
