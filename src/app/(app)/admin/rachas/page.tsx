@@ -83,7 +83,8 @@ export default async function AdminRachasPage() {
           name="pixPaymentEnabled"
           icon={QrCode}
           title="Ativar Pix automático neste racha"
-          description="A pessoa reserva a vaga por 5 minutos, paga por QR Code ou copia e cola e entra na lista automaticamente."
+          defaultChecked
+          description="Exige o valor por jogador. A pessoa gera o Pix copia e cola, paga e entra na lista automaticamente. Quem já está confirmado também paga por aqui."
         />
         <RegistrationScheduleFields defaultOpensAt={suggestedRegistrationOpensAt} />
         <RachaCapacityFields

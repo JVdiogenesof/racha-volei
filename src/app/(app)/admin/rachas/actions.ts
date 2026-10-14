@@ -72,6 +72,12 @@ export async function createEvent(formData: FormData) {
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
+  if (pricePerPlayer !== null && (!Number.isFinite(pricePerPlayer) || pricePerPlayer < 0)) {
+    throw new Error("Informe um valor válido por jogador.");
+  }
+  if (pixPaymentEnabled && !(pricePerPlayer !== null && pricePerPlayer > 0)) {
+    throw new Error("Para ativar o Pix automático, informe o valor por jogador (maior que zero).");
+  }
   const isPreTorneio = gameStyle === "pre_tournament";
   const isMiniTorneio = gameStyle === "mini_tournament";
 
@@ -152,6 +158,12 @@ export async function updateEvent(formData: FormData) {
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
+  if (pricePerPlayer !== null && (!Number.isFinite(pricePerPlayer) || pricePerPlayer < 0)) {
+    throw new Error("Informe um valor válido por jogador.");
+  }
+  if (pixPaymentEnabled && !(pricePerPlayer !== null && pricePerPlayer > 0)) {
+    throw new Error("Para ativar o Pix automático, informe o valor por jogador (maior que zero).");
+  }
   const isPreTorneio = gameStyle === "pre_tournament";
   const isMiniTorneio = gameStyle === "mini_tournament";
 

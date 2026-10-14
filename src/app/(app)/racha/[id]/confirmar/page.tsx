@@ -28,6 +28,7 @@ import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
+import { reconcileEventPayments } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
 
 export default async function ConfirmarPresencaPage({
@@ -39,6 +40,8 @@ export default async function ConfirmarPresencaPage({
   const profile = await requireProfile();
   const supabase = await createClient();
   const selectedCommunity = await getActiveCommunity(profile);
+  // Confere Pix recém-pagos antes de montar a lista (não depende só do webhook).
+  await reconcileEventPayments(id, profile.is_organizer ? undefined : profile.id);
 
   const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }, { data: lockedRows }, { data: qualificationExceptions }, { data: qualifiedPlayers }] =
     await Promise.all([

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { settleMercadoPagoOrder } from "@/lib/mercadoPagoSettle";
+import { reconcileEventPayments } from "@/lib/mercadoPagoSettle";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,25 +15,7 @@ export async function POST(request: Request) {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return Response.json({ error: "Entre na sua conta novamente." }, { status: 401 });
 
-    // Só pedidos da própria pessoa (a RLS já limita as reservas dela).
-    const { data: intents } = await supabase
-      .from("event_payment_intents")
-      .select("provider_order_id, status")
-      .eq("event_id", body.eventId)
-      .eq("profile_id", auth.user.id)
-      .in("status", ["pending", "expired"])
-      .not("provider_order_id", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(3);
-
-    let paid = false;
-    for (const intent of intents ?? []) {
-      if (!intent.provider_order_id) continue;
-      if ((await settleMercadoPagoOrder(intent.provider_order_id)) === "paid") {
-        paid = true;
-        break;
-      }
-    }
+    const paid = (await reconcileEventPayments(body.eventId, auth.user.id)) > 0;
     return Response.json({ paid });
   } catch (error) {
     console.error("[pix-status] Falha ao conferir o pagamento", error instanceof Error ? error.message : error);
