@@ -83,8 +83,6 @@ export async function getProfileRankingSheet(
         if (winners.includes(profileId)) legacyWins += 1;
         continue;
       }
-      // Pré-torneio entra só pela presença.
-      if (event.is_pre_torneio) continue;
       if (winners.includes(profileId)) wins += 1;
       if (losers.includes(profileId)) losses += 1;
     }

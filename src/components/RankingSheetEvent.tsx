@@ -41,7 +41,6 @@ export function RankingSheetEvent({
     setView(event.effective);
   }
   const adjusted = event.adjust.attendance !== 0 || event.adjust.mvp !== 0 || event.adjust.wins !== 0 || event.adjust.losses !== 0;
-  const isPre = event.kind === "pre_torneio";
 
   function run(action: Action, fields: Record<string, string>, optimistic: Partial<typeof view>) {
     const previous = view;
@@ -137,21 +136,13 @@ export function RankingSheetEvent({
             <span className={`absolute left-[3px] top-[3px] h-[22px] w-[22px] rounded-full bg-white transition-transform ${view.present ? "translate-x-5" : ""}`} />
           </button>
         </div>
-        {isPre ? (
-          <p className="col-span-2 flex items-center rounded-xl bg-white/[0.04] px-3 text-[11px] leading-snug text-white/50">
-            Pré-torneio conta só presença no Índice. Vitórias e derrotas daqui não entram no aproveitamento.
-          </p>
-        ) : (
-          <>
-            {stepper("wins", "Vitórias")}
-            {stepper("losses", "Derrotas")}
-          </>
-        )}
+        {stepper("wins", "Vitórias")}
+        {stepper("losses", "Derrotas")}
       </div>
       {toggle("mvp", "Jogador Destaque do racha", view.mvp, "mvp")}
       <p className={`text-[11px] ${adjusted ? "text-amber-200/90" : "text-white/45"}`}>
         Registrado: {event.registered.present ? "presente" : "ausente"}
-        {!isPre ? ` · ${event.registered.wins}V · ${event.registered.losses}D` : ""}
+        {` · ${event.registered.wins}V · ${event.registered.losses}D`}
         {event.registered.mvp ? " · destaque" : ""}
         {event.registered.legacyWins > 0 ? ` · ${event.registered.legacyWins} vitória(s) no formato antigo (não entram no aproveitamento; use o ajuste para contar)` : ""}
       </p>

@@ -90,7 +90,7 @@ export async function getRankingCounts(
       Promise.resolve({ data: communityEvents ?? [] }),
       supabase
         .from("match_wins")
-        .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids, events(is_pre_torneio)")
+        .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
         .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
       // Os ajustes ligados a um racha entram pelo próprio racha (já filtrado pelo
@@ -169,8 +169,7 @@ export async function getRankingCounts(
   };
 
   for (const match of winRows ?? []) {
-    const event = match.events as unknown as { is_pre_torneio: boolean } | null;
-    if (event?.is_pre_torneio || !match.loser_team_id) continue;
+    if (!match.loser_team_id) continue;
 
     const winnerIds = match.winning_profile_ids?.length
       ? match.winning_profile_ids

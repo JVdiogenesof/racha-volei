@@ -178,10 +178,9 @@ export async function getSeasonRanking(
     for (const profileId of presentProfiles) recordFor(records, eventId, profileId).present = true;
   }
 
-  const eventById = new Map(events.map((event) => [event.id, event]));
   for (const match of matchRows ?? []) {
-    // Pré-torneios entram pela presença; confrontos normais alimentam a forma.
-    if (eventById.get(match.event_id)?.is_pre_torneio || !match.loser_team_id) continue;
+    // Pré-torneios contam como um racha normal: presença e confrontos.
+    if (!match.loser_team_id) continue;
     const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
     const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
     for (const profileId of winners) recordFor(records, match.event_id, profileId).wins += 1;
