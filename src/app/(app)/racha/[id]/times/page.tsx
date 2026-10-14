@@ -337,7 +337,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     {teamBrandFor(team.name) && (
                       <div className="-mx-1 mb-3 flex justify-center rounded-xl p-2" style={{ background: teamBrandFor(team.name)!.panel, border: `1px solid ${teamBrandFor(team.name)!.accent}55` }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={teamBrandFor(team.name)!.logo} alt={`Time ${team.name}`} className="h-auto w-full max-w-[220px] object-contain" />
+                        <img src={teamBrandFor(team.name)!.logoWeb} alt={`Time ${team.name}`} className="h-auto w-full max-w-[220px] object-contain" />
                       </div>
                     )}
                     <div className="flex items-center justify-between gap-2">

@@ -95,59 +95,25 @@ export default async function HomePage() {
   const secondaryScheduledRacha =
     secondaryScheduledCandidates.find((event) => event.is_pre_torneio) ?? secondaryScheduledCandidates[0] ?? null;
 
-  let recentChampion: { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] } | null = null;
-  if (recentFinal) {
+  type RecentChampion = { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] };
+  const loadChampion = async (): Promise<RecentChampion | null> => {
+    if (!recentFinal) return null;
     const championTeamId = recentFinal.score_a! > recentFinal.score_b! ? recentFinal.team_a_id : recentFinal.team_b_id;
     const [{ data: championTeam }, { data: memberRows }] = await Promise.all([
       supabase.from("teams").select("name").eq("id", championTeamId).maybeSingle(),
       supabase.from("team_members").select("profiles(full_name, avatar_url)").eq("team_id", championTeamId),
     ]);
     const event = recentFinal.events as unknown as { date: string } | null;
-    if (championTeam && event) {
-      recentChampion = {
-        eventDateLabel: new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR"),
-        teamName: championTeam.name,
-        players: (memberRows ?? []).map((m) => {
-          const p = m.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
-          return { fullName: p?.full_name ?? "?", avatarUrl: p?.avatar_url ?? null };
-        }),
-      };
-    }
-  }
-
-  const { data: myAttendance } = proximoRacha
-    ? await supabase
-        .from("attendance")
-        .select("status")
-        .eq("event_id", proximoRacha.id)
-        .eq("profile_id", profile.id)
-        .maybeSingle()
-    : { data: null };
-
-  const [{ count: confirmedCount }, { count: newcomerConfirmedCount }] = proximoRacha
-    ? await Promise.all([
-        supabase
-          .from("attendance")
-          .select("id", { count: "exact", head: true })
-          .eq("event_id", proximoRacha.id)
-          .eq("status", "confirmed"),
-        supabase
-          .from("attendance")
-          .select("id", { count: "exact", head: true })
-          .eq("event_id", proximoRacha.id)
-          .eq("status", "confirmed")
-          .eq("uses_newcomer_spot", true),
-      ])
-    : [{ count: null }, { count: null }];
-  const reservedSpots = proximoRacha?.newcomer_reserved_spots ?? 0;
-  const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
-  const memberCapacity =
-    proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - reservedSpots) : null;
-  const isFull =
-    proximoRacha?.max_players != null &&
-    (profile.status === "guest"
-      ? (confirmedCount ?? 0) >= proximoRacha.max_players
-      : memberCapacity !== null && regularConfirmedCount >= memberCapacity);
+    if (!championTeam || !event) return null;
+    return {
+      eventDateLabel: new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR"),
+      teamName: championTeam.name,
+      players: (memberRows ?? []).map((m) => {
+        const p = m.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+        return { fullName: p?.full_name ?? "?", avatarUrl: p?.avatar_url ?? null };
+      }),
+    };
+  };
 
   const eventIdForPanel = proximoRacha?.id ?? "";
   // O aviso de cancelamento é só pra quem já estava confirmado e saiu da lista
@@ -161,27 +127,56 @@ export default async function HomePage() {
         new Date(`${proximoRacha.date}T${proximoRacha.time ?? "00:00"}`).getTime() - 48 * 60 * 60 * 1000,
       ).toISOString()
     : hoursAgoIso(48);
-  const [{ count: reserveCount }, { count: interessadosCount }, { data: declineRows }] =
-    profile.is_organizer
-      ? await Promise.all([
-          supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]),
-          supabase
-            .from("attendance")
-            .select("id", { count: "exact", head: true })
-            .eq("event_id", eventIdForPanel)
-            .eq("status", "interested"),
-          supabase
-            .from("attendance")
-            .select("profile_id, profiles(full_name)")
-            .eq("event_id", eventIdForPanel)
-            .eq("status", "declined")
-            .not("cancelled_at", "is", null)
-            .gte("cancelled_at", declineWindowStart),
-        ])
-      : [{ count: 0 }, { count: 0 }, { data: [] }];
 
-  const rachaLevel =
-    proximoRacha?.official_list_open ? await getRachaLevel(supabase, proximoRacha.id) : null;
+  // Tudo abaixo só depende do próximo racha: roda em paralelo, em vez de uma
+  // consulta esperando a outra (era o que deixava a tela de início lenta).
+  const [
+    recentChampion,
+    { data: myAttendance },
+    { count: confirmedCount },
+    { count: newcomerConfirmedCount },
+    { count: reserveCount },
+    { count: interessadosCount },
+    { data: declineRows },
+    rachaLevel,
+  ] = await Promise.all([
+    loadChampion(),
+    proximoRacha
+      ? supabase.from("attendance").select("status").eq("event_id", proximoRacha.id).eq("profile_id", profile.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    proximoRacha
+      ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed")
+      : Promise.resolve({ count: null }),
+    proximoRacha
+      ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed").eq("uses_newcomer_spot", true)
+      : Promise.resolve({ count: null }),
+    profile.is_organizer
+      ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community])
+      : Promise.resolve({ count: 0 }),
+    profile.is_organizer
+      ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", eventIdForPanel).eq("status", "interested")
+      : Promise.resolve({ count: 0 }),
+    profile.is_organizer
+      ? supabase
+          .from("attendance")
+          .select("profile_id, profiles(full_name)")
+          .eq("event_id", eventIdForPanel)
+          .eq("status", "declined")
+          .not("cancelled_at", "is", null)
+          .gte("cancelled_at", declineWindowStart)
+      : Promise.resolve({ data: [] as { profile_id: string; profiles: unknown }[] }),
+    proximoRacha?.official_list_open ? getRachaLevel(supabase, proximoRacha.id) : Promise.resolve(null),
+  ]);
+  const reservedSpots = proximoRacha?.newcomer_reserved_spots ?? 0;
+  const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
+  const memberCapacity =
+    proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - reservedSpots) : null;
+  const isFull =
+    proximoRacha?.max_players != null &&
+    (profile.status === "guest"
+      ? (confirmedCount ?? 0) >= proximoRacha.max_players
+      : memberCapacity !== null && regularConfirmedCount >= memberCapacity);
+
   const isInProgress = proximoRacha?.status === "in_progress";
   const myStatus = myAttendance?.status;
   const canRespondToNextEvent =

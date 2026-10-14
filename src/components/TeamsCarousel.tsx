@@ -69,7 +69,7 @@ export function TeamsCarousel() {
               style={{ background: `radial-gradient(circle at 50% 40%, ${brand.glow}, transparent 62%), ${brand.panel}` }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={brand.logo} alt={`Logo do time ${name}`} className="h-[88%] w-auto object-contain" draggable={false} loading={position === 0 ? "eager" : "lazy"} />
+              <img src={brand.logoWeb} alt={`Logo do time ${name}`} className="h-[88%] w-auto object-contain" draggable={false} loading={position === 0 ? "eager" : "lazy"} />
             </div>
           ))}
         </div>

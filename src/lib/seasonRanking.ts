@@ -151,12 +151,19 @@ export async function getSeasonRanking(
   const events = ([...(eventRows ?? [])] as EventRow[]).reverse();
   if (!events.length) return new Map();
   const eventIds = events.map((event) => event.id);
-  const [presentByEvent, { data: matchRows, error: matchError }] = await Promise.all([
+  // Consultas independentes entre si (só dependem dos ids dos rachas): rodam juntas.
+  const [presentByEvent, { data: matchRows, error: matchError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, eventIds),
     supabase
       .from("match_wins")
       .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
       .in("event_id", eventIds),
+    supabase
+      .from("ranking_adjustments")
+      .select("profile_id, metric, delta, event_id")
+      .eq("community", community)
+      .in("event_id", eventIds)
+      .in("metric", ["wins", "losses", "attendance"]),
   ]);
   if (matchError) throw new Error(matchError.message);
 
@@ -190,12 +197,6 @@ export async function getSeasonRanking(
   // Ajustes manuais ligados a um racha da janela (feitos na tela de ajustes de
   // ranking): vitórias e derrotas somam ao racha; presença positiva marca o
   // jogador como presente e negativa tira a presença desse racha.
-  const { data: adjustmentRows, error: adjustmentError } = await supabase
-    .from("ranking_adjustments")
-    .select("profile_id, metric, delta, event_id")
-    .eq("community", community)
-    .in("event_id", eventIds)
-    .in("metric", ["wins", "losses", "attendance"]);
   if (adjustmentError) throw new Error(adjustmentError.message);
   const presenceDelta = new Map<string, number>();
   for (const adj of adjustmentRows ?? []) {
