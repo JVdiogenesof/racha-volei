@@ -25,6 +25,8 @@ import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { teamDisplayName } from "@/lib/teamNames";
+import { teamBrandFor } from "@/lib/teamLogos";
+import { ShareTeamArtButton } from "@/components/ShareTeamArtButton";
 import {
   generateTeams,
   cancelTeams,
@@ -331,6 +333,12 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                 const sum = team.members.reduce((total, member) => total + member.overall, 0);
                 return (
                   <VictoryTeamCard key={team.id} teamId={team.id}>
+                    {teamBrandFor(team.name) && (
+                      <div className="-mx-1 mb-3 flex justify-center rounded-xl p-2" style={{ background: teamBrandFor(team.name)!.panel, border: `1px solid ${teamBrandFor(team.name)!.accent}55` }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={teamBrandFor(team.name)!.logo} alt={`Time ${team.name}`} className="h-auto w-full max-w-[220px] object-contain" />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-semibold text-white">{team.name}</h3>
                       <div className="flex items-center gap-2">
@@ -366,6 +374,13 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                         </li>
                       ))}
                     </ul>
+
+                    <div className="mt-3 flex flex-wrap gap-2 border-t border-white/8 pt-3">
+                      <ShareTeamArtButton eventId={id} teamId={team.id} teamName={team.name} mode="escalacao" />
+                      {(event.status === "finished" || team.wins + team.losses > 0 || finalMatch?.scoreA != null) && (
+                        <ShareTeamArtButton eventId={id} teamId={team.id} teamName={team.name} mode="resultado" />
+                      )}
+                    </div>
 
                     {canManage && team.members.length < event.team_size && (
                       <div className="mt-3 border-t border-white/8 pt-3">
