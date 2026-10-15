@@ -6,6 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
+import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
@@ -83,6 +84,11 @@ export default async function HomePage() {
       // Posição do jogador no Índice VPA da temporada (faixa "Sua posição").
       profile.status === "approved" ? getSeasonRanking(supabase, community) : Promise.resolve(null),
     ]);
+  const { data: myReservedRow } =
+    profile.status === "approved"
+      ? await supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
+      : { data: null };
+  const amGuaranteed = Boolean(myReservedRow);
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
   const secondaryScheduledCandidates = (upcomingRachas ?? [])
@@ -206,7 +212,7 @@ export default async function HomePage() {
   const myRankIndex = rankedSeason.findIndex((item) => item.profileId === profile.id);
   const myPosition = myRankIndex >= 0 ? myRankIndex + 1 : null;
   const cutoffScore = rankedSeason.length >= TOURNAMENT_QUALIFYING_SLOTS ? rankedSeason[TOURNAMENT_QUALIFYING_SLOTS - 1].averageIndex : null;
-  const myQualified = myPosition !== null && myPosition <= TOURNAMENT_QUALIFYING_SLOTS;
+  const myQualified = amGuaranteed || (myPosition !== null && myPosition <= TOURNAMENT_QUALIFYING_SLOTS);
   const myGap = myPosition !== null && !myQualified && cutoffScore !== null && mySeason
     ? Math.max(0, Math.round((cutoffScore - mySeason.averageIndex) * 10) / 10)
     : null;
@@ -230,6 +236,8 @@ export default async function HomePage() {
           </Link>
         </div>
       </div>
+
+      <TodayBirthdayCard profiles={birthdayProfiles ?? []} />
 
       {profile.status === "approved" && (
         <Link

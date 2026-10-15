@@ -44,7 +44,7 @@ export function RankingTabs({
   const mine = currentEntry(active);
   const rankedActive = rankings[active].filter((item) => item.ranked !== false);
   const cutoffScore = cutoff && rankedActive.length >= cutoff.slots ? rankedActive[cutoff.slots - 1].count : null;
-  const isQualified = Boolean(cutoff && mine.position && mine.position <= cutoff.slots);
+  const isQualified = Boolean(cutoff && mine.entry && (mine.entry.guaranteed || (mine.position && mine.position <= cutoff.slots)));
   const missing = cutoff && mine.position && !isQualified && cutoffScore !== null && mine.entry
     ? Math.max(0, Math.round((cutoffScore - mine.entry.count) * 10) / 10)
     : null;

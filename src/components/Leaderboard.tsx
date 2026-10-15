@@ -18,7 +18,26 @@ export type RankingEntry = {
   /** Movimento desde o racha anterior, usado pelo Índice VPA vivo. */
   trend?: "up" | "down" | "same" | "new";
   positionChange?: number | null;
+  /** Já garantiu vaga via pré-torneio -- fica "classificado" (verde) mesmo fora do corte pela nota. */
+  guaranteed?: boolean;
 };
+
+type Tier = "green" | "blue" | "red";
+
+const TIER_STYLE: Record<Tier, { ring: string; text: string; bg: string; progress: string }> = {
+  green: { ring: "ring-emerald-400/70", text: "text-emerald-300", bg: "bg-emerald-400/[0.05]", progress: "bg-emerald-400/60" },
+  blue: { ring: "ring-sky-400/70", text: "text-sky-300", bg: "bg-sky-400/[0.05]", progress: "bg-sky-400/60" },
+  red: { ring: "ring-rose-400/60", text: "text-rose-300", bg: "", progress: "bg-purple-300/40" },
+};
+
+/** Faixa de cor dentro do corte de classificação: top 10 = verde, até o corte = azul, fora = vermelho. */
+function tierFor(rankedPosition: number | null, cutoff: { slots: number } | undefined, guaranteed?: boolean): Tier | null {
+  if (guaranteed) return "green";
+  if (!cutoff || rankedPosition === null) return null;
+  if (rankedPosition <= 10) return "green";
+  if (rankedPosition <= cutoff.slots) return "blue";
+  return "red";
+}
 
 // Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
 const PODIUM_STYLE = [
@@ -89,7 +108,8 @@ export function Leaderboard({
                 const place = podium.indexOf(entry);
                 const isFirst = place === 0;
                 const style = PODIUM_STYLE[place];
-                const insideCutoff = Boolean(cutoff) && place + 1 <= (cutoff?.slots ?? 0);
+                const podiumTier = tierFor(place + 1, cutoff, entry.guaranteed);
+                const insideCutoff = podiumTier === "green" || podiumTier === "blue";
                 const isMe = entry.profileId === currentProfileId;
                 return (
                   <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
@@ -99,7 +119,7 @@ export function Leaderboard({
                         src={entry.avatarUrl}
                         name={entry.fullName}
                         size={isFirst ? "lg" : "md"}
-                        ring={insideCutoff ? "ring-emerald-400/70" : undefined}
+                        ring={podiumTier ? TIER_STYLE[podiumTier].ring : undefined}
                       />
                     </div>
                     <p className="mt-1.5 line-clamp-2 w-full px-0.5 text-[11px] font-semibold leading-tight text-white sm:text-sm">
@@ -117,8 +137,8 @@ export function Leaderboard({
                       <span className={`text-sm font-black leading-none ${style.text}`}>
                         <AnimatedMetric value={`${place + 1}º`} />
                       </span>
-                      {insideCutoff && (
-                        <CheckCircle2 className="h-3 w-3 text-emerald-300" strokeWidth={2.5} aria-label="Classificado" />
+                      {insideCutoff && podiumTier && (
+                        <CheckCircle2 className={`h-3 w-3 ${TIER_STYLE[podiumTier].text}`} strokeWidth={2.5} aria-label="Classificado" />
                       )}
                     </div>
                   </div>
@@ -131,9 +151,10 @@ export function Leaderboard({
             <ul className="border-t border-white/10 px-2 py-1 sm:px-4">
               {rest.map((entry, i) => {
                 const rankedPosition = entry.ranked === false ? null : rankedEntries.indexOf(entry) + 1;
-                const insideCutoff = Boolean(cutoff) && rankedPosition !== null && rankedPosition <= cutoff!.slots;
-                const outsideCutoff = cutoffScore !== null && rankedPosition !== null && rankedPosition > cutoff!.slots;
-                const gap = outsideCutoff ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
+                const tier = tierFor(rankedPosition, cutoff, entry.guaranteed);
+                const insideCutoff = tier === "green" || tier === "blue";
+                const outsideCutoff = tier === "red";
+                const gap = outsideCutoff && cutoffScore !== null ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
                 const isMe = entry.profileId === currentProfileId;
                 const progress = rankedPosition ? Math.max(4, Math.min(100, (entry.count / leaderCount) * 100)) : 0;
                 return (
@@ -150,36 +171,41 @@ export function Leaderboard({
                     )}
                     <li
                       className={`relative my-0.5 min-w-0 overflow-hidden rounded-xl px-2 py-1.5 ${
-                        isMe ? "bg-purple-400/12 ring-1 ring-purple-300/25" : insideCutoff ? "bg-emerald-400/[0.05]" : "hover:bg-white/[0.03]"
+                        isMe ? "bg-purple-400/12 ring-1 ring-purple-300/25" : tier ? TIER_STYLE[tier].bg : "hover:bg-white/[0.03]"
                       }`}
                     >
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className={`w-6 shrink-0 text-center text-xs font-black ${insideCutoff ? "text-emerald-300" : "text-white/35"}`}>
+                        <span className={`w-6 shrink-0 text-center text-xs font-black ${tier ? TIER_STYLE[tier].text : "text-white/35"}`}>
                           {rankedPosition ? `${rankedPosition}º` : "—"}
                         </span>
-                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={insideCutoff ? "ring-emerald-400/60" : undefined} />
+                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={tier ? TIER_STYLE[tier].ring : undefined} />
                         <div className="min-w-0 flex-1">
                           <p className="flex min-w-0 items-center gap-1 text-[13px] font-medium leading-tight text-white">
                             <span className="truncate">{entry.fullName}</span>
                             {isMe && <span className="shrink-0 text-[8px] font-black text-purple-200">VOCÊ</span>}
+                            {entry.guaranteed && (
+                              <span className="shrink-0 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-emerald-300">
+                                Pré-torneio
+                              </span>
+                            )}
                           </p>
                           {entry.detail && <p className="truncate text-[10px] leading-tight text-white/35">{entry.detail}</p>}
                         </div>
                         <div className="shrink-0 text-right">
                           <p className="flex items-center justify-end gap-1 text-[13px] font-bold leading-tight text-white/80">
-                            {insideCutoff && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300" strokeWidth={2.5} aria-label="Classificado" />}
+                            {insideCutoff && tier && <CheckCircle2 className={`h-3.5 w-3.5 ${TIER_STYLE[tier].text}`} strokeWidth={2.5} aria-label="Classificado" />}
                             <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                           </p>
                           <TrendBadge entry={entry} />
                           {gap !== null && gap > 0 && (
-                            <p className="text-[10px] font-bold leading-tight text-amber-300/85">−{gap.toFixed(1)} p/ vaga</p>
+                            <p className="text-[10px] font-bold leading-tight text-rose-300/85">−{gap.toFixed(1)} p/ vaga</p>
                           )}
                         </div>
                       </div>
                       {rankedPosition !== null && (
                         <span className="mt-1 block h-0.5 overflow-hidden rounded-full bg-white/[0.06]">
                           <span
-                            className={`block h-full rounded-full ${insideCutoff ? "bg-emerald-400/60" : "bg-purple-300/40"}`}
+                            className={`block h-full rounded-full ${tier ? TIER_STYLE[tier].progress : "bg-purple-300/40"}`}
                             style={{ width: `${progress}%` }}
                           />
                         </span>

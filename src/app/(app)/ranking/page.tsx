@@ -19,12 +19,16 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const monthKey = requestedMonth && requestedMonth !== "season" ? normalizeMonthKey(requestedMonth) : undefined;
   const isSeasonView = !monthKey;
 
-  const [{ data: profiles }, { data: monthEvents }, counts, seasonScores] = await Promise.all([
+  const [{ data: profiles }, { data: monthEvents }, counts, seasonScores, { data: reservedPlayers }] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]),
     supabase.from("events").select("date").eq("community", community).order("date", { ascending: false }),
     getRankingCounts(supabase, community, monthKey),
     isSeasonView ? getSeasonRanking(supabase, community) : Promise.resolve(null),
+    // Quem já garantiu vaga via pré-torneio (passado ou futuro) aparece
+    // "classificado" no Índice VPA mesmo se a nota não alcançar o corte.
+    supabase.from("tournament_reserved_players").select("profile_id").eq("community", community),
   ]);
+  const guaranteedIds = new Set((reservedPlayers ?? []).map((row) => row.profile_id));
 
   const availableMonths = [...new Set((monthEvents ?? []).map((event) => event.date.slice(0, 7)))]
     .filter((key) => key >= SEASON_START_MONTH)
@@ -69,6 +73,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             ranked: season.eligible,
             trend: season.trend,
             positionChange: season.positionChange,
+            guaranteed: guaranteedIds.has(profileId),
           }];
         })
         .sort(
@@ -89,6 +94,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
             detail: `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres. (${formatMonthLabel(monthKey!)})`,
             ranked: stats.eligible,
+            guaranteed: guaranteedIds.has(profileId),
           }];
         })
         .sort(

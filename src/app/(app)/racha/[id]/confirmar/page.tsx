@@ -786,9 +786,16 @@ export default async function ConfirmarPresencaPage({
       )}
 
       <section>
-        <h2 className="font-semibold text-white">Interessados ({interessados.length})</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-semibold text-white">Interessados ({interessados.length})</h2>
+          {isFull && interessados.length > 0 && (
+            <span className="rounded-full bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-200">
+              Lista cheia · fila de espera
+            </span>
+          )}
+        </div>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {interessados.map((a) => {
+          {interessados.map((a, index) => {
             const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
             const overall = overallFor(a.profile_id);
             return (
@@ -796,6 +803,14 @@ export default async function ConfirmarPresencaPage({
                 key={a.profile_id}
                 className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
               >
+                {isFull && (
+                  <span
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[11px] font-bold text-amber-200"
+                    title="Posição na fila de espera"
+                  >
+                    {index + 1}º
+                  </span>
+                )}
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
                 <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
                 {p?.is_setter && <SetterBadge />}

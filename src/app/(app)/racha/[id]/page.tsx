@@ -130,6 +130,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
             eventId={id}
             maxPlayers={event.max_players}
             initialConfirmedCount={confirmedCount ?? 0}
+            showFullCapacity={profile.is_organizer}
           />
         )}
       </section>
