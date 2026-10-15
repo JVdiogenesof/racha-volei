@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -75,13 +75,20 @@ export default async function ConfirmarPresencaPage({
         : Promise.resolve({ data: null }),
     ]);
 
-  const { data: pendingSpotOffer } = await supabase
-    .from("spot_offers")
-    .select("profile_id, expires_at, profiles(full_name)")
-    .eq("event_id", id)
-    .eq("status", "pending")
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+  const [{ data: pendingSpotOffer }, { data: hasActiveSpotOffer }] = await Promise.all([
+    supabase
+      .from("spot_offers")
+      .select("profile_id, expires_at, profiles(full_name)")
+      .eq("event_id", id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle(),
+    // RLS só deixa a gente ver os detalhes da oferta de quem é organizador
+    // ou o próprio dono dela -- esse RPC é só um booleano, pra qualquer
+    // interessado saber que a vaga está reservada pra outra pessoa agora,
+    // sem revelar pra quem.
+    supabase.rpc("has_active_spot_offer", { p_event_id: id }),
+  ]);
   const myPendingOffer = pendingSpotOffer?.profile_id === profile.id ? pendingSpotOffer : null;
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
@@ -133,6 +140,10 @@ export default async function ConfirmarPresencaPage({
       ? confirmados.length >= eventCapacity
       : regularConfirmedCount >= memberCapacity;
   const setterSlotsFull = profile.is_setter && setterConfirmedCount >= setterCapacity;
+  // Vaga com oferta de fila ativa pra outra pessoa: ninguém mais pode pagar
+  // e furar a fila até o prazo dela vencer ou ela recusar (o banco já
+  // bloqueia isso; aqui é só pra nem mostrar a opção de pagar).
+  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
@@ -395,13 +406,25 @@ export default async function ConfirmarPresencaPage({
               As {setterCapacity} vagas reservadas para levantadores já foram preenchidas. Não gere Pix: se uma vaga de levantador for liberada, você poderá tentar de novo.
             </p>
           )}
+          {queueLockedForMe && !setterSlotsFull && (
+            <p className="flex items-start gap-2 rounded-xl border border-amber-300/25 bg-amber-400/10 px-3.5 py-3 text-sm leading-relaxed text-amber-100">
+              <AlarmClock className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" strokeWidth={2.25} />
+              Essa vaga está reservada pra próxima pessoa da fila de interessados. Você só poderá pagar se ela recusar ou o prazo dela vencer.
+            </p>
+          )}
         <div className="flex gap-3">
           {event.pix_payment_enabled && event.price_per_player ? (
             <PixReservationButton
               eventId={id}
               hasInterest={myStatus === "interested"}
               isFull={isFull}
-              blockedReason={setterSlotsFull ? `As ${setterCapacity} vagas reservadas para levantadores já foram preenchidas.` : null}
+              blockedReason={
+                setterSlotsFull
+                  ? `As ${setterCapacity} vagas reservadas para levantadores já foram preenchidas.`
+                  : queueLockedForMe
+                    ? "Essa vaga está reservada pra próxima pessoa da fila de interessados."
+                    : null
+              }
               action={setAttendance}
             />
           ) : (
