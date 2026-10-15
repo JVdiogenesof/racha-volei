@@ -109,12 +109,12 @@ export async function restoreMember(formData: FormData) {
     .from("profiles")
     .update({ status: "approved" })
     .eq("id", profileId)
-    .eq("status", "removed")
+    .in("status", ["removed", "suspended"])
     .select("id")
     .maybeSingle();
 
   if (error) throw new Error(error.message);
-  if (!restored) throw new Error("Essa pessoa não está mais na lista de removidos.");
+  if (!restored) throw new Error("Essa pessoa não está mais removida ou suspensa.");
 
   revalidatePath("/admin/jogadores");
   revalidatePath("/jogadores");

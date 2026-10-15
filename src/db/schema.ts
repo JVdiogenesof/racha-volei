@@ -31,6 +31,16 @@ export const profileStatusEnum = pgEnum("profile_status", [
   "rejected",
   "removed",
   "guest",
+  // Suspensão automática por inatividade (ver applyAbsenceSuspensions) --
+  // bloqueia acesso igual "removed", até um organizador reativar na mão.
+  "suspended",
+]);
+
+export const spotOfferStatusEnum = pgEnum("spot_offer_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "expired",
 ]);
 
 export const eventStatusEnum = pgEnum("event_status", [
@@ -483,6 +493,21 @@ export const tournamentReservedPlayers = pgTable("tournament_reserved_players", 
   addedBy: uuid("added_by").notNull().references(() => profiles.id),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("tournament_reserved_players_profile_community_unique").on(t.profileId, t.community)]);
+
+// Fila automática de vagas: quando um confirmado desiste, a próxima pessoa
+// interessada (por ordem de quem marcou interesse primeiro) ganha 1h pra
+// aceitar antes de passar pra próxima (ver advance_spot_offer no banco).
+// unique(event_id, profile_id) garante que cada pessoa só é ofertada uma vez
+// por racha -- quem recusou ou deixou expirar não é chamada de novo.
+export const spotOffers = pgTable("spot_offers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  status: spotOfferStatusEnum("status").notNull().default("pending"),
+  offeredAt: timestamp("offered_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (t) => [unique("spot_offers_event_profile_unique").on(t.eventId, t.profileId)]);
 
 // Exceções pontuais para um pré-torneio. Servem, por exemplo, quando uma
 // vaga é usada como premiação e o organizador autoriza a pessoa a jogar mesmo

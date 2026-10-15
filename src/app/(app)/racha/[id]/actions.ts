@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
+import { applyAbsenceSuspensions } from "@/lib/absenceSuspension";
+import type { Community } from "@/lib/community";
 
 export async function startEvent(formData: FormData) {
   await requireOrganizer();
@@ -44,10 +46,12 @@ export async function finishEvent(formData: FormData) {
     .eq("id", eventId)
     .neq("status", "finished")
     .neq("status", "cancelled")
-    .select("id")
+    .select("id, community")
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!finishedEvent) throw new Error("Esse racha já foi finalizado ou cancelado.");
+
+  await applyAbsenceSuspensions(supabase, finishedEvent.community as Community);
 
   const { data: organizers } = await supabase
     .from("profiles")
@@ -63,5 +67,7 @@ export async function finishEvent(formData: FormData) {
   revalidatePath(`/racha/${eventId}`);
   revalidatePath(`/racha/${eventId}/mvp`);
   revalidatePath("/racha");
+  revalidatePath("/admin/jogadores");
+  revalidatePath("/admin/atividade");
 }
 

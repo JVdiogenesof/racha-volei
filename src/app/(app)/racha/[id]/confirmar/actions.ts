@@ -65,6 +65,12 @@ export async function setAttendance(formData: FormData) {
   // anterior, tira ela de lá também, sem precisar o organizador notar depois.
   await removeFromCurrentTeam(supabase, eventId, profile.id);
 
+  // Vaga de confirmado abriu de verdade: oferece pra próxima pessoa
+  // interessada, com 1h pra aceitar (ver advance_spot_offer no banco).
+  if (wasConfirmedCancel) {
+    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+  }
+
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath(`/racha/${eventId}/times`);
@@ -173,18 +179,50 @@ export async function demoteToInterested(formData: FormData) {
     throw new Error("Essa vaga foi paga no Pix automático. Use o controle Pix para registrar saldo, reembolso, desistência fora do prazo ou transferência.");
   }
 
-  const { error } = await supabase
+  const { data: wasConfirmed, error } = await supabase
     .from("attendance")
     .update({ status: "interested" })
     .eq("event_id", eventId)
-    .eq("profile_id", profileId);
+    .eq("profile_id", profileId)
+    .eq("status", "confirmed")
+    .select("profile_id")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
   await removeFromCurrentTeam(supabase, eventId, profileId);
+  if (wasConfirmed) {
+    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+  }
 
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath(`/racha/${eventId}/times`);
+}
+
+export async function acceptSpotOffer(formData: FormData) {
+  const eventId = String(formData.get("eventId"));
+  await requireEventParticipant(eventId);
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("accept_spot_offer", { p_event_id: eventId });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
+}
+
+export async function declineSpotOffer(formData: FormData) {
+  const eventId = String(formData.get("eventId"));
+  await requireEventParticipant(eventId);
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("decline_spot_offer", { p_event_id: eventId });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
 }
 
 export async function setOfficialListOpen(formData: FormData) {
@@ -399,14 +437,19 @@ export async function removeAttendance(formData: FormData) {
     throw new Error("Essa vaga foi paga no Pix automático. Use o controle Pix para preservar o histórico financeiro antes de remover a pessoa.");
   }
 
-  const { error } = await supabase
+  const { data: removed, error } = await supabase
     .from("attendance")
     .delete()
     .eq("event_id", eventId)
-    .eq("profile_id", profileId);
+    .eq("profile_id", profileId)
+    .select("status")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
   await removeFromCurrentTeam(supabase, eventId, profileId);
+  if (removed?.status === "confirmed") {
+    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+  }
 
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);

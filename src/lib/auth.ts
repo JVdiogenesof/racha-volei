@@ -17,7 +17,7 @@ export interface CurrentProfile {
   player_level: "beginner" | "intermediate" | "advanced" | null;
   communities: ("court" | "sand")[];
   is_organizer: boolean;
-  status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor";
+  status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor" | "suspended";
   guest_for_event_id: string | null;
 }
 

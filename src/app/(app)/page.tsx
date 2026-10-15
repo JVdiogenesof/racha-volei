@@ -23,6 +23,8 @@ import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
+import { SpotOfferBanner } from "@/components/SpotOfferBanner";
+import { acceptSpotOffer, declineSpotOffer } from "./racha/[id]/confirmar/actions";
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -84,10 +86,18 @@ export default async function HomePage() {
       // Posição do jogador no Índice VPA da temporada (faixa "Sua posição").
       profile.status === "approved" ? getSeasonRanking(supabase, community) : Promise.resolve(null),
     ]);
-  const { data: myReservedRow } =
+  const [{ data: myReservedRow }, { data: myPendingOffer }] = await Promise.all([
     profile.status === "approved"
-      ? await supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
-      : { data: null };
+      ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("spot_offers")
+      .select("event_id, expires_at")
+      .eq("profile_id", profile.id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle(),
+  ]);
   const amGuaranteed = Boolean(myReservedRow);
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
@@ -236,6 +246,15 @@ export default async function HomePage() {
           </Link>
         </div>
       </div>
+
+      {myPendingOffer && (
+        <SpotOfferBanner
+          eventId={myPendingOffer.event_id}
+          expiresAt={myPendingOffer.expires_at}
+          acceptAction={acceptSpotOffer}
+          declineAction={declineSpotOffer}
+        />
+      )}
 
       <TodayBirthdayCard profiles={birthdayProfiles ?? []} />
 

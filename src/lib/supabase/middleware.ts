@@ -114,7 +114,7 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (
-      (profile?.status === "rejected" || profile?.status === "removed") &&
+      (profile?.status === "rejected" || profile?.status === "removed" || profile?.status === "suspended") &&
       !isOnboarding
     ) {
       const url = request.nextUrl.clone();

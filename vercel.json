@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/spot-offers",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

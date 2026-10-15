@@ -26,7 +26,15 @@ export default async function AguardandoAprovacaoPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center">
-      {profile.status === "removed" ? (
+      {profile.status === "suspended" ? (
+        <>
+          <h1 className="text-2xl font-bold text-white">Sua conta foi suspensa</h1>
+          <p className="mt-2 text-white/60">
+            Você passou vários rachas seguidos sem ficar confirmado(a). Fale com um dos
+            organizadores do racha pra reativar seu acesso.
+          </p>
+        </>
+      ) : profile.status === "removed" ? (
         <>
           <h1 className="text-2xl font-bold text-white">Você foi removido do grupo</h1>
           <p className="mt-2 text-white/60">

@@ -23,7 +23,8 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { cancelPixAttendance, completePixRefund, demoteToInterested, grantPreTournamentException, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -73,6 +74,15 @@ export default async function ConfirmarPresencaPage({
         ? supabase.from("tournament_reserved_players").select("profile_id, profiles(full_name)").eq("community", selectedCommunity)
         : Promise.resolve({ data: null }),
     ]);
+
+  const { data: pendingSpotOffer } = await supabase
+    .from("spot_offers")
+    .select("profile_id, expires_at, profiles(full_name)")
+    .eq("event_id", id)
+    .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  const myPendingOffer = pendingSpotOffer?.profile_id === profile.id ? pendingSpotOffer : null;
 
   const [{ data: approvedProfiles }, { data: reserveEntries }, { data: guestProfiles }] = profile.is_organizer
     ? await Promise.all([
@@ -222,6 +232,15 @@ export default async function ConfirmarPresencaPage({
         </div>
         <span className="mt-1 shrink-0 rounded-full border border-purple-300/20 bg-purple-400/10 px-2.5 py-1 text-[11px] font-bold text-purple-100">{statusLabel}</span>
       </header>
+
+      {myPendingOffer && (
+        <SpotOfferBanner
+          eventId={id}
+          expiresAt={myPendingOffer.expires_at}
+          acceptAction={acceptSpotOffer}
+          declineAction={declineSpotOffer}
+        />
+      )}
 
       {!registrationOpen && event.registration_opens_at && !eventFinished && !eventCancelled && (
         <RegistrationCountdown opensAt={event.registration_opens_at} />
@@ -803,7 +822,14 @@ export default async function ConfirmarPresencaPage({
                 key={a.profile_id}
                 className="flex min-w-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2.5"
               >
-                {isFull && (
+                {profile.is_organizer && pendingSpotOffer?.profile_id === a.profile_id ? (
+                  <span
+                    className="flex h-6 shrink-0 items-center gap-1 rounded-full bg-amber-400/20 px-2 text-[10px] font-bold uppercase tracking-wide text-amber-200"
+                    title="Chame essa pessoa no grupo do zap -- ela tem até o prazo pra aceitar"
+                  >
+                    Chamar agora
+                  </span>
+                ) : isFull && (
                   <span
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[11px] font-bold text-amber-200"
                     title="Posição na fila de espera"
