@@ -112,7 +112,8 @@ export default async function ConfirmarPresencaPage({
   const listOpen = event.official_list_open;
   const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
-  const pixCancellationDeadline = new Date(`${event.date}T00:00:00-03:00`);
+  // 20h (horário de Fortaleza) do dia anterior ao racha -- mesma regra do RPC.
+  const pixCancellationDeadline = new Date(`${event.date}T20:00:00-03:00`);
   pixCancellationDeadline.setDate(pixCancellationDeadline.getDate() - 1);
   const isBeforePixCancellationDeadline = new Date() < pixCancellationDeadline;
 
@@ -337,7 +338,7 @@ export default async function ConfirmarPresencaPage({
             <div className="ml-auto flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:ml-auto sm:w-auto sm:border-0 sm:pt-0">
               {isBeforePixCancellationDeadline ? (
                 <>
-                  <p className="text-xs text-emerald-100/75">Até {pixCancellationDeadline.toLocaleDateString("pt-BR")} às 00:00, você pode escolher saldo ou reembolso.</p>
+                  <p className="text-xs text-emerald-100/75">Até {pixCancellationDeadline.toLocaleDateString("pt-BR")} às 20h, você pode escolher saldo ou reembolso.</p>
                   <div className="flex flex-wrap gap-2">
                     <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada: o valor virou saldo para outro racha.">
                       <input type="hidden" name="eventId" value={id} />
@@ -352,10 +353,10 @@ export default async function ConfirmarPresencaPage({
                   </div>
                 </>
               ) : (
-                <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada. Como o prazo passou, o pagamento permanece no caixa do racha.">
+                <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada. Como o prazo passou, o valor virou saldo automaticamente.">
                   <input type="hidden" name="eventId" value={id} />
                   <input type="hidden" name="choice" value="balance" />
-                  <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha</button>
+                  <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha (virará saldo)</button>
                 </ActionForm>
               )}
               {transferCandidates.length > 0 && (
@@ -746,11 +747,11 @@ export default async function ConfirmarPresencaPage({
                                 </ActionForm>
                               </>
                             ) : (
-                              <ActionForm action={organizerResolvePixAttendance} successMessage="Vaga liberada. Como o prazo passou, o Pix continua no caixa do racha.">
+                              <ActionForm action={organizerResolvePixAttendance} successMessage="Vaga liberada. Como o prazo passou, o valor virou saldo automaticamente.">
                                 <input type="hidden" name="eventId" value={id} />
                                 <input type="hidden" name="profileId" value={a.profile_id} />
                                 <input type="hidden" name="choice" value="late_cancel" />
-                                <button className="min-h-9 w-full rounded-lg border border-amber-300/25 bg-amber-400/10 px-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/20">Liberar vaga fora do prazo</button>
+                                <button className="min-h-9 w-full rounded-lg border border-amber-300/25 bg-amber-400/10 px-2 text-xs font-semibold text-amber-100 hover:bg-amber-400/20">Liberar vaga fora do prazo (virará saldo)</button>
                               </ActionForm>
                             )}
                             {transferCandidates.length > 0 && (

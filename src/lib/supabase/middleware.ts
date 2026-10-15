@@ -8,6 +8,7 @@ const PUBLIC_PATHS = [
   "/auth/callback",
   "/api/payments/mercado-pago/webhook",
   "/privacidade",
+  "/regulamento",
   "/manifest.json",
   "/sw.js",
 ];

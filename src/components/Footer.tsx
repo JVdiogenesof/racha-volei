@@ -16,6 +16,10 @@ export function Footer() {
           <p>
             Feito por <span className="font-medium text-white/70">João Victor Almeida</span>
           </p>
+          <Link href="/regulamento" className="hover:text-purple-300 hover:underline">
+            Regulamento
+          </Link>
+          {" · "}
           <Link href="/privacidade" className="hover:text-purple-300 hover:underline">
             Política de Privacidade
           </Link>
