@@ -237,8 +237,11 @@ export default async function ConfirmarPresencaPage({
         <SpotOfferBanner
           eventId={id}
           expiresAt={myPendingOffer.expires_at}
+          needsPixPayment={event.pix_payment_enabled && Boolean(event.price_per_player)}
+          price={event.price_per_player ? Number(event.price_per_player) : null}
           acceptAction={acceptSpotOffer}
           declineAction={declineSpotOffer}
+          setAttendanceAction={setAttendance}
         />
       )}
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlarmClock, Check, X } from "lucide-react";
 import { ActionForm } from "./ActionForm";
+import { PixReservationButton } from "./PixReservationButton";
 
 function remainingLabel(expiresAt: string): string | null {
   const diff = new Date(expiresAt).getTime() - Date.now();
@@ -15,17 +16,26 @@ function remainingLabel(expiresAt: string): string | null {
 }
 
 /** Banner pra quem foi chamado(a) da fila de interessados: tem até o horário
- * marcado pra aceitar a vaga, senão ela passa pra próxima pessoa. */
+ * marcado pra aceitar a vaga, senão ela passa pra próxima pessoa. Em racha
+ * com Pix automático, "aceitar" é pagar a vaga -- sem pagamento, ninguém é
+ * confirmado, então aqui mostra o fluxo real de pagamento em vez de um botão
+ * que confirmaria de graça. */
 export function SpotOfferBanner({
   eventId,
   expiresAt,
+  needsPixPayment,
+  price,
   acceptAction,
   declineAction,
+  setAttendanceAction,
 }: {
   eventId: string;
   expiresAt: string;
+  needsPixPayment: boolean;
+  price: number | null;
   acceptAction: (formData: FormData) => Promise<void> | void;
   declineAction: (formData: FormData) => Promise<void> | void;
+  setAttendanceAction: (formData: FormData) => Promise<void> | void;
 }) {
   const router = useRouter();
   const [label, setLabel] = useState<string | null | undefined>(undefined);
@@ -55,7 +65,11 @@ export function SpotOfferBanner({
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold text-white">Abriu uma vaga pra você!</h3>
-          <p className="text-xs text-white/60">Alguém desistiu — aceite antes do prazo ou ela passa pra próxima pessoa.</p>
+          <p className="text-xs text-white/60">
+            {needsPixPayment
+              ? "Alguém desistiu — pague por Pix antes do prazo ou a vaga passa pra próxima pessoa."
+              : "Alguém desistiu — aceite antes do prazo ou ela passa pra próxima pessoa."}
+          </p>
         </div>
         {label !== undefined && (
           <span className="shrink-0 rounded-full bg-amber-400/20 px-2.5 py-1 text-sm font-black tabular-nums text-amber-200">
@@ -64,16 +78,25 @@ export function SpotOfferBanner({
         )}
       </div>
       <div className="mt-3 flex gap-2">
-        <ActionForm action={acceptAction} successMessage="Vaga confirmada! Bom racha 🏐" className="flex-1">
-          <input type="hidden" name="eventId" value={eventId} />
-          <button
-            type="submit"
-            className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 text-sm font-bold text-white hover:bg-emerald-400"
-          >
-            <Check className="h-4 w-4" strokeWidth={2.5} />
-            Aceitar vaga
-          </button>
-        </ActionForm>
+        {needsPixPayment ? (
+          <PixReservationButton
+            eventId={eventId}
+            hasInterest
+            isFull={false}
+            action={setAttendanceAction}
+          />
+        ) : (
+          <ActionForm action={acceptAction} successMessage="Vaga confirmada! Bom racha 🏐" className="flex-1">
+            <input type="hidden" name="eventId" value={eventId} />
+            <button
+              type="submit"
+              className="flex min-h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-500 text-sm font-bold text-white hover:bg-emerald-400"
+            >
+              <Check className="h-4 w-4" strokeWidth={2.5} />
+              Aceitar vaga
+            </button>
+          </ActionForm>
+        )}
         <ActionForm action={declineAction} successMessage="Tudo bem, a vaga passou pra próxima pessoa." className="flex-1">
           <input type="hidden" name="eventId" value={eventId} />
           <button
@@ -85,6 +108,9 @@ export function SpotOfferBanner({
           </button>
         </ActionForm>
       </div>
+      {needsPixPayment && price != null && (
+        <p className="mt-2 text-[11px] text-white/45">Valor: R$ {price.toFixed(2)}</p>
+      )}
     </section>
   );
 }

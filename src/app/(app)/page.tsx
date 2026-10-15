@@ -92,13 +92,16 @@ export default async function HomePage() {
       : Promise.resolve({ data: null }),
     supabase
       .from("spot_offers")
-      .select("event_id, expires_at")
+      .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
       .eq("profile_id", profile.id)
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
       .maybeSingle(),
   ]);
   const amGuaranteed = Boolean(myReservedRow);
+  const myPendingOfferEvent = myPendingOffer?.events as unknown as
+    | { pix_payment_enabled: boolean; price_per_player: string | null }
+    | null;
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
   const secondaryScheduledCandidates = (upcomingRachas ?? [])
@@ -251,8 +254,11 @@ export default async function HomePage() {
         <SpotOfferBanner
           eventId={myPendingOffer.event_id}
           expiresAt={myPendingOffer.expires_at}
+          needsPixPayment={Boolean(myPendingOfferEvent?.pix_payment_enabled && myPendingOfferEvent?.price_per_player)}
+          price={myPendingOfferEvent?.price_per_player ? Number(myPendingOfferEvent.price_per_player) : null}
           acceptAction={acceptSpotOffer}
           declineAction={declineSpotOffer}
+          setAttendanceAction={setAttendance}
         />
       )}
 
