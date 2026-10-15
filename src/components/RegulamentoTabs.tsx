@@ -137,27 +137,25 @@ export function RegulamentoTabs() {
 
   return (
     <div>
-      <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
-        <div className="flex w-max min-w-full gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1 sm:min-w-0 sm:flex-wrap">
-          {TOPICS.map((topic) => {
-            const Icon = topic.icon;
-            const selected = topic.id === active;
-            return (
-              <button
-                key={topic.id}
-                type="button"
-                onClick={() => setActive(topic.id)}
-                aria-pressed={selected}
-                className={`flex min-h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-semibold leading-none transition sm:flex-1 ${
-                  selected ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:bg-white/5 hover:text-white/75"
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-                {topic.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-white/10 bg-white/[0.03] p-1.5 sm:grid-cols-3">
+        {TOPICS.map((topic) => {
+          const Icon = topic.icon;
+          const selected = topic.id === active;
+          return (
+            <button
+              key={topic.id}
+              type="button"
+              onClick={() => setActive(topic.id)}
+              aria-pressed={selected}
+              className={`flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-semibold leading-tight transition ${
+                selected ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:bg-white/5 hover:text-white/75"
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+              <span className="min-w-0 truncate">{topic.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="mt-4 space-y-4">
