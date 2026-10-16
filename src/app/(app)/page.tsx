@@ -23,6 +23,7 @@ import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
+import { todayStringInFortaleza } from "@/lib/today";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { acceptSpotOffer, declineSpotOffer } from "./racha/[id]/confirmar/actions";
 
@@ -49,7 +50,7 @@ export default async function HomePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
   const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }, seasonScores] =
     await Promise.all([
       supabase

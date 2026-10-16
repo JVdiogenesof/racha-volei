@@ -2,6 +2,7 @@ import { ChevronDown, ArrowDownRight, ArrowLeftRight, ArrowUpRight, CalendarCloc
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
+import { todayDateInFortaleza } from "@/lib/today";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { PlayerBalanceForm } from "@/components/PlayerBalanceForm";
@@ -34,7 +35,7 @@ export default async function AdminFinancasPage({ searchParams }: { searchParams
   const community = await getActiveCommunity(organizer);
   const supabase = await createClient();
   const requestedMonth = (await searchParams).month;
-  const currentDate = new Date();
+  const currentDate = todayDateInFortaleza();
   const currentMonth = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}`;
   const selectedMonth = requestedMonth && /^\d{4}-\d{2}$/.test(requestedMonth) ? requestedMonth : currentMonth;
   const [profilesResult, balancesResult, transactionsResult, remindersResult, eventsResult] = await Promise.all([

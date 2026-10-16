@@ -1,3 +1,5 @@
+import { todayDateInFortaleza } from "./today";
+
 export type BirthdayProfile = {
   id: string;
   full_name: string;
@@ -19,7 +21,7 @@ export type BirthdayEntry = {
  * pelo dia. `isThisWeek` marca quem faz aniversário nos próximos 7 dias
  * (incluindo hoje) — útil pra destacar sem precisar de uma segunda lista.
  */
-export function birthdaysThisMonth(profiles: BirthdayProfile[], today = new Date()): BirthdayEntry[] {
+export function birthdaysThisMonth(profiles: BirthdayProfile[], today = todayDateInFortaleza()): BirthdayEntry[] {
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   return profiles

@@ -7,6 +7,7 @@ import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { EmptyState } from "@/components/EmptyState";
 import { isRegistrationOpen, registrationInputParts } from "@/lib/registrationSchedule";
+import { todayStringInFortaleza } from "@/lib/today";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -55,7 +56,7 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
   ]);
   const attendanceByEvent = new Map((attendanceRows ?? []).map((row) => [row.event_id, row.status as AttendanceStatus]));
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
   const atuais = events?.filter((e) => e.status === "in_progress") ?? [];
   const proximos = events?.filter((e) => e.date >= today && e.status !== "in_progress") ?? [];
   const passados = events?.filter((e) => e.date < today && e.status !== "in_progress") ?? [];

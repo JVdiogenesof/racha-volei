@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CircleDollarSign } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Community } from "@/lib/community";
+import { todayStringInFortaleza } from "@/lib/today";
 
 type Props = { profileId: string; community: Community };
 
@@ -17,7 +18,7 @@ function formatDay(date: string) {
  */
 export async function PaymentNotices({ profileId, community }: Props) {
   const supabase = await createClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
 
   const { data: rows } = await supabase
     .from("attendance")

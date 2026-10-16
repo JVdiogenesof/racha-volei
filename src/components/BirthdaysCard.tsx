@@ -1,12 +1,13 @@
 import { Cake, PartyPopper } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { birthdaysThisMonth, type BirthdayProfile } from "@/lib/birthdays";
+import { todayDateInFortaleza } from "@/lib/today";
 
 const MONTH_LABEL = new Intl.DateTimeFormat("pt-BR", { month: "long" });
 
 export function BirthdaysCard({ profiles, embedded = false }: { profiles: BirthdayProfile[]; embedded?: boolean }) {
   const entries = birthdaysThisMonth(profiles);
-  const monthName = MONTH_LABEL.format(new Date());
+  const monthName = MONTH_LABEL.format(todayDateInFortaleza());
   const today = entries.filter((p) => p.isToday);
   const restOfMonth = entries.filter((p) => !p.isToday);
 

@@ -3,6 +3,7 @@ import { SlidersHorizontal, AtSign, BadgeCheck, CalendarDays, CheckCircle2, Circ
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getActiveCommunity } from "@/lib/community";
+import { todayStringInFortaleza } from "@/lib/today";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
 import { FormSelect } from "@/components/FormSelect";
@@ -31,7 +32,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
   const supabase = await createClient();
   const community = await getActiveCommunity(organizer);
   const filters = await searchParams;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
 
   const [{ data: rows }, { data: callableEvents }, { data: waitingProfiles }, { data: invitationRows }] = await Promise.all([
     supabase.from("reserve_list").select("id, auth_user_id, full_name, phone, instagram_handle, neighborhood, player_level, communities, how_heard, known_people, wants_official_membership, contacted, created_at").contains("communities", [community]).order("created_at", { ascending: false }),

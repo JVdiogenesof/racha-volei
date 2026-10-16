@@ -8,6 +8,7 @@ import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { ShirtOrderStatusControl } from "@/components/ShirtOrderStatusControl";
 import { shirtGroupMatchesView, type ShirtListView, type ShirtOrderStatus } from "@/lib/shirts";
 import { requireOrganizer } from "@/lib/auth";
+import { todayStringInFortaleza } from "@/lib/today";
 import { SHIRT_MODELS, SHIRT_FITS, SHIRT_SIZES, SHIRT_PAYMENT_LABELS, SHIRT_PRICES, shirtPayment, shirtOrderTotal, groupShirtOrders, formatShirtNumber, type ShirtFit, type ShirtModel } from "@/lib/shirts";
 import { ShirtPaymentButton } from "@/components/ShirtPaymentButton";
 import { ShirtOrderExports, type ExportShirtOrder } from "@/components/ShirtOrderExports";
@@ -72,7 +73,7 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
   const shirtCashTotal = totalReceived - totalSpent;
   const shirtProfiles = [...new Map(orders.map((order) => [order.profile_id, order.profiles])).entries()]
     .map(([id, profile]) => ({ id, fullName: profile?.full_name ?? "Sem nome" })).sort((first, second) => first.fullName.localeCompare(second.fullName, "pt-BR"));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
   const query = (params.q ?? "").trim().toLocaleLowerCase("pt-BR");
   const paymentPriority = { paid: 0, half: 1, mixed: 1, pending: 2 } as const;
   const selected = listView ? groups.filter((g) => shirtGroupMatchesView(g, listView) &&

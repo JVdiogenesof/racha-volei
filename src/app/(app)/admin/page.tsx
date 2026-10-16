@@ -3,6 +3,7 @@ import { Award, BarChart3, Bell, CalendarPlus, ChevronRight, Clock, MapPin, Phon
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
+import { todayStringInFortaleza } from "@/lib/today";
 
 function formatDay(date: string) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
@@ -12,7 +13,7 @@ export default async function AdminPainelPage() {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
   const community = await getActiveCommunity(organizer);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayStringInFortaleza();
 
   const [{ data: nextEvents }, reserve, neverContacted, shirts, reminders] = await Promise.all([
     supabase
