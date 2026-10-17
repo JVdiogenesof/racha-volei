@@ -23,23 +23,72 @@ interface TeamCandidate {
 }
 
 /**
+ * Separa o time fixo do sorteio: balanceia só o resto dos jogadores nos
+ * times restantes (numTeams - 1) e devolve o time fixo pronto como time 1.
+ */
+function balanceTeamsWithFixedTeam(
+  players: PlayerInput[],
+  numTeams: number,
+  maxPlayersPerTeam: number | undefined,
+  random: () => number,
+  fixedTeamProfileIds: string[],
+): TeamResult[] {
+  const fixedIdSet = new Set(fixedTeamProfileIds);
+  const fixedMembers = players.filter((player) => fixedIdSet.has(player.profileId));
+  const missing = fixedTeamProfileIds.filter((id) => !players.some((player) => player.profileId === id));
+  if (missing.length) {
+    throw new Error("Algum jogador do time fixo não está na lista de confirmados.");
+  }
+  if (numTeams < 2) {
+    throw new Error("Precisa de pelo menos 2 times pra reservar um time fixo.");
+  }
+  if (maxPlayersPerTeam != null && fixedMembers.length > maxPlayersPerTeam) {
+    throw new Error(`O time fixo tem mais gente do que cabe num time (${maxPlayersPerTeam}).`);
+  }
+
+  const settingScoreById = new Map(players.map((player) => [player.profileId, player.settingScore]));
+  const fixedSetter = fixedMembers.find((player) => player.isSetter)?.profileId
+    ?? highestSettingMember(fixedMembers.map((p) => p.profileId), settingScoreById);
+  const fixedTeam: TeamResult = {
+    teamNumber: 1,
+    memberProfileIds: fixedMembers.map((player) => player.profileId),
+    setterProfileId: fixedSetter,
+  };
+
+  const rest = players.filter((player) => !fixedIdSet.has(player.profileId));
+  const restTeams = balanceTeams(rest, numTeams - 1, maxPlayersPerTeam, random);
+
+  return [fixedTeam, ...restTeams.map((team) => ({ ...team, teamNumber: team.teamNumber + 1 }))];
+}
+
+/**
  * Monta várias escalações equilibradas e escolhe aleatoriamente entre as
  * melhores. Antes, os empates eram resolvidos pelo profileId, o que deixava a
  * formação praticamente igual toda vez. Agora a aleatoriedade aparece tanto
  * na distribuição quanto na escolha da escalação final, sem aceitar times
  * nitidamente desequilibrados.
+ *
+ * `fixedTeamProfileIds`, quando informado, tira esse grupo do sorteio e
+ * entrega ele pronto como o time 1 -- o resto dos jogadores é balanceado
+ * normalmente nos times restantes. Serve pra manter um time que já jogou
+ * junto (ex: o campeão do racha passado) pro próximo racha.
  */
 export function balanceTeams(
   players: PlayerInput[],
   numTeams: number,
   maxPlayersPerTeam?: number,
   random: () => number = Math.random,
+  fixedTeamProfileIds?: string[],
 ): TeamResult[] {
   if (numTeams < 1) {
     throw new Error("numTeams deve ser maior ou igual a 1");
   }
   if (maxPlayersPerTeam != null && players.length > numTeams * maxPlayersPerTeam) {
     throw new Error("Há mais jogadores do que vagas disponíveis nos times.");
+  }
+
+  if (fixedTeamProfileIds?.length) {
+    return balanceTeamsWithFixedTeam(players, numTeams, maxPlayersPerTeam, random, fixedTeamProfileIds);
   }
 
   if (!players.length) {

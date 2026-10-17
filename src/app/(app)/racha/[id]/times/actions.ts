@@ -133,7 +133,8 @@ export async function generateTeams(formData: FormData) {
     };
   });
 
-  const result = balanceTeams(players, event.num_teams, event.team_size);
+  const fixedTeamProfileIds = formData.getAll("fixedTeamProfileIds").map(String).filter(Boolean);
+  const result = balanceTeams(players, event.num_teams, event.team_size, Math.random, fixedTeamProfileIds.length ? fixedTeamProfileIds : undefined);
   const teamNames = assignTeamNames(result.length);
 
   const { data: generation, error: genError } = await supabase
@@ -251,7 +252,7 @@ export type SimulatedTeam = {
  * descartável pro organizador ter uma noção; fechar a prévia no navegador já
  * "apaga" ela, porque nunca existiu de verdade em lugar nenhum.
  */
-export async function simulateTeams(eventId: string, previousSignature?: string): Promise<SimulatedTeam[]> {
+export async function simulateTeams(eventId: string, previousSignature?: string, fixedTeamProfileIds?: string[]): Promise<SimulatedTeam[]> {
   await requireOrganizer();
   const supabase = await createClient();
 
@@ -296,14 +297,21 @@ export async function simulateTeams(eventId: string, previousSignature?: string)
   });
   const overallByProfile = new Map(players.map((p) => [p.profileId, p.overall]));
 
+  const fixedIds = fixedTeamProfileIds?.length ? fixedTeamProfileIds : undefined;
+  if (fixedIds) {
+    const missing = fixedIds.filter((id) => !players.some((p) => p.profileId === id));
+    if (missing.length) throw new Error("Algum jogador do time fixo não está confirmado nesse racha.");
+  }
+
   // Cada simulação começa por uma nova escalação equilibrada. Caso o sorteio
   // ainda repita a formação que estava aberta, tenta novas combinações antes
-  // de recorrer à troca equilibrada já existente.
-  let baseTeams = balanceTeams(players, event.num_teams, event.team_size);
+  // de recorrer à troca equilibrada já existente. Com time fixo, só
+  // sorteia de novo (a troca equilibrada não sabe preservar o time fixo).
+  let baseTeams = balanceTeams(players, event.num_teams, event.team_size, Math.random, fixedIds);
   for (let attempt = 0; attempt < 12 && previousSignature && teamCompositionSignature(baseTeams) === previousSignature; attempt += 1) {
-    baseTeams = balanceTeams(players, event.num_teams, event.team_size);
+    baseTeams = balanceTeams(players, event.num_teams, event.team_size, Math.random, fixedIds);
   }
-  const result = previousSignature && teamCompositionSignature(baseTeams) === previousSignature
+  const result = !fixedIds && previousSignature && teamCompositionSignature(baseTeams) === previousSignature
     ? varySimulatedTeams(baseTeams, players, previousSignature)
     : baseTeams;
   const teamNames = assignTeamNames(result.length);

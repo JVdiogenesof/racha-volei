@@ -17,7 +17,7 @@ import { ShareConfrontationsArtButton } from "@/components/ShareConfrontationsAr
 import { TournamentMatchScoreForm } from "@/components/TournamentMatchScoreForm";
 import { ResetGroupStageButton } from "@/components/ResetGroupStageButton";
 import { UndoFinalButton } from "@/components/UndoFinalButton";
-import { SimulateTeamsButton } from "@/components/SimulateTeamsButton";
+import { TeamsGenerationDock } from "@/components/TeamsGenerationDock";
 import { CancelTeamsButton } from "@/components/CancelTeamsButton";
 import { ActionForm } from "@/components/ActionForm";
 import { VictoryTeamCard } from "@/components/VictoryTeamCard";
@@ -66,7 +66,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .maybeSingle(),
     supabase
       .from("attendance")
-      .select("profile_id, status, profiles(full_name)")
+      .select("profile_id, status, profiles(full_name, avatar_url)")
       .eq("event_id", id)
       .in("status", ["confirmed", "interested"]),
     supabase.from("event_setter_overrides").select("profile_id, is_setter").eq("event_id", id),
@@ -244,6 +244,14 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       .map((m) => ({ fullName: m.fullName, teamName: t.name })),
   );
 
+  const fixedTeamPlayerPool = (confirmedAttendance ?? [])
+    .filter((a) => a.status === "confirmed")
+    .map((a) => {
+      const p = a.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+      return { profileId: a.profile_id, fullName: p?.full_name ?? "?", avatarUrl: p?.avatar_url ?? null };
+    })
+    .sort((a, b) => a.fullName.localeCompare(b.fullName, "pt-BR"));
+
   const tournamentMatchCount = groupMatches.length + (finalMatch ? 1 : 0) + (thirdPlaceMatch ? 1 : 0);
   const tournamentPlayedCount = [...groupMatches, finalMatch, thirdPlaceMatch].filter(
     (match) => match?.scoreA != null && match?.scoreB != null,
@@ -268,7 +276,17 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
 
       {showActionDock && (
         <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
-          {canRegenerate && <SimulateTeamsButton eventId={id} action={simulateTeams} compact />}
+          {canRegenerate && (
+            <TeamsGenerationDock
+              eventId={id}
+              confirmedPlayers={fixedTeamPlayerPool}
+              teamSize={event.team_size}
+              generateAction={generateTeams}
+              simulateAction={simulateTeams}
+              hasGeneration={Boolean(generation)}
+              canGenerate={Boolean(event.official_list_open || generation)}
+            />
+          )}
           {generation && (
             <>
               {canRegenerate && <CancelTeamsButton eventId={id} action={cancelTeams} />}
@@ -280,14 +298,6 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             <Link href={`/racha/${id}/resultado`} aria-label="Ver resultado final" title="Ver resultado final" className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20">
               <Trophy className="h-5 w-5" />
             </Link>
-          )}
-          {canRegenerate && (event.official_list_open || generation) && (
-            <ActionForm action={generateTeams} successMessage={generation ? "Times gerados novamente!" : "Times gerados com sucesso!"}>
-              <input type="hidden" name="eventId" value={id} />
-              <button type="submit" aria-label={generation ? "Gerar times novamente" : "Gerar times"} title={generation ? "Gerar times novamente" : "Gerar times"} className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-purple text-white hover:bg-brand-purple-dark">
-                <RefreshCw className="h-5 w-5" />
-              </button>
-            </ActionForm>
           )}
         </div>
       )}

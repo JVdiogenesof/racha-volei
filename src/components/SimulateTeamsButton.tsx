@@ -12,10 +12,13 @@ export function SimulateTeamsButton({
   eventId,
   action,
   compact = false,
+  fixedTeamProfileIds,
 }: {
   eventId: string;
-  action: (eventId: string, previousSignature?: string) => Promise<SimulatedTeam[]>;
+  action: (eventId: string, previousSignature?: string, fixedTeamProfileIds?: string[]) => Promise<SimulatedTeam[]>;
   compact?: boolean;
+  /** Mantém esse grupo junto no time 1; o resto é balanceado normalmente. */
+  fixedTeamProfileIds?: string[];
 }) {
   const [teams, setTeams] = useState<SimulatedTeam[] | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -41,7 +44,7 @@ export function SimulateTeamsButton({
         const previousSignature = teams
           ?.map((team) => [...team.members].map((member) => member.profileId).sort().join(","))
           .join("|");
-        const result = await action(eventId, previousSignature);
+        const result = await action(eventId, previousSignature, fixedTeamProfileIds);
         setTeams(result);
       } catch (err) {
         showToast(err instanceof Error ? err.message : "Não foi possível simular os times.");
