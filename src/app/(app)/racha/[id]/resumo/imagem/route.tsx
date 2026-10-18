@@ -57,7 +57,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
         }}
       >
         <ArtWatermark src={watermarkUrl} />
-        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "space-around" }}>
         <div
           style={{
             position: "absolute",
@@ -77,7 +77,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
               <span style={{ fontSize: "22px", letterSpacing: "5px", color: "#c4b5fd", fontWeight: 700 }}>
                 VÔLEI POR AMOR
               </span>
-              <span style={{ marginTop: "5px", fontSize: "48px", lineHeight: 1, fontWeight: 800 }}>
+              <span style={{ marginTop: "5px", fontSize: "56px", lineHeight: 1, fontWeight: 800 }}>
                 RESUMO DO RACHA
               </span>
             </div>
@@ -87,12 +87,12 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: "96px",
-              height: "96px",
-              borderRadius: "26px",
+              width: "108px",
+              height: "108px",
+              borderRadius: "28px",
               background: "rgba(124,58,237,.3)",
               border: "1px solid rgba(196,181,253,.25)",
-              fontSize: "48px",
+              fontSize: "54px",
             }}
           >
             🏐
@@ -104,29 +104,29 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginTop: "34px",
-            padding: "22px 26px",
-            borderRadius: "22px",
+            marginTop: "40px",
+            padding: "26px 30px",
+            borderRadius: "24px",
             background: "rgba(255,255,255,.075)",
             border: "1px solid rgba(255,255,255,.1)",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "26px", fontWeight: 700, textTransform: "capitalize" }}>{dateLabel}</span>
-            <span style={{ marginTop: "5px", fontSize: "20px", color: "rgba(255,255,255,.6)" }}>
+            <span style={{ fontSize: "30px", fontWeight: 700, textTransform: "capitalize" }}>{dateLabel}</span>
+            <span style={{ marginTop: "5px", fontSize: "22px", color: "rgba(255,255,255,.6)" }}>
               {summary.event.location ?? "Racha da galera"}
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginRight: "30px" }}>
-              <span style={{ fontSize: "38px", fontWeight: 800 }}>{summary.totalMatches}</span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginRight: "34px" }}>
+              <span style={{ fontSize: "44px", fontWeight: 800 }}>{summary.totalMatches}</span>
               <span style={{ fontSize: "15px", color: "rgba(255,255,255,.55)", textTransform: "uppercase", letterSpacing: "2px" }}>
                 vitórias registradas
               </span>
             </div>
-            <div style={{ width: "1px", height: "56px", background: "rgba(255,255,255,.12)" }} />
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginLeft: "30px" }}>
-              <span style={{ fontSize: "38px", fontWeight: 800, color: "#fcd34d" }}>{summary.bestWinCount}</span>
+            <div style={{ width: "1px", height: "64px", background: "rgba(255,255,255,.12)" }} />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", marginLeft: "34px" }}>
+              <span style={{ fontSize: "44px", fontWeight: 800, color: "#fcd34d" }}>{summary.bestWinCount}</span>
               <span style={{ fontSize: "15px", color: "rgba(255,255,255,.55)", textTransform: "uppercase", letterSpacing: "2px" }}>
                 melhor marca
               </span>
@@ -134,32 +134,32 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", marginTop: "34px", marginBottom: "18px" }}>
-          <span style={{ fontSize: "28px" }}>🏆</span>
-          <span style={{ marginLeft: "12px", fontSize: "25px", fontWeight: 800 }}>Quem mais venceu no racha</span>
+        <div style={{ display: "flex", alignItems: "center", marginTop: "40px", marginBottom: "22px" }}>
+          <span style={{ fontSize: "32px" }}>🏆</span>
+          <span style={{ marginLeft: "12px", fontSize: "29px", fontWeight: 800 }}>Quem mais venceu no racha</span>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignContent: "flex-start" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", alignContent: "flex-start" }}>
           {displayedPlayers.map((player, index) => {
             const isLeader = summary.bestWinCount > 0 && player.wins === summary.bestWinCount;
             return (
               <div
                 key={player.profileId}
                 style={{
-                  width: "31.9%",
-                  height: "92px",
+                  width: "31.5%",
+                  height: "124px",
                   display: "flex",
                   alignItems: "center",
-                  padding: "12px 13px",
-                  borderRadius: "18px",
+                  padding: "16px 16px",
+                  borderRadius: "20px",
                   background: isLeader ? "rgba(251,191,36,.15)" : "rgba(255,255,255,.065)",
                   border: isLeader ? "1px solid rgba(252,211,77,.38)" : "1px solid rgba(255,255,255,.08)",
                 }}
               >
                 <span
                   style={{
-                    width: "28px",
-                    height: "28px",
+                    width: "34px",
+                    height: "34px",
                     flexShrink: 0,
                     display: "flex",
                     alignItems: "center",
@@ -167,7 +167,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
                     borderRadius: "999px",
                     background: index < 3 ? "#7c3aed" : "rgba(255,255,255,.1)",
                     color: index < 3 ? "white" : "rgba(255,255,255,.55)",
-                    fontSize: "13px",
+                    fontSize: "15px",
                     fontWeight: 800,
                   }}
                 >
@@ -178,45 +178,45 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
                   <img
                     src={player.avatarUrl}
                     alt=""
-                    width={54}
-                    height={54}
-                    style={{ marginLeft: "9px", borderRadius: "999px", objectFit: "cover", border: "2px solid rgba(255,255,255,.18)" }}
+                    width={68}
+                    height={68}
+                    style={{ marginLeft: "11px", borderRadius: "999px", objectFit: "cover", border: "2px solid rgba(255,255,255,.18)" }}
                   />
                 ) : (
                   <span
                     style={{
-                      width: "54px",
-                      height: "54px",
+                      width: "68px",
+                      height: "68px",
                       flexShrink: 0,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      marginLeft: "9px",
+                      marginLeft: "11px",
                       borderRadius: "999px",
                       background: "rgba(124,58,237,.35)",
                       border: "2px solid rgba(255,255,255,.14)",
                       color: "#ddd6fe",
-                      fontSize: "16px",
+                      fontSize: "20px",
                       fontWeight: 800,
                     }}
                   >
                     {initials(player.fullName)}
                   </span>
                 )}
-                <div style={{ minWidth: 0, display: "flex", flex: 1, flexDirection: "column", marginLeft: "10px" }}>
+                <div style={{ minWidth: 0, display: "flex", flex: 1, flexDirection: "column", marginLeft: "13px" }}>
                   <span
                     style={{
                       maxWidth: "150px",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
-                      fontSize: "17px",
+                      fontSize: "19px",
                       fontWeight: 700,
                     }}
                   >
                     {player.fullName}
                   </span>
-                  <span style={{ marginTop: "3px", fontSize: "14px", color: isLeader ? "#fde68a" : "#c4b5fd" }}>
+                  <span style={{ marginTop: "4px", fontSize: "15px", color: isLeader ? "#fde68a" : "#c4b5fd" }}>
                     {player.wins} {player.wins === 1 ? "vitória" : "vitórias"} · {player.teamName}
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
         </div>
 
         {hiddenPlayers > 0 && (
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "14px", color: "#ddd6fe", fontSize: "15px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "18px", color: "#ddd6fe", fontSize: "16px" }}>
             +{hiddenPlayers} jogadores no resumo completo
           </div>
         )}
@@ -251,7 +251,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     ),
     {
       width: 1080,
-      height: 1350,
+      height: 1920,
       headers: {
         "Cache-Control": "private, no-store",
         "Content-Disposition": `inline; filename="resumo-racha-${summary.event.date}.png"`,

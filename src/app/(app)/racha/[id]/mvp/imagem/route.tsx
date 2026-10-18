@@ -97,16 +97,16 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
         <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", gap: destaques.length > 1 ? "28px" : "0" }}>
           {destaques.map((destaque, index) => (
-            <div key={destaque.profileId} style={{ width: destaques.length > 1 ? "48%" : "68%", minHeight: "660px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "38px 26px", borderRadius: "42px", background: "linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055))", border: "1px solid rgba(216,180,254,.25)", boxShadow: "0 30px 80px rgba(0,0,0,.25)" }}>
-              <span style={{ marginBottom: "24px", padding: "9px 16px", borderRadius: "999px", background: "rgba(245,158,11,.16)", color: "#fde68a", fontSize: "16px", fontWeight: 800, letterSpacing: "2px" }}>{destaques.length > 1 ? `DESTAQUE ${index + 1}` : "JOGADOR DESTAQUE"}</span>
+            <div key={destaque.profileId} style={{ width: destaques.length > 1 ? "48%" : "68%", minHeight: "1040px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 30px", borderRadius: "48px", background: "linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.055))", border: "1px solid rgba(216,180,254,.25)", boxShadow: "0 30px 80px rgba(0,0,0,.25)" }}>
+              <span style={{ marginBottom: "32px", padding: "11px 20px", borderRadius: "999px", background: "rgba(245,158,11,.16)", color: "#fde68a", fontSize: "19px", fontWeight: 800, letterSpacing: "2px" }}>{destaques.length > 1 ? `DESTAQUE ${index + 1}` : "JOGADOR DESTAQUE"}</span>
               {destaque.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={destaque.avatarUrl} alt="" width={destaques.length > 1 ? 310 : 390} height={destaques.length > 1 ? 310 : 390} style={{ borderRadius: "999px", objectFit: "cover", border: "8px solid rgba(255,255,255,.92)", boxShadow: "0 0 0 12px rgba(139,92,246,.38)" }} />
+                <img src={destaque.avatarUrl} alt="" width={destaques.length > 1 ? 420 : 520} height={destaques.length > 1 ? 420 : 520} style={{ borderRadius: "999px", objectFit: "cover", border: "8px solid rgba(255,255,255,.92)", boxShadow: "0 0 0 12px rgba(139,92,246,.38)" }} />
               ) : (
-                <div style={{ width: destaques.length > 1 ? "310px" : "390px", height: destaques.length > 1 ? "310px" : "390px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "linear-gradient(145deg, #8b5cf6, #4c1d95)", border: "8px solid rgba(255,255,255,.92)", boxShadow: "0 0 0 12px rgba(139,92,246,.38)", color: "white", fontSize: destaques.length > 1 ? "94px" : "116px", fontWeight: 900 }}>{initials(destaque.fullName)}</div>
+                <div style={{ width: destaques.length > 1 ? "420px" : "520px", height: destaques.length > 1 ? "420px" : "520px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "linear-gradient(145deg, #8b5cf6, #4c1d95)", border: "8px solid rgba(255,255,255,.92)", boxShadow: "0 0 0 12px rgba(139,92,246,.38)", color: "white", fontSize: destaques.length > 1 ? "128px" : "156px", fontWeight: 900 }}>{initials(destaque.fullName)}</div>
               )}
-              <span style={{ marginTop: "34px", maxWidth: "100%", textAlign: "center", fontSize: destaques.length > 1 ? "38px" : "48px", lineHeight: 1.08, fontWeight: 900 }}>{destaque.fullName}</span>
-              <span style={{ marginTop: "14px", color: "#d8b4fe", fontSize: "19px", fontWeight: 700 }}>
+              <span style={{ marginTop: "42px", maxWidth: "100%", textAlign: "center", fontSize: destaques.length > 1 ? "46px" : "58px", lineHeight: 1.08, fontWeight: 900 }}>{destaque.fullName}</span>
+              <span style={{ marginTop: "18px", color: "#d8b4fe", fontSize: "23px", fontWeight: 700 }}>
                 {event.community === "sand" ? "BRILHOU NA AREIA ✨" : "BRILHOU EM QUADRA ✨"}
               </span>
             </div>
@@ -121,7 +121,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     ),
     {
       width: 1080,
-      height: 1350,
+      height: 1920,
       headers: {
         "Cache-Control": "private, no-store",
         "Content-Disposition": `inline; filename="destaques-racha-${event.date}.png"`,
