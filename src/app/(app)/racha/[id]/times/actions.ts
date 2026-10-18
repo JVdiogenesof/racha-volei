@@ -770,30 +770,28 @@ export async function recordTournamentMatchScore(formData: FormData) {
   // Cada confronto vencido conta pro ranking de vitórias igual um racha
   // normal (recordMatchWin manual) -- apaga o que já tinha sido creditado
   // aqui antes, cobrindo o caso de corrigir um placar já lançado.
+  //
+  // O snapshot de loser_team_id/winning_profile_ids/losing_profile_ids vale
+  // tanto pro pré-torneio quanto pro mini torneio -- sem ele a partida fica
+  // sem perdedor registrado e rankings.ts/seasonRanking.ts (Índice VPA)
+  // ignoram o confronto inteiro (continue por falta de loser_team_id), então
+  // ninguém que só jogou esse torneio entra no índice.
   await supabase.from("match_wins").delete().eq("match_id", matchId);
   const winnerTeamId = scoreA > scoreB ? match.team_a_id : match.team_b_id;
   const loserTeamId = winnerTeamId === match.team_a_id ? match.team_b_id : match.team_a_id;
-  let miniTournamentSnapshots = {};
-  if (event.is_mini_torneio) {
-    const { data: memberRows, error: memberError } = await supabase
-      .from("team_members")
-      .select("team_id, profile_id")
-      .in("team_id", [winnerTeamId, loserTeamId]);
-    if (memberError) throw new Error(memberError.message);
-    const winningProfileIds = (memberRows ?? [])
-      .filter((member) => member.team_id === winnerTeamId)
-      .map((member) => member.profile_id);
-    const losingProfileIds = (memberRows ?? [])
-      .filter((member) => member.team_id === loserTeamId)
-      .map((member) => member.profile_id);
-    if (!winningProfileIds.length || !losingProfileIds.length) {
-      throw new Error("Os dois times precisam ter jogadores antes do confronto.");
-    }
-    miniTournamentSnapshots = {
-      loser_team_id: loserTeamId,
-      winning_profile_ids: winningProfileIds,
-      losing_profile_ids: losingProfileIds,
-    };
+  const { data: memberRows, error: memberError } = await supabase
+    .from("team_members")
+    .select("team_id, profile_id")
+    .in("team_id", [winnerTeamId, loserTeamId]);
+  if (memberError) throw new Error(memberError.message);
+  const winningProfileIds = (memberRows ?? [])
+    .filter((member) => member.team_id === winnerTeamId)
+    .map((member) => member.profile_id);
+  const losingProfileIds = (memberRows ?? [])
+    .filter((member) => member.team_id === loserTeamId)
+    .map((member) => member.profile_id);
+  if (!winningProfileIds.length || !losingProfileIds.length) {
+    throw new Error("Os dois times precisam ter jogadores antes do confronto.");
   }
   const { error: winError } = await supabase
     .from("match_wins")
@@ -802,7 +800,9 @@ export async function recordTournamentMatchScore(formData: FormData) {
       team_id: winnerTeamId,
       recorded_by: organizer.id,
       match_id: matchId,
-      ...miniTournamentSnapshots,
+      loser_team_id: loserTeamId,
+      winning_profile_ids: winningProfileIds,
+      losing_profile_ids: losingProfileIds,
     });
   if (winError) throw new Error(winError.message);
 
