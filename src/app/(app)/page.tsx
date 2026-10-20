@@ -15,7 +15,7 @@ import { EventCountdown } from "@/components/EventCountdown";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
-import { TeamsCarousel } from "@/components/TeamsCarousel";
+import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
@@ -515,7 +515,7 @@ export default async function HomePage() {
         </div>
       </section>
       ) : (
-        <TeamsCarousel />
+        <HomeTeamsVideo />
       )}
 
       {recentChampion && (
