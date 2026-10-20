@@ -105,9 +105,16 @@ export async function restoreMember(formData: FormData) {
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
+  // A contagem de faltas recomeça agora: sem isso, quem foi removido pela
+  // regra voltaria com o streak ainda em 6+ e seria removido de novo assim
+  // que o próximo racha fosse finalizado.
   const { data: restored, error } = await supabase
     .from("profiles")
-    .update({ status: "approved" })
+    .update({
+      status: "approved",
+      absence_removed_at: null,
+      absence_counts_from: new Date().toISOString(),
+    })
     .eq("id", profileId)
     .in("status", ["removed", "suspended"])
     .select("id")

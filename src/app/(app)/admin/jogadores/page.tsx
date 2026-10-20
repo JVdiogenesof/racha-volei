@@ -1,4 +1,4 @@
-import { Percent, UserRoundCheck } from "lucide-react";
+import { Percent, TriangleAlert, UserRoundCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -9,6 +9,7 @@ import { Avatar } from "@/components/Avatar";
 import { FormField } from "@/components/FormField";
 import { restoreMember, setRatingWeights } from "./actions";
 import { getActiveCommunity } from "@/lib/community";
+import { ATTENDANCE_REMOVE_THRESHOLD } from "@/lib/attendancePolicy";
 
 export default async function AdminJogadoresPage() {
   const organizer = await requireOrganizer();
@@ -24,7 +25,7 @@ export default async function AdminJogadoresPage() {
       .order("full_name"),
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url")
+      .select("id, full_name, avatar_url, absence_removed_at")
       .eq("status", "removed")
       .contains("communities", [community])
       .order("full_name"),
@@ -112,7 +113,8 @@ export default async function AdminJogadoresPage() {
         <div>
           <h2 className="font-semibold text-white">Pessoas removidas ({removedPlayers?.length ?? 0})</h2>
           <p className="mt-1 text-sm text-white/50">
-            Restaure o acesso sem apagar ou reiniciar o histórico da pessoa.
+            Quem saiu pela regra de faltas aparece marcado. Restaurar devolve o acesso e zera a contagem de faltas,
+            sem apagar o histórico da pessoa.
           </p>
         </div>
 
@@ -121,7 +123,15 @@ export default async function AdminJogadoresPage() {
             {removedPlayers.map((player) => (
               <li key={player.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
                 <Avatar src={player.avatar_url} name={player.full_name} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">{player.full_name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-white">
+                  {player.full_name}
+                  {player.absence_removed_at && (
+                    <span className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-red-200">
+                      <TriangleAlert className="h-3 w-3 shrink-0" strokeWidth={2.5} />
+                      {ATTENDANCE_REMOVE_THRESHOLD} faltas seguidas · {new Date(player.absence_removed_at).toLocaleDateString("pt-BR")}
+                    </span>
+                  )}
+                </span>
                 <ActionForm action={restoreMember} successMessage={`${player.full_name} recuperou o acesso.`} className="shrink-0">
                   <input type="hidden" name="profileId" value={player.id} />
                   <button
@@ -144,9 +154,9 @@ export default async function AdminJogadoresPage() {
 
       <section className="rounded-2xl border border-amber-300/20 bg-amber-400/[0.04] p-4 sm:p-6">
         <div>
-          <h2 className="font-semibold text-white">Suspensas por inatividade ({suspendedPlayers?.length ?? 0})</h2>
+          <h2 className="font-semibold text-white">Pessoas suspensas ({suspendedPlayers?.length ?? 0})</h2>
           <p className="mt-1 text-sm text-white/50">
-            Passaram mais de 5 rachas seguidos sem ficar confirmadas. Reative depois de falar com a pessoa.
+            Suspensões antigas ou feitas na mão por outro motivo. Hoje a falta seguida leva direto à remoção, acima.
           </p>
         </div>
 

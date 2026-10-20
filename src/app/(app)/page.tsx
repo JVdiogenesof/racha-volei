@@ -25,6 +25,8 @@ import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
 import { todayStringInFortaleza } from "@/lib/today";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
+import { AbsenceWarningBanner } from "@/components/AbsenceWarningBanner";
+import { getAbsenceStreaks, ATTENDANCE_ALERT_THRESHOLD } from "@/lib/attendancePolicy";
 import { acceptSpotOffer, declineSpotOffer } from "./racha/[id]/confirmar/actions";
 
 function hoursAgoIso(hours: number) {
@@ -51,7 +53,7 @@ export default async function HomePage() {
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
   const today = todayStringInFortaleza();
-  const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }, seasonScores] =
+  const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }, seasonScores, absenceStreaks] =
     await Promise.all([
       supabase
         .from("events")
@@ -86,7 +88,10 @@ export default async function HomePage() {
         .maybeSingle(),
       // Posição do jogador no Índice VPA da temporada (faixa "Sua posição").
       profile.status === "approved" ? getSeasonRanking(supabase, community) : Promise.resolve(null),
+      // Faltas seguidas, pro aviso de quem está perto do limite do regulamento.
+      profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
+  const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
   const [{ data: myReservedRow }, { data: myPendingOffer }] = await Promise.all([
     profile.status === "approved"
       ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
@@ -262,6 +267,8 @@ export default async function HomePage() {
           setAttendanceAction={setAttendance}
         />
       )}
+
+      {myAbsenceStreak >= ATTENDANCE_ALERT_THRESHOLD && <AbsenceWarningBanner streak={myAbsenceStreak} />}
 
       <TodayBirthdayCard profiles={birthdayProfiles ?? []} />
 

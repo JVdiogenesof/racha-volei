@@ -104,6 +104,14 @@ export const profiles = pgTable("profiles", {
   // FK pra events.id é adicionada à mão em rls.sql (referência cruzada com
   // events.created_by -> profiles.id confundiria a inferência de tipos do Drizzle).
   guestForEventId: uuid("guest_for_event_id"),
+  // Preenchido só quando a remoção veio da regra de faltas (ver
+  // applyAttendancePolicy) -- remoção feita na mão deixa nulo, o que separa
+  // os dois casos no painel do organizador.
+  absenceRemovedAt: timestamp("absence_removed_at", { withTimezone: true }),
+  // Marco zero da contagem de faltas, gravado quando um organizador restaura
+  // o acesso: sem ele a pessoa restaurada cairia de novo na remoção no racha
+  // seguinte, já que o streak dela continua em 6+.
+  absenceCountsFrom: timestamp("absence_counts_from", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
