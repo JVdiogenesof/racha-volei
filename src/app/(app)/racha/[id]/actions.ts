@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
-import { applyAbsenceSuspensions } from "@/lib/absenceSuspension";
+import { applyAttendancePolicy } from "@/lib/attendancePolicy";
 import type { Community } from "@/lib/community";
 
 export async function startEvent(formData: FormData) {
@@ -51,7 +51,7 @@ export async function finishEvent(formData: FormData) {
   if (error) throw new Error(error.message);
   if (!finishedEvent) throw new Error("Esse racha já foi finalizado ou cancelado.");
 
-  await applyAbsenceSuspensions(supabase, finishedEvent.community as Community);
+  await applyAttendancePolicy(supabase, finishedEvent.community as Community);
 
   const { data: organizers } = await supabase
     .from("profiles")

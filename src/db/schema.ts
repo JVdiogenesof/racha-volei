@@ -31,8 +31,9 @@ export const profileStatusEnum = pgEnum("profile_status", [
   "rejected",
   "removed",
   "guest",
-  // Suspensão automática por inatividade (ver applyAbsenceSuspensions) --
-  // bloqueia acesso igual "removed", até um organizador reativar na mão.
+  // Hoje só fica nesse status quem um organizador suspendeu na mão por outro
+  // motivo -- a ausência automática (ver applyAttendancePolicy) vai direto
+  // pra "removed" a partir de 6 rachas seguidos sem participação.
   "suspended",
 ]);
 

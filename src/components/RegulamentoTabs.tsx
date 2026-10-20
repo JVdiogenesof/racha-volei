@@ -81,10 +81,39 @@ const TOPICS: Topic[] = [
     icon: ShieldAlert,
     items: [
       {
-        title: "Suspensão por inatividade",
+        title: "Participação e ausências",
         points: [
-          "Passar por mais de 5 rachas finalizados seguidos sem ficar confirmado(a) suspende o acesso.",
-          "A conta volta a funcionar só depois de falar com um organizador.",
+          "Depois de 4 rachas finalizados seguidos sem participar, você recebe um aviso automático.",
+          "Depois de 6 seguidos, o acesso ao grupo e ao app é removido automaticamente.",
+          "A contagem reseta assim que você participa de um racha de novo.",
+        ],
+      },
+      {
+        title: "O que acontece ao ser removido(a)",
+        points: [
+          "Sua pontuação no Índice VPA zera e some do ranking.",
+          "Vaga já garantida pro Torneio Oficial (por índice ou pré-torneio) é perdida e redistribuída pelos critérios do ranking.",
+        ],
+      },
+      {
+        title: "Retorno ao grupo",
+        points: [
+          "Dá pra pedir retorno pela lista de reserva, nos mesmos critérios de quem está entrando pela primeira vez.",
+          "Não há vaga garantida nem recuperação da pontuação anterior.",
+        ],
+      },
+      {
+        title: "Situações excepcionais",
+        points: [
+          "Impedimentos de força maior devem ser avisados diretamente a um organizador -- casos assim são avaliados fora da contagem automática.",
+          "Comportamento que comprometa o respeito e a convivência do grupo pode gerar advertência ou remoção, independente da contagem de faltas.",
+        ],
+      },
+      {
+        title: "Uniforme oficial",
+        points: [
+          "Recomendado nas atividades normais, pra fortalecer a identidade do VPA e valorizar os patrocinadores.",
+          "Obrigatório no Torneio Oficial.",
         ],
       },
     ],
