@@ -127,7 +127,8 @@ const TOPICS: Topic[] = [
         title: "Como é calculado",
         points: [
           "Nota viva dos últimos 8 rachas — os 4 mais recentes pesam mais que os antigos.",
-          "65% aproveitamento (vitórias) + 35% presença, com bônus por evolução recente.",
+          "55% aproveitamento (vitórias) + 35% presença + 10% saldo de pontos, com bônus por evolução recente.",
+          "Saldo de pontos é a margem média dos seus jogos (só os que têm placar). Pesa pouco e funciona como desempate fino entre quem tem campanha parecida.",
           "Precisa de pelo menos 2 rachas jogados pra entrar na classificação.",
         ],
       },

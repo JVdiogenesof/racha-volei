@@ -13,6 +13,14 @@ const RECENT_EVENT_COUNT = 4;
 const RECENT_EVENT_WEIGHT = 2.5;
 const OLDER_EVENT_WEIGHT = 1;
 const MAX_PROGRESS_BONUS = 5;
+// Peso de cada parte do Índice: aproveitamento, presença e saldo de pontos.
+export const INDEX_PERFORMANCE_WEIGHT = 0.55;
+export const INDEX_ATTENDANCE_WEIGHT = 0.35;
+export const INDEX_POINT_BALANCE_WEIGHT = 0.1;
+// A margem de um jogo é (pontos feitos - sofridos) / pontos totais da partida,
+// então jogos de tamanhos diferentes (grupo x final) ficam comparáveis. O teto
+// evita que uma lavada isolada pese muito mais que uma vitória folgada.
+const MARGIN_CAP = 0.5;
 
 export type RankingTrend = "up" | "down" | "same" | "new";
 
@@ -30,7 +38,7 @@ export type SeasonPlayerScore = {
 };
 
 type EventRow = { id: string; date: string; is_pre_torneio: boolean };
-type EventPlayerRecord = { present: boolean; wins: number; losses: number };
+type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number };
 type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange">;
 
 function roundOne(value: number) {
@@ -40,7 +48,7 @@ function roundOne(value: number) {
 function recordFor(records: Map<string, Map<string, EventPlayerRecord>>, eventId: string, profileId: string) {
   const byProfile = records.get(eventId) ?? new Map<string, EventPlayerRecord>();
   records.set(eventId, byProfile);
-  const record = byProfile.get(profileId) ?? { present: false, wins: 0, losses: 0 };
+  const record = byProfile.get(profileId) ?? { present: false, wins: 0, losses: 0, marginSum: 0, marginGames: 0 };
   byProfile.set(profileId, record);
   return record;
 }
@@ -81,6 +89,9 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
     let totalLosses = 0;
     let eventsPlayed = 0;
     let attendedWeight = 0;
+    let weightedMargin = 0;
+    let marginWeight = 0;
+    let marginGames = 0;
 
     events.forEach((event, index) => {
       const record = records.get(event.id)?.get(profileId);
@@ -96,13 +107,25 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
       rawMatches += matches;
       totalWins += record.wins;
       totalLosses += record.losses;
+      weightedMargin += record.marginSum * weight;
+      marginWeight += record.marginGames * weight;
+      marginGames += record.marginGames;
     });
 
     const percentage = weightedMatches ? (weightedWins / weightedMatches) * 100 : INDEX_BASE_PERCENTAGE;
     const confidence = rawMatches / (rawMatches + INDEX_CONFIDENCE_MATCHES);
     const adjustedPerformance = confidence * percentage + (1 - confidence) * INDEX_BASE_PERCENTAGE;
     const attendancePercentage = (attendedWeight / totalWeight) * 100;
-    const baseIndex = adjustedPerformance * 0.65 + attendancePercentage * 0.35;
+    // Saldo de pontos: margem média por jogo (só jogos com placar), de -50% a +50%
+    // levada pra 0-100 e encolhida em direção a 50 enquanto há poucos jogos.
+    const averageMargin = marginWeight ? weightedMargin / marginWeight : 0;
+    const pointBalance = 50 + (averageMargin / MARGIN_CAP) * 50;
+    const marginConfidence = marginGames / (marginGames + INDEX_CONFIDENCE_MATCHES);
+    const adjustedPointBalance = marginConfidence * pointBalance + (1 - marginConfidence) * INDEX_BASE_PERCENTAGE;
+    const baseIndex =
+      adjustedPerformance * INDEX_PERFORMANCE_WEIGHT +
+      attendancePercentage * INDEX_ATTENDANCE_WEIGHT +
+      adjustedPointBalance * INDEX_POINT_BALANCE_WEIGHT;
 
     const recentAttendance = recentEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
     const olderAttendance = olderEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
@@ -152,12 +175,18 @@ export async function getSeasonRanking(
   if (!events.length) return new Map();
   const eventIds = events.map((event) => event.id);
   // Consultas independentes entre si (só dependem dos ids dos rachas): rodam juntas.
-  const [presentByEvent, { data: matchRows, error: matchError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
+  const [presentByEvent, { data: matchRows, error: matchError }, { data: scoreRows, error: scoreError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, eventIds),
     supabase
       .from("match_wins")
-      .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
       .in("event_id", eventIds),
+    supabase
+      .from("tournament_matches")
+      .select("id, score_a, score_b")
+      .in("event_id", eventIds)
+      .not("score_a", "is", null)
+      .not("score_b", "is", null),
     supabase
       .from("ranking_adjustments")
       .select("profile_id, metric, delta, event_id")
@@ -166,6 +195,7 @@ export async function getSeasonRanking(
       .in("metric", ["wins", "losses", "attendance"]),
   ]);
   if (matchError) throw new Error(matchError.message);
+  if (scoreError) throw new Error(scoreError.message);
 
   const teamIds = [...new Set((matchRows ?? []).flatMap((match) => [match.team_id, match.loser_team_id].filter((id): id is string => Boolean(id))))];
   const { data: memberRows, error: membersError } = teamIds.length
@@ -180,6 +210,12 @@ export async function getSeasonRanking(
     profileIdsByTeam.set(member.team_id, members);
   }
 
+  const marginByMatchId = new Map<string, number>();
+  for (const row of scoreRows ?? []) {
+    const total = row.score_a + row.score_b;
+    if (total > 0) marginByMatchId.set(row.id, Math.abs(row.score_a - row.score_b) / total);
+  }
+
   const records = new Map<string, Map<string, EventPlayerRecord>>();
   for (const [eventId, presentProfiles] of presentByEvent) {
     for (const profileId of presentProfiles) recordFor(records, eventId, profileId).present = true;
@@ -190,8 +226,18 @@ export async function getSeasonRanking(
     if (!match.loser_team_id) continue;
     const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
     const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
-    for (const profileId of winners) recordFor(records, match.event_id, profileId).wins += 1;
-    for (const profileId of losers) recordFor(records, match.event_id, profileId).losses += 1;
+    const margin = match.match_id ? marginByMatchId.get(match.match_id) : undefined;
+    const cappedMargin = margin === undefined ? null : Math.min(MARGIN_CAP, margin);
+    for (const profileId of winners) {
+      const record = recordFor(records, match.event_id, profileId);
+      record.wins += 1;
+      if (cappedMargin !== null) { record.marginSum += cappedMargin; record.marginGames += 1; }
+    }
+    for (const profileId of losers) {
+      const record = recordFor(records, match.event_id, profileId);
+      record.losses += 1;
+      if (cappedMargin !== null) { record.marginSum -= cappedMargin; record.marginGames += 1; }
+    }
   }
 
   // Ajustes manuais ligados a um racha da janela (feitos na tela de ajustes de
