@@ -6,6 +6,7 @@ import {
   Crown,
   History,
   Medal,
+  Scale,
   ShieldCheck,
   Sparkles,
   Target,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
 import type { EvolutionConnection, EvolutionStatus, PersonalEvolution } from "@/lib/evolution";
+import { formatPointsDiff } from "@/lib/pointsDiff";
 
 const STATUS_INFO: Record<EvolutionStatus, { label: string; icon: typeof CalendarCheck; className: string }> = {
   confirmed: { label: "Confirmado", icon: CalendarCheck, className: "text-emerald-300" },
@@ -75,6 +77,8 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
   const { totals } = report;
   const percentage = totals.percentage ?? 0;
   const recentMonths = report.months.slice(-6);
+  const hasPoints = totals.pointsFor + totals.pointsAgainst > 0;
+  const pointsDiff = totals.pointsFor - totals.pointsAgainst;
 
   return (
     <div className="mt-5">
@@ -150,6 +154,23 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
             ))}
           </section>
 
+          <section className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-purple-400/10 text-purple-200">
+              <Scale className="h-5 w-5" strokeWidth={2} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-bold text-white">Saldo de pontos</h2>
+              <p className="mt-0.5 text-[11px] text-white/45">
+                {hasPoints
+                  ? `${totals.pointsFor} pontos feitos · ${totals.pointsAgainst} sofridos`
+                  : "Aparece quando houver jogos com placar."}
+              </p>
+            </div>
+            <p className={`text-3xl font-black tabular-nums ${!hasPoints ? "text-white/30" : pointsDiff > 0 ? "text-emerald-300" : pointsDiff < 0 ? "text-rose-300" : "text-white"}`}>
+              {hasPoints ? formatPointsDiff(pointsDiff) : "—"}
+            </p>
+          </section>
+
           <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
             <div className="flex items-end justify-between gap-3">
               <div>
@@ -173,6 +194,11 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
                     <p className="mt-2 text-xs font-black text-white">{month.percentage === null ? "—" : `${month.percentage}%`}</p>
                     <p className="truncate text-[10px] capitalize text-white/45">{month.monthLabel}</p>
                     <p className="mt-0.5 text-[9px] text-white/35">{month.wins}V · {month.losses}D</p>
+                    {month.pointsFor + month.pointsAgainst > 0 && (
+                      <p className={`text-[9px] font-bold ${month.pointsFor - month.pointsAgainst >= 0 ? "text-emerald-300/80" : "text-rose-300/80"}`}>
+                        saldo {formatPointsDiff(month.pointsFor - month.pointsAgainst)}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -197,7 +223,7 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
           </div>
 
           <p className="px-2 text-center text-[10px] leading-relaxed text-white/35">
-            O aproveitamento e as conexões usam confrontos normais com vencedor e perdedor registrados. As vitórias de pré-torneios continuam no total de vitórias.
+            O aproveitamento e as conexões usam confrontos normais com vencedor e perdedor registrados. As vitórias de pré-torneios continuam no total de vitórias. O saldo de pontos soma todos os jogos com placar, inclusive de pré-torneios.
           </p>
         </div>
       ) : (
@@ -236,7 +262,7 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
                     </p>
                   </div>
                 </div>
-                {(entry.wins > 0 || entry.matches > 0 || entry.wasDestaque) && (
+                {(entry.wins > 0 || entry.matches > 0 || entry.wasDestaque || entry.pointsFor + entry.pointsAgainst > 0) && (
                   <div className="flex flex-wrap items-center gap-2 border-t border-white/[0.07] px-4 py-3">
                     {entry.wins > 0 && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
@@ -248,6 +274,11 @@ export function PersonalEvolutionDashboard({ report }: { report: PersonalEvoluti
                     )}
                     {entry.percentage !== null && (
                       <span className="rounded-full bg-purple-400/10 px-2.5 py-1 text-[11px] font-bold text-purple-200">{entry.percentage}%</span>
+                    )}
+                    {entry.pointsFor + entry.pointsAgainst > 0 && (
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${entry.pointsFor - entry.pointsAgainst >= 0 ? "bg-emerald-400/10 text-emerald-300" : "bg-rose-400/10 text-rose-200"}`}>
+                        Saldo {formatPointsDiff(entry.pointsFor - entry.pointsAgainst)}
+                      </span>
                     )}
                     {entry.wasDestaque && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/10 px-2.5 py-1 text-[11px] font-bold text-amber-200">

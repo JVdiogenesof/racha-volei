@@ -17,6 +17,8 @@ export type EvolutionEntry = {
   losses: number;
   matches: number;
   percentage: number | null;
+  pointsFor: number;
+  pointsAgainst: number;
 };
 
 export type EvolutionMonth = {
@@ -28,6 +30,8 @@ export type EvolutionMonth = {
   losses: number;
   matches: number;
   percentage: number | null;
+  pointsFor: number;
+  pointsAgainst: number;
 };
 
 export type EvolutionConnection = {
@@ -51,6 +55,8 @@ export type PersonalEvolution = {
     losses: number;
     matches: number;
     percentage: number | null;
+    pointsFor: number;
+    pointsAgainst: number;
   };
 };
 
@@ -59,11 +65,13 @@ type ResultStats = {
   performanceWins: number;
   losses: number;
   matches: number;
+  pointsFor: number;
+  pointsAgainst: number;
 };
 
 type ConnectionCounter = { confrontations: number; eventIds: Set<string> };
 
-const EMPTY_RESULT = (): ResultStats => ({ wins: 0, performanceWins: 0, losses: 0, matches: 0 });
+const EMPTY_RESULT = (): ResultStats => ({ wins: 0, performanceWins: 0, losses: 0, matches: 0, pointsFor: 0, pointsAgainst: 0 });
 const IMPOSSIBLE_ID = "00000000-0000-0000-0000-000000000000";
 
 function addConnection(map: Map<string, ConnectionCounter>, profileId: string, eventId: string) {
@@ -112,14 +120,25 @@ export async function getPersonalEvolution(
     (attendanceRows ?? []).map((row) => [row.event_id, row.status as Exclude<EvolutionStatus, "participated">]),
   );
 
-  const [presentByEvent, { data: matchRows, error: matchError }] = await Promise.all([
+  const [presentByEvent, { data: matchRows, error: matchError }, { data: scoreRows, error: scoreError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, finishedEventIds),
     supabase
       .from("match_wins")
-      .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
       .in("event_id", eventIds.length ? eventIds : [IMPOSSIBLE_ID]),
+    supabase
+      .from("tournament_matches")
+      .select("id, score_a, score_b")
+      .in("event_id", eventIds.length ? eventIds : [IMPOSSIBLE_ID])
+      .not("score_a", "is", null)
+      .not("score_b", "is", null),
   ]);
   if (matchError) throw new Error(matchError.message);
+  if (scoreError) throw new Error(scoreError.message);
+
+  const scoreByMatchId = new Map(
+    (scoreRows ?? []).map((row) => [row.id, { high: Math.max(row.score_a, row.score_b), low: Math.min(row.score_a, row.score_b) }]),
+  );
 
   const allTeamIds = [
     ...new Set(
@@ -164,6 +183,13 @@ export async function getPersonalEvolution(
     involvedEventIds.add(match.event_id);
     const result = resultsByEvent.get(match.event_id) ?? EMPTY_RESULT();
     if (playerWon) result.wins += 1;
+    // Saldo em pontos conta toda partida com placar (pré-torneio e mini torneio),
+    // igual ao Índice -- diferente do aproveitamento, que só olha confrontos normais.
+    const score = match.match_id ? scoreByMatchId.get(match.match_id) : undefined;
+    if (score) {
+      result.pointsFor += playerWon ? score.high : score.low;
+      result.pointsAgainst += playerWon ? score.low : score.high;
+    }
 
     // Esta é exatamente a regra do ranking de aproveitamento atual.
     const isPairedNormalConfrontation = !event.is_pre_torneio && Boolean(match.loser_team_id);
@@ -222,15 +248,17 @@ export async function getPersonalEvolution(
       total.performanceWins += entry.performanceWins;
       total.losses += entry.losses;
       total.matches += entry.matches;
+      total.pointsFor += entry.pointsFor;
+      total.pointsAgainst += entry.pointsAgainst;
       return total;
     },
-    { attendance: 0, highlights: 0, wins: 0, performanceWins: 0, losses: 0, matches: 0, percentage: null as number | null },
+    { attendance: 0, highlights: 0, wins: 0, performanceWins: 0, losses: 0, matches: 0, percentage: null as number | null, pointsFor: 0, pointsAgainst: 0 },
   );
   totals.percentage = totals.matches ? Math.round((totals.performanceWins / totals.matches) * 100) : null;
 
   const monthsByKey = new Map<string, Omit<EvolutionMonth, "monthLabel" | "percentage">>();
   for (const entry of finishedEntries) {
-    if (!entry.wasPresent && !entry.wins && !entry.matches && !entry.wasDestaque) continue;
+    if (!entry.wasPresent && !entry.wins && !entry.matches && !entry.wasDestaque && !entry.pointsFor && !entry.pointsAgainst) continue;
     const monthKey = entry.date.slice(0, 7);
     const month = monthsByKey.get(monthKey) ?? {
       monthKey,
@@ -239,12 +267,16 @@ export async function getPersonalEvolution(
       performanceWins: 0,
       losses: 0,
       matches: 0,
+      pointsFor: 0,
+      pointsAgainst: 0,
     };
     if (entry.wasPresent) month.attendance += 1;
     month.wins += entry.wins;
     month.performanceWins += entry.performanceWins;
     month.losses += entry.losses;
     month.matches += entry.matches;
+    month.pointsFor += entry.pointsFor;
+    month.pointsAgainst += entry.pointsAgainst;
     monthsByKey.set(monthKey, month);
   }
   const months = [...monthsByKey.values()]

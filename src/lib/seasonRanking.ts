@@ -34,12 +34,18 @@ export type SeasonPlayerScore = {
   progressBonus: number;
   trend: RankingTrend;
   positionChange: number | null;
+  // Saldo em pontos reais das partidas com placar dentro da janela do Índice.
+  pointsFor: number;
+  pointsAgainst: number;
+  pointsDiff: number;
   eligible: boolean;
 };
 
 type EventRow = { id: string; date: string; is_pre_torneio: boolean };
-type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number };
+type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number; pointsFor: number; pointsAgainst: number };
 type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange">;
+
+export { formatPointsDiff } from "./pointsDiff";
 
 function roundOne(value: number) {
   return Math.round(value * 10) / 10;
@@ -48,7 +54,7 @@ function roundOne(value: number) {
 function recordFor(records: Map<string, Map<string, EventPlayerRecord>>, eventId: string, profileId: string) {
   const byProfile = records.get(eventId) ?? new Map<string, EventPlayerRecord>();
   records.set(eventId, byProfile);
-  const record = byProfile.get(profileId) ?? { present: false, wins: 0, losses: 0, marginSum: 0, marginGames: 0 };
+  const record = byProfile.get(profileId) ?? { present: false, wins: 0, losses: 0, marginSum: 0, marginGames: 0, pointsFor: 0, pointsAgainst: 0 };
   byProfile.set(profileId, record);
   return record;
 }
@@ -92,6 +98,8 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
     let weightedMargin = 0;
     let marginWeight = 0;
     let marginGames = 0;
+    let pointsFor = 0;
+    let pointsAgainst = 0;
 
     events.forEach((event, index) => {
       const record = records.get(event.id)?.get(profileId);
@@ -110,6 +118,8 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
       weightedMargin += record.marginSum * weight;
       marginWeight += record.marginGames * weight;
       marginGames += record.marginGames;
+      pointsFor += record.pointsFor;
+      pointsAgainst += record.pointsAgainst;
     });
 
     const percentage = weightedMatches ? (weightedWins / weightedMatches) * 100 : INDEX_BASE_PERCENTAGE;
@@ -142,6 +152,9 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
       totalAttendance: eventsPlayed,
       totalWins,
       totalLosses,
+      pointsFor,
+      pointsAgainst,
+      pointsDiff: pointsFor - pointsAgainst,
       progressBonus,
       averageIndex: roundOne(Math.min(100, baseIndex + progressBonus)),
       eligible: eventsPlayed >= INDEX_MIN_EVENTS,
@@ -210,10 +223,16 @@ export async function getSeasonRanking(
     profileIdsByTeam.set(member.team_id, members);
   }
 
-  const marginByMatchId = new Map<string, number>();
+  const scoreByMatchId = new Map<string, { margin: number; winnerPoints: number; loserPoints: number }>();
   for (const row of scoreRows ?? []) {
     const total = row.score_a + row.score_b;
-    if (total > 0) marginByMatchId.set(row.id, Math.abs(row.score_a - row.score_b) / total);
+    if (total > 0) {
+      scoreByMatchId.set(row.id, {
+        margin: Math.abs(row.score_a - row.score_b) / total,
+        winnerPoints: Math.max(row.score_a, row.score_b),
+        loserPoints: Math.min(row.score_a, row.score_b),
+      });
+    }
   }
 
   const records = new Map<string, Map<string, EventPlayerRecord>>();
@@ -226,17 +245,27 @@ export async function getSeasonRanking(
     if (!match.loser_team_id) continue;
     const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
     const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
-    const margin = match.match_id ? marginByMatchId.get(match.match_id) : undefined;
-    const cappedMargin = margin === undefined ? null : Math.min(MARGIN_CAP, margin);
+    const score = match.match_id ? scoreByMatchId.get(match.match_id) : undefined;
+    const cappedMargin = score ? Math.min(MARGIN_CAP, score.margin) : null;
     for (const profileId of winners) {
       const record = recordFor(records, match.event_id, profileId);
       record.wins += 1;
-      if (cappedMargin !== null) { record.marginSum += cappedMargin; record.marginGames += 1; }
+      if (score && cappedMargin !== null) {
+        record.marginSum += cappedMargin;
+        record.marginGames += 1;
+        record.pointsFor += score.winnerPoints;
+        record.pointsAgainst += score.loserPoints;
+      }
     }
     for (const profileId of losers) {
       const record = recordFor(records, match.event_id, profileId);
       record.losses += 1;
-      if (cappedMargin !== null) { record.marginSum -= cappedMargin; record.marginGames += 1; }
+      if (score && cappedMargin !== null) {
+        record.marginSum -= cappedMargin;
+        record.marginGames += 1;
+        record.pointsFor += score.loserPoints;
+        record.pointsAgainst += score.winnerPoints;
+      }
     }
   }
 

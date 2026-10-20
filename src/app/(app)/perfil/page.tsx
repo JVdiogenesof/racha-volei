@@ -1,9 +1,9 @@
-import { CalendarCheck, Trophy, Crown, Percent } from "lucide-react";
+import { CalendarCheck, Trophy, Crown, Percent, Scale } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
 import { getRankingCounts } from "@/lib/rankings";
-import { getSeasonRanking } from "@/lib/seasonRanking";
+import { formatPointsDiff, getSeasonRanking, ROLLING_INDEX_EVENT_COUNT } from "@/lib/seasonRanking";
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementGallery } from "@/components/AchievementGallery";
@@ -34,6 +34,7 @@ export default async function PerfilPage() {
   const seasonMatches = season ? season.totalWins + season.totalLosses : 0;
   const seasonPercentage = season && seasonMatches > 0 ? Math.round((season.totalWins / seasonMatches) * 100) : null;
   const streak = rankingCounts.streaks.get(profile.id) ?? 0;
+  const hasPointBalance = Boolean(season && season.pointsFor + season.pointsAgainst > 0);
 
   const myStats = [
     { label: "Presenças", value: attendanceCount, icon: CalendarCheck },
@@ -43,6 +44,11 @@ export default async function PerfilPage() {
       label: season ? `${season.totalWins}V · ${season.totalLosses}D` : "Sem confrontos",
       value: seasonPercentage !== null ? `${seasonPercentage}%` : "—",
       icon: Percent,
+    },
+    {
+      label: hasPointBalance ? `Saldo de pontos · últimos ${ROLLING_INDEX_EVENT_COUNT} rachas` : "Saldo de pontos",
+      value: hasPointBalance && season ? formatPointsDiff(season.pointsDiff) : "—",
+      icon: Scale,
     },
   ];
   const achievementStats = {
@@ -85,9 +91,9 @@ export default async function PerfilPage() {
 
       <section>
         <h2 className="font-semibold text-white">Meu histórico</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {myStats.map((s) => (
-            <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center">
+            <div key={s.label} className="rounded-xl border border-white/10 bg-white/5 p-4 text-center sm:last:col-span-2 lg:last:col-span-1">
               <s.icon className="mx-auto h-5 w-5 text-purple-300" strokeWidth={2} />
               <AnimatedMetric className="mt-2 block text-xl font-bold text-white" value={s.value} />
               <p className="text-xs text-white/60">{s.label}</p>

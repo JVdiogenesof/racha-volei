@@ -2,7 +2,7 @@ import { CalendarRange, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
-import { getSeasonRanking, INDEX_MIN_EVENTS, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
+import { formatPointsDiff, getSeasonRanking, INDEX_MIN_EVENTS, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -68,7 +68,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             avatarUrl: profile.avatar_url,
             displayValue: season.eligible ? `${season.averageIndex.toFixed(1)} pts` : "Em classificação",
             detail: season.eligible
-              ? `${season.eventsPlayed}/${ROLLING_INDEX_EVENT_COUNT} rachas · ${season.totalWins}V · ${season.totalLosses}D${season.progressBonus ? ` · +${season.progressBonus.toFixed(1)} evolução` : ""}`
+              ? `${season.eventsPlayed}/${ROLLING_INDEX_EVENT_COUNT} rachas · ${season.totalWins}V · ${season.totalLosses}D${season.pointsFor + season.pointsAgainst > 0 ? ` · saldo ${formatPointsDiff(season.pointsDiff)}` : ""}${season.progressBonus ? ` · +${season.progressBonus.toFixed(1)} evolução` : ""}`
               : `${season.eventsPlayed}/${INDEX_MIN_EVENTS} rachas para classificação`,
             ranked: season.eligible,
             trend: season.trend,
