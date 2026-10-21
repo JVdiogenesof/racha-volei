@@ -48,7 +48,7 @@ export default async function AdminPainelPage() {
   }
 
   const shortcuts: { href: string; icon: LucideIcon; title: string; detail: string }[] = [
-    { href: "/admin/rachas", icon: CalendarPlus, title: "Criar racha", detail: "Já vem preenchido igual ao último" },
+    { href: "/racha", icon: CalendarPlus, title: "Criar racha", detail: "Agora na aba Rachas" },
     { href: "/admin/ranking", icon: Award, title: "Ajustar ranking", detail: "Corrigir presença e vitórias" },
     { href: "/admin/financas", icon: WalletCards, title: "Finanças", detail: "Caixa e saldos" },
     { href: "/admin/atividade", icon: UserRoundX, title: "Atividade", detail: "Presenças e tempo sem ir" },
@@ -80,14 +80,14 @@ export default async function AdminPainelPage() {
             </div>
             <div className="flex gap-2">
               <Link href={`/racha/${next.id}`} className="flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-sm font-bold text-white hover:bg-brand-purple-dark"><Users className="h-4 w-4" />Gerenciar lista</Link>
-              <Link href="/admin/rachas" className="flex min-h-10 items-center justify-center rounded-xl border border-white/15 px-3 text-sm font-semibold text-white/80 hover:bg-white/5">Rachas</Link>
+              <Link href="/racha" className="flex min-h-10 items-center justify-center rounded-xl border border-white/15 px-3 text-sm font-semibold text-white/80 hover:bg-white/5">Rachas</Link>
             </div>
           </>
         ) : (
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10 text-purple-100"><Clock className="h-5 w-5" /></span>
             <div className="min-w-0 flex-1"><p className="font-bold text-white">Nenhum racha agendado</p><p className="text-xs text-white/55">Crie o próximo racha pra abrir a lista.</p></div>
-            <Link href="/admin/rachas" className="flex min-h-10 shrink-0 items-center rounded-xl bg-brand-purple px-3 text-sm font-bold text-white">Criar</Link>
+            <Link href="/racha" className="flex min-h-10 shrink-0 items-center rounded-xl bg-brand-purple px-3 text-sm font-bold text-white">Criar</Link>
           </div>
         )}
       </section>

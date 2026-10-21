@@ -1,13 +1,18 @@
 import Link from "next/link";
-import { Plus, MapPin, ChevronRight, Trophy, Medal, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { MapPin, ChevronRight, Trophy, Medal, Map as MapIcon, Radio, ArrowRight, CheckCircle2, Clock3, Eye, UserRoundCheck, XCircle, CircleHelp, CalendarClock, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { EmptyState } from "@/components/EmptyState";
+import { CreateRachaPanel } from "@/components/CreateRachaPanel";
+import { RachaOrganizerRow } from "@/components/RachaOrganizerRow";
+import type { RachaFormDefaults } from "@/components/RachaForm";
 import { isRegistrationOpen, registrationInputParts } from "@/lib/registrationSchedule";
 import { todayStringInFortaleza } from "@/lib/today";
+import { createEvent, updateEvent, cancelEvent, deleteEvent } from "./actions";
 
 const NR_SPORT_TRAINING_ADDRESS = "NR Sport Training, Rua Maria Josefina Pessoa, 226, Fortaleza, Brazil";
 const NR_SPORT_TRAINING_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(NR_SPORT_TRAINING_ADDRESS)}`;
@@ -18,6 +23,38 @@ function isNrSportTraining(location: string | null) {
 
 type AttendanceStatus = "confirmed" | "interested" | "declined";
 type AttendanceIndicatorData = { label: string; className: string; icon: LucideIcon } | null;
+
+type EditableEvent = {
+  date: string;
+  time: string | null;
+  location: string | null;
+  num_teams: number;
+  team_size: number;
+  price_per_player: number | null;
+  pix_payment_enabled: boolean;
+  max_players: number | null;
+  newcomer_reserved_spots: number;
+  is_pre_torneio: boolean;
+  is_mini_torneio: boolean;
+  registration_opens_at: string | null;
+};
+
+function toFormDefaults(event: EditableEvent): RachaFormDefaults {
+  return {
+    date: event.date,
+    time: event.time?.slice(0, 5) ?? "",
+    location: event.location ?? "",
+    pixPaymentEnabled: event.pix_payment_enabled,
+    registrationOpensAt: event.registration_opens_at,
+    numTeams: event.num_teams,
+    maxPlayers: event.max_players,
+    teamSize: event.team_size,
+    newcomerReservedSpots: event.newcomer_reserved_spots,
+    isPreTorneio: event.is_pre_torneio,
+    isMiniTorneio: event.is_mini_torneio,
+    pricePerPlayer: event.price_per_player,
+  };
+}
 
 function getAttendanceIndicator({
   attendanceStatus,
@@ -49,12 +86,46 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
   const [{ data: events }, { data: attendanceRows }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, time, location, team_size, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at")
+      .select(
+        "id, date, time, location, num_teams, team_size, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at",
+      )
       .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profile.id),
   ]);
   const attendanceByEvent = new Map((attendanceRows ?? []).map((row) => [row.event_id, row.status as AttendanceStatus]));
+
+  // Pré-preenche a criação com os dados do último racha, só avançando a data
+  // em 7 dias -- antes isso só existia na tela de Admin.
+  const lastEvent = events?.[0] ?? null;
+  let suggestedDate = "";
+  let suggestedRegistrationOpensAt: string | null = null;
+  if (lastEvent) {
+    const d = new Date(`${lastEvent.date}T00:00:00`);
+    d.setDate(d.getDate() + 7);
+    suggestedDate = d.toISOString().slice(0, 10);
+    if (lastEvent.registration_opens_at) {
+      const opening = new Date(lastEvent.registration_opens_at);
+      opening.setDate(opening.getDate() + 7);
+      suggestedRegistrationOpensAt = opening.toISOString();
+    } else {
+      suggestedRegistrationOpensAt = new Date(`${suggestedDate}T18:00:00-03:00`).toISOString();
+    }
+  }
+  const createDefaults: RachaFormDefaults = {
+    date: suggestedDate,
+    time: lastEvent?.time?.slice(0, 5) ?? "",
+    location: lastEvent?.location ?? "",
+    pixPaymentEnabled: true,
+    registrationOpensAt: suggestedRegistrationOpensAt,
+    numTeams: lastEvent?.num_teams ?? 2,
+    maxPlayers: lastEvent?.max_players ?? null,
+    teamSize: lastEvent?.team_size ?? 6,
+    newcomerReservedSpots: lastEvent?.newcomer_reserved_spots ?? 0,
+    isPreTorneio: false,
+    isMiniTorneio: false,
+    pricePerPlayer: lastEvent?.price_per_player ?? null,
+  };
 
   const today = todayStringInFortaleza();
   const atuais = events?.filter((e) => e.status === "in_progress") ?? [];
@@ -67,20 +138,45 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
     ended: event.date < today || event.status === "finished" || event.status === "cancelled",
   });
 
+  // Dá os controles de editar/cancelar/excluir pro organizador em cada
+  // racha, direto na lista -- sem isso, todo mundo só vê o card normal.
+  const withOrganizerControls = (event: EditableEvent & { id: string; status: string }, children: ReactNode) => {
+    if (!profile.is_organizer) return children;
+    return (
+      <RachaOrganizerRow
+        key={event.id}
+        eventId={event.id}
+        status={event.status}
+        defaults={toFormDefaults(event)}
+        updateEventAction={updateEvent}
+        cancelEventAction={cancelEvent}
+        deleteEventAction={deleteEvent}
+      >
+        {children}
+      </RachaOrganizerRow>
+    );
+  };
+
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between gap-3">
-        <div>
+      {profile.is_organizer ? (
+        <CreateRachaPanel
+          title={
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{community === "sand" ? "Areia" : "Quadra"}</p>
+              <h1 className="mt-0.5 text-2xl font-black text-white">Rachas</h1>
+            </div>
+          }
+          action={createEvent}
+          defaults={createDefaults}
+          hint={lastEvent ? "Sugerido: uma semana depois do último racha." : undefined}
+        />
+      ) : (
+        <header className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{community === "sand" ? "Areia" : "Quadra"}</p>
           <h1 className="mt-0.5 text-2xl font-black text-white">Rachas</h1>
-        </div>
-        {profile.is_organizer && (
-          <Link href="/admin/rachas" aria-label="Criar racha" className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-brand-purple px-3.5 text-sm font-bold text-white hover:bg-brand-purple-dark">
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            Criar
-          </Link>
-        )}
-      </header>
+        </header>
+      )}
 
       <div className="flex gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
         <Link href="/racha" aria-current={!showPast ? "page" : undefined} className={`flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-xs font-semibold transition ${!showPast ? "bg-brand-purple text-white shadow-md shadow-purple-950/30" : "text-white/45 hover:text-white/75"}`}>
@@ -101,9 +197,9 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
             <h2 className="text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/50">Acontecendo agora</h2>
           </div>
           <div className="space-y-2">
-            {atuais.map((event) => (
-              <CurrentEventCard key={event.id} event={event} indicator={indicatorFor(event)} />
-            ))}
+            {atuais.map((event) =>
+              withOrganizerControls(event, <CurrentEventCard key={event.id} event={event} indicator={indicatorFor(event)} />),
+            )}
           </div>
         </section>
       )}
@@ -113,9 +209,9 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
           <h2 className="mb-2 px-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/40">Próximos</h2>
           <div className="space-y-1.5">
             {!proximos.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Agenda livre no momento" description="Assim que o próximo racha for criado, ele aparecerá aqui com data, horário e confirmação." />}
-            {proximos.map((e) => (
-              <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
-            ))}
+            {proximos.map((e) =>
+              withOrganizerControls(e, <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />),
+            )}
           </div>
         </section>
       )}
@@ -124,9 +220,9 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
         <section>
           <div className="space-y-1.5">
             {!passados.length && <EmptyState compact icon={<CalendarClock className="h-5 w-5" />} title="Nenhum racha passado" description="Os rachas encerrados aparecem aqui." />}
-            {passados.map((e) => (
-              <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />
-            ))}
+            {passados.map((e) =>
+              withOrganizerControls(e, <EventRow key={e.id} event={e} indicator={indicatorFor(e)} />),
+            )}
           </div>
         </section>
       )}
