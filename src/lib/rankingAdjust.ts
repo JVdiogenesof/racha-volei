@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
 import type { Community } from "./community";
+import { countsTowardMatchRanking } from "./matchRankingEligibility";
 
 export type AdjustMetric = "attendance" | "mvp" | "wins" | "losses";
 
@@ -20,7 +21,8 @@ const SHEET_EVENT_LIMIT = 12;
 /**
  * Monta, racha a racha, o que está registrado para o jogador e o que já foi
  * ajustado à mão. As regras de contagem espelham as do Índice VPA: só
- * confrontos com vencedor e perdedor entram em vitórias/derrotas.
+ * confrontos com vencedor e perdedor entram em vitórias/derrotas, e racha
+ * normal com 3 times fica fora (ver matchRankingEligibility).
  */
 export async function getProfileRankingSheet(
   supabase: SupabaseClient,
@@ -29,7 +31,7 @@ export async function getProfileRankingSheet(
 ): Promise<SheetEvent[]> {
   const { data: eventRows, error: eventError } = await supabase
     .from("events")
-    .select("id, date, is_pre_torneio, is_mini_torneio, mvp_profile_id, mvp_profile_id_2")
+    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .eq("status", "finished")
     .order("date", { ascending: false })
@@ -68,11 +70,13 @@ export async function getProfileRankingSheet(
     membersByTeam.set(member.team_id, list);
   }
 
+  const matchRankedEventIds = new Set(events.filter(countsTowardMatchRanking).map((event) => event.id));
+
   return events.map((event) => {
     let wins = 0;
     let losses = 0;
     let legacyWins = 0;
-    for (const match of (matchRows ?? []).filter((row) => row.event_id === event.id)) {
+    for (const match of matchRankedEventIds.has(event.id) ? (matchRows ?? []).filter((row) => row.event_id === event.id) : []) {
       const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : membersByTeam.get(match.team_id) ?? [];
       const losers = match.losing_profile_ids?.length
         ? match.losing_profile_ids

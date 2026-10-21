@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "./community";
 import { getPresentProfileIdsByEvent } from "./presence";
 import { INDEX_BASE_PERCENTAGE, INDEX_CONFIDENCE_MATCHES } from "./rankings";
+import { countsTowardMatchRanking } from "./matchRankingEligibility";
 
 // A temporada continua sendo usada como referência do torneio oficial. O
 // Índice em si é uma janela viva: os oito últimos rachas deixam a tabela
@@ -41,7 +42,7 @@ export type SeasonPlayerScore = {
   eligible: boolean;
 };
 
-type EventRow = { id: string; date: string; is_pre_torneio: boolean };
+type EventRow = { id: string; date: string; is_pre_torneio: boolean; is_mini_torneio: boolean; num_teams: number };
 type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number; pointsFor: number; pointsAgainst: number };
 type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange">;
 
@@ -177,7 +178,7 @@ export async function getSeasonRanking(
 ): Promise<Map<string, SeasonPlayerScore>> {
   const { data: eventRows, error: eventError } = await supabase
     .from("events")
-    .select("id, date, is_pre_torneio")
+    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams")
     .eq("community", community)
     .eq("status", "finished")
     .order("date", { ascending: false })
@@ -187,6 +188,9 @@ export async function getSeasonRanking(
   const events = ([...(eventRows ?? [])] as EventRow[]).reverse();
   if (!events.length) return new Map();
   const eventIds = events.map((event) => event.id);
+  // Racha normal de 3 times fica fora do ranking de partidas (ver
+  // matchRankingEligibility) -- continua contando presença normalmente.
+  const matchRankedEventIds = new Set(events.filter(countsTowardMatchRanking).map((event) => event.id));
   // Consultas independentes entre si (só dependem dos ids dos rachas): rodam juntas.
   const [presentByEvent, { data: matchRows, error: matchError }, { data: scoreRows, error: scoreError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, eventIds),
@@ -252,6 +256,7 @@ export async function getSeasonRanking(
   for (const match of matchRows ?? []) {
     // Pré-torneios contam como um racha normal: presença e confrontos.
     if (!match.loser_team_id) continue;
+    if (!matchRankedEventIds.has(match.event_id)) continue;
     const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
     const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
     const score = match.match_id ? scoreByMatchId.get(match.match_id) : normalMatchScore(match.winner_score, match.loser_score);
@@ -290,6 +295,7 @@ export async function getSeasonRanking(
       presenceDelta.set(key, (presenceDelta.get(key) ?? 0) + adj.delta);
       continue;
     }
+    if (!matchRankedEventIds.has(adj.event_id)) continue;
     const record = recordFor(records, adj.event_id, adj.profile_id);
     if (adj.metric === "wins") record.wins = Math.max(0, record.wins + adj.delta);
     else record.losses = Math.max(0, record.losses + adj.delta);

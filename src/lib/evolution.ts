@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "./community";
 import { getPresentProfileIdsByEvent } from "./presence";
+import { countsTowardMatchRanking } from "./matchRankingEligibility";
 
 export type EvolutionStatus = "confirmed" | "interested" | "declined" | "participated";
 
@@ -91,9 +92,10 @@ function formatMonthLabel(monthKey: string) {
 
 /**
  * Monta o histórico pessoal usando apenas dados que o app já registra.
- * Presença segue a mesma regra do ranking. Vitórias incluem todo tipo de
- * racha; derrotas e aproveitamento seguem o ranking e consideram somente os
- * confrontos normais que possuem vencedor e perdedor registrados.
+ * Presença segue a mesma regra do ranking. Vitórias, derrotas, aproveitamento
+ * e saldo seguem o ranking: contam em todo racha estruturado (pré-torneio,
+ * mini torneio) e em racha normal com vencedor/perdedor registrado, exceto
+ * racha normal de 3 times (ver matchRankingEligibility).
  */
 export async function getPersonalEvolution(
   supabase: SupabaseClient,
@@ -103,7 +105,7 @@ export async function getPersonalEvolution(
   const [{ data: eventRows, error: eventError }, { data: attendanceRows, error: attendanceError }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, location, status, is_pre_torneio, mvp_profile_id, mvp_profile_id_2")
+      .select("id, date, location, status, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
       .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profileId),
@@ -116,6 +118,7 @@ export async function getPersonalEvolution(
   const finishedEvents = events.filter((event) => event.status === "finished");
   const finishedEventIds = finishedEvents.map((event) => event.id);
   const eventById = new Map(events.map((event) => [event.id, event]));
+  const matchRankedEventIds = new Set(events.filter(countsTowardMatchRanking).map((event) => event.id));
   const attendanceByEvent = new Map(
     (attendanceRows ?? []).map((row) => [row.event_id, row.status as Exclude<EvolutionStatus, "participated">]),
   );
@@ -167,6 +170,7 @@ export async function getPersonalEvolution(
   for (const match of matchRows ?? []) {
     const event = eventById.get(match.event_id);
     if (!event || event.status !== "finished") continue;
+    if (!matchRankedEventIds.has(match.event_id)) continue;
 
     const winnerIds: string[] = match.winning_profile_ids?.length
       ? match.winning_profile_ids

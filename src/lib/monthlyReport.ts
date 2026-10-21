@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "@/lib/community";
 import { getPresentProfileIdsByEvent } from "@/lib/presence";
+import { countsTowardMatchRanking } from "@/lib/matchRankingEligibility";
 
 export const MONTHLY_REPORT_REQUIRED_EVENTS = 4;
 
@@ -76,7 +77,7 @@ export async function getMonthlyReport(
   const { start, nextStart } = monthRange(monthKey);
   const { data: eventRows, error: eventError } = await supabase
     .from("events")
-    .select("id, date, status, is_pre_torneio, mvp_profile_id, mvp_profile_id_2")
+    .select("id, date, status, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .gte("date", start)
     .lt("date", nextStart)
@@ -162,7 +163,12 @@ export async function getMonthlyReport(
   }
 
   const preTournamentByEvent = new Map(finishedEvents.map((event) => [event.id, event.is_pre_torneio]));
+  // Racha normal com 3 times fica fora do ranking de partidas (ver
+  // matchRankingEligibility) -- presença e MVP acima já não dependem disso.
+  const matchRankedEventIds = new Set(finishedEvents.filter(countsTowardMatchRanking).map((event) => event.id));
   for (const match of matchRows ?? []) {
+    if (!matchRankedEventIds.has(match.event_id)) continue;
+
     const winnerIds = match.winning_profile_ids?.length
       ? match.winning_profile_ids
       : profileIdsByTeam.get(match.team_id) ?? [];

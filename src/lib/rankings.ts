@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
 import type { Community } from "./community";
 import { monthRange } from "./monthlyReport";
+import { countsTowardMatchRanking } from "./matchRankingEligibility";
 
 export type RankingMetric = "attendance" | "mvp" | "wins";
 
@@ -76,7 +77,7 @@ export async function getRankingCounts(
 
   let eventsQuery = supabase
     .from("events")
-    .select("id, date, status, mvp_profile_id, mvp_profile_id_2")
+    .select("id, date, status, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .order("date", { ascending: false });
   if (range) {
@@ -94,7 +95,7 @@ export async function getRankingCounts(
       Promise.resolve({ data: communityEvents ?? [] }),
       supabase
         .from("match_wins")
-        .select("team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+        .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
         .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
       // Os ajustes ligados a um racha entram pelo próprio racha (já filtrado pelo
@@ -135,6 +136,10 @@ export async function getRankingCounts(
     }
   }
 
+  // Racha normal com 3 times fica fora do ranking de partidas (ver
+  // matchRankingEligibility) -- presença acima já não depende disso.
+  const matchRankedEventIds = new Set((communityEvents ?? []).filter(countsTowardMatchRanking).map((event) => event.id));
+
   const profileIdsByTeam = new Map<string, string[]>();
   for (const m of memberRows ?? []) {
     if (!profileIdsByTeam.has(m.team_id)) profileIdsByTeam.set(m.team_id, []);
@@ -142,6 +147,7 @@ export async function getRankingCounts(
   }
   const wins = new Map<string, number>();
   for (const w of winRows ?? []) {
+    if (!matchRankedEventIds.has(w.event_id)) continue;
     const winnerIds = w.winning_profile_ids?.length
       ? w.winning_profile_ids
       : profileIdsByTeam.get(w.team_id) ?? [];
@@ -174,6 +180,7 @@ export async function getRankingCounts(
 
   for (const match of winRows ?? []) {
     if (!match.loser_team_id) continue;
+    if (!matchRankedEventIds.has(match.event_id)) continue;
 
     const winnerIds = match.winning_profile_ids?.length
       ? match.winning_profile_ids
@@ -205,9 +212,11 @@ export async function getRankingCounts(
   for (const adj of adjustmentRows ?? []) {
     if (adj.event_id) {
       if (!eventIdSet.has(adj.event_id)) continue;
-      if (adj.metric === "wins") bumpResult(adj.profile_id, adj.delta, 0);
-      else if (adj.metric === "losses") bumpResult(adj.profile_id, 0, adj.delta);
-      else if (adj.metric === "attendance" || adj.metric === "mvp") {
+      if (adj.metric === "wins") {
+        if (matchRankedEventIds.has(adj.event_id)) bumpResult(adj.profile_id, adj.delta, 0);
+      } else if (adj.metric === "losses") {
+        if (matchRankedEventIds.has(adj.event_id)) bumpResult(adj.profile_id, 0, adj.delta);
+      } else if (adj.metric === "attendance" || adj.metric === "mvp") {
         const target = byMetric[adj.metric as RankingMetric];
         target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);
       }
