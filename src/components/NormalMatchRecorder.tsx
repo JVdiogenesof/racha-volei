@@ -13,6 +13,8 @@ type Confrontation = {
   id: string;
   winnerTeamId: string;
   loserTeamId: string;
+  winnerScore: number | null;
+  loserScore: number | null;
 };
 
 type MatchAction = (formData: FormData) => Promise<void> | void;
@@ -34,33 +36,35 @@ export function NormalMatchRecorder({
 }) {
   const [teamAId, setTeamAId] = useState("");
   const [teamBId, setTeamBId] = useState("");
-  const [pendingWinnerId, setPendingWinnerId] = useState<string | null>(null);
+  const [scoreA, setScoreA] = useState("");
+  const [scoreB, setScoreB] = useState("");
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const { showToast } = useToast();
   const router = useRouter();
   const labels = new Map(teams.map((team) => [team.id, team.name]));
 
-  function record(winnerTeamId: string) {
-    if (!teamAId || !teamBId) return;
-    setPendingWinnerId(winnerTeamId);
+  function record() {
+    if (!teamAId || !teamBId || scoreA === "" || scoreB === "") return;
     startTransition(async () => {
       try {
         const formData = new FormData();
         formData.set("eventId", eventId);
         formData.set("teamAId", teamAId);
         formData.set("teamBId", teamBId);
-        formData.set("winnerTeamId", winnerTeamId);
+        formData.set("scoreA", scoreA);
+        formData.set("scoreB", scoreB);
+        const winnerTeamId = Number(scoreA) > Number(scoreB) ? teamAId : teamBId;
         await recordAction(formData);
         showToast(`Vitória do ${labels.get(winnerTeamId)} registrada!`);
         window.dispatchEvent(new CustomEvent(TEAM_VICTORY_EVENT, { detail: { teamId: winnerTeamId } }));
         setTeamAId("");
         setTeamBId("");
+        setScoreA("");
+        setScoreB("");
         router.refresh();
       } catch (error) {
         showToast(error instanceof Error ? error.message : "Não foi possível registrar o confronto.");
-      } finally {
-        setPendingWinnerId(null);
       }
     });
   }
@@ -83,13 +87,15 @@ export function NormalMatchRecorder({
     });
   }
 
+  const canRecord = teamAId && teamBId && scoreA !== "" && scoreB !== "" && Number(scoreA) !== Number(scoreB);
+
   return (
     <section className="rounded-2xl border border-purple-300/20 bg-purple-400/5 p-4 sm:p-5">
       <div className="flex items-center gap-2">
         <Swords className="h-5 w-5 text-purple-300" strokeWidth={2} />
         <div>
           <h2 className="font-semibold text-white">Confrontos</h2>
-          <p className="text-xs text-white/50">Escolha dois times e toque em quem venceu.</p>
+          <p className="text-xs text-white/50">Escolha os dois times e lance o placar do confronto.</p>
         </div>
       </div>
 
@@ -134,21 +140,45 @@ export function NormalMatchRecorder({
 
           {teamAId && teamBId && (
             <div className="mt-4">
-              <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-white/45">Quem venceu?</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[teamAId, teamBId].map((teamId) => (
-                  <button
-                    key={teamId}
-                    type="button"
-                    onClick={() => record(teamId)}
+              <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-white/45">Placar final</p>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <div className="flex flex-col items-center gap-1.5">
+                  <TeamBadge name={labels.get(teamAId) ?? ""} size={22} />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={scoreA}
+                    onChange={(event) => setScoreA(event.target.value)}
                     disabled={isPending}
-                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-purple px-3 text-sm font-semibold text-white hover:bg-brand-purple-dark disabled:opacity-50"
-                  >
-                    <Trophy className="h-4 w-4" strokeWidth={2} />
-                    {pendingWinnerId === teamId ? "Registrando..." : <TeamBadge name={labels.get(teamId) ?? ""} size={24} />}
-                  </button>
-                ))}
+                    placeholder="0"
+                    className="min-h-12 w-full rounded-lg border border-white/15 bg-[#1c1238] px-3 text-center text-lg font-bold text-white outline-none focus:border-purple-300"
+                  />
+                </div>
+                <span className="pt-6 text-sm font-bold text-white/35">X</span>
+                <div className="flex flex-col items-center gap-1.5">
+                  <TeamBadge name={labels.get(teamBId) ?? ""} size={22} />
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={scoreB}
+                    onChange={(event) => setScoreB(event.target.value)}
+                    disabled={isPending}
+                    placeholder="0"
+                    className="min-h-12 w-full rounded-lg border border-white/15 bg-[#1c1238] px-3 text-center text-lg font-bold text-white outline-none focus:border-purple-300"
+                  />
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={record}
+                disabled={isPending || !canRecord}
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-purple px-3 text-sm font-semibold text-white hover:bg-brand-purple-dark disabled:opacity-50"
+              >
+                <Trophy className="h-4 w-4" strokeWidth={2} />
+                {isPending ? "Registrando..." : "Registrar confronto"}
+              </button>
             </div>
           )}
         </div>
@@ -157,7 +187,7 @@ export function NormalMatchRecorder({
       <div className="mt-4">
         <h3 className="text-sm font-medium text-white">Histórico do racha</h3>
         {!confrontations.length ? (
-          <div className="mt-2"><EmptyState compact icon={<Swords className="h-5 w-5" />} title="A quadra está pronta" description="Escolha dois times acima e registre o vencedor do primeiro confronto." /></div>
+          <div className="mt-2"><EmptyState compact icon={<Swords className="h-5 w-5" />} title="A quadra está pronta" description="Escolha dois times acima e registre o placar do primeiro confronto." /></div>
         ) : (
           <ol className="mt-2 space-y-2">
             {confrontations.map((match, index) => (
@@ -167,7 +197,11 @@ export function NormalMatchRecorder({
                 </span>
                 <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white">
                   <strong><TeamBadge name={labels.get(match.winnerTeamId) ?? "Time anterior"} size={22} /></strong>
-                  <span className="text-white/45">venceu o</span>
+                  {match.winnerScore != null && match.loserScore != null ? (
+                    <span className="font-mono text-xs font-bold text-emerald-300">{match.winnerScore}×{match.loserScore}</span>
+                  ) : (
+                    <span className="text-white/45">venceu o</span>
+                  )}
                   <TeamBadge name={labels.get(match.loserTeamId) ?? "time anterior"} size={22} className="text-white/80" />
                 </p>
                 {isOrganizer && (

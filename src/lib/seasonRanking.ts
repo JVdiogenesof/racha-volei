@@ -192,7 +192,7 @@ export async function getSeasonRanking(
     getPresentProfileIdsByEvent(supabase, eventIds),
     supabase
       .from("match_wins")
-      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids, winner_score, loser_score")
       .in("event_id", eventIds),
     supabase
       .from("tournament_matches")
@@ -234,6 +234,15 @@ export async function getSeasonRanking(
       });
     }
   }
+  // Confronto normal (sem tabela de torneio) guarda o placar direto em
+  // match_wins -- já sabe quem é vencedor e perdedor, então não precisa de
+  // max/min como a tabela de torneio.
+  function normalMatchScore(winnerScore: number | null, loserScore: number | null) {
+    if (winnerScore == null || loserScore == null) return undefined;
+    const total = winnerScore + loserScore;
+    if (total <= 0) return undefined;
+    return { margin: (winnerScore - loserScore) / total, winnerPoints: winnerScore, loserPoints: loserScore };
+  }
 
   const records = new Map<string, Map<string, EventPlayerRecord>>();
   for (const [eventId, presentProfiles] of presentByEvent) {
@@ -245,7 +254,7 @@ export async function getSeasonRanking(
     if (!match.loser_team_id) continue;
     const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
     const losers = match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? [];
-    const score = match.match_id ? scoreByMatchId.get(match.match_id) : undefined;
+    const score = match.match_id ? scoreByMatchId.get(match.match_id) : normalMatchScore(match.winner_score, match.loser_score);
     const cappedMargin = score ? Math.min(MARGIN_CAP, score.margin) : null;
     for (const profileId of winners) {
       const record = recordFor(records, match.event_id, profileId);

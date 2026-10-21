@@ -124,7 +124,7 @@ export async function getPersonalEvolution(
     getPresentProfileIdsByEvent(supabase, finishedEventIds),
     supabase
       .from("match_wins")
-      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+      .select("event_id, match_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids, winner_score, loser_score")
       .in("event_id", eventIds.length ? eventIds : [IMPOSSIBLE_ID]),
     supabase
       .from("tournament_matches")
@@ -183,9 +183,14 @@ export async function getPersonalEvolution(
     involvedEventIds.add(match.event_id);
     const result = resultsByEvent.get(match.event_id) ?? EMPTY_RESULT();
     if (playerWon) result.wins += 1;
-    // Saldo em pontos conta toda partida com placar (pré-torneio e mini torneio),
-    // igual ao Índice -- diferente do aproveitamento, que só olha confrontos normais.
-    const score = match.match_id ? scoreByMatchId.get(match.match_id) : undefined;
+    // Saldo em pontos conta toda partida com placar (pré-torneio, mini torneio
+    // e confronto normal que já tenha placar lançado), igual ao Índice --
+    // diferente do aproveitamento, que só olha confrontos normais.
+    const score = match.match_id
+      ? scoreByMatchId.get(match.match_id)
+      : match.winner_score != null && match.loser_score != null
+        ? { high: match.winner_score, low: match.loser_score }
+        : undefined;
     if (score) {
       result.pointsFor += playerWon ? score.high : score.low;
       result.pointsAgainst += playerWon ? score.low : score.high;

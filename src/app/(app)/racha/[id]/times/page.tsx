@@ -99,7 +99,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   let finalMatch: MatchLite | null = null;
   let thirdPlaceMatch: MatchLite | null = null;
   let standings: ReturnType<typeof computeStandings> = [];
-  let normalConfrontations: { id: string; winnerTeamId: string; loserTeamId: string }[] = [];
+  let normalConfrontations: { id: string; winnerTeamId: string; loserTeamId: string; winnerScore: number | null; loserScore: number | null }[] = [];
 
   if (generation) {
     const { data: teamRows } = await supabase
@@ -121,7 +121,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       getRatingWeights(supabase),
       supabase
         .from("match_wins")
-        .select("id, team_id, loser_team_id, recorded_at")
+        .select("id, team_id, loser_team_id, recorded_at, winner_score, loser_score")
         .eq("event_id", id)
         .order("recorded_at", { ascending: false }),
     ]);
@@ -136,7 +136,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
     if (!isTournament) {
       normalConfrontations = (winRows ?? [])
         .filter((win): win is typeof win & { loser_team_id: string } => Boolean(win.loser_team_id))
-        .map((win) => ({ id: win.id, winnerTeamId: win.team_id, loserTeamId: win.loser_team_id }));
+        .map((win) => ({ id: win.id, winnerTeamId: win.team_id, loserTeamId: win.loser_team_id, winnerScore: win.winner_score, loserScore: win.loser_score }));
     }
 
     teams = (teamRows ?? []).map((t) => ({

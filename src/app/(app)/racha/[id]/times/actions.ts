@@ -481,15 +481,20 @@ export async function recordNormalMatch(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const teamAId = String(formData.get("teamAId"));
   const teamBId = String(formData.get("teamBId"));
-  const winnerTeamId = String(formData.get("winnerTeamId"));
+  const scoreA = Number(formData.get("scoreA"));
+  const scoreB = Number(formData.get("scoreB"));
 
-  if (!eventId || !teamAId || !teamBId || !winnerTeamId) {
-    throw new Error("Escolha os dois times e depois informe o vencedor.");
+  if (!eventId || !teamAId || !teamBId) {
+    throw new Error("Escolha os dois times do confronto.");
   }
   if (teamAId === teamBId) throw new Error("Escolha dois times diferentes.");
-  if (winnerTeamId !== teamAId && winnerTeamId !== teamBId) {
-    throw new Error("O vencedor precisa ser um dos times do confronto.");
+  if (!Number.isFinite(scoreA) || !Number.isFinite(scoreB) || scoreA < 0 || scoreB < 0) {
+    throw new Error("Placar inválido.");
   }
+  if (scoreA === scoreB) {
+    throw new Error("Vôlei não empata — os placares não podem ser iguais.");
+  }
+  const winnerTeamId = scoreA > scoreB ? teamAId : teamBId;
 
   const [{ data: event }, { data: generation }] = await Promise.all([
     supabase.from("events").select("is_pre_torneio, is_mini_torneio").eq("id", eventId).maybeSingle(),
@@ -531,6 +536,8 @@ export async function recordNormalMatch(formData: FormData) {
     throw new Error("Os dois times precisam ter jogadores antes do confronto.");
   }
 
+  const winnerScore = Math.max(scoreA, scoreB);
+  const loserScore = Math.min(scoreA, scoreB);
   const { error } = await supabase.from("match_wins").insert({
     event_id: eventId,
     team_id: winnerTeamId,
@@ -538,6 +545,8 @@ export async function recordNormalMatch(formData: FormData) {
     winning_profile_ids: winningProfileIds,
     losing_profile_ids: losingProfileIds,
     recorded_by: organizer.id,
+    winner_score: winnerScore,
+    loser_score: loserScore,
   });
 
   if (error) throw new Error(error.message);
