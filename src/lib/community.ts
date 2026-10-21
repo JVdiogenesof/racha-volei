@@ -16,7 +16,11 @@ export function parseCommunities(value?: string[] | null): Community[] {
 
 export async function getActiveCommunity(profile?: { communities?: string[] | null; is_organizer?: boolean }): Promise<Community> {
   const requested = (await cookies()).get(COMMUNITY_COOKIE)?.value;
-  const available = profile?.is_organizer ? (["court", "sand"] as Community[]) : parseCommunities(profile?.communities);
+  // Organizador via as duas comunidades sempre, mesmo sem usar areia -- com o
+  // racha de areia ainda sem nenhum evento, isso só deixava a aba acesa à toa
+  // pra quem nunca entra lá. Agora segue a mesma regra de todo mundo: só vê
+  // o que está no próprio cadastro (ajustável em Admin > Jogadores).
+  const available = parseCommunities(profile?.communities);
   return (requested === "court" || requested === "sand") && available.includes(requested)
     ? requested
     : available[0];

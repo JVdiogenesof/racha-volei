@@ -16,7 +16,7 @@ type NavProfile = {
 
 export async function NavBar({ profile, activeCommunity, chromeData }: { profile: NavProfile; activeCommunity: Community; chromeData: Promise<AppChromeData> }) {
   const { newAvisosCount, upcomingEvents, attendanceByEvent } = await chromeData;
-  const availableCommunities = profile.is_organizer ? parseCommunities(["court", "sand"]) : parseCommunities(profile.communities);
+  const availableCommunities = parseCommunities(profile.communities);
 
   let pendingConfirmCount = 0;
   let nextEvent: HeaderEventSummary | null = null;

@@ -8,7 +8,7 @@ import { COMMUNITY_COOKIE, parseCommunities, type Community } from "@/lib/commun
 export async function switchCommunity(formData: FormData) {
   const profile = await requireProfile();
   const community = String(formData.get("community")) as Community;
-  const available = profile.is_organizer ? ["court", "sand"] : parseCommunities(profile.communities);
+  const available = parseCommunities(profile.communities);
   if (!available.includes(community)) throw new Error("Você ainda não tem acesso a esse racha.");
 
   const cookieStore = await cookies();
