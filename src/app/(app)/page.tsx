@@ -110,15 +110,19 @@ export default async function HomePage() {
     | null;
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
+  // Mostra o segundo racha marcado mesmo depois que as inscrições dele
+  // abrirem -- antes sumia da tela inicial assim que abria (a contagem
+  // regressiva se auto-desligava e o filtro escondia o card junto), dando a
+  // impressão de que o racha tinha sumido, quando só dava pra se inscrever
+  // normalmente pela aba Rachas.
   const secondaryScheduledCandidates = (upcomingRachas ?? [])
     .slice(1)
-    .filter(
-      (event) =>
-        event.registration_opens_at &&
-        !isRegistrationOpen(event.registration_opens_at, event.official_list_open),
-    );
+    .filter((event) => event.registration_opens_at);
   const secondaryScheduledRacha =
     secondaryScheduledCandidates.find((event) => event.is_pre_torneio) ?? secondaryScheduledCandidates[0] ?? null;
+  const secondaryRegistrationOpen = secondaryScheduledRacha
+    ? isRegistrationOpen(secondaryScheduledRacha.registration_opens_at, secondaryScheduledRacha.official_list_open)
+    : false;
 
   type RecentChampion = { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] };
   const loadChampion = async (): Promise<RecentChampion | null> => {
@@ -461,43 +465,59 @@ export default async function HomePage() {
       </section>
 
       {secondaryScheduledRacha?.registration_opens_at && (
-        <section className="overflow-hidden rounded-2xl border border-amber-300/25 bg-gradient-to-br from-amber-400/[0.09] to-transparent">
+        <section
+          className={`overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent ${
+            secondaryRegistrationOpen ? "border-emerald-300/25 from-emerald-400/[0.09]" : "border-amber-300/25 from-amber-400/[0.09]"
+          }`}
+        >
           <div className="flex items-center gap-3 p-3">
             <div className="shrink-0 text-center">
-              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-amber-200/70">
+              <p className={`text-[8px] font-black uppercase tracking-[0.14em] ${secondaryRegistrationOpen ? "text-emerald-200/70" : "text-amber-200/70"}`}>
                 {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")}
               </p>
               <p className="-mt-0.5 text-2xl font-black leading-none text-white">
                 {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit" })}
               </p>
-              <p className="text-[8px] font-black uppercase tracking-[0.14em] text-amber-200/70">
+              <p className={`text-[8px] font-black uppercase tracking-[0.14em] ${secondaryRegistrationOpen ? "text-emerald-200/70" : "text-amber-200/70"}`}>
                 {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}
               </p>
             </div>
             <span className="h-10 w-px bg-white/10" />
             <div className="min-w-0 flex-1">
               <h2 className="truncate text-sm font-bold text-white">
-                {secondaryScheduledRacha.is_pre_torneio
-                  ? "Pré-torneio agendado"
-                  : secondaryScheduledRacha.is_mini_torneio
-                    ? "Mini torneio agendado"
-                    : "Próximo racha agendado"}
+                {secondaryRegistrationOpen
+                  ? "Inscrições abertas"
+                  : secondaryScheduledRacha.is_pre_torneio
+                    ? "Pré-torneio agendado"
+                    : secondaryScheduledRacha.is_mini_torneio
+                      ? "Mini torneio agendado"
+                      : "Próximo racha agendado"}
               </h2>
               {secondaryScheduledRacha.time && (
                 <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/55">
-                  <Clock className="h-3 w-3 text-amber-200/80" strokeWidth={2.25} />
+                  <Clock className={`h-3 w-3 ${secondaryRegistrationOpen ? "text-emerald-200/80" : "text-amber-200/80"}`} strokeWidth={2.25} />
                   {secondaryScheduledRacha.time.slice(0, 5)}
                 </p>
               )}
             </div>
-            <Link href={`/racha/${secondaryScheduledRacha.id}`} aria-label="Ver racha agendado" className="inline-flex min-h-9 shrink-0 items-center gap-0.5 rounded-xl border border-white/12 px-2.5 text-xs font-semibold text-white/75 hover:bg-white/10">
-              Ver
+            <Link
+              href={secondaryRegistrationOpen ? `/racha/${secondaryScheduledRacha.id}/confirmar` : `/racha/${secondaryScheduledRacha.id}`}
+              aria-label={secondaryRegistrationOpen ? "Entrar na lista deste racha" : "Ver racha agendado"}
+              className={`inline-flex min-h-9 shrink-0 items-center gap-0.5 rounded-xl px-2.5 text-xs font-semibold ${
+                secondaryRegistrationOpen
+                  ? "bg-emerald-500 text-white hover:bg-emerald-400"
+                  : "border border-white/12 text-white/75 hover:bg-white/10"
+              }`}
+            >
+              {secondaryRegistrationOpen ? "Entrar na lista" : "Ver"}
               <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
             </Link>
           </div>
-          <div className="px-3 pb-3">
-            <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
-          </div>
+          {!secondaryRegistrationOpen && (
+            <div className="px-3 pb-3">
+              <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
+            </div>
+          )}
         </section>
       )}
 
