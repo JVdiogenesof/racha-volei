@@ -31,6 +31,7 @@ import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileEventPayments } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
+import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -108,7 +109,7 @@ export default async function ConfirmarPresencaPage({
   if (event.community !== selectedCommunity) notFound();
 
   const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }] = await Promise.all([
-    supabase.from("payments").select("paid, payment_source").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+    supabase.from("payments").select("paid, payment_source, paid_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
     profile.is_organizer
       ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
       : Promise.resolve({ data: null }),
@@ -125,6 +126,18 @@ export default async function ConfirmarPresencaPage({
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
   ]);
+
+  // Dispara o banner de "pagamento confirmado" só se o Pix foi concluído há
+  // pouco -- cobre tanto quem vê a confirmação acontecer na hora (polling do
+  // PixReservationButton) quanto quem paga por fora e só volta depois.
+  // Passado esse tempo, a mensagem permanente "Você está confirmado(a)" dá
+  // conta do recado sem precisar do banner temporário.
+  const RECENT_PAYMENT_WINDOW_MS = 3 * 60 * 1000;
+  const recentlyPaidAt =
+    myPayment?.paid && myPayment.payment_source === "pix" && myPayment.paid_at &&
+    new Date().getTime() - new Date(myPayment.paid_at).getTime() < RECENT_PAYMENT_WINDOW_MS
+      ? myPayment.paid_at
+      : null;
 
   const eventFinished = event.status === "finished";
   const eventCancelled = event.status === "cancelled";
@@ -260,6 +273,7 @@ export default async function ConfirmarPresencaPage({
 
   return (
     <div className={`space-y-4 ${profile.is_organizer ? "pb-40" : ""}`}>
+      <PaymentConfirmedBanner dedupeKey={recentlyPaidAt} />
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Link href={`/racha/${id}`} className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300 hover:text-purple-200">← Racha · {dateLabel}</Link>
