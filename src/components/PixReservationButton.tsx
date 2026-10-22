@@ -146,6 +146,9 @@ export function PixReservationButton({
           </a>
         </div>
         <p className="mt-3 text-xs text-white/55">Após pagar, sua confirmação aparece automaticamente.</p>
+        <p className="mt-2 text-[11px] leading-relaxed text-amber-200/80">
+          Importante: pague colando esse código (ou pelo botão acima), não mandando um Pix manual pra uma chave salva -- só assim o sistema confirma sozinho.
+        </p>
       </section>
     );
   }

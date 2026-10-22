@@ -107,10 +107,22 @@ export default async function ConfirmarPresencaPage({
   if (!event) notFound();
   if (event.community !== selectedCommunity) notFound();
 
-  const [{ data: myPayment }, { data: refundRequests }] = await Promise.all([
+  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }] = await Promise.all([
     supabase.from("payments").select("paid, payment_source").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
     profile.is_organizer
       ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
+      : Promise.resolve({ data: null }),
+    // Pix que venceu sem confirmar sozinho -- às vezes a pessoa pagou mesmo
+    // assim (direto na chave fixa, sem o código copia e cola daquela cobrança
+    // específica), e só avisa a organização por fora do app. Mostrar aqui
+    // evita depender desse aviso chegar.
+    profile.is_organizer
+      ? supabase
+          .from("event_payment_intents")
+          .select("id, amount, profile_id, created_at, profiles(full_name, avatar_url)")
+          .eq("event_id", id)
+          .eq("status", "expired")
+          .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
   ]);
 
@@ -125,6 +137,20 @@ export default async function ConfirmarPresencaPage({
   const isBeforePixCancellationDeadline = new Date() < pixCancellationDeadline;
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
+  const confirmedProfileIds = new Set(confirmados.map((a) => a.profile_id));
+  // Um por pessoa (a tentativa mais recente, já que a consulta veio ordenada
+  // por created_at desc) -- e só quem ainda não foi confirmado por outro
+  // caminho, senão ficaria mostrando gente já resolvida.
+  const pendingExpiredPix = (() => {
+    const seen = new Set<string>();
+    const result: NonNullable<typeof expiredPixAttempts> = [];
+    for (const attempt of expiredPixAttempts ?? []) {
+      if (seen.has(attempt.profile_id) || confirmedProfileIds.has(attempt.profile_id)) continue;
+      seen.add(attempt.profile_id);
+      result.push(attempt);
+    }
+    return result;
+  })();
   const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
   const regularConfirmedCount = confirmados.length - newcomerConfirmedCount;
   const eventCapacity = event.max_players ?? event.num_teams * event.team_size;
@@ -471,6 +497,36 @@ export default async function ConfirmarPresencaPage({
                   <button className="inline-flex min-h-10 items-center rounded-lg bg-amber-300 px-3 text-sm font-bold text-amber-950 hover:bg-amber-200">Registrar reembolso enviado</button>
                 </ActionForm>
               </div>;
+            })}
+          </div>
+        </section>
+      )}
+
+      {profile.is_organizer && pendingExpiredPix.length > 0 && (
+        <section className="rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4">
+          <h2 className="text-sm font-black text-amber-100">Pix vencidos sem confirmar</h2>
+          <p className="mt-1 text-xs leading-relaxed text-amber-50/70">
+            Essas pessoas geraram o Pix mas a cobrança venceu sem o pagamento ser reconhecido -- geralmente porque pagaram direto na chave Pix fixa, sem usar o código daquela cobrança. Confira seu extrato antes de confirmar.
+          </p>
+          <div className="mt-3 space-y-2">
+            {pendingExpiredPix.map((attempt) => {
+              const person = attempt.profiles as unknown as { full_name: string; avatar_url: string | null } | null;
+              return (
+                <div key={attempt.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-black/10 px-3 py-2.5">
+                  <Avatar src={person?.avatar_url ?? null} name={person?.full_name ?? "?"} size="sm" />
+                  <p className="min-w-0 flex-1 text-sm text-white">
+                    <strong>{person?.full_name ?? "Jogador"}</strong> · R$ {Number(attempt.amount).toFixed(2)}
+                  </p>
+                  <ActionForm action={promoteToConfirmed} successMessage={`${person?.full_name ?? "Jogador"} confirmado!`}>
+                    <input type="hidden" name="eventId" value={id} />
+                    <input type="hidden" name="profileId" value={attempt.profile_id} />
+                    <button className="inline-flex min-h-10 items-center gap-1 rounded-lg bg-brand-purple px-3 text-sm font-bold text-white hover:bg-brand-purple-dark">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2} />
+                      Já recebi, confirmar
+                    </button>
+                  </ActionForm>
+                </div>
+              );
             })}
           </div>
         </section>
