@@ -33,9 +33,16 @@ export function PixReservationButton({
 }) {
   const [isPending, startTransition] = useTransition();
   const [pix, setPix] = useState<PixData | null>(null);
-  // Se o provedor falhar, a pessoa não fica sem saída: mostramos a chave Pix
-  // manual do grupo e a organização confirma o nome na lista.
+  // Se o provedor falhar (Mercado Pago fora do ar, por exemplo), a pessoa não
+  // fica sem saída: mostramos a chave Pix manual do grupo e a organização
+  // confirma o nome na lista -- faz sentido pagar porque a vaga já foi
+  // reservada no banco antes de tentar falar com o provedor.
   const [failure, setFailure] = useState<string | null>(null);
+  // Já diferente: vaga/cota cheia, inscrições fechadas etc. -- a reserva nem
+  // chegou a existir, então não tem o que pagar. Mostrar a chave aqui seria
+  // convidar a pessoa a mandar um Pix que nunca vira vaga nenhuma (foi
+  // exatamente o que aconteceu com o Ryan no racha de domingo).
+  const [blocked, setBlocked] = useState<string | null>(null);
   const [now, setNow] = useState(0);
   const { showToast } = useToast();
   const router = useRouter();
@@ -74,6 +81,8 @@ export function PixReservationButton({
       return;
     }
     startTransition(async () => {
+      setFailure(null);
+      setBlocked(null);
       try {
         if (!hasInterest && !guaranteedSpot) {
           const formData = new FormData();
@@ -86,10 +95,18 @@ export function PixReservationButton({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ eventId }),
         });
-        const payload = (await response.json()) as PixData & { error?: string };
-        if (!response.ok || payload.error) throw new Error(payload.error || "Não foi possível gerar o Pix.");
+        const payload = (await response.json()) as PixData & { error?: string; blocked?: boolean };
+        if (!response.ok || payload.error) {
+          if (payload.blocked) {
+            const message = payload.error || "Não foi possível reservar sua vaga.";
+            showToast(message);
+            setBlocked(message);
+            router.refresh();
+            return;
+          }
+          throw new Error(payload.error || "Não foi possível gerar o Pix.");
+        }
         setNow(Date.now());
-        setFailure(null);
         setPix(payload);
         router.refresh();
       } catch (error) {
@@ -149,6 +166,23 @@ export function PixReservationButton({
         <p className="mt-2 text-[11px] leading-relaxed text-amber-200/80">
           Importante: pague colando esse código (ou pelo botão acima), não mandando um Pix manual pra uma chave salva -- só assim o sistema confirma sozinho.
         </p>
+      </section>
+    );
+  }
+
+  if (blocked) {
+    return (
+      <section className="w-full rounded-2xl border border-orange-400/25 bg-orange-500/10 p-4 text-center">
+        <p className="text-sm font-bold text-orange-100">Não deu pra reservar sua vaga.</p>
+        <p className="mt-1 text-xs leading-relaxed text-orange-50/80">{blocked}</p>
+        <p className="mt-2 text-[11px] text-orange-50/60">Não pague por fora pra tentar entrar -- sem vaga reservada, o pagamento não é confirmado e não garante lugar nenhum. Se abrir vaga, tente de novo aqui.</p>
+        <button
+          type="button"
+          onClick={() => setBlocked(null)}
+          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+        >
+          Entendi
+        </button>
       </section>
     );
   }

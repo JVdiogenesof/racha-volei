@@ -18,9 +18,13 @@ export async function POST(request: Request) {
     const { data: reservation, error: reservationError } = await supabase.rpc("begin_event_payment_reservation", {
       p_event_id: body.eventId,
     });
-    if (reservationError) throw new Error(reservationError.message);
+    // Erro aqui (vaga/vaga de levantador/novato cheia, inscrições fechadas
+    // etc.) significa que a reserva nem chegou a existir -- pagar não
+    // resolveria nada, então marca como "blocked" pra tela não oferecer a
+    // chave Pix manual como se fosse só uma falha técnica (ver PixReservationButton).
+    if (reservationError) return Response.json({ error: reservationError.message, blocked: true }, { status: 409 });
     const intent = reservation?.[0];
-    if (!intent) throw new Error("Não foi possível reservar sua vaga.");
+    if (!intent) return Response.json({ error: "Não foi possível reservar sua vaga.", blocked: true }, { status: 409 });
 
     const { data: storedIntent, error: intentError } = await supabase
       .from("event_payment_intents")
