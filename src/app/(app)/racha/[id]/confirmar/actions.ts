@@ -93,6 +93,34 @@ export async function setAttendance(formData: FormData) {
   revalidatePath(`/racha/${eventId}/times`);
 }
 
+/**
+ * Quem é isento de pagamento (ver payment_exempt_profiles) entra direto na
+ * lista de confirmados, sem gerar Pix -- o gatilho do banco registra o
+ * pagamento como isento. Respeita as mesmas vagas de qualquer confirmação.
+ */
+export async function joinAsExempt(formData: FormData) {
+  const eventId = String(formData.get("eventId"));
+  const profile = await requireEventParticipant(eventId);
+  const supabase = await createClient();
+
+  const { data: exemption } = await supabase
+    .from("payment_exempt_profiles")
+    .select("profile_id")
+    .eq("profile_id", profile.id)
+    .maybeSingle();
+  if (!exemption) throw new Error("Você não está na lista de isentos de pagamento.");
+
+  const { error } = await supabase.rpc("confirm_event_participant", {
+    p_event_id: eventId,
+    p_profile_id: profile.id,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/racha/${eventId}/confirmar`);
+  revalidatePath(`/racha/${eventId}`);
+  revalidatePath("/");
+}
+
 export async function promoteToConfirmed(formData: FormData) {
   await requireOrganizer();
   const supabase = await createClient();

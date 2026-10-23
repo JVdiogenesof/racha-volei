@@ -92,7 +92,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myReservedRow }, { data: myPendingOffer }] = await Promise.all([
+  const [{ data: myReservedRow }, { data: myPendingOffer }, { data: myExemption }] = await Promise.all([
     profile.status === "approved"
       ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -103,7 +103,9 @@ export default async function HomePage() {
       .eq("status", "pending")
       .gt("expires_at", new Date().toISOString())
       .maybeSingle(),
+    supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
   ]);
+  const isPaymentExempt = Boolean(myExemption);
   const amGuaranteed = Boolean(myReservedRow);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
@@ -432,6 +434,14 @@ export default async function HomePage() {
                     >
                       <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
                       Ver interesse
+                    </Link>
+                  ) : isPaymentExempt ? (
+                    <Link
+                      href={`/racha/${proximoRacha.id}/confirmar`}
+                      className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
+                    >
+                      <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                      Entrar na lista
                     </Link>
                   ) : (
                     <InterestButton

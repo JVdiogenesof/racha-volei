@@ -23,7 +23,7 @@ import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtB
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { PIX_KEY } from "@/lib/payment";
-import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, joinAsExempt, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
@@ -109,7 +109,7 @@ export default async function ConfirmarPresencaPage({
   if (!event) notFound();
   if (event.community !== selectedCommunity) notFound();
 
-  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }] = await Promise.all([
+  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }, { data: myExemption }] = await Promise.all([
     supabase.from("payments").select("paid, payment_source, paid_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
     profile.is_organizer
       ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
@@ -126,7 +126,9 @@ export default async function ConfirmarPresencaPage({
           .eq("status", "expired")
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
+    supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
   ]);
+  const isPaymentExempt = Boolean(myExemption);
 
   // Dispara o banner de "pagamento confirmado" só se o Pix foi concluído há
   // pouco -- cobre tanto quem vê a confirmação acontecer na hora (polling do
@@ -369,6 +371,9 @@ export default async function ConfirmarPresencaPage({
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-green-500/30 bg-green-500/15 px-4 py-3">
           <div>
             <p className="text-sm text-green-300">🎉 Você está confirmado(a) pra esse racha!</p>
+            {myPayment?.paid && myPayment.payment_source === "exempt" && (
+              <p className="mt-1 text-xs text-emerald-100/75">Você é isento de pagamento.</p>
+            )}
             {!myPayment?.paid && (
               <p className="mt-1 text-xs text-emerald-100/75">
                 {myLockedSpot ? "Sua vaga foi garantida pela organização. " : ""}Falta apenas concluir o pagamento.
@@ -455,7 +460,15 @@ export default async function ConfirmarPresencaPage({
             </p>
           )}
         <div className="flex gap-3">
-          {event.pix_payment_enabled && event.price_per_player ? (
+          {isPaymentExempt ? (
+            <ActionForm action={joinAsExempt} successMessage="Você entrou na lista de confirmados (isento de pagamento).">
+              <input type="hidden" name="eventId" value={id} />
+              <button className="inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-500 px-4 font-bold text-white hover:bg-emerald-400">
+                <Check className="h-4 w-4" strokeWidth={2.5} />
+                Entrar na lista (isento)
+              </button>
+            </ActionForm>
+          ) : event.pix_payment_enabled && event.price_per_player ? (
             <PixReservationButton
               eventId={id}
               hasInterest={myStatus === "interested"}
@@ -741,7 +754,7 @@ export default async function ConfirmarPresencaPage({
                         {profile.is_organizer && (
                           <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold tracking-wide ${hasPaid ? "border-green-400/25 bg-green-500/10 text-green-300" : hasGuaranteedSpot ? "border-amber-300/25 bg-amber-400/10 text-amber-200" : "border-white/10 bg-white/5 text-white/55"}`}>
                             {hasPaid
-                              ? paymentSource === "balance" ? "PAGO · SALDO" : "PAGO"
+                              ? paymentSource === "balance" ? "PAGO · SALDO" : paymentSource === "exempt" ? "ISENTO" : "PAGO"
                               : hasGuaranteedSpot ? "VAGA GARANTIDA · FALTA PAGAR" : "CONFIRMADO · PAGAMENTO PENDENTE"}
                           </span>
                         )}
