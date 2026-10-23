@@ -32,6 +32,7 @@ import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileEventPayments } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
 import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
+import { ForfeitPixSpotButton } from "@/components/ForfeitPixSpotButton";
 
 export default async function ConfirmarPresencaPage({
   params,
@@ -401,6 +402,7 @@ export default async function ConfirmarPresencaPage({
                       <input type="hidden" name="choice" value="refund" />
                       <button className="inline-flex min-h-10 items-center rounded-lg border border-white/15 bg-white/5 px-3 text-sm font-semibold text-white/80 hover:bg-white/10">Pedir reembolso</button>
                     </ActionForm>
+                    <ForfeitPixSpotButton eventId={id} action={cancelPixAttendance} />
                   </div>
                 </>
               ) : (

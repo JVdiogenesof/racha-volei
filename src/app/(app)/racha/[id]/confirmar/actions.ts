@@ -7,6 +7,23 @@ import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 import { sendPushToProfiles } from "@/lib/push";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 
+/**
+ * Vaga de confirmado abriu: oferece pra próxima pessoa da fila de
+ * interessados (1h pra pagar, ver advance_spot_offer no banco) e avisa ela
+ * por notificação -- sem o aviso, a oferta podia vencer sem ninguém ver.
+ */
+async function offerFreedSpot(supabase: Awaited<ReturnType<typeof createClient>>, eventId: string) {
+  const { data: offeredProfileId } = await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+  if (!offeredProfileId) return;
+  const { data: event } = await supabase.from("events").select("date").eq("id", eventId).maybeSingle();
+  const dateLabel = event ? new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR") : "";
+  await sendPushToProfiles(supabase, [offeredProfileId as string], {
+    title: "Abriu uma vaga pra você!",
+    body: `Alguém desistiu do racha de ${dateLabel}. Você tem 1h pra pagar e garantir a vaga.`,
+    url: `/racha/${eventId}/confirmar`,
+  });
+}
+
 export async function setAttendance(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const profile = await requireEventParticipant(eventId);
@@ -68,7 +85,7 @@ export async function setAttendance(formData: FormData) {
   // Vaga de confirmado abriu de verdade: oferece pra próxima pessoa
   // interessada, com 1h pra aceitar (ver advance_spot_offer no banco).
   if (wasConfirmedCancel) {
-    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+    await offerFreedSpot(supabase, eventId);
   }
 
   revalidatePath(`/racha/${eventId}/confirmar`);
@@ -191,7 +208,7 @@ export async function demoteToInterested(formData: FormData) {
   if (error) throw new Error(error.message);
   await removeFromCurrentTeam(supabase, eventId, profileId);
   if (wasConfirmed) {
-    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+    await offerFreedSpot(supabase, eventId);
   }
 
   revalidatePath(`/racha/${eventId}/confirmar`);
@@ -285,7 +302,7 @@ export async function setPaymentStatus(formData: FormData) {
 export async function cancelPixAttendance(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const choice = String(formData.get("choice"));
-  if (choice !== "balance" && choice !== "refund") throw new Error("Escolha de desistência inválida.");
+  if (choice !== "balance" && choice !== "refund" && choice !== "forfeit") throw new Error("Escolha de desistência inválida.");
 
   const profile = await requireEventParticipant(eventId);
   const supabase = await createClient();
@@ -296,6 +313,7 @@ export async function cancelPixAttendance(formData: FormData) {
   if (error) throw new Error(error.message);
 
   await removeFromCurrentTeam(supabase, eventId, profile.id);
+  await offerFreedSpot(supabase, eventId);
   const outcome = data?.[0]?.outcome;
   if (outcome === "balance") {
     revalidatePath("/admin/financas");
@@ -334,6 +352,7 @@ export async function organizerResolvePixAttendance(formData: FormData) {
   if (error) throw new Error(error.message);
 
   await removeFromCurrentTeam(supabase, eventId, profileId);
+  await offerFreedSpot(supabase, eventId);
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath(`/racha/${eventId}/times`);
@@ -448,7 +467,7 @@ export async function removeAttendance(formData: FormData) {
   if (error) throw new Error(error.message);
   await removeFromCurrentTeam(supabase, eventId, profileId);
   if (removed?.status === "confirmed") {
-    await supabase.rpc("advance_spot_offer", { p_event_id: eventId });
+    await offerFreedSpot(supabase, eventId);
   }
 
   revalidatePath(`/racha/${eventId}/confirmar`);
