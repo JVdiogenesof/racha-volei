@@ -55,7 +55,7 @@ export default async function ConfirmarPresencaPage({
         .maybeSingle(),
       supabase
         .from("attendance")
-        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, is_setter)")
+        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, is_setter, status)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
       supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -248,10 +248,10 @@ export default async function ConfirmarPresencaPage({
     `🏐 Lista de presença do racha de ${dateLabel} — confirmados (${confirmados.length}):`,
     "",
     ...confirmados.map((a, i) => {
-      const p = a.profiles as unknown as { full_name: string; is_setter: boolean } | null;
+      const p = a.profiles as unknown as { full_name: string; is_setter: boolean; status: string } | null;
       const name = p?.full_name ?? "?";
       const isSetter = isSetterForEvent(a);
-      const labels = [isSetter ? "🏐 levantador(a)" : null, a.uses_newcomer_spot ? "*CONVIDADO*" : null].filter(Boolean);
+      const labels = [isSetter ? "🏐 levantador(a)" : null, p?.status === "guest" ? "*CONVIDADO*" : null].filter(Boolean);
       return `${i + 1}. ${isSetter ? `*${name}*` : name}${labels.length > 0 ? ` · ${labels.join(" · ")}` : ""}`;
     }),
   ].join("\n");
@@ -727,14 +727,20 @@ export default async function ConfirmarPresencaPage({
           </div>
           <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
             {confirmadosOrdenados.map((a) => {
-              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
+              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean; status: string } | null;
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
               const paymentSource = paymentSourceByProfile.get(a.profile_id);
               const hasGuaranteedSpot = lockedProfileIds.has(a.profile_id);
               const isSetter = isSetterForEvent(a);
               const ratingDetails = ratingDetailsFor(a.profile_id);
-              const hasProvisionalGuestRating = a.uses_newcomer_spot && ratingDetails.provisional;
+              // É convidado de verdade (precisa de avaliação provisória) quem
+              // tem status "guest" -- não quem ocupa a vaga protegida pra
+              // novato. Um convidado que também é levantador ocupa a vaga
+              // protegida de levantador em vez da de novato (uses_newcomer_spot
+              // fica false pra ele), mas continua sendo convidado.
+              const isGuest = p?.status === "guest";
+              const hasProvisionalGuestRating = isGuest && ratingDetails.provisional;
               return (
                 <li
                   key={a.profile_id}
@@ -743,9 +749,9 @@ export default async function ConfirmarPresencaPage({
                   <div className="flex min-w-0 items-start gap-3">
                     <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
                     <div className="min-w-0 flex-1 pt-0.5">
-                      <p className={`truncate text-[15px] text-white ${a.uses_newcomer_spot ? "font-bold" : "font-semibold"}`}>{p?.full_name}</p>
+                      <p className={`truncate text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}</p>
                       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">
-                        {a.uses_newcomer_spot && (
+                        {isGuest && (
                           <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">
                             CONVIDADO
                           </span>
@@ -771,7 +777,7 @@ export default async function ConfirmarPresencaPage({
                       </span>
                     )}
                   </div>
-                  {profile.is_organizer && a.uses_newcomer_spot && (
+                  {profile.is_organizer && isGuest && (
                     <GuestRatingEditor
                       eventId={id}
                       profileId={a.profile_id}
