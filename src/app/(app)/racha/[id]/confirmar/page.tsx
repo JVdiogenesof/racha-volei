@@ -487,7 +487,7 @@ export default async function ConfirmarPresencaPage({
         </div>
       )}
 
-      {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && !event.pix_payment_enabled && myStatus !== "confirmed" && (
+      {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && !event.pix_payment_enabled && myStatus !== "confirmed" && !isFull && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
           <p className="text-sm text-white/70">
             💰 Pagamento de <strong>R$ {Number(event.price_per_player).toFixed(2)}</strong> via Pix:{" "}

@@ -57,7 +57,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at")
         .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
@@ -438,6 +438,7 @@ export default async function HomePage() {
                       eventId={proximoRacha.id}
                       price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
                       isFull={isFull}
+                      pixPaymentEnabled={proximoRacha.pix_payment_enabled}
                       action={setAttendance}
                       className="inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50 disabled:opacity-50"
                     />

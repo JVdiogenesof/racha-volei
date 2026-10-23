@@ -10,6 +10,7 @@ export function InterestButton({
   eventId,
   price,
   isFull,
+  pixPaymentEnabled = false,
   action,
   className,
 }: {
@@ -17,6 +18,8 @@ export function InterestButton({
   price: number | null;
   /** Já tem gente confirmada suficiente pra esse racha (vagas configuradas). */
   isFull?: boolean;
+  /** Racha com Pix automático: o pagamento é gerado na tela da lista, nunca na chave fixa. */
+  pixPaymentEnabled?: boolean;
   action: (formData: FormData) => Promise<void> | void;
   className?: string;
 }) {
@@ -25,21 +28,18 @@ export function InterestButton({
   const { showToast } = useToast();
 
   function handleClick() {
-    const messages: string[] = [];
+    // Lista cheia: não fala em pagamento nenhum. Qualquer Pix agora (na
+    // chave ou não) não vira vaga -- a pessoa só entra na fila.
+    let message: string | null = null;
     if (isFull) {
-      messages.push(
-        "A lista de confirmados já está cheia. Você só será chamado(a) se alguém desistir — mas mesmo assim vai entrar na lista de interessados agora.",
-      );
+      message =
+        "A lista de confirmados já está cheia. Você vai entrar na lista de interessados e só será chamado(a) se alguém desistir.\n\nNão faça nenhum pagamento agora.";
+    } else if (price && pixPaymentEnabled) {
+      message = `Sua vaga NÃO está garantida só por marcar interesse.\n\nNa próxima tela, gere o Pix de R$ ${price.toFixed(2)} pelo app e pague com o código gerado. Não pague direto na chave do grupo, senão o sistema não confirma seu nome.`;
+    } else if (price) {
+      message = `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} via Pix pra entrar na lista de confirmados.\n\nChave Pix: ${PIX_KEY}`;
     }
-    if (price) {
-      messages.push(
-        `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} via Pix pra entrar na lista de confirmados.\n\nChave Pix: ${PIX_KEY}`,
-      );
-    }
-    if (messages.length) {
-      const confirmed = window.confirm(messages.join("\n\n"));
-      if (!confirmed) return;
-    }
+    if (message && !window.confirm(message)) return;
 
     const formData = new FormData();
     formData.set("eventId", eventId);
@@ -49,7 +49,11 @@ export function InterestButton({
       try {
         await action(formData);
         showToast("Interesse registrado!");
-        router.refresh();
+        if (pixPaymentEnabled && price && !isFull) {
+          router.push(`/racha/${eventId}/confirmar`);
+        } else {
+          router.refresh();
+        }
       } catch (err) {
         showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
       }

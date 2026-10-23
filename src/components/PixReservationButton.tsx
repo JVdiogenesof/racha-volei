@@ -4,8 +4,6 @@ import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, Copy, Loader2, QrCode } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
-import { CopyPixButton } from "./CopyPixButton";
-import { PIX_KEY } from "@/lib/payment";
 
 type PixData = {
   qrCode: string;
@@ -33,15 +31,13 @@ export function PixReservationButton({
 }) {
   const [isPending, startTransition] = useTransition();
   const [pix, setPix] = useState<PixData | null>(null);
-  // Se o provedor falhar (Mercado Pago fora do ar, por exemplo), a pessoa não
-  // fica sem saída: mostramos a chave Pix manual do grupo e a organização
-  // confirma o nome na lista -- faz sentido pagar porque a vaga já foi
-  // reservada no banco antes de tentar falar com o provedor.
+  // Falha técnica (Mercado Pago fora do ar, rede): pede pra tentar de novo --
+  // a nova tentativa reaproveita a mesma reserva pendente. Não mostra a chave
+  // fixa: um Pix nela não se liga à reserva, que vence em 5 minutos e libera
+  // a vaga pra outra pessoa enquanto a organização ainda nem viu o pagamento.
   const [failure, setFailure] = useState<string | null>(null);
-  // Já diferente: vaga/cota cheia, inscrições fechadas etc. -- a reserva nem
-  // chegou a existir, então não tem o que pagar. Mostrar a chave aqui seria
-  // convidar a pessoa a mandar um Pix que nunca vira vaga nenhuma (foi
-  // exatamente o que aconteceu com o Ryan no racha de domingo).
+  // Vaga/cota cheia, inscrições fechadas etc.: a reserva nem existe, não há o
+  // que pagar (caso do Ryan no racha de domingo).
   const [blocked, setBlocked] = useState<string | null>(null);
   const [now, setNow] = useState(0);
   const { showToast } = useToast();
@@ -88,7 +84,17 @@ export function PixReservationButton({
           const formData = new FormData();
           formData.set("eventId", eventId);
           formData.set("status", "interested");
-          await action(formData);
+          try {
+            await action(formData);
+          } catch (interestError) {
+            // Inscrições fechadas, racha encerrado/cancelado: nem dá pra
+            // marcar interesse, quanto mais reservar.
+            const message = interestError instanceof Error ? interestError.message : "Não foi possível marcar seu interesse.";
+            showToast(message);
+            setBlocked(message);
+            router.refresh();
+            return;
+          }
         }
         const response = await fetch("/api/payments/mercado-pago/create", {
           method: "POST",
@@ -189,22 +195,20 @@ export function PixReservationButton({
 
   if (failure) {
     return (
-      <section className="w-full rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4">
-        <p className="text-sm font-bold text-amber-100">Não conseguimos gerar o QR Code agora.</p>
+      <section className="w-full rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4 text-center">
+        <p className="text-sm font-bold text-amber-100">Não conseguimos gerar o Pix agora.</p>
         <p className="mt-1 text-xs leading-relaxed text-amber-50/80">
-          Seu interesse está registrado. Pague pela chave Pix abaixo e avise a organização para confirmar seu nome na lista.
+          Seu interesse está registrado, mas a vaga só fica garantida com o pagamento pelo código gerado aqui. Tente de novo em instantes -- não pague por fora.
         </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2.5">
-          <span className="min-w-0 flex-1 break-all text-sm font-semibold text-white">{PIX_KEY}</span>
-          <CopyPixButton pixKey={PIX_KEY} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-sm font-bold text-white hover:bg-emerald-400" />
-        </div>
         <p className="mt-2 text-[11px] text-amber-50/60">Detalhe: {failure}</p>
         <button
           type="button"
-          onClick={() => setFailure(null)}
-          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+          onClick={startPayment}
+          disabled={isPending}
+          className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-60"
         >
-          Tentar gerar o QR Code de novo
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          Tentar gerar o Pix de novo
         </button>
       </section>
     );
