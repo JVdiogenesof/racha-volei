@@ -2,7 +2,7 @@ import { CalendarRange, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
-import { formatPointsDiff, getSeasonRanking, INDEX_MIN_EVENTS, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
+import { formatPointsDiff, getSeasonRanking, INDEX_ATTENDANCE_WEIGHT, INDEX_MIN_EVENTS, INDEX_PERFORMANCE_WEIGHT, INDEX_POINT_BALANCE_WEIGHT, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -61,15 +61,42 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         .flatMap(([profileId, season]) => {
           const profile = profileById.get(profileId);
           if (!profile) return [];
+          const hasScores = season.pointsFor + season.pointsAgainst > 0;
+          // Ordem pensada pro pódio, que mostra só as duas primeiras: V-D e
+          // saldo são justamente o que gerava dúvida ("por que ele passou?").
+          const stats = season.eligible
+            ? [
+                { label: "V-D", value: `${season.totalWins}-${season.totalLosses}` },
+                ...(hasScores
+                  ? [{
+                      label: "saldo",
+                      value: formatPointsDiff(season.pointsDiff),
+                      tone: season.pointsDiff > 0 ? ("good" as const) : season.pointsDiff < 0 ? ("bad" as const) : ("default" as const),
+                    }]
+                  : []),
+                ...(season.winRate !== null ? [{ label: "aprov.", value: `${Math.round(season.winRate)}%` }] : []),
+                { label: "rachas", value: `${season.eventsPlayed}/${ROLLING_INDEX_EVENT_COUNT}` },
+              ]
+            : undefined;
           return [{
             profileId,
             count: season.averageIndex,
             fullName: profile.full_name,
             avatarUrl: profile.avatar_url,
             displayValue: season.eligible ? `${season.averageIndex.toFixed(1)} pts` : "Em classificação",
-            detail: season.eligible
-              ? `${season.eventsPlayed}/${ROLLING_INDEX_EVENT_COUNT} rachas · ${season.totalWins}V · ${season.totalLosses}D${season.pointsFor + season.pointsAgainst > 0 ? ` · saldo ${formatPointsDiff(season.pointsDiff)}` : ""}${season.progressBonus ? ` · +${season.progressBonus.toFixed(1)} evolução` : ""}`
-              : `${season.eventsPlayed}/${INDEX_MIN_EVENTS} rachas para classificação`,
+            detail: season.eligible ? undefined : `${season.eventsPlayed}/${INDEX_MIN_EVENTS} rachas para classificação`,
+            stats,
+            breakdown: season.eligible
+              ? {
+                  parts: [
+                    { label: "Aproveitamento", score: season.performanceScore, weight: INDEX_PERFORMANCE_WEIGHT, points: season.performanceScore * INDEX_PERFORMANCE_WEIGHT },
+                    { label: "Presença", score: season.attendanceScore, weight: INDEX_ATTENDANCE_WEIGHT, points: season.attendanceScore * INDEX_ATTENDANCE_WEIGHT },
+                    { label: "Saldo de pontos", score: season.pointBalanceScore, weight: INDEX_POINT_BALANCE_WEIGHT, points: season.pointBalanceScore * INDEX_POINT_BALANCE_WEIGHT },
+                  ],
+                  bonus: season.progressBonus,
+                  total: season.averageIndex,
+                }
+              : undefined,
             ranked: season.eligible,
             trend: season.trend,
             positionChange: season.positionChange,

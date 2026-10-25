@@ -4,11 +4,12 @@ import { useState } from "react";
 import { CalendarCheck, CheckCircle2, Gauge, Info, Star, Swords, Target, type LucideIcon } from "lucide-react";
 import { Leaderboard, type RankingEntry } from "./Leaderboard";
 import { AnimatedMetric } from "./AnimatedMetric";
+import { ROLLING_INDEX_EVENT_COUNT } from "@/lib/seasonRanking";
 
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
 const CONFIG: Record<RankingId, { label: string; shortLabel: string; unit: string; description: string; icon: LucideIcon }> = {
-  performance: { label: "Índice VPA", shortLabel: "Índice", unit: "pontos", description: "Classificação viva dos últimos 8 rachas: os 4 mais recentes valem cerca de 70% da nota. Aproveitamento é ajustado pela quantidade de partidas, presença pesa 35%, o saldo de pontos das partidas pesa 10% e uma melhora real de forma pode render até 5 pontos. São necessárias 2 participações para entrar na classificação.", icon: Gauge },
+  performance: { label: "Índice VPA", shortLabel: "Índice", unit: "pontos", description: "", icon: Gauge },
   wins: { label: "Mais vitórias", shortLabel: "Vitórias", unit: "vitórias", description: "Total de confrontos vencidos por cada jogador.", icon: Swords },
   mvp: { label: "Jogador Destaque", shortLabel: "Destaque", unit: "vezes", description: "Quantidade de vezes em que a pessoa foi eleita destaque do racha.", icon: Star },
   attendance: { label: "Mais presença", shortLabel: "Presença", unit: "presenças", description: "Participações confirmadas em rachas que já foram encerrados.", icon: CalendarCheck },
@@ -119,10 +120,34 @@ export function RankingTabs({
           <span className="text-white/30">{showInfo ? "fechar" : "ver"}</span>
         </button>
         {showInfo && (
-          <p className="border-t border-white/10 px-3 py-2.5 text-xs leading-relaxed text-white/55">
-            {activeConfig.description}
+          <div className="border-t border-white/10 px-3 py-2.5 text-xs leading-relaxed text-white/55">
+            {active === "performance" ? (
+              <div className="space-y-2">
+                <p>A nota junta três coisas. Toque em qualquer pessoa pra ver a conta dela:</p>
+                <ul className="space-y-1">
+                  <li className="flex gap-2">
+                    <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">55%</span>
+                    <span><strong className="text-white/75">Aproveitamento</strong> — % de vitórias. Com poucos jogos, a nota fica mais perto de 50 até você jogar o suficiente.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">35%</span>
+                    <span><strong className="text-white/75">Presença</strong> — quanto você apareceu nos últimos {ROLLING_INDEX_EVENT_COUNT} rachas.</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">10%</span>
+                    <span><strong className="text-white/75">Saldo de pontos</strong> — se você ganha/perde apertado ou folgado.</span>
+                  </li>
+                </ul>
+                <p className="rounded-lg border border-purple-300/15 bg-purple-400/[0.07] px-2.5 py-2">
+                  <strong className="text-purple-200">Os 4 rachas mais recentes valem 2,5x</strong> os mais antigos. Por isso dá pra ter mais vitórias no total e mesmo assim ficar atrás: o que conta mais é como você está agora, e faltar num racha recente pesa bem mais do que num antigo.
+                </p>
+                <p>Melhorar de forma de verdade ainda rende até 5 pontos de bônus. Precisa de 2 participações pra entrar na classificação.</p>
+              </div>
+            ) : (
+              <p>{activeConfig.description}</p>
+            )}
             {cutoff && <span className="mt-1.5 block font-semibold text-emerald-300/80">As {cutoff.slots} primeiras posições garantem vaga no torneio oficial de abril/2027 (número provisório).</span>}
-          </p>
+          </div>
         )}
       </div>
 

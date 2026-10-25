@@ -40,6 +40,16 @@ export type SeasonPlayerScore = {
   pointsAgainst: number;
   pointsDiff: number;
   eligible: boolean;
+  // As três partes que formam o Índice, cada uma de 0 a 100 -- a tela mostra
+  // quanto cada uma rendeu (nota x peso) pra dar pra entender a posição sem
+  // precisar adivinhar.
+  performanceScore: number;
+  attendanceScore: number;
+  pointBalanceScore: number;
+  /** Aproveitamento bruto ponderado pela recência, antes do ajuste por nº de jogos. */
+  winRate: number | null;
+  /** Partidas contabilizadas na janela (as que entram no ranking de partidas). */
+  matchesPlayed: number;
 };
 
 type EventRow = { id: string; date: string; is_pre_torneio: boolean; is_mini_torneio: boolean; num_teams: number };
@@ -159,6 +169,11 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
       progressBonus,
       averageIndex: roundOne(Math.min(100, baseIndex + progressBonus)),
       eligible: eventsPlayed >= INDEX_MIN_EVENTS,
+      performanceScore: roundOne(adjustedPerformance),
+      attendanceScore: roundOne(attendancePercentage),
+      pointBalanceScore: roundOne(adjustedPointBalance),
+      winRate: weightedMatches ? roundOne(percentage) : null,
+      matchesPlayed: rawMatches,
     });
   }
 

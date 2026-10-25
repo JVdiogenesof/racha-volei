@@ -6,6 +6,12 @@ import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
 
+/** Chip de estatística: quebra linha em vez de ser cortado no meio. */
+export type RankingStat = { label: string; value: string; tone?: "default" | "good" | "bad" };
+
+/** Uma parte do Índice: nota de 0 a 100, peso, e quanto ela rendeu na conta final. */
+export type RankingBreakdownPart = { label: string; score: number; weight: number; points: number };
+
 export type RankingEntry = {
   profileId: string;
   count: number;
@@ -13,6 +19,10 @@ export type RankingEntry = {
   avatarUrl: string | null;
   displayValue?: string;
   detail?: string;
+  /** Substitui o `detail` numa linha só: cada número ganha rótulo e nada fica cortado. */
+  stats?: RankingStat[];
+  /** Composição da nota, mostrada ao tocar na pessoa. */
+  breakdown?: { parts: RankingBreakdownPart[]; bonus: number; total: number };
   /** false mantém a pessoa visível, mas fora das posições e do pódio. */
   ranked?: boolean;
   /** Movimento desde o racha anterior, usado pelo Índice VPA vivo. */
@@ -21,6 +31,68 @@ export type RankingEntry = {
   /** Já garantiu vaga via pré-torneio -- fica "classificado" (verde) mesmo fora do corte pela nota. */
   guaranteed?: boolean;
 };
+
+const STAT_TONE: Record<NonNullable<RankingStat["tone"]>, string> = {
+  default: "border-white/10 bg-white/[0.04] text-white/60",
+  good: "border-emerald-300/20 bg-emerald-400/10 text-emerald-200/90",
+  bad: "border-rose-300/20 bg-rose-400/10 text-rose-200/90",
+};
+
+function StatChips({ stats, className = "" }: { stats: RankingStat[]; className?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-1 ${className}`}>
+      {stats.map((stat) => (
+        <span
+          key={stat.label}
+          className={`inline-flex items-baseline gap-1 rounded-md border px-1.5 py-0.5 text-[10px] leading-tight ${STAT_TONE[stat.tone ?? "default"]}`}
+        >
+          <span className="font-semibold uppercase tracking-wide opacity-60">{stat.label}</span>
+          <span className="font-bold tabular-nums">{stat.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Mostra a conta do Índice: cada parte, quanto ela rendeu, e o total. */
+function BreakdownPanel({ breakdown }: { breakdown: NonNullable<RankingEntry["breakdown"]> }) {
+  return (
+    <div className="mt-2 rounded-lg border border-white/10 bg-black/20 p-2.5">
+      <p className="mb-2 text-[9px] font-black uppercase tracking-wide text-white/35">Como essa nota foi formada</p>
+      <div className="space-y-1.5">
+        {breakdown.parts.map((part) => (
+          <div key={part.label} className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1">
+            <span className="flex min-w-0 items-baseline gap-1.5">
+              <span className="truncate text-[11px] font-medium text-white/70">{part.label}</span>
+              <span className="shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-bold text-white/40">
+                {Math.round(part.weight * 100)}%
+              </span>
+            </span>
+            <span className="shrink-0 text-right text-[11px] font-bold tabular-nums text-white/80">
+              {part.points.toFixed(1)} pts
+            </span>
+            <span className="col-span-2 flex items-center gap-2">
+              <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <span className="block h-full rounded-full bg-purple-300/50" style={{ width: `${Math.max(2, Math.min(100, part.score))}%` }} />
+              </span>
+              <span className="w-16 shrink-0 text-right text-[9px] tabular-nums text-white/35">nota {part.score.toFixed(1)}</span>
+            </span>
+          </div>
+        ))}
+        {breakdown.bonus > 0 && (
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <span className="text-[11px] font-medium text-emerald-300/80">Evolução de forma</span>
+            <span className="text-[11px] font-bold tabular-nums text-emerald-300/80">+{breakdown.bonus.toFixed(1)} pts</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/10 pt-1.5">
+        <span className="text-[11px] font-black uppercase tracking-wide text-white/50">Índice</span>
+        <span className="text-sm font-black tabular-nums text-white">{breakdown.total.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+}
 
 type Tier = "green" | "blue" | "red";
 
@@ -71,6 +143,7 @@ export function Leaderboard({
   cutoff?: { slots: number; label: string };
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const rankedEntries = ranking.filter((entry) => entry.ranked !== false);
   const classifyingEntries = ranking.filter((entry) => entry.ranked === false);
   const podium = rankedEntries.slice(0, 3);
@@ -82,6 +155,7 @@ export function Leaderboard({
   const rest = showAll ? remainingEntries : remainingEntries.slice(0, defaultRestCount);
   const hasMore = remainingEntries.length > defaultRestCount;
   const podiumOrder = [podium[1], podium[0], podium[2]];
+  const podiumExpanded = podium.find((entry) => entry?.profileId === expandedId) ?? null;
   const cutoffScore = cutoff && rankedEntries.length >= cutoff.slots ? rankedEntries[cutoff.slots - 1].count : null;
   const leaderCount = Math.max(0.0001, rankedEntries[0]?.count ?? 0);
 
@@ -111,8 +185,20 @@ export function Leaderboard({
                 const podiumTier = tierFor(place + 1, cutoff, entry.guaranteed);
                 const insideCutoff = podiumTier === "green" || podiumTier === "blue";
                 const isMe = entry.profileId === currentProfileId;
+                const Wrapper = entry.breakdown ? "button" : "div";
                 return (
-                  <div key={entry.profileId} className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""}`}>
+                  <Wrapper
+                    key={entry.profileId}
+                    {...(entry.breakdown
+                      ? {
+                          type: "button" as const,
+                          onClick: () => setExpandedId((id) => (id === entry.profileId ? null : entry.profileId)),
+                          "aria-expanded": expandedId === entry.profileId,
+                          "aria-label": `Ver conta da nota de ${entry.fullName}`,
+                        }
+                      : {})}
+                    className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""} ${entry.breakdown ? "cursor-pointer rounded-xl transition hover:bg-white/[0.03]" : ""}`}
+                  >
                     <div className="relative">
                       {isFirst && <Crown className="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 text-yellow-300" strokeWidth={2.25} fill="currentColor" fillOpacity={0.25} />}
                       <Avatar
@@ -129,7 +215,22 @@ export function Leaderboard({
                     <p className="mt-0.5 text-[11px] font-bold text-white/70 sm:text-xs">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
-                    {entry.detail && <p className="line-clamp-1 w-full px-0.5 text-[9px] leading-tight text-white/35">{entry.detail}</p>}
+                    {entry.stats?.length ? (
+                      <div className="mt-0.5 flex w-full flex-col items-center gap-0.5">
+                        {/* Só as duas primeiras pra não empurrar o pedestal: o resto
+                            aparece na lista e na conta da nota, que abre ao tocar. */}
+                        {entry.stats.slice(0, 2).map((stat) => (
+                          <span key={stat.label} className="flex items-baseline gap-1 text-[9px] leading-tight">
+                            <span className="uppercase tracking-wide text-white/25">{stat.label}</span>
+                            <span className={`font-bold tabular-nums ${stat.tone === "good" ? "text-emerald-300/80" : stat.tone === "bad" ? "text-rose-300/80" : "text-white/50"}`}>
+                              {stat.value}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    ) : entry.detail ? (
+                      <p className="line-clamp-1 w-full px-0.5 text-[9px] leading-tight text-white/35">{entry.detail}</p>
+                    ) : null}
                     <TrendBadge entry={entry} />
                     <div
                       className={`mt-1.5 flex w-full items-start justify-center gap-1 rounded-t-lg border border-b-0 bg-gradient-to-b pt-1 ${style.height} ${style.bar} ${style.border}`}
@@ -141,9 +242,16 @@ export function Leaderboard({
                         <CheckCircle2 className={`h-3 w-3 ${TIER_STYLE[podiumTier].text}`} strokeWidth={2.5} aria-label="Classificado" />
                       )}
                     </div>
-                  </div>
+                  </Wrapper>
                 );
               })}
+            </div>
+          )}
+
+          {podiumExpanded?.breakdown && (
+            <div className="px-3 pt-2 sm:px-6">
+              <p className="text-[11px] font-bold text-white/70">{podiumExpanded.fullName}</p>
+              <BreakdownPanel breakdown={podiumExpanded.breakdown} />
             </div>
           )}
 
@@ -157,6 +265,7 @@ export function Leaderboard({
                 const gap = outsideCutoff && cutoffScore !== null ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
                 const isMe = entry.profileId === currentProfileId;
                 const progress = rankedPosition ? Math.max(4, Math.min(100, (entry.count / leaderCount) * 100)) : 0;
+                const isExpanded = expandedId === entry.profileId;
                 return (
                   <Fragment key={entry.profileId}>
                     {cutoffIndexInRest !== null && i === cutoffIndexInRest && (
@@ -174,12 +283,14 @@ export function Leaderboard({
                         isMe ? "bg-purple-400/12 ring-1 ring-purple-300/25" : tier ? TIER_STYLE[tier].bg : "hover:bg-white/[0.03]"
                       }`}
                     >
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className={`w-6 shrink-0 text-center text-xs font-black ${tier ? TIER_STYLE[tier].text : "text-white/35"}`}>
+                      <div className="flex min-w-0 items-start gap-2">
+                        <span className={`w-6 shrink-0 pt-1.5 text-center text-xs font-black ${tier ? TIER_STYLE[tier].text : "text-white/35"}`}>
                           {rankedPosition ? `${rankedPosition}º` : "—"}
                         </span>
-                        <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={tier ? TIER_STYLE[tier].ring : undefined} />
-                        <div className="min-w-0 flex-1">
+                        <span className="shrink-0 pt-0.5">
+                          <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={tier ? TIER_STYLE[tier].ring : undefined} />
+                        </span>
+                        <div className="min-w-0 flex-1 pt-0.5">
                           <p className="flex min-w-0 items-center gap-1 text-[13px] font-medium leading-tight text-white">
                             <span className="truncate">{entry.fullName}</span>
                             {isMe && <span className="shrink-0 text-[8px] font-black text-purple-200">VOCÊ</span>}
@@ -189,9 +300,13 @@ export function Leaderboard({
                               </span>
                             )}
                           </p>
-                          {entry.detail && <p className="truncate text-[10px] leading-tight text-white/35">{entry.detail}</p>}
+                          {entry.stats?.length ? (
+                            <StatChips stats={entry.stats} className="mt-1" />
+                          ) : entry.detail ? (
+                            <p className="truncate text-[10px] leading-tight text-white/35">{entry.detail}</p>
+                          ) : null}
                         </div>
-                        <div className="shrink-0 text-right">
+                        <div className="shrink-0 pt-0.5 text-right">
                           <p className="flex items-center justify-end gap-1 text-[13px] font-bold leading-tight text-white/80">
                             {insideCutoff && tier && <CheckCircle2 className={`h-3.5 w-3.5 ${TIER_STYLE[tier].text}`} strokeWidth={2.5} aria-label="Classificado" />}
                             <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
@@ -209,6 +324,20 @@ export function Leaderboard({
                             style={{ width: `${progress}%` }}
                           />
                         </span>
+                      )}
+                      {entry.breakdown && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId((id) => (id === entry.profileId ? null : entry.profileId))}
+                            aria-expanded={isExpanded}
+                            className="mt-1 flex min-h-7 w-full items-center justify-center gap-1 rounded-md text-[10px] font-semibold text-white/35 transition hover:bg-white/[0.04] hover:text-white/70"
+                          >
+                            {isExpanded ? "Fechar conta da nota" : "Ver conta da nota"}
+                            <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} strokeWidth={2.25} />
+                          </button>
+                          {isExpanded && <BreakdownPanel breakdown={entry.breakdown} />}
+                        </>
                       )}
                     </li>
                   </Fragment>
