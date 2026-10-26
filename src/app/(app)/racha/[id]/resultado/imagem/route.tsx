@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import { ArtWatermark } from "@/components/ArtWatermark";
 import { VPA_INSTAGRAM_HANDLE } from "@/lib/brand";
 import { teamIconFor } from "@/lib/teamLogos";
 import { computeStandings } from "@/lib/torneioStandings";
@@ -17,19 +16,34 @@ type MatchRow = {
   score_b: number | null;
 };
 
-const placementStyles = {
-  1: { label: "CAMPEÃO", icon: "🏆", color: "#fcd34d", background: "rgba(245,158,11,.18)", border: "rgba(252,211,77,.52)" },
-  2: { label: "VICE-CAMPEÃO", icon: "🥈", color: "#e2e8f0", background: "rgba(226,232,240,.11)", border: "rgba(226,232,240,.30)" },
-  3: { label: "3º LUGAR", icon: "🥉", color: "#fdba74", background: "rgba(249,115,22,.14)", border: "rgba(251,146,60,.32)" },
-  4: { label: "4º LUGAR", icon: "🏐", color: "#ddd6fe", background: "rgba(255,255,255,.055)", border: "rgba(255,255,255,.13)" },
+const placementMeta = {
+  1: { label: "CAMPEÃO", icon: "🏆" },
+  2: { label: "VICE-CAMPEÃO", icon: "🥈" },
+  3: { label: "3º LUGAR", icon: "🥉" },
+  4: { label: "4º LUGAR", icon: "🏐" },
 } as const;
 
-function shortName(name: string, limit = 30) {
+const PURPLE = "#3a0f85";
+const PURPLE_DEEP = "#1c0a4a";
+const GOLD = "#fcd34d";
+const GOLD_DEEP = "#f59e0b";
+
+function shortName(name: string, limit = 26) {
   return name.length > limit ? `${name.slice(0, limit - 1)}…` : name;
 }
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+}
+
+function InstagramGlyph({ size = 24, color = "#ffffff" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ display: "flex" }}>
+      <rect x="4" y="4" width="40" height="40" rx="12" fill="none" stroke={color} strokeWidth="3.4" />
+      <circle cx="24" cy="24" r="10.5" fill="none" stroke={color} strokeWidth="3.4" />
+      <circle cx="34.5" cy="13.5" r="2.6" fill={color} />
+    </svg>
+  );
 }
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -104,57 +118,106 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     .filter((entry): entry is { place: 1 | 2 | 3 | 4; team: ResultTeam } => Boolean(entry.team));
   const dateLabel = new Date(`${event.date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
   const formatLabel = event.is_pre_torneio ? "PRÉ-TORNEIO VPA" : "MINI TORNEIO VPA";
-  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
+  const crestUrl = new URL("/vpa-nova-logo.png", request.url).toString();
+  const sponsorsUrl = new URL("/vpa-patrocinadores.png", request.url).toString();
+
+  const champion = placements.find((entry) => entry.place === 1)!;
+  const rest = placements.filter((entry) => entry.place !== 1);
 
   return new ImageResponse(
-    <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "238px 58px 102px", color: "white", backgroundImage: "radial-gradient(circle at 92% 4%, rgba(251,191,36,.24), transparent 25%), radial-gradient(circle at 4% 88%, rgba(124,58,237,.45), transparent 32%), linear-gradient(155deg, #43207f 0%, #24104e 47%, #0b0d28 100%)", fontFamily: "sans-serif" }}>
-      <ArtWatermark src={watermarkUrl} />
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-        <div style={{ width: "106px", height: "106px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "34px", background: "rgba(251,191,36,.13)", border: "1px solid rgba(252,211,77,.4)", fontSize: "57px" }}>🏆</div>
-        <span style={{ marginTop: "20px", color: "#fcd34d", fontSize: "19px", fontWeight: 900, letterSpacing: "4px" }}>{formatLabel}</span>
-        <span style={{ marginTop: "10px", fontSize: "56px", fontWeight: 900, lineHeight: 1 }}>PÓDIO FINAL</span>
-        <span style={{ marginTop: "12px", color: "rgba(255,255,255,.65)", fontSize: "21px", textTransform: "capitalize" }}>{dateLabel}</span>
-      </div>
+    (
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", background: `linear-gradient(160deg, ${PURPLE} 0%, ${PURPLE_DEEP} 62%, #0a0620 100%)`, fontFamily: "sans-serif", color: "#fff", padding: "168px 56px 0" }}>
+        {/* textura: brasão gigante fantasma, rotacionado, cortado */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={crestUrl} width={1129} height={934} alt="" style={{ position: "absolute", top: "-120px", right: "-260px", width: "980px", height: "810px", opacity: 0.07, transform: "rotate(14deg)" }} />
 
-      <div style={{ display: "flex", flex: 1, flexDirection: "column", justifyContent: "center", marginTop: "34px", gap: "14px" }}>
-        {placements.map(({ place, team }) => {
-          const style = placementStyles[place];
-          return (
-            <div key={team.id} style={{ display: "flex", flexDirection: "column", padding: place === 1 ? "26px 28px" : "20px 24px", borderRadius: "28px", background: style.background, border: `1px solid ${style.border}` }}>
+        {/* faixa diagonal dourada decorativa */}
+        <div style={{ position: "absolute", top: "348px", left: "-120px", width: "1320px", height: "10px", background: `linear-gradient(90deg, transparent, ${GOLD}, transparent)`, opacity: 0.5, transform: "rotate(-3deg)" }} />
+
+        <div style={{ display: "flex", width: "100%", flexDirection: "column" }}>
+          {/* header */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={crestUrl} width={1129} height={934} alt="" style={{ width: "182px", height: "150px" }} />
+            <div style={{ display: "flex", marginTop: "26px", padding: "10px 24px", borderRadius: "999px", border: `2px solid ${GOLD}`, transform: "skewX(-10deg)" }}>
+              <span style={{ display: "flex", transform: "skewX(10deg)", color: GOLD, fontSize: "20px", fontWeight: 900, letterSpacing: "4px" }}>{formatLabel}</span>
+            </div>
+            <span style={{ marginTop: "26px", fontSize: "88px", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-1px", textTransform: "uppercase" }}>Pódio Final</span>
+            <span style={{ marginTop: "16px", fontSize: "24px", color: "rgba(255,255,255,.6)", textTransform: "capitalize", fontWeight: 600 }}>{dateLabel}</span>
+          </div>
+
+          {/* campeão - hero */}
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "104px", position: "relative" }}>
+            <div style={{ display: "flex", flexDirection: "column", padding: "66px 42px 52px", borderRadius: "24px", background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`, boxShadow: "0 18px 40px rgba(0,0,0,.35)" }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <div style={{ width: place === 1 ? "66px" : "55px", height: place === 1 ? "66px" : "55px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(255,255,255,.11)", color: style.color, fontSize: place === 1 ? "34px" : "28px" }}>{style.icon}</div>
-                <div style={{ display: "flex", flexDirection: "column", marginLeft: "17px" }}>
-                  <span style={{ color: style.color, fontSize: "16px", fontWeight: 900, letterSpacing: "2px" }}>{style.label}</span>
-                  <div style={{ display: "flex", alignItems: "center", marginTop: "4px" }}>
-                    {teamIconFor(team.name) && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={new URL(teamIconFor(team.name)!, request.url).toString()} alt="" width={Math.round((place === 1 ? 50 : 40) * 1.8)} height={place === 1 ? 50 : 40} style={{ marginRight: "12px", borderRadius: "8px" }} />
-                    )}
-                    <span style={{ fontSize: place === 1 ? "35px" : "28px", fontWeight: 900 }}>{shortName(team.name)}</span>
-                  </div>
-                </div>
-                <span style={{ marginLeft: "auto", color: "rgba(255,255,255,.56)", fontSize: "20px", fontWeight: 800 }}>{place}º</span>
+                {teamIconFor(champion.team.name) && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={new URL(teamIconFor(champion.team.name)!, request.url).toString()} alt="" width={180} height={100} style={{ width: "120px", height: "120px", objectFit: "contain", marginRight: "26px" }} />
+                )}
+                <span style={{ fontSize: "66px", fontWeight: 900, color: PURPLE_DEEP, lineHeight: 1 }}>{shortName(champion.team.name, 16)}</span>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "17px" }}>
-                {team.members.slice(0, 8).map((member, index) => (
-                  <div key={`${member.fullName}-${index}`} style={{ display: "flex", alignItems: "center", padding: "5px 10px 5px 5px", borderRadius: "999px", background: "rgba(4,3,20,.25)", border: "1px solid rgba(255,255,255,.08)", color: "rgba(255,255,255,.9)", fontSize: "16px", fontWeight: 700 }}>
-                    {member.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={member.avatarUrl} alt="" width={30} height={30} style={{ borderRadius: "999px", objectFit: "cover", border: "1px solid rgba(255,255,255,.2)" }} />
-                    ) : (
-                      <span style={{ width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(124,58,237,.48)", color: "#ede9fe", fontSize: "10px", fontWeight: 900 }}>{initials(member.fullName)}</span>
-                    )}
-                    <span style={{ marginLeft: "7px" }}>{shortName(member.fullName, 17)}</span>
-                  </div>
+              <div style={{ display: "flex", flexWrap: "wrap", marginTop: "44px" }}>
+                {champion.team.members.slice(0, 8).map((member, index) => (
+                  member.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={`${member.fullName}-${index}`} src={member.avatarUrl} alt="" width={90} height={90} style={{ width: "90px", height: "90px", borderRadius: "999px", objectFit: "cover", border: `3px solid ${GOLD_DEEP}`, marginLeft: index === 0 ? 0 : "-20px", boxShadow: "0 2px 6px rgba(0,0,0,.25)" }} />
+                  ) : (
+                    <span key={`${member.fullName}-${index}`} style={{ width: "90px", height: "90px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: PURPLE_DEEP, color: GOLD, fontSize: "24px", fontWeight: 900, border: `3px solid ${GOLD_DEEP}`, marginLeft: index === 0 ? 0 : "-20px" }}>{initials(member.fullName)}</span>
+                  )
                 ))}
               </div>
             </div>
-          );
-        })}
-      </div>
+            <div style={{ position: "absolute", top: "-22px", right: "24px", display: "flex", padding: "12px 26px", borderRadius: "10px", background: PURPLE_DEEP, border: `2px solid ${GOLD}`, transform: "rotate(5deg)" }}>
+              <span style={{ display: "flex", color: GOLD, fontSize: "20px", fontWeight: 900, letterSpacing: "1px", whiteSpace: "nowrap" }}>🏆 CAMPEÃO</span>
+            </div>
+          </div>
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.64)", fontSize: "17px", fontWeight: 700 }}><span>MAIS QUE UM JOGO, É A NOSSA RESENHA!</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>
-    </div>,
+          {/* 2º a 4º - linhas com numeral gigante */}
+          <div style={{ display: "flex", flexDirection: "column", marginTop: "56px", gap: "40px" }}>
+            {rest.map(({ place, team }) => (
+              <div key={team.id} style={{ display: "flex", alignItems: "center", position: "relative", padding: "38px 32px 38px 14px", borderRadius: "18px", background: "rgba(255,255,255,.055)", border: "1px solid rgba(255,255,255,.12)", overflow: "hidden" }}>
+                <span style={{ display: "flex", position: "absolute", left: "10px", top: "-36px", fontSize: "172px", fontWeight: 900, color: "rgba(255,255,255,.08)", lineHeight: 1 }}>{place}</span>
+                <div style={{ display: "flex", flexDirection: "column", marginLeft: "122px", flex: 1 }}>
+                  <span style={{ fontSize: "17px", fontWeight: 800, letterSpacing: "2px", color: "rgba(255,255,255,.55)" }}>{placementMeta[place].icon} {placementMeta[place].label}</span>
+                  <div style={{ display: "flex", alignItems: "center", marginTop: "10px" }}>
+                    {teamIconFor(team.name) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={new URL(teamIconFor(team.name)!, request.url).toString()} alt="" width={126} height={70} style={{ width: "52px", height: "52px", objectFit: "contain", marginRight: "16px" }} />
+                    )}
+                    <span style={{ fontSize: "34px", fontWeight: 900 }}>{shortName(team.name, 18)}</span>
+                  </div>
+                </div>
+                <div style={{ display: "flex" }}>
+                  {team.members.slice(0, 4).map((member, index) => (
+                    member.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={`${member.fullName}-${index}`} src={member.avatarUrl} alt="" width={50} height={50} style={{ width: "50px", height: "50px", borderRadius: "999px", objectFit: "cover", border: "2px solid rgba(255,255,255,.4)", marginLeft: index === 0 ? 0 : "-15px" }} />
+                    ) : (
+                      <span key={`${member.fullName}-${index}`} style={{ width: "50px", height: "50px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(124,58,237,.5)", color: "#ede9fe", fontSize: "13px", fontWeight: 900, border: "2px solid rgba(255,255,255,.4)", marginLeft: index === 0 ? 0 : "-15px" }}>{initials(member.fullName)}</span>
+                    )
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* rodapé */}
+        <div style={{ display: "flex", flexDirection: "column", marginTop: "auto", marginLeft: "-56px", marginRight: "-56px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "26px 40px", background: "rgba(0,0,0,.22)", borderTop: `2px solid ${GOLD}` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={sponsorsUrl} width={2176} height={165} alt="" style={{ height: "46px", width: "auto", opacity: 0.92 }} />
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 40px 44px", background: PURPLE_DEEP }}>
+            <span style={{ fontSize: "17px", fontWeight: 800, color: "rgba(255,255,255,.7)", letterSpacing: "1px" }}>MAIS QUE UM JOGO, É A NOSSA RESENHA!</span>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <InstagramGlyph size={24} color="rgba(255,255,255,.85)" />
+              <span style={{ marginLeft: "9px", fontSize: "17px", fontWeight: 800, color: "rgba(255,255,255,.85)" }}>{VPA_INSTAGRAM_HANDLE}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    ),
     { width: 1080, height: 1920, headers: { "Cache-Control": "private, no-store", "Content-Disposition": `inline; filename="podio-racha-${event.date}.png"` } },
   );
 }
