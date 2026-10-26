@@ -17,8 +17,10 @@ export function ArtWatermark({ src }: ArtWatermarkProps) {
         width: "100%",
         height: "100%",
         objectFit: "cover",
-        // A arte é quadrada e os Stories são verticais; este ponto compensa o recorte lateral.
-        objectPosition: "56% center",
+        // Logo quadrada num story vertical: o recorte é só na largura (a
+        // altura inteira sempre aparece), então centralizado de verdade é
+        // o brasão no meio da faixa visível.
+        objectPosition: "center",
         opacity: 0.09,
       }}
     />

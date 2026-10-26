@@ -57,17 +57,22 @@ function baseStyle(community: "court" | "sand") {
 
 function Header({ logoUrl, title, subtitle, communityLabel }: { logoUrl: string; title: string; subtitle: string; communityLabel: string }) {
   return (
-    <div style={{ height: "126px", flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "23px", objectFit: "cover" }} />
-        <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}>
-          <span style={{ fontSize: "18px", fontWeight: 800, letterSpacing: "4px", color: "#ddd6fe" }}>VÔLEI POR AMOR · {communityLabel.toUpperCase()}</span>
-          <span style={{ marginTop: "5px", fontSize: "44px", lineHeight: 1, fontWeight: 900 }}>{title}</span>
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "23px", objectFit: "cover" }} />
+          <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 800, letterSpacing: "4px", color: "#ddd6fe" }}>VÔLEI POR AMOR · {communityLabel.toUpperCase()}</span>
+            <span style={{ marginTop: "5px", fontSize: "44px", lineHeight: 1, fontWeight: 900 }}>{title}</span>
+          </div>
         </div>
+        <div style={{ width: "82px", height: "82px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "25px", background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.14)", fontSize: "42px" }}>🏐</div>
       </div>
-      <div style={{ width: "82px", height: "82px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "25px", background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.14)", fontSize: "42px" }}>🏐</div>
-      <span style={{ position: "absolute", left: "66px", top: "194px", fontSize: "20px", color: "rgba(255,255,255,.55)" }}>{subtitle}</span>
+      {/* Em fluxo normal, não mais position:absolute -- fora do fluxo, sem
+          container posicionado como referência, ficava atrás de qualquer
+          coisa que viesse depois no documento. */}
+      <span style={{ marginTop: "16px", fontSize: "20px", color: "rgba(255,255,255,.55)" }}>{subtitle}</span>
     </div>
   );
 }
@@ -102,7 +107,17 @@ function OverviewArt({ report, logoUrl, watermarkUrl }: { report: Awaited<Return
             return <div key={metric} style={{ width: "49.2%", display: "flex", flexDirection: "column", padding: "24px", borderRadius: "25px", background: "rgba(8,5,30,.28)", border: "1px solid rgba(255,255,255,.1)" }}>
               <span style={{ fontSize: "15px", fontWeight: 900, color: config.color, letterSpacing: "2px" }}>{config.title}</span>
               <div style={{ display: "flex", flexDirection: "column", marginTop: "14px" }}>
-                {leaders.map((player, index) => <div key={player.profileId} style={{ display: "flex", alignItems: "center", height: "57px", borderBottom: "1px solid rgba(255,255,255,.06)" }}><span style={{ width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: index === 0 ? config.color : "rgba(255,255,255,.1)", color: index === 0 ? "#241447" : "white", fontSize: "13px", fontWeight: 900 }}>{index + 1}</span><span style={{ maxWidth: "300px", marginLeft: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "17px", fontWeight: 750 }}>{player.fullName}</span><span style={{ marginLeft: "auto", color: config.color, fontSize: "20px", fontWeight: 900 }}>{metricValue(metric, player)}</span></div>)}
+                {leaders.map((player, index) => <div key={player.profileId} style={{ display: "flex", alignItems: "center", height: "57px", borderBottom: "1px solid rgba(255,255,255,.06)" }}>
+                  <span style={{ width: "20px", flexShrink: 0, display: "flex", fontSize: "13px", fontWeight: 900, color: index === 0 ? config.color : "rgba(255,255,255,.45)" }}>{index + 1}</span>
+                  {player.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={player.avatarUrl} alt="" width={36} height={36} style={{ borderRadius: "999px", objectFit: "cover", border: `2px solid ${index === 0 ? config.color : "rgba(255,255,255,.18)"}` }} />
+                  ) : (
+                    <span style={{ width: "36px", height: "36px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "rgba(124,58,237,.4)", border: `2px solid ${index === 0 ? config.color : "rgba(255,255,255,.18)"}`, fontSize: "13px", fontWeight: 900 }}>{initials(player.fullName)}</span>
+                  )}
+                  <span style={{ maxWidth: "260px", marginLeft: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "17px", fontWeight: 750 }}>{player.fullName}</span>
+                  <span style={{ marginLeft: "auto", color: config.color, fontSize: "20px", fontWeight: 900 }}>{metricValue(metric, player)}</span>
+                </div>)}
               </div>
             </div>;
           })}
@@ -178,7 +193,21 @@ export async function GET(request: Request) {
   const report = await getMonthlyReport(supabase, community, monthKey);
   if (!report.unlocked) return new Response("A análise mensal será liberada depois de quatro rachas encerrados.", { status: 409 });
 
-  if (art !== "overview") {
+  if (art === "overview") {
+    // A capa mostra o top 3 das quatro categorias -- a mesma pessoa pode
+    // aparecer em mais de uma, então embute uma vez só por perfil.
+    const topProfiles = new Map<string, MonthlyReportPlayer>();
+    for (const metric of Object.keys(CONFIG) as MonthlyReportMetric[]) {
+      for (const player of report.rankings[metric].slice(0, 3)) topProfiles.set(player.profileId, player);
+    }
+    const embedded = await embedAvatarUrls([...topProfiles.values()]);
+    const avatarById = new Map(embedded.map((player) => [player.profileId, player.avatarUrl]));
+    for (const metric of Object.keys(CONFIG) as MonthlyReportMetric[]) {
+      report.rankings[metric] = report.rankings[metric].map((player) =>
+        avatarById.has(player.profileId) ? { ...player, avatarUrl: avatarById.get(player.profileId) ?? null } : player,
+      );
+    }
+  } else {
     const embedded = await embedAvatarUrls(report.rankings[art].slice(0, 3));
     const avatarById = new Map(embedded.map((player) => [player.profileId, player.avatarUrl]));
     report.rankings[art] = report.rankings[art].map((player) => ({ ...player, avatarUrl: avatarById.get(player.profileId) ?? null }));
