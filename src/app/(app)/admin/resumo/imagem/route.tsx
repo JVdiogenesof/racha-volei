@@ -57,28 +57,18 @@ function baseStyle(community: "court" | "sand") {
 
 function Header({ logoUrl, title, subtitle, communityLabel }: { logoUrl: string; title: string; subtitle: string; communityLabel: string }) {
   return (
-    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "23px", objectFit: "cover" }} />
-          <div style={{ display: "flex", flexDirection: "column", marginLeft: "20px" }}>
-            <span style={{ fontSize: "18px", fontWeight: 800, letterSpacing: "4px", color: "#ddd6fe" }}>VÔLEI POR AMOR · {communityLabel.toUpperCase()}</span>
-            <span style={{ marginTop: "5px", fontSize: "44px", lineHeight: 1, fontWeight: 900 }}>{title}</span>
-          </div>
-        </div>
-        <div style={{ width: "82px", height: "82px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "25px", background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.14)", fontSize: "42px" }}>🏐</div>
-      </div>
-      {/* Em fluxo normal, não mais position:absolute -- fora do fluxo, sem
-          container posicionado como referência, ficava atrás de qualquer
-          coisa que viesse depois no documento. */}
-      <span style={{ marginTop: "16px", fontSize: "20px", color: "rgba(255,255,255,.55)" }}>{subtitle}</span>
+    <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={logoUrl} alt="" width={88} height={88} style={{ borderRadius: "23px", objectFit: "cover" }} />
+      <span style={{ marginTop: "16px", fontSize: "18px", fontWeight: 800, letterSpacing: "4px", color: "#ddd6fe" }}>VÔLEI POR AMOR · {communityLabel.toUpperCase()}</span>
+      <span style={{ marginTop: "7px", fontSize: "44px", lineHeight: 1, fontWeight: 900 }}>{title}</span>
+      <span style={{ marginTop: "14px", fontSize: "20px", color: "rgba(255,255,255,.55)" }}>{subtitle}</span>
     </div>
   );
 }
 
 function Footer() {
-  return <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.55)", fontSize: "16px", letterSpacing: "1px" }}><span>UM MÊS DE JOGO, RESENHA E EVOLUÇÃO</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>;
+  return <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.55)", fontSize: "16px", letterSpacing: "1px", textAlign: "center" }}><span>UM MÊS DE JOGO, RESENHA E EVOLUÇÃO</span><span>{VPA_INSTAGRAM_HANDLE}</span></div>;
 }
 
 function OverviewArt({ report, logoUrl, watermarkUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; logoUrl: string; watermarkUrl: string }) {
@@ -99,7 +89,7 @@ function OverviewArt({ report, logoUrl, watermarkUrl }: { report: Awaited<Return
           ].map(([value, label]) => <div key={label} style={{ flex: 1, display: "flex", flexDirection: "column", padding: "20px", borderRadius: "22px", background: "rgba(255,255,255,.075)", border: "1px solid rgba(255,255,255,.11)" }}><span style={{ fontSize: "34px", fontWeight: 900 }}>{value}</span><span style={{ marginTop: "5px", fontSize: "14px", color: "rgba(255,255,255,.55)", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</span></div>)}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", marginTop: "38px", marginBottom: "16px" }}><span style={{ fontSize: "28px" }}>✨</span><span style={{ marginLeft: "11px", fontSize: "25px", fontWeight: 900 }}>Os nomes do mês</span></div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: "38px", marginBottom: "16px" }}><span style={{ fontSize: "28px" }}>✨</span><span style={{ marginLeft: "11px", fontSize: "25px", fontWeight: 900 }}>Os nomes do mês</span></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "14px" }}>
           {(Object.keys(CONFIG) as MonthlyReportMetric[]).map((metric) => {
             const config = CONFIG[metric];
@@ -155,7 +145,7 @@ function RankingArt({ report, metric, logoUrl, watermarkUrl }: { report: Awaited
           </div> : <div key={slot} style={{ width: "25%", display: "flex" }} />)}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "26px", marginBottom: "12px" }}><span style={{ fontSize: "20px", fontWeight: 900 }}>{config.kicker}</span><span style={{ color: "rgba(255,255,255,.45)", fontSize: "14px" }}>{players.length} jogadores</span></div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: "26px", marginBottom: "12px" }}><span style={{ fontSize: "20px", fontWeight: 900 }}>{config.kicker}</span><span style={{ marginTop: "3px", color: "rgba(255,255,255,.45)", fontSize: "14px" }}>{players.length} jogadores</span></div>
         <div style={{ display: "flex", gap: "14px" }}>
           {columns.map((column, columnIndex) => <div key={columnIndex} style={{ width: columns.length === 1 ? "100%" : "49.3%", display: "flex", flexDirection: "column", padding: "8px 16px", borderRadius: "22px", background: "rgba(5,3,22,.24)", border: "1px solid rgba(255,255,255,.09)" }}>
             {column.map((player) => {

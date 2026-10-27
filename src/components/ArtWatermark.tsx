@@ -13,14 +13,15 @@ export function ArtWatermark({ src }: ArtWatermarkProps) {
       height={1920}
       style={{
         position: "absolute",
-        inset: "0",
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        // Logo quadrada num story vertical: o recorte é só na largura (a
-        // altura inteira sempre aparece), então centralizado de verdade é
-        // o brasão no meio da faixa visível.
-        objectPosition: "center",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        // Afastada (contain, não cover): a logo inteira aparece atrás do
+        // conteúdo, sem cortar nenhuma borda, só um pouco menor que o
+        // story pra sobrar respiro ao redor.
+        width: "82%",
+        height: "82%",
+        objectFit: "contain",
         opacity: 0.09,
       }}
     />
