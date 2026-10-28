@@ -9,6 +9,10 @@ import { Avatar } from "@/components/Avatar";
 import type { Community } from "@/lib/community";
 import type { MonthlySelection, MonthlySelectionPlayer } from "@/lib/monthlySelection";
 
+function initials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+}
+
 const COURT_WIDTH = 6;
 const COURT_DEPTH = 9;
 
@@ -120,7 +124,17 @@ function PlayerFigure({ player, spot, featured = false }: { player: MonthlySelec
         <div className="flex w-24 flex-col items-center text-center">
           <div className="relative">
             <div className={`rounded-full p-0.5 shadow-xl ${featured ? "bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-600" : "bg-white/80"}`}>
-              <Avatar src={player.avatarUrl} name={player.fullName} size="lg" />
+              {player.avatarUrl ? (
+                <Avatar src={player.avatarUrl} name={player.fullName} size="lg" />
+              ) : (
+                // Fallback próprio com mais contraste: o degradê suave do
+                // Avatar padrão (pensado pra UI 2D cheia de contexto ao redor)
+                // ficava quase invisível flutuando sozinho na cena 3D --
+                // parecia um boneco vazio, sem ninguém em cima.
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-purple-700 text-base font-black text-white ring-2 ring-white/40">
+                  {initials(player.fullName) || "?"}
+                </span>
+              )}
             </div>
             {featured && (
               <span className="absolute -right-1 -top-1 grid h-6 w-6 place-items-center rounded-full border-2 border-[#30205f] bg-amber-300 text-amber-950 shadow-lg">
