@@ -450,7 +450,7 @@ export default async function ConfirmarPresencaPage({
           {setterSlotsFull && (
             <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
               <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
-              As {setterCapacity} vagas reservadas para levantadores já foram preenchidas. Não gere Pix: se uma vaga de levantador for liberada, você poderá tentar de novo.
+              As {setterCapacity} vagas reservadas para levantadores já foram preenchidas. Você pode continuar e entrar como jogador comum (atacante) normalmente.
             </p>
           )}
           {queueLockedForMe && !setterSlotsFull && (
@@ -474,11 +474,9 @@ export default async function ConfirmarPresencaPage({
               hasInterest={myStatus === "interested"}
               isFull={isFull}
               blockedReason={
-                setterSlotsFull
-                  ? `As ${setterCapacity} vagas reservadas para levantadores já foram preenchidas.`
-                  : queueLockedForMe
-                    ? "Essa vaga está reservada pra próxima pessoa da fila de interessados."
-                    : null
+                queueLockedForMe
+                  ? "Essa vaga está reservada pra próxima pessoa da fila de interessados."
+                  : null
               }
               action={setAttendance}
             />

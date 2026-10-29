@@ -10,6 +10,7 @@ type PixData = {
   qrCodeBase64: string;
   ticketUrl: string;
   reservationExpiresAt: string;
+  fellBackToRegular?: boolean;
 };
 
 export function PixReservationButton({
@@ -114,6 +115,9 @@ export function PixReservationButton({
         }
         setNow(Date.now());
         setPix(payload);
+        if (payload.fellBackToRegular) {
+          showToast("As vagas de levantador já estavam cheias — você entra como jogador comum (atacante).");
+        }
         router.refresh();
       } catch (error) {
         const message = error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.";
@@ -158,6 +162,11 @@ export function PixReservationButton({
           <QrCode className="h-4 w-4" /> Vaga reservada por {timerText}
         </div>
         <p className="mt-1 text-xs leading-relaxed text-emerald-50/75">Copie o código, pague no app do seu banco (Pix copia e cola) e seu nome entra na lista automaticamente.</p>
+        {pix.fellBackToRegular && (
+          <p className="mt-2 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-2 text-[11px] leading-relaxed text-cyan-100">
+            As vagas de levantador já estavam cheias: essa reserva é como jogador comum (atacante).
+          </p>
+        )}
         <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-emerald-100/60">Pix copia e cola</p>
         <p className="mt-1 max-h-20 overflow-hidden break-all rounded-xl bg-black/20 px-3 py-2 text-left font-mono text-[11px] leading-snug text-white/80">{pix.qrCode}</p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">

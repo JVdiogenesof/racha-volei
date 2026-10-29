@@ -4,7 +4,11 @@ import { useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "./Toast";
 
-type ActionFn = (formData: FormData) => Promise<void> | void;
+// Uma action pode devolver uma string pra sobrescrever o toast de sucesso
+// padrão com um aviso específico do que aconteceu no servidor (ex.: "entrou
+// como atacante, vagas de levantador já cheias") -- o `successMessage` fixo
+// continua sendo o padrão quando a action não devolve nada.
+type ActionFn = (formData: FormData) => Promise<void | string> | void | string;
 
 /**
  * Wrapper de <form> que chama a Server Action diretamente no submit (em vez
@@ -47,8 +51,8 @@ export function ActionForm({
 
     startTransition(async () => {
       try {
-        await action(formData);
-        showToast(typeof successMessage === "function" ? successMessage(formData) : successMessage);
+        const result = await action(formData);
+        showToast(result || (typeof successMessage === "function" ? successMessage(formData) : successMessage));
         if (resetOnSuccess) form.reset();
         router.refresh();
         onSuccess?.();

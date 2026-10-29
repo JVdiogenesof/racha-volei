@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     return Response.json({
       ...pixDataFromOrder(order),
       reservationExpiresAt: storedIntent.reservation_expires_at,
+      fellBackToRegular: Boolean(intent.fell_back_to_regular),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível iniciar o pagamento Pix.";

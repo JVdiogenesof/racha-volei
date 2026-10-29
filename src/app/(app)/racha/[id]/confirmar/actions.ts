@@ -110,7 +110,7 @@ export async function joinAsExempt(formData: FormData) {
     .maybeSingle();
   if (!exemption) throw new Error("Você não está na lista de isentos de pagamento.");
 
-  const { error } = await supabase.rpc("confirm_event_participant", {
+  const { data: fellBack, error } = await supabase.rpc("confirm_event_participant", {
     p_event_id: eventId,
     p_profile_id: profile.id,
   });
@@ -119,6 +119,8 @@ export async function joinAsExempt(formData: FormData) {
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
   revalidatePath("/");
+
+  if (fellBack) return "Você entrou na lista, mas como jogador comum — as vagas de levantador já estavam cheias.";
 }
 
 export async function promoteToConfirmed(formData: FormData) {
@@ -127,7 +129,7 @@ export async function promoteToConfirmed(formData: FormData) {
   const eventId = String(formData.get("eventId"));
   const profileId = String(formData.get("profileId"));
 
-  const { error } = await supabase.rpc("confirm_event_participant", {
+  const { data: fellBack, error } = await supabase.rpc("confirm_event_participant", {
     p_event_id: eventId,
     p_profile_id: profileId,
   });
@@ -135,6 +137,8 @@ export async function promoteToConfirmed(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/confirmar`);
   revalidatePath(`/racha/${eventId}`);
+
+  if (fellBack) return "Confirmado(a), mas como jogador comum — as vagas de levantador já estavam cheias.";
 }
 
 export async function lockGuaranteedSpot(formData: FormData) {
