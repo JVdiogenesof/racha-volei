@@ -166,6 +166,7 @@ export default async function HomePage() {
     { data: myAttendance },
     { count: confirmedCount },
     { count: newcomerConfirmedCount },
+    { count: setterConfirmedCount },
     { count: reserveCount },
     { count: interessadosCount },
     { data: declineRows },
@@ -180,6 +181,9 @@ export default async function HomePage() {
       : Promise.resolve({ count: null }),
     proximoRacha
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed").eq("uses_newcomer_spot", true)
+      : Promise.resolve({ count: null }),
+    proximoRacha
+      ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed").eq("uses_setter_spot", true)
       : Promise.resolve({ count: null }),
     profile.is_organizer
       ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community])
@@ -408,7 +412,7 @@ export default async function HomePage() {
                   />
                 )}
                 <div className="rounded-2xl bg-black/25 p-3">
-                  <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
+                  <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} initialSetterCount={setterConfirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                   {!canRespondToNextEvent ? (
