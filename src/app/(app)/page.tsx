@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, Clock, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Star, Trophy, Medal, Users, Zap, Shirt, Gauge, CheckCircle2, Target } from "lucide-react";
+import { CalendarDays, Clock, CreditCard, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Trophy, Medal, Users, Zap, Shirt, Gauge, CheckCircle2, Target, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { InterestButton } from "@/components/InterestButton";
@@ -30,6 +30,17 @@ import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { AbsenceWarningBanner } from "@/components/AbsenceWarningBanner";
 import { getAbsenceStreaks, ATTENDANCE_ALERT_THRESHOLD } from "@/lib/attendancePolicy";
 import { acceptSpotOffer, declineSpotOffer } from "./racha/[id]/confirmar/actions";
+
+function HomeStep({ icon: Icon, label, done }: { icon: LucideIcon; label: string; done: boolean }) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${done ? "border-emerald-300/50 bg-emerald-400/25 text-emerald-100" : "border-white/20 bg-white/10 text-white/50"}`}>
+        {done ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.75} /> : <Icon className="h-3 w-3" strokeWidth={2.25} />}
+      </span>
+      <span className={`whitespace-nowrap text-[10px] font-bold uppercase ${done ? "text-emerald-100" : "text-white/55"}`}>{label}</span>
+    </span>
+  );
+}
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -167,6 +178,7 @@ export default async function HomePage() {
   const [
     recentChampion,
     { data: myAttendance },
+    { data: myPayment },
     { count: confirmedCount },
     { count: newcomerConfirmedCount },
     { count: setterConfirmedCount },
@@ -178,6 +190,9 @@ export default async function HomePage() {
     loadChampion(),
     proximoRacha
       ? supabase.from("attendance").select("status").eq("event_id", proximoRacha.id).eq("profile_id", profile.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    proximoRacha
+      ? supabase.from("payments").select("paid").eq("event_id", proximoRacha.id).eq("profile_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
     proximoRacha
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed")
@@ -223,6 +238,18 @@ export default async function HomePage() {
   const registrationOpen = proximoRacha
     ? isRegistrationOpen(proximoRacha.registration_opens_at, proximoRacha.official_list_open)
     : false;
+  const racePhase = isInProgress
+    ? { label: "Rolando agora", className: "bg-red-400/25 text-red-100", dot: "bg-red-300" }
+    : registrationOpen
+      ? { label: "Inscrições abertas", className: "bg-emerald-400/25 text-emerald-100", dot: "bg-emerald-300" }
+      : proximoRacha?.registration_opens_at
+        ? { label: "Inscrições em breve", className: "bg-amber-400/25 text-amber-100", dot: "bg-amber-300" }
+        : null;
+  const needsPayment = Boolean(proximoRacha?.price_per_player) && !isPaymentExempt;
+  const showSteps = canRespondToNextEvent && registrationOpen && !isInProgress;
+  const interestDone = myStatus === "interested" || myStatus === "confirmed";
+  const paymentDone = Boolean(myPayment?.paid);
+  const listDone = myStatus === "confirmed";
   const ultimoAviso = avisos?.[0] ?? null;
   const avisoAuthor = ultimoAviso
     ? (ultimoAviso.profiles as unknown as { full_name: string } | null)?.full_name
@@ -340,158 +367,166 @@ export default async function HomePage() {
         </Link>
       )}
 
-      <section
-        className={
-          preTorneio
-            ? "relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/25 via-[#4c1d95] to-[#1b1038] shadow-2xl shadow-purple-950/40"
-            : "relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#6d28d9] via-[#4c1d95] to-[#1b1038] shadow-2xl shadow-purple-950/40"
-        }
-      >
-        <span className="pointer-events-none absolute -right-14 -top-16 h-52 w-52 rounded-full border-[14px] border-white/[0.06]" />
-        <span className="pointer-events-none absolute -bottom-20 -left-12 h-44 w-44 rounded-full border-[14px] border-white/[0.04]" />
+      <section className={`copa-frame rounded-3xl ${preTorneio ? "theme-gold" : ""}`}>
+        <div className={`copa-hero ${preTorneio ? "theme-gold" : "theme-ranking"} copa-shine rounded-[22px]`}>
+          <span aria-hidden className="copa-orb -left-10 -top-12 h-40 w-40 bg-fuchsia-400" />
+          <span aria-hidden className="copa-orb copa-orb-slow -bottom-16 -right-10 h-44 w-44 bg-violet-500" />
 
-        {proximoRacha ? (
-          <div className="relative space-y-3 p-4">
-            <div className="flex items-start gap-4">
-              <div className="shrink-0 text-center" aria-label={`Racha em ${raceWeekday} ${raceDay} de ${raceMonth}`}>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-200">{raceWeekday}</p>
-                <p className="-mt-1 text-[56px] font-black leading-none text-white">{raceDay}</p>
-                <p className="-mt-0.5 text-[11px] font-black uppercase tracking-[0.16em] text-purple-200">{raceMonth}</p>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {preTorneio && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-950">
-                      <Trophy className="h-3 w-3" strokeWidth={2.75} />
-                      Pré-torneio
-                    </span>
-                  )}
-                  {proximoRacha.is_mini_torneio && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-cyan-100">
-                      <Medal className="h-3 w-3" />
-                      Mini torneio
-                    </span>
-                  )}
-                  <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-purple-50">
-                    {teamFormatLabel(proximoRacha.team_size)}
-                  </span>
-                  {myStatus === "confirmed" && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-green-400/20 px-2 py-0.5 text-[10px] font-bold text-green-200">
-                      <CheckCircle2 className="h-3 w-3" strokeWidth={2.75} />
-                      Confirmado
-                    </span>
-                  )}
+          {proximoRacha ? (
+            <div className="relative z-10 space-y-2.5 p-3.5">
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 text-center" aria-label={`Racha em ${raceWeekday} ${raceDay} de ${raceMonth}`}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-100">{raceWeekday}</p>
+                  <p className="copa-title -mt-0.5 text-[46px] font-black leading-none">{raceDay}</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-100">{raceMonth}</p>
                 </div>
-                <div className="mt-2.5 space-y-1 text-sm">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {racePhase && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${racePhase.className}`}>
+                        <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${racePhase.dot}`} /> {racePhase.label}
+                      </span>
+                    )}
+                    {preTorneio && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-950">
+                        <Trophy className="h-3 w-3" strokeWidth={2.75} />
+                        Pré-torneio
+                      </span>
+                    )}
+                    {proximoRacha.is_mini_torneio && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/25 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-cyan-100">
+                        <Medal className="h-3 w-3" />
+                        Mini torneio
+                      </span>
+                    )}
+                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-white">
+                      {teamFormatLabel(proximoRacha.team_size)}
+                    </span>
+                    {myStatus === "confirmed" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/25 px-2 py-0.5 text-[10px] font-bold text-emerald-100">
+                        <CheckCircle2 className="h-3 w-3" strokeWidth={2.75} />
+                        Confirmado
+                      </span>
+                    )}
+                    {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
+                  </div>
+                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] font-bold text-white">
+                    {proximoRacha.time && (
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-purple-100" strokeWidth={2.5} />
+                        {proximoRacha.time.slice(0, 5)}
+                      </span>
+                    )}
+                    {proximoRacha.location && (
+                      <span className="inline-flex items-start gap-1 font-medium text-purple-50">
+                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-100" strokeWidth={2.5} />
+                        <span className="break-words">{proximoRacha.location}</span>
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {!registrationOpen && proximoRacha.registration_opens_at ? (
+                <>
+                  <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
+                  <Link
+                    href={`/racha/${proximoRacha.id}`}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-xl bg-white/15 px-3 text-sm font-bold text-white hover:bg-white/20"
+                  >
+                    Ver detalhes do racha
+                    <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
+                  </Link>
+                </>
+              ) : (
+                <>
                   {proximoRacha.time && (
-                    <p className="flex items-center gap-1.5 font-bold text-white">
-                      <Clock className="h-3.5 w-3.5 text-purple-200" strokeWidth={2.5} />
-                      {proximoRacha.time.slice(0, 5)}
-                    </p>
-                  )}
-                  {proximoRacha.location && (
-                    <p className="flex items-center gap-1.5 font-medium text-purple-100">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-purple-200" strokeWidth={2.5} />
-                      <span className="truncate">{proximoRacha.location}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {rachaLevel !== null && (
-              <div className="flex items-center gap-1.5 rounded-xl bg-black/20 px-2.5 py-1.5">
-                <Star className="h-3.5 w-3.5 shrink-0 text-purple-200" strokeWidth={2.25} />
-                <RachaLevelBadge level={rachaLevel} />
-              </div>
-            )}
-
-            {!registrationOpen && proximoRacha.registration_opens_at ? (
-              <>
-                <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
-                <Link
-                  href={`/racha/${proximoRacha.id}`}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-2xl bg-white/15 px-3 text-sm font-bold text-white hover:bg-white/20"
-                >
-                  Ver detalhes do racha
-                  <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
-                </Link>
-              </>
-            ) : (
-              <>
-                {proximoRacha.time && (
-                  <EventCountdown
-                    startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
-                    isInProgress={isInProgress}
-                    compact
-                  />
-                )}
-                <div className="rounded-2xl bg-black/25 p-3">
-                  <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} initialSetterCount={setterConfirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
-                </div>
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  {!canRespondToNextEvent ? (
-                    <Link
-                      href={`/racha/${proximoRacha.id}/confirmar`}
-                      className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl border border-amber-300/25 bg-amber-400/15 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/20"
-                    >
-                      <Users className="h-4 w-4" strokeWidth={2.25} />
-                      Acompanhar
-                    </Link>
-                  ) : myStatus === "confirmed" ? (
-                    <Link
-                      href={`/racha/${proximoRacha.id}`}
-                      className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                    >
-                      <Zap className="h-4 w-4" strokeWidth={2.75} />
-                      Abrir racha
-                    </Link>
-                  ) : myStatus === "interested" ? (
-                    <Link
-                      href={`/racha/${proximoRacha.id}/confirmar`}
-                      className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                    >
-                      <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
-                      Ver interesse
-                    </Link>
-                  ) : isPaymentExempt ? (
-                    <Link
-                      href={`/racha/${proximoRacha.id}/confirmar`}
-                      className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                    >
-                      <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
-                      Entrar na lista
-                    </Link>
-                  ) : (
-                    <InterestButton
-                      eventId={proximoRacha.id}
-                      price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
-                      isFull={isFull}
-                      pixPaymentEnabled={proximoRacha.pix_payment_enabled}
-                      action={setAttendance}
-                      className="inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-2xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50 disabled:opacity-50"
+                    <EventCountdown
+                      startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
+                      isInProgress={isInProgress}
+                      inline
                     />
                   )}
-                  <Link
-                    href={`/racha/${proximoRacha.id}/confirmar`}
-                    className="inline-flex min-h-12 items-center justify-center gap-1 rounded-2xl bg-white/15 px-4 text-center text-sm font-bold text-white hover:bg-white/20"
-                  >
-                    Ver lista
-                    <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
-                  </Link>
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="relative p-4">
-            <div className="rounded-2xl border border-dashed border-white/15 bg-black/10 px-4 py-6 text-center">
-              <CalendarDays className="mx-auto h-7 w-7 text-white/25" strokeWidth={1.5} />
-              <p className="mt-2 text-sm font-medium text-white/70">Nenhum racha marcado ainda.</p>
-              <p className="mt-0.5 text-xs text-white/40">O próximo evento vai aparecer aqui.</p>
+                  <div className="rounded-xl border border-white/15 bg-black/25 p-2.5">
+                    <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} initialSetterCount={setterConfirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
+                  </div>
+                  {showSteps && (
+                    <div className="flex items-center justify-between gap-1 rounded-xl border border-white/15 bg-black/25 px-2.5 py-2" aria-label="Seu caminho até a quadra">
+                      <HomeStep icon={ThumbsUp} label="Interesse" done={interestDone} />
+                      {needsPayment && (
+                        <>
+                          <span className={`h-px min-w-2 flex-1 ${interestDone ? "bg-emerald-300/50" : "bg-white/15"}`} />
+                          <HomeStep icon={CreditCard} label={proximoRacha.pix_payment_enabled ? "Pix pago" : "Pagamento"} done={paymentDone} />
+                        </>
+                      )}
+                      <span className={`h-px min-w-2 flex-1 ${listDone ? "bg-emerald-300/50" : "bg-white/15"}`} />
+                      <HomeStep icon={Users} label="Na lista" done={listDone} />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-[1fr_auto] gap-2">
+                    {!canRespondToNextEvent ? (
+                      <Link
+                        href={`/racha/${proximoRacha.id}/confirmar`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-300/25 bg-amber-400/15 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/20"
+                      >
+                        <Users className="h-4 w-4" strokeWidth={2.25} />
+                        Acompanhar
+                      </Link>
+                    ) : myStatus === "confirmed" ? (
+                      <Link
+                        href={`/racha/${proximoRacha.id}`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
+                      >
+                        <Zap className="h-4 w-4" strokeWidth={2.75} />
+                        Abrir racha
+                      </Link>
+                    ) : myStatus === "interested" ? (
+                      <Link
+                        href={`/racha/${proximoRacha.id}/confirmar`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
+                      >
+                        <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
+                        Ver interesse
+                      </Link>
+                    ) : isPaymentExempt ? (
+                      <Link
+                        href={`/racha/${proximoRacha.id}/confirmar`}
+                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
+                      >
+                        <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                        Entrar na lista
+                      </Link>
+                    ) : (
+                      <InterestButton
+                        eventId={proximoRacha.id}
+                        price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
+                        isFull={isFull}
+                        pixPaymentEnabled={proximoRacha.pix_payment_enabled}
+                        action={setAttendance}
+                        className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50 disabled:opacity-50"
+                      />
+                    )}
+                    <Link
+                      href={`/racha/${proximoRacha.id}/confirmar`}
+                      className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl bg-white/15 px-4 text-center text-sm font-bold text-white hover:bg-white/20"
+                    >
+                      Ver lista
+                      <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="relative z-10 p-3.5">
+              <div className="rounded-2xl border border-dashed border-white/20 bg-black/15 px-4 py-6 text-center">
+                <CalendarDays className="mx-auto h-7 w-7 text-white/30" strokeWidth={1.5} />
+                <p className="mt-2 text-sm font-medium text-white/80">Nenhum racha marcado ainda.</p>
+                <p className="mt-0.5 text-xs text-white/50">O próximo evento vai aparecer aqui.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {secondaryScheduledRacha?.registration_opens_at && (

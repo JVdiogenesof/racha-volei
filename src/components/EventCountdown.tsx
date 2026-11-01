@@ -17,7 +17,7 @@ function getCountdown(startIso: string): Countdown | null {
   };
 }
 
-export function EventCountdown({ startIso, isInProgress, compact = false }: { startIso: string; isInProgress: boolean; compact?: boolean }) {
+export function EventCountdown({ startIso, isInProgress, compact = false, inline = false }: { startIso: string; isInProgress: boolean; compact?: boolean; /** Uma linha só: "Começa em 2d 03h 14min". */ inline?: boolean }) {
   const [countdown, setCountdown] = useState<Countdown | null | undefined>(undefined);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function EventCountdown({ startIso, isInProgress, compact = false }: { st
   }
 
   if (countdown === undefined) {
-    return <div className={`${compact ? "h-[52px]" : "h-[74px]"} animate-pulse rounded-xl bg-white/5`} aria-hidden="true" />;
+    return <div className={`${inline ? "h-10" : compact ? "h-[52px]" : "h-[74px]"} animate-pulse rounded-xl bg-white/5`} aria-hidden="true" />;
   }
 
   if (countdown === null) {
@@ -45,6 +45,19 @@ export function EventCountdown({ startIso, isInProgress, compact = false }: { st
       <div className="flex items-center justify-center gap-2 rounded-xl border border-purple-300/20 bg-purple-400/10 px-4 py-3 text-sm font-semibold text-purple-100">
         <Timer className="h-4 w-4" strokeWidth={2} />
         Começa em instantes
+      </div>
+    );
+  }
+
+  if (inline) {
+    const text = `${countdown.days > 0 ? `${countdown.days}d ` : ""}${String(countdown.hours).padStart(2, "0")}h ${String(countdown.minutes).padStart(2, "0")}min`;
+    return (
+      <div className="flex items-center justify-between gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-2" aria-live="polite" aria-label="Contagem regressiva para o racha">
+        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60">
+          <Timer className="h-3.5 w-3.5" strokeWidth={2.25} />
+          Começa em
+        </span>
+        <strong className="text-base font-black tabular-nums text-white">{text}</strong>
       </div>
     );
   }
