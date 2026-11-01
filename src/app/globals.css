@@ -728,6 +728,36 @@ form[aria-busy="true"] button[type="submit"]::after {
   animation: copa-pulse 1.8s ease-in-out infinite;
 }
 
+/* Variante dourado + roxo (Torneio oficial), mesmas animações da Copa. */
+.copa-frame.theme-gold {
+  box-shadow: 0 24px 60px -24px rgb(217 119 6 / 0.5), 0 12px 40px -20px rgb(109 40 217 / 0.6);
+}
+
+.copa-frame.theme-gold::before {
+  background: conic-gradient(from 0deg, transparent 0deg, #fbbf24 60deg, #fde68a 100deg, #a78bfa 140deg, transparent 190deg, transparent 360deg);
+}
+
+.copa-hero.theme-gold {
+  background: linear-gradient(120deg, #2e1065, #5b21b6, #7c3aed, #a16207, #d97706, #6d28d9, #2e1065);
+  background-size: 320% 320%;
+}
+
+.copa-title.theme-gold {
+  background-image: linear-gradient(90deg, #ffffff, #fde68a, #fbbf24, #ffffff, #e9d5ff, #ffffff);
+  background-size: 250% 100%;
+  filter: drop-shadow(0 4px 18px rgb(217 119 6 / 0.5));
+}
+
+.copa-slot-on.theme-gold {
+  background: linear-gradient(90deg, #fde68a, #f59e0b);
+  box-shadow: 0 0 10px rgb(245 158 11 / 0.75);
+}
+
+.copa-slot-on.theme-violet {
+  background: linear-gradient(90deg, #ddd6fe, #8b5cf6);
+  box-shadow: 0 0 10px rgb(139 92 246 / 0.7);
+}
+
 @keyframes copa-spin {
   to { transform: rotate(360deg); }
 }
