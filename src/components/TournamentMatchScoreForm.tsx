@@ -9,6 +9,8 @@ export function TournamentMatchScoreForm({
   matchId,
   teamALabel,
   teamBLabel,
+  teamAHint,
+  teamBHint,
   scoreA,
   scoreB,
 }: {
@@ -17,6 +19,8 @@ export function TournamentMatchScoreForm({
   matchId: string;
   teamALabel: string;
   teamBLabel: string;
+  teamAHint?: string | null;
+  teamBHint?: string | null;
   scoreA: number | null;
   scoreB: number | null;
 }) {
@@ -32,7 +36,7 @@ export function TournamentMatchScoreForm({
       <input type="hidden" name="matchId" value={matchId} />
       <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
         <label className="min-w-0 text-center text-sm font-medium text-white">
-          <span className="mb-2 flex justify-center"><TeamBadge name={teamALabel} size={34} stacked /></span>
+          <span className="mb-2 flex justify-center"><TeamBadge name={teamALabel} size={34} stacked hint={teamAHint} /></span>
           <input
             type="number"
             name="scoreA"
@@ -46,7 +50,7 @@ export function TournamentMatchScoreForm({
         </label>
         <span className="pb-3 text-white/40" aria-label="contra">×</span>
         <label className="min-w-0 text-center text-sm font-medium text-white">
-          <span className="mb-2 flex justify-center"><TeamBadge name={teamBLabel} size={34} stacked /></span>
+          <span className="mb-2 flex justify-center"><TeamBadge name={teamBLabel} size={34} stacked hint={teamBHint} /></span>
           <input
             type="number"
             name="scoreB"

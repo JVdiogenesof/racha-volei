@@ -8,7 +8,7 @@ import { TEAM_VICTORY_EVENT } from "./VictoryTeamCard";
 import { EmptyState } from "./EmptyState";
 import { TeamBadge } from "./TeamBadge";
 
-type TeamOption = { id: string; teamNumber: number; name: string };
+type TeamOption = { id: string; teamNumber: number; name: string; hint?: string | null };
 type Confrontation = {
   id: string;
   winnerTeamId: string;
@@ -43,6 +43,7 @@ export function NormalMatchRecorder({
   const { showToast } = useToast();
   const router = useRouter();
   const labels = new Map(teams.map((team) => [team.id, team.name]));
+  const hints = new Map(teams.map((team) => [team.id, team.hint ?? null]));
 
   function record() {
     if (!teamAId || !teamBId || scoreA === "" || scoreB === "") return;
@@ -115,7 +116,7 @@ export function NormalMatchRecorder({
               >
                 <option value="">Escolher time</option>
                 {teams.map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
+                  <option key={team.id} value={team.id}>{team.hint ? `${team.name} · com ${team.hint}` : team.name}</option>
                 ))}
               </select>
             </label>
@@ -132,7 +133,7 @@ export function NormalMatchRecorder({
               >
                 <option value="">Escolher time</option>
                 {teams.filter((team) => team.id !== teamAId).map((team) => (
-                  <option key={team.id} value={team.id}>{team.name}</option>
+                  <option key={team.id} value={team.id}>{team.hint ? `${team.name} · com ${team.hint}` : team.name}</option>
                 ))}
               </select>
             </label>
@@ -143,7 +144,7 @@ export function NormalMatchRecorder({
               <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-white/45">Placar final</p>
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                 <div className="flex flex-col items-center gap-1.5">
-                  <TeamBadge name={labels.get(teamAId) ?? ""} size={22} />
+                  <TeamBadge name={labels.get(teamAId) ?? ""} size={22} hint={hints.get(teamAId)} />
                   <input
                     type="number"
                     inputMode="numeric"
@@ -157,7 +158,7 @@ export function NormalMatchRecorder({
                 </div>
                 <span className="pt-6 text-sm font-bold text-white/35">X</span>
                 <div className="flex flex-col items-center gap-1.5">
-                  <TeamBadge name={labels.get(teamBId) ?? ""} size={22} />
+                  <TeamBadge name={labels.get(teamBId) ?? ""} size={22} hint={hints.get(teamBId)} />
                   <input
                     type="number"
                     inputMode="numeric"
@@ -196,13 +197,13 @@ export function NormalMatchRecorder({
                   {confrontations.length - index}
                 </span>
                 <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-white">
-                  <strong><TeamBadge name={labels.get(match.winnerTeamId) ?? "Time anterior"} size={22} /></strong>
+                  <strong><TeamBadge name={labels.get(match.winnerTeamId) ?? "Time anterior"} size={22} hint={hints.get(match.winnerTeamId)} /></strong>
                   {match.winnerScore != null && match.loserScore != null ? (
                     <span className="font-mono text-xs font-bold text-emerald-300">{match.winnerScore}×{match.loserScore}</span>
                   ) : (
                     <span className="text-white/45">venceu o</span>
                   )}
-                  <TeamBadge name={labels.get(match.loserTeamId) ?? "time anterior"} size={22} className="text-white/80" />
+                  <TeamBadge name={labels.get(match.loserTeamId) ?? "time anterior"} size={22} className="text-white/80" hint={hints.get(match.loserTeamId)} />
                 </p>
                 {isOrganizer && (
                   <button

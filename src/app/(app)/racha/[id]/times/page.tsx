@@ -201,6 +201,14 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   }
 
   const teamLabelById = new Map(teams.map((t) => [t.id, teamDisplayName(t)]));
+  // Um jogador de referência por time (o de maior nota; desempate por nome),
+  // pra achar o time na quadra sem voltar na aba de times.
+  const teamHintById = new Map(
+    teams.map((t) => {
+      const reference = [...t.members].sort((a, b) => b.overall - a.overall || a.fullName.localeCompare(b.fullName, "pt-BR"))[0];
+      return [t.id, reference?.fullName ?? null] as const;
+    }),
+  );
 
   const eventDateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
   const allMembersFlat = teams.flatMap((t) =>
@@ -446,7 +454,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                           <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border px-3 py-2.5 ${advancesToFinal ? "border-amber-300/25 bg-amber-400/[0.08]" : "border-white/10 bg-black/10"}`}>
                             <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${advancesToFinal ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/50"}`}>{index + 1}</span>
                             <div className="min-w-0">
-                              <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} /></p>
+                              <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} hint={teamHintById.get(standing.teamId)} /></p>
                               <p className={`mt-0.5 text-[10px] font-bold ${advancesToFinal ? "text-amber-200/85" : "text-white/45"}`}>{advancesToFinal ? "VAI PARA A FINAL" : playsBottomMatch ? "JOGO DOS DOIS ÚLTIMOS" : "CLASSIFICAÇÃO PARCIAL"}</p>
                             </div>
                             <div className="text-right text-xs text-white/60"><strong className="text-white">{standing.wins}V</strong><span className="mx-1 text-white/20">•</span>{standing.pointsFor} pts</div>
@@ -471,14 +479,14 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                   <div className="mt-3 grid gap-2 lg:grid-cols-2">
                     {groupMatches.map((match, index) => (
                       canManage ? (
-                        <TournamentMatchScoreForm key={match.id} action={recordTournamentMatchScore} eventId={id} matchId={match.id} teamALabel={teamLabelById.get(match.teamAId) ?? "?"} teamBLabel={teamLabelById.get(match.teamBId) ?? "?"} scoreA={match.scoreA} scoreB={match.scoreB} />
+                        <TournamentMatchScoreForm key={match.id} action={recordTournamentMatchScore} eventId={id} matchId={match.id} teamALabel={teamLabelById.get(match.teamAId) ?? "?"} teamBLabel={teamLabelById.get(match.teamBId) ?? "?"} teamAHint={teamHintById.get(match.teamAId)} teamBHint={teamHintById.get(match.teamBId)} scoreA={match.scoreA} scoreB={match.scoreB} />
                       ) : (
                         <article key={match.id} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
                           <p className="text-[10px] font-bold uppercase tracking-wider text-white/35">Jogo {index + 1}</p>
                           <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-center text-sm font-semibold text-white">
-                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamAId) ?? "?"} size={30} stacked /></span>
+                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamAId) ?? "?"} size={30} stacked hint={teamHintById.get(match.teamAId)} /></span>
                             <span className="rounded-lg bg-white/5 px-2 py-1 text-base">{match.scoreA ?? "–"} × {match.scoreB ?? "–"}</span>
-                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamBId) ?? "?"} size={30} stacked /></span>
+                            <span className="flex justify-center"><TeamBadge name={teamLabelById.get(match.teamBId) ?? "?"} size={30} stacked hint={teamHintById.get(match.teamBId)} /></span>
                           </div>
                         </article>
                       )
@@ -495,7 +503,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     {finalMatch.scoreA != null && finalMatch.scoreB != null && <p className="mt-2 text-sm font-medium text-amber-200">🏆 {finalMatch.scoreA > finalMatch.scoreB ? teamLabelById.get(finalMatch.teamAId) : teamLabelById.get(finalMatch.teamBId)} {event.is_pre_torneio ? "é campeão e garante vaga no Torneio VPA!" : "é campeão do mini torneio!"}</p>}
                     <div className="mt-3">
                       {canManage && (!event.is_mini_torneio || bottomMatchComplete) ? (
-                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={finalMatch.id} teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"} scoreA={finalMatch.scoreA} scoreB={finalMatch.scoreB} />
+                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={finalMatch.id} teamALabel={teamLabelById.get(finalMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(finalMatch.teamBId) ?? "?"} teamAHint={teamHintById.get(finalMatch.teamAId)} teamBHint={teamHintById.get(finalMatch.teamBId)} scoreA={finalMatch.scoreA} scoreB={finalMatch.scoreB} />
                       ) : canManage ? (
                         <p className="rounded-xl border border-amber-300/15 bg-black/10 px-3 py-3 text-center text-sm text-amber-100/70">
                           A final libera depois do placar do jogo dos dois últimos.
@@ -516,7 +524,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     )}
                     <div className="mt-3">
                       {canManage ? (
-                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={thirdPlaceMatch.id} teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"} scoreA={thirdPlaceMatch.scoreA} scoreB={thirdPlaceMatch.scoreB} />
+                        <TournamentMatchScoreForm action={recordTournamentMatchScore} eventId={id} matchId={thirdPlaceMatch.id} teamALabel={teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} teamBLabel={teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"} teamAHint={teamHintById.get(thirdPlaceMatch.teamAId)} teamBHint={teamHintById.get(thirdPlaceMatch.teamBId)} scoreA={thirdPlaceMatch.scoreA} scoreB={thirdPlaceMatch.scoreB} />
                       ) : (
                         <p className="rounded-xl bg-white/[0.025] px-3 py-3 text-center font-semibold text-white">{teamLabelById.get(thirdPlaceMatch.teamAId) ?? "?"} <span className="mx-2 text-white/60">{thirdPlaceMatch.scoreA ?? "–"} × {thirdPlaceMatch.scoreB ?? "–"}</span> {teamLabelById.get(thirdPlaceMatch.teamBId) ?? "?"}</p>
                       )}
@@ -535,7 +543,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <ShareConfrontationsArtButton eventId={id} eventDate={event.date} />
                   </section>
                 )}
-                <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
+                <NormalMatchRecorder eventId={id} teams={teams.map((team) => ({ id: team.id, teamNumber: team.teamNumber, name: team.name, hint: teamHintById.get(team.id) ?? null }))} confrontations={normalConfrontations} isOrganizer={canManage} recordAction={recordNormalMatch} undoAction={undoNormalMatch} />
               </div>
             )
           }
@@ -554,7 +562,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                     <li key={standing.teamId} className={`grid grid-cols-[auto_minmax(0,1fr)_repeat(3,auto)] items-center gap-3 rounded-xl border px-3 py-3 ${index < 2 ? "border-amber-300/20 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.025]"}`}>
                       <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${index < 2 ? "bg-amber-400/15 text-amber-200" : "bg-white/5 text-white/45"}`}>{index + 1}</span>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} /></p>
+                        <p className="text-sm font-semibold text-white"><TeamBadge name={standing.name} size={24} hint={teamHintById.get(standing.teamId)} /></p>
                         {index < 2 && <p className="text-[10px] font-bold text-amber-200/70">{event.is_mini_torneio ? "VAI PARA A FINAL" : "CLASSIFICADO"}</p>}
                         {event.is_mini_torneio && index >= standings.length - 2 && <p className="text-[10px] font-bold text-white/40">JOGO DOS DOIS ÚLTIMOS</p>}
                       </div>
