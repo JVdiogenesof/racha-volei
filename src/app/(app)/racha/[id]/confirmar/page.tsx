@@ -22,6 +22,8 @@ import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { ShareConfirmedListArtButton } from "@/components/ShareConfirmedListArtButton";
 import { GuestRatingEditor } from "@/components/GuestRatingEditor";
 import { OrganizerListDock } from "@/components/OrganizerListDock";
+import { RachaListTabs } from "@/components/RachaListTabs";
+import { RachaSteps } from "@/components/RachaMyStatus";
 import { PIX_KEY } from "@/lib/payment";
 import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, joinAsExempt, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
@@ -353,6 +355,19 @@ export default async function ConfirmarPresencaPage({
             )}
           </div>
         </details>
+      )}
+
+      {canRespond && !eventFinished && !eventCancelled && (myStatus === "confirmed" || myStatus === "interested") && (
+        <section className="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-white/50">Suas etapas neste racha</p>
+          <RachaSteps
+            interestDone
+            paymentDone={Boolean(myPayment?.paid)}
+            listDone={myStatus === "confirmed"}
+            needsPayment={Boolean(event.price_per_player) && !isPaymentExempt}
+            pix={Boolean(event.pix_payment_enabled)}
+          />
+        </section>
       )}
 
       {!canRespond && !eventFinished && !eventCancelled ? (
@@ -709,7 +724,11 @@ export default async function ConfirmarPresencaPage({
         </OrganizerListDock>
       )}
 
-      {canSeeConfirmados && (
+      <RachaListTabs
+        confirmedCount={confirmados.length}
+        interestedCount={interessados.length}
+        showConfirmed={canSeeConfirmados}
+        confirmed={canSeeConfirmados ? (
         <section>
           <div className="flex flex-wrap items-end justify-between gap-2">
             <h2 className="font-semibold text-white">
@@ -724,7 +743,7 @@ export default async function ConfirmarPresencaPage({
             )}
           </div>
           <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
-            {confirmadosOrdenados.map((a) => {
+            {confirmadosOrdenados.map((a, index) => {
               const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean; status: string } | null;
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
@@ -742,12 +761,13 @@ export default async function ConfirmarPresencaPage({
               return (
                 <li
                   key={a.profile_id}
-                  className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-3"
+                  className={`min-w-0 rounded-xl border p-3 ${a.profile_id === profile.id ? "border-purple-300/60 bg-purple-400/15" : "border-white/10 bg-white/[0.025]"}`}
                 >
                   <div className="flex min-w-0 items-start gap-3">
+                    <span className="w-5 shrink-0 pt-2 text-center text-xs font-semibold text-white/40">{index + 1}</span>
                     <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
                     <div className="min-w-0 flex-1 pt-0.5">
-                      <p className={`truncate text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}</p>
+                      <p className={`break-words text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}{a.profile_id === profile.id && <span className="ml-1.5 text-xs font-bold text-purple-200">(você)</span>}</p>
                       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">
                         {isGuest && (
                           <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">
@@ -918,8 +938,8 @@ export default async function ConfirmarPresencaPage({
             {!confirmados.length && <li className="text-sm text-white/60">Ninguém confirmado ainda.</li>}
           </ul>
         </section>
-      )}
-
+        ) : null}
+        interested={
       <section>
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-semibold text-white">Interessados ({interessados.length})</h2>
@@ -954,7 +974,7 @@ export default async function ConfirmarPresencaPage({
                   </span>
                 )}
                 <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" />
-                <span className="min-w-0 flex-1 truncate text-sm text-white">{p?.full_name}</span>
+                <span className="min-w-0 flex-1 break-words text-sm text-white">{p?.full_name}{a.profile_id === profile.id && <span className="ml-1.5 text-xs font-bold text-purple-200">(você)</span>}</span>
                 {p?.is_setter && <SetterBadge />}
                 {overall !== null && <span className="text-xs text-white/40">{overall.toFixed(1)}</span>}
                 {profile.is_organizer && !eventFinished && !eventCancelled && (
@@ -984,6 +1004,8 @@ export default async function ConfirmarPresencaPage({
           {!interessados.length && <li className="text-sm text-white/60">Ninguém demonstrou interesse ainda.</li>}
         </ul>
       </section>
+        }
+      />
     </div>
   );
 }

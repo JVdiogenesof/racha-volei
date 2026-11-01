@@ -10,6 +10,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { ToastFromQuery } from "@/components/ToastFromQuery";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { ConfirmedCounter } from "@/components/ConfirmedCounter";
+import { RachaMyStatus } from "@/components/RachaMyStatus";
 import { EventProgress } from "@/components/EventProgress";
 import { startEvent, finishEvent } from "./actions";
 import { teamFormatLabel } from "@/lib/rachaFormat";
@@ -33,12 +34,14 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     { data: finalMatch },
     { data: cupQualifier },
     { data: cupFinal },
+    { data: myPayment },
+    { data: myExemption },
   ] =
     await Promise.all([
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, is_mini_torneio, community, registration_opens_at",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, is_mini_torneio, community, registration_opens_at, pix_payment_enabled",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -68,6 +71,8 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         .maybeSingle(),
       supabase.from("cup_qualifiers").select("cups(name)").eq("event_id", id).maybeSingle(),
       supabase.from("cups").select("name").eq("final_event_id", id).limit(1).maybeSingle(),
+      supabase.from("payments").select("paid").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+      supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
     ]);
 
   if (!event) notFound();
@@ -86,12 +91,13 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const finishLeaders = finishSummary?.bestWinCount
     ? finishSummary.players.filter((player) => player.wins === finishSummary.bestWinCount).map((player) => player.fullName)
     : [];
-  const myStatusLabel =
-    myAttendance?.status === "confirmed"
-      ? "confirmado"
-      : myAttendance?.status === "interested"
-        ? "interessado"
-        : "de fora";
+  const myStatus =
+    myAttendance?.status === "confirmed" || myAttendance?.status === "interested" || myAttendance?.status === "declined"
+      ? myAttendance.status
+      : "none";
+  const canRespond =
+    profile.status === "approved" || (profile.status === "guest" && profile.guest_for_event_id === id);
+  const needsPayment = Boolean(event.price_per_player) && !myExemption;
 
   const dateObj = new Date(`${event.date}T00:00:00`);
 
@@ -135,17 +141,14 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           </div>
         )}
         <div className="grid grid-cols-3 gap-1.5 text-center">
-          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Horário</small><strong className="block truncate text-sm text-white">{event.time ? event.time.slice(0, 5) : "A definir"}</strong></div>
-          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Formato</small><strong className="block truncate text-sm text-white">{event.num_teams} times · {teamFormatLabel(event.team_size)}</strong></div>
-          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Valor</small><strong className="block truncate text-sm text-white">{event.price_per_player ? `R$ ${Number(event.price_per_player).toFixed(2)}` : "—"}</strong></div>
+          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Horário</small><strong className="block break-words text-sm text-white">{event.time ? event.time.slice(0, 5) : "A definir"}</strong></div>
+          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Formato</small><strong className="block break-words text-sm text-white">{event.num_teams} times · {teamFormatLabel(event.team_size)}</strong></div>
+          <div className="min-w-0 rounded-xl bg-black/15 px-1.5 py-2"><small className="block text-[9px] font-bold uppercase tracking-wide text-white/40">Valor</small><strong className="block break-words text-sm text-white">{event.price_per_player ? `R$ ${Number(event.price_per_player).toFixed(2)}` : "—"}</strong></div>
         </div>
-        <p className="flex min-w-0 items-center gap-1.5 text-xs text-white/65"><MapPin className="h-3.5 w-3.5 shrink-0 text-purple-200" /><span className="truncate">{event.location ?? "Local a definir"}</span></p>
+        <p className="flex min-w-0 items-start gap-1.5 text-xs text-white/65"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-200" /><span className="min-w-0 break-words">{event.location ?? "Local a definir"}</span></p>
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="rounded-full bg-white/12 px-2.5 py-1 text-[11px] font-bold text-purple-50">
             {listOpen ? `${confirmedCount ?? 0} confirmados` : `${interestedCount ?? 0} interessados`}
-          </span>
-          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${myAttendance?.status === "confirmed" ? "bg-emerald-400/15 text-emerald-300" : myAttendance?.status === "interested" ? "bg-purple-300/15 text-purple-100" : "bg-white/10 text-white/60"}`}>
-            Você está {myStatusLabel}
           </span>
           {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
         </div>
@@ -158,6 +161,20 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           />
         )}
       </section>
+
+      <RachaMyStatus
+        status={myStatus}
+        listHref={`/racha/${id}/confirmar`}
+        canRespond={canRespond}
+        eventClosed={isFinished || isCancelled}
+        steps={{
+          interestDone: myStatus === "interested" || myStatus === "confirmed",
+          paymentDone: Boolean(myPayment?.paid),
+          listDone: myStatus === "confirmed",
+          needsPayment,
+          pix: Boolean(event.pix_payment_enabled),
+        }}
+      />
 
       {!isFinished && !isCancelled && !registrationOpen && event.registration_opens_at && (
         <RegistrationCountdown opensAt={event.registration_opens_at} />
@@ -247,9 +264,9 @@ function HubCard({
   return (
     <Link
       href={href}
-      className="group grid min-w-0 gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition hover:border-purple-300/40 hover:bg-white/[0.06]"
+      className="group flex min-w-0 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-3 transition hover:border-purple-300/40 hover:bg-white/[0.06]"
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-400/15 text-purple-200 transition group-hover:bg-brand-purple group-hover:text-white">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-400/15 text-purple-200 transition group-hover:bg-brand-purple group-hover:text-white">
         <Icon className="h-4.5 w-4.5" strokeWidth={2.25} />
       </span>
       <span className="min-w-0">
