@@ -11,6 +11,7 @@ import { teamCompositionSignature, varySimulatedTeams } from "@/lib/teamSimulati
 import { assignTeamNames } from "@/lib/teamNames";
 import { generateRoundRobinPairs, computeStandings } from "@/lib/torneioStandings";
 import { sendPushToProfiles } from "@/lib/push";
+import { clearCupQualificationsFromEvent, COPA_PATH, qualifyCupChampions } from "@/lib/copaVpa";
 
 async function ensureTeamHasSpace(supabase: SupabaseClient, teamId: string) {
   const { data: team, error: teamError } = await supabase
@@ -817,12 +818,14 @@ export async function recordTournamentMatchScore(formData: FormData) {
 
   if (match.stage === "group") {
     await maybeCreateFinal(supabase, eventId);
-  } else if (match.stage === "final" && event.is_pre_torneio) {
-    await reserveChampionTeam(supabase, eventId, matchId, organizer.id);
+  } else if (match.stage === "final") {
+    if (event.is_pre_torneio) await reserveChampionTeam(supabase, eventId, matchId, organizer.id);
+    await qualifyCupChampions(supabase, eventId, winningProfileIds, organizer.id);
   }
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath(COPA_PATH);
   revalidatePath("/ranking");
   revalidatePath("/jogadores");
   revalidatePath("/perfil");
@@ -852,6 +855,7 @@ export async function resetGroupStage(formData: FormData) {
   if (!teamIds.length) throw new Error("Nenhum time encontrado pra esse racha.");
 
   await supabase.from("tournament_reserved_players").delete().eq("source_event_id", eventId);
+  await clearCupQualificationsFromEvent(supabase, eventId);
   await supabase.from("tournament_matches").delete().eq("event_id", eventId);
 
   const pairs = generateRoundRobinPairs(teamIds);
@@ -862,6 +866,7 @@ export async function resetGroupStage(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath(COPA_PATH);
   revalidatePath("/ranking");
 }
 
@@ -886,6 +891,7 @@ export async function undoFinal(formData: FormData) {
 
   if (final?.score_a != null && final?.score_b != null) {
     await supabase.from("tournament_reserved_players").delete().eq("source_event_id", eventId);
+    await clearCupQualificationsFromEvent(supabase, eventId);
   }
 
   const { error } = await supabase
@@ -897,5 +903,6 @@ export async function undoFinal(formData: FormData) {
 
   revalidatePath(`/racha/${eventId}/times`);
   revalidatePath("/torneios-vpa");
+  revalidatePath(COPA_PATH);
   revalidatePath("/ranking");
 }

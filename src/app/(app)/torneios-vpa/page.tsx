@@ -8,6 +8,7 @@ import { RemoveReservedPlayerButton } from "@/components/RemoveReservedPlayerBut
 import { ClearReservedListButton } from "@/components/ClearReservedListButton";
 import { addReservedPlayer, removeReservedPlayer, clearReservedList } from "./actions";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
+import { TorneiosVpaTabs } from "@/components/TorneiosVpaTabs";
 
 export default async function TorneiosVpaPage() {
   const profile = await requireProfile();
@@ -65,10 +66,11 @@ export default async function TorneiosVpaPage() {
 
   return (
     <div className="space-y-6">
+      <TorneiosVpaTabs />
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
           <Trophy className="h-6 w-6 text-amber-400" strokeWidth={2} />
-          Torneios VPA · {COMMUNITY_INFO[community].shortLabel}
+          Torneio oficial VPA · {COMMUNITY_INFO[community].shortLabel}
         </h1>
         <p className="mt-1 text-sm text-white/60">
           Quem já garantiu vaga no próximo Torneio Vôlei Por Amor — vencendo um racha pré-torneio ou escolhido direto

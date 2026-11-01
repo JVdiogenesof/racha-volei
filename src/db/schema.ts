@@ -541,6 +541,40 @@ export const eventLockedPlayers = pgTable("event_locked_players", {
   lockedAt: timestamp("locked_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("event_locked_players_event_profile_unique").on(t.eventId, t.profileId)]);
 
+// Copa VPA: final disputada pelos campeões dos rachas classificatórios.
+// Checks e policies ficam na migração 20261031150000_add_copa_vpa.sql.
+export const cups = pgTable("cups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  community: text("community").notNull().default("court"),
+  name: text("name").notNull(),
+  finalDate: date("final_date").notNull(),
+  qualifierDates: date("qualifier_dates").array().notNull().default([]),
+  numTeams: integer("num_teams").notNull().default(4),
+  teamSize: integer("team_size").notNull().default(6),
+  finalEventId: uuid("final_event_id").references(() => events.id, { onDelete: "set null" }),
+  createdBy: uuid("created_by").notNull().references(() => profiles.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const cupQualifiers = pgTable("cup_qualifiers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cupId: uuid("cup_id").notNull().references(() => cups.id, { onDelete: "cascade" }),
+  eventId: uuid("event_id").notNull().references(() => events.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("cup_qualifiers_event_id_key").on(t.eventId)]);
+
+export const cupQualifiedPlayers = pgTable("cup_qualified_players", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cupId: uuid("cup_id").notNull().references(() => cups.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  source: text("source").notNull(),
+  sourceEventId: uuid("source_event_id").references(() => events.id, { onDelete: "set null" }),
+  replacesProfileId: uuid("replaces_profile_id").references(() => profiles.id, { onDelete: "set null" }),
+  rankingPosition: integer("ranking_position"),
+  addedBy: uuid("added_by").notNull().references(() => profiles.id),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("cup_qualified_players_cup_id_profile_id_key").on(t.cupId, t.profileId)]);
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {

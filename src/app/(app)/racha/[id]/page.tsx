@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, Medal, MapPin, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, Medal, MapPin, type LucideIcon } from "lucide-react";
+import { COPA_PATH } from "@/lib/copaVpa";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { EVENT_STATUS_LABELS } from "@/lib/eventStatus";
@@ -24,7 +25,15 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const supabase = await createClient();
   const community = await getActiveCommunity(profile);
 
-  const [{ data: event }, { count: confirmedCount }, { count: interestedCount }, { data: myAttendance }, { data: finalMatch }] =
+  const [
+    { data: event },
+    { count: confirmedCount },
+    { count: interestedCount },
+    { data: myAttendance },
+    { data: finalMatch },
+    { data: cupQualifier },
+    { data: cupFinal },
+  ] =
     await Promise.all([
       supabase
         .from("events")
@@ -57,9 +66,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
         .not("score_a", "is", null)
         .not("score_b", "is", null)
         .maybeSingle(),
+      supabase.from("cup_qualifiers").select("cups(name)").eq("event_id", id).maybeSingle(),
+      supabase.from("cups").select("name").eq("final_event_id", id).limit(1).maybeSingle(),
     ]);
 
   if (!event) notFound();
+  const cupQualifierName = (cupQualifier?.cups as unknown as { name: string } | null)?.name ?? null;
   if (event.community !== community) notFound();
 
   const statusInfo = EVENT_STATUS_LABELS[event.status];
@@ -100,6 +112,18 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       </header>
 
       <section className="grid gap-2.5 rounded-2xl border border-purple-300/20 bg-gradient-to-br from-[#51339a] via-[#2f205e] to-[#171136] p-3.5">
+        {(cupQualifierName || cupFinal) && (
+          <Link
+            href={COPA_PATH}
+            className="flex items-center gap-2 rounded-xl border border-amber-300/30 bg-amber-400/15 px-3 py-2 text-xs font-bold text-amber-100 transition hover:bg-amber-400/20"
+          >
+            <Trophy className="h-4 w-4 shrink-0 text-amber-300" strokeWidth={2} />
+            <span className="min-w-0 flex-1">
+              {cupFinal ? `Final da ${cupFinal.name} · só classificados` : `Classificatória da ${cupQualifierName} · o time campeão vai pra final`}
+            </span>
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
+          </Link>
+        )}
         {(event.is_pre_torneio || event.is_mini_torneio) && (
           <div className="flex flex-wrap gap-1.5">
             {event.is_pre_torneio && (

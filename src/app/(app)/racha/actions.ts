@@ -8,6 +8,7 @@ import { sendPushToProfiles } from "@/lib/push";
 import { getActiveCommunity } from "@/lib/community";
 import type { EventGameStyle } from "@/lib/eventGameStyle";
 import { registrationOpensAtFromForm } from "@/lib/registrationSchedule";
+import { COPA_PATH, linkEventToCup } from "@/lib/copaVpa";
 
 function validateRegistrationSchedule(registrationOpensAt: string, eventDate: string, eventTime: string | null) {
   const eventStartsAt = new Date(`${eventDate}T${eventTime ?? "23:59"}:00-03:00`);
@@ -109,6 +110,14 @@ export async function createEvent(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  // Racha criado numa data da Copa VPA vira classificatória (ou a final, que
+  // já recebe os classificados na lista) sem passo extra do organizador.
+  try {
+    await linkEventToCup(supabase, { id: data.id, date, community });
+  } catch (linkError) {
+    console.error("[copa] Não foi possível ligar o racha à copa", linkError instanceof Error ? linkError.message : linkError);
+  }
+
   const { data: approvedProfiles } = await supabase
     .from("profiles")
     .select("id")
@@ -125,6 +134,7 @@ export async function createEvent(formData: FormData) {
   revalidatePath("/admin/rachas");
   revalidatePath("/racha");
   revalidatePath("/");
+  revalidatePath(COPA_PATH);
   redirect(`/racha/${data.id}?criado=1`);
 }
 
