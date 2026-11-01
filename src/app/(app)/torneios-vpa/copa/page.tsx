@@ -3,29 +3,26 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
-  CalendarDays,
-  Clock3,
   Crown,
   ListChecks,
   Medal,
   RefreshCw,
-  Shirt,
   Sparkles,
   Trophy,
   UserMinus,
   UserPlus,
-  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCommunity, COMMUNITY_INFO } from "@/lib/community";
-import { cupCapacity, getCupRankingQueue, getEventChampionIds, getFeaturedCup, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
+import { cupCapacity, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
 import { FormSelect } from "@/components/FormSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { TorneiosVpaTabs } from "@/components/TorneiosVpaTabs";
+import { CopaHero } from "@/components/CopaHero";
 import {
   addCupPlayer,
   addCupQualifier,
@@ -58,15 +55,6 @@ function shortDate(date: string) {
 
 function longDate(date: string) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" });
-}
-
-function todayInBrazil() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-}
-
-function daysUntil(date: string) {
-  const diff = new Date(`${date}T00:00:00Z`).getTime() - new Date(`${todayInBrazil()}T00:00:00Z`).getTime();
-  return Math.round(diff / 86_400_000);
 }
 
 function formatTime(time: string | null) {
@@ -152,7 +140,7 @@ export default async function CopaVpaPage() {
 
   const myRow = qualified.find((row) => row.profile_id === profile.id) ?? null;
   const myQueueIndex = rankingQueue.findIndex((candidate) => candidate.profileId === profile.id);
-  const remaining = daysUntil(cup.final_date);
+  const remaining = daysUntilInBrazil(cup.final_date);
   const finalChampions = finalChampionIds ? qualified.filter((row) => finalChampionIds.includes(row.profile_id)) : [];
 
   const sortedQualified = [...qualified].sort((a, b) => {
@@ -162,72 +150,37 @@ export default async function CopaVpaPage() {
     return dateA.localeCompare(dateB) || sourceOrder[a.source] - sourceOrder[b.source] || a.added_at.localeCompare(b.added_at);
   });
   const emptySlots = Math.max(0, capacity - sortedQualified.length);
-  const progress = Math.min(100, Math.round((qualified.length / capacity) * 100));
 
   return (
     <div className="space-y-6">
       <TorneiosVpaTabs />
 
-      {/* Capa */}
-      <header className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/25 via-brand-purple/20 to-transparent px-5 py-6 sm:px-8 sm:py-8">
-        <div aria-hidden className="absolute -left-16 -top-20 h-52 w-52 rounded-full bg-amber-400/20 blur-3xl" />
-        <div aria-hidden className="absolute -bottom-24 -right-16 h-56 w-56 rounded-full bg-brand-purple/30 blur-3xl" />
-        <div className="relative">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-amber-300">
-            <Sparkles className="h-3.5 w-3.5" strokeWidth={2.25} />
-            {COMMUNITY_INFO[community].shortLabel} · Dinâmica de {new Date(`${cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { month: "long" })}
-          </p>
-          <h1 className="mt-2 flex items-center gap-2.5 text-3xl font-black text-white sm:text-5xl">
-            <Trophy className="h-8 w-8 shrink-0 text-amber-300 sm:h-11 sm:w-11" strokeWidth={1.8} />
-            {cup.name}
-          </h1>
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-white/70">
-            Disputa entre quem vencer os rachas classificatórios. Os {capacity} classificados entram direto na lista da final e
-            jogam em {cup.num_teams} times valendo troféu.
-          </p>
-
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <HeroStat icon={CalendarDays} label="Final" value={shortDate(cup.final_date)} detail={longDate(cup.final_date).split(",")[0]} />
-            <HeroStat
-              icon={Clock3}
-              label={remaining > 0 ? "Faltam" : remaining === 0 ? "É hoje" : "Encerrada"}
-              value={remaining > 0 ? `${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? "Hoje!" : "—"}
-            />
-            <HeroStat icon={Users} label="Formato" value={`${cup.num_teams} times`} detail={`${cup.team_size} por time`} />
-            <HeroStat icon={BadgeCheck} label="Classificados" value={`${qualified.length}/${capacity}`} />
-          </div>
-
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10" aria-hidden>
-            <div className="h-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 transition-all" style={{ width: `${progress}%` }} />
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-              <Shirt className="h-3.5 w-3.5 text-purple-200" strokeWidth={2.25} />
-              Estreia oficial do uniforme
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-400/15 px-3 py-1 text-xs font-semibold text-amber-100">
-              <Trophy className="h-3.5 w-3.5 text-amber-300" strokeWidth={2.25} />
-              Troféu para os campeões
-            </span>
-          </div>
-        </div>
-      </header>
+      <CopaHero
+        name={cup.name}
+        eyebrow={`${COMMUNITY_INFO[community].shortLabel} · Dinâmica de ${new Date(`${cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { month: "long" })}`}
+        finalDateShort={shortDate(cup.final_date)}
+        finalWeekday={longDate(cup.final_date).split(",")[0].replace(/^./, (letter) => letter.toUpperCase())}
+        remaining={remaining}
+        numTeams={cup.num_teams}
+        teamSize={cup.team_size}
+        capacity={capacity}
+        qualifiedCount={qualified.length}
+      />
 
       {/* Campeões da copa */}
       {finalChampions.length > 0 && cup.final_event_id && (
-        <section className="rounded-2xl border border-amber-400/40 bg-gradient-to-br from-amber-400/20 to-transparent p-5 text-center">
-          <Crown className="mx-auto h-8 w-8 text-amber-300" strokeWidth={1.8} />
+        <section className="rounded-2xl border border-pink-400/40 bg-gradient-to-br from-pink-400/20 to-transparent p-5 text-center">
+          <Crown className="mx-auto h-8 w-8 text-pink-300" strokeWidth={1.8} />
           <h2 className="mt-2 text-xl font-black text-white">Campeões da {cup.name}</h2>
           <ul className="mt-4 flex flex-wrap justify-center gap-3">
             {finalChampions.map((row) => (
               <li key={row.profile_id} className="flex w-20 flex-col items-center gap-1.5">
-                <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="lg" ring="ring-amber-300/70" />
+                <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="lg" ring="ring-pink-300/70" />
                 <span className="line-clamp-2 text-xs font-semibold text-white">{row.player?.full_name}</span>
               </li>
             ))}
           </ul>
-          <Link href={`/racha/${cup.final_event_id}/resultado`} className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-amber-200 hover:underline">
+          <Link href={`/racha/${cup.final_event_id}/resultado`} className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-pink-200 hover:underline">
             Ver resultado completo <ArrowRight className="h-3 w-3" strokeWidth={2} />
           </Link>
         </section>
@@ -259,7 +212,7 @@ export default async function CopaVpaPage() {
                   ? { label: "Campeão definido", tone: "text-emerald-200 bg-emerald-500/15" }
                   : event.status === "open"
                     ? { label: "Inscrições", tone: "text-cyan-200 bg-cyan-500/15" }
-                    : { label: "Em disputa", tone: "text-amber-200 bg-amber-500/15" };
+                    : { label: "Em disputa", tone: "text-pink-200 bg-pink-500/15" };
             return (
               <article key={date} className="flex min-w-0 flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -277,8 +230,8 @@ export default async function CopaVpaPage() {
                   <div className="mt-3 space-y-3">
                     <ul className="flex flex-wrap gap-2">
                       {champions.map((row) => (
-                        <li key={row.profile_id} className="flex min-w-0 items-center gap-2 rounded-full bg-amber-400/10 py-1 pl-1 pr-3">
-                          <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="sm" ring="ring-amber-300/50" />
+                        <li key={row.profile_id} className="flex min-w-0 items-center gap-2 rounded-full bg-pink-400/10 py-1 pl-1 pr-3">
+                          <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="sm" ring="ring-pink-300/50" />
                           <span className="truncate text-xs font-semibold text-white">{row.player?.full_name}</span>
                         </li>
                       ))}
@@ -346,7 +299,7 @@ export default async function CopaVpaPage() {
         />
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {sortedQualified.map((row) => (
-            <li key={row.profile_id} className={`flex min-w-0 items-center gap-3 rounded-xl border px-3 py-2.5 ${row.profile_id === profile.id ? "border-amber-300/50 bg-amber-400/10" : "border-white/10 bg-white/[0.02]"}`}>
+            <li key={row.profile_id} className={`flex min-w-0 items-center gap-3 rounded-xl border px-3 py-2.5 ${row.profile_id === profile.id ? "border-pink-300/50 bg-pink-400/10" : "border-white/10 bg-white/[0.02]"}`}>
               <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-white">{row.player?.full_name}</p>
@@ -393,7 +346,7 @@ export default async function CopaVpaPage() {
         {rankingQueue.length ? (
           <ol className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10">
             {rankingQueue.slice(0, QUEUE_PREVIEW).map((candidate, index) => (
-              <li key={candidate.profileId} className={`flex items-center gap-3 px-3 py-2.5 ${candidate.profileId === profile.id ? "bg-amber-400/10" : index === 0 ? "bg-cyan-400/5" : ""}`}>
+              <li key={candidate.profileId} className={`flex items-center gap-3 px-3 py-2.5 ${candidate.profileId === profile.id ? "bg-pink-400/10" : index === 0 ? "bg-cyan-400/5" : ""}`}>
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${index === 0 ? "bg-cyan-400 text-cyan-950" : "bg-white/10 text-white/70"}`}>
                   {index + 1}
                 </span>
@@ -459,23 +412,11 @@ export default async function CopaVpaPage() {
   );
 }
 
-function HeroStat({ icon: Icon, label, value, detail }: { icon: typeof Trophy; label: string; value: string; detail?: string }) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-white/10 bg-black/20 px-3 py-2.5">
-      <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white/50">
-        <Icon className="h-3 w-3" strokeWidth={2.5} /> {label}
-      </p>
-      <p className="mt-0.5 truncate text-lg font-black text-white">{value}</p>
-      {detail && <p className="truncate text-[11px] capitalize text-white/45">{detail}</p>}
-    </div>
-  );
-}
-
 function SectionTitle({ icon: Icon, title, subtitle }: { icon: typeof Trophy; title: string; subtitle?: string }) {
   return (
     <div>
       <h2 className="flex items-center gap-2 text-base font-bold text-white">
-        <Icon className="h-4 w-4 text-amber-300" strokeWidth={2.25} />
+        <Icon className="h-4 w-4 text-pink-300" strokeWidth={2.25} />
         {title}
       </h2>
       {subtitle && <p className="mt-0.5 text-xs leading-relaxed text-white/55">{subtitle}</p>}
@@ -486,7 +427,7 @@ function SectionTitle({ icon: Icon, title, subtitle }: { icon: typeof Trophy; ti
 function Rule({ n, children }: { n: number; children: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-xs font-black text-amber-200">{n}</span>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink-400/15 text-xs font-black text-pink-200">{n}</span>
       <span>{children}</span>
     </li>
   );
@@ -496,7 +437,7 @@ function SourceChip({ row, eventDateById }: { row: QualifiedRow; eventDateById: 
   const eventDate = row.source_event_id ? eventDateById.get(row.source_event_id) : undefined;
   if (row.source === "champion") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+      <span className="inline-flex items-center gap-1 rounded-full bg-pink-400/15 px-2 py-0.5 text-[10px] font-semibold text-pink-200">
         <Crown className="h-3 w-3" strokeWidth={2.25} /> Campeão {eventDate ? shortDate(eventDate) : ""}
       </span>
     );
@@ -546,7 +487,7 @@ function MyStatus({
   }
   return (
     <section className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <Sparkles className="mt-0.5 h-6 w-6 shrink-0 text-amber-300" strokeWidth={2} />
+      <Sparkles className="mt-0.5 h-6 w-6 shrink-0 text-pink-300" strokeWidth={2} />
       <div>
         <p className="font-bold text-white">Ainda não classificado(a)</p>
         <p className="mt-0.5 text-sm leading-relaxed text-white/65">

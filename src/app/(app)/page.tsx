@@ -8,6 +8,8 @@ import { ConfirmedCounter } from "@/components/ConfirmedCounter";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
+import { CopaHomeCard } from "@/components/CopaHomeCard";
+import { COPA_PATH, cupCapacity, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
@@ -92,7 +94,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myReservedRow }, { data: myPendingOffer }, { data: myExemption }] = await Promise.all([
+  const [{ data: myReservedRow }, { data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
     profile.status === "approved"
       ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
       : Promise.resolve({ data: null }),
@@ -104,6 +106,7 @@ export default async function HomePage() {
       .gt("expires_at", new Date().toISOString())
       .maybeSingle(),
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
+    getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
   ]);
   const isPaymentExempt = Boolean(myExemption);
   const amGuaranteed = Boolean(myReservedRow);
@@ -285,6 +288,18 @@ export default async function HomePage() {
       {myAbsenceStreak >= ATTENDANCE_ALERT_THRESHOLD && <AbsenceWarningBanner streak={myAbsenceStreak} />}
 
       <TodayBirthdayCard profiles={birthdayProfiles ?? []} />
+
+      {copaSummary && (
+        <CopaHomeCard
+          href={COPA_PATH}
+          name={copaSummary.cup.name}
+          finalDateLabel={new Date(`${copaSummary.cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+          remaining={daysUntilInBrazil(copaSummary.cup.final_date)}
+          capacity={cupCapacity(copaSummary.cup)}
+          qualifiedCount={copaSummary.qualifiedCount}
+          iAmQualified={copaSummary.iAmQualified}
+        />
+      )}
 
       {profile.status === "approved" && (
         <Link

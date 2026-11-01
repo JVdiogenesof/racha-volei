@@ -28,7 +28,7 @@ export function TorneiosVpaTabs() {
             <tab.icon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
             {tab.label}
             {tab.badge && !active && (
-              <span className="rounded-full bg-amber-300 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-950">{tab.badge}</span>
+              <span className="rounded-full bg-pink-400 px-1.5 py-0.5 text-[9px] font-black uppercase text-pink-950">{tab.badge}</span>
             )}
           </Link>
         );

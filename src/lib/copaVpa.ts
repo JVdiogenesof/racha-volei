@@ -32,6 +32,12 @@ export type RankingCandidate = {
 
 const CUP_COLUMNS = "id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id";
 
+/** Dias corridos até a data, contando pelo calendário de Brasília. */
+export function daysUntilInBrazil(date: string) {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  return Math.round((new Date(`${date}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / 86_400_000);
+}
+
 export function cupCapacity(cup: Pick<Cup, "num_teams" | "team_size">) {
   return cup.num_teams * cup.team_size;
 }
@@ -56,6 +62,25 @@ export async function getFeaturedCup(supabase: SupabaseClient, community: Commun
     .limit(1)
     .maybeSingle();
   return (latest as Cup | null) ?? null;
+}
+
+/** Resumo da copa para o card da tela de início (só enquanto a final não passou). */
+export async function getCopaHomeSummary(supabase: SupabaseClient, community: Community, profileId: string) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: cup } = await supabase
+    .from("cups")
+    .select(CUP_COLUMNS)
+    .eq("community", community)
+    .gte("final_date", today)
+    .order("final_date", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!cup) return null;
+  const [{ count }, { data: mine }] = await Promise.all([
+    supabase.from("cup_qualified_players").select("id", { count: "exact", head: true }).eq("cup_id", cup.id),
+    supabase.from("cup_qualified_players").select("id").eq("cup_id", cup.id).eq("profile_id", profileId).maybeSingle(),
+  ]);
+  return { cup: cup as Cup, qualifiedCount: count ?? 0, iAmQualified: Boolean(mine) };
 }
 
 /**
