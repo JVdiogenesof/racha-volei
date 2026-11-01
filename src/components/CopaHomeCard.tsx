@@ -14,7 +14,7 @@ export function CopaHomeCard({
   href: string;
   name: string;
   finalDateLabel: string;
-  remaining: number;
+  remaining: number | null;
   capacity: number;
   qualifiedCount: number;
   iAmQualified: boolean;
@@ -36,7 +36,7 @@ export function CopaHomeCard({
               <span className="copa-pulse shrink-0 whitespace-nowrap rounded-full bg-pink-400 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-pink-950">Novo</span>
               <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-pink-100/85">
                 Final {finalDateLabel}
-                {remaining > 0 ? ` · faltam ${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? " · é hoje!" : ""}
+                {remaining === null ? "" : remaining > 0 ? ` · faltam ${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? " · é hoje!" : ""}
               </span>
             </div>
             <p className="copa-title mt-0.5 truncate text-2xl font-black uppercase leading-tight">{name}</p>

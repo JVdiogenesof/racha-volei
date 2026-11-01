@@ -9,7 +9,7 @@ import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
 import { CopaHomeCard } from "@/components/CopaHomeCard";
-import { COPA_PATH, cupCapacity, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
+import { COPA_PATH, cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
@@ -293,8 +293,8 @@ export default async function HomePage() {
         <CopaHomeCard
           href={COPA_PATH}
           name={copaSummary.cup.name}
-          finalDateLabel={new Date(`${copaSummary.cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-          remaining={daysUntilInBrazil(copaSummary.cup.final_date)}
+          finalDateLabel={cupFinalDateLabel(copaSummary.cup)}
+          remaining={copaSummary.cup.final_date ? daysUntilInBrazil(copaSummary.cup.final_date) : null}
           capacity={cupCapacity(copaSummary.cup)}
           qualifiedCount={copaSummary.qualifiedCount}
           iAmQualified={copaSummary.iAmQualified}

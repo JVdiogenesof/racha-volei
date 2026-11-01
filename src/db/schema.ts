@@ -547,7 +547,7 @@ export const cups = pgTable("cups", {
   id: uuid("id").primaryKey().defaultRandom(),
   community: text("community").notNull().default("court"),
   name: text("name").notNull(),
-  finalDate: date("final_date").notNull(),
+  finalDate: date("final_date"),
   qualifierDates: date("qualifier_dates").array().notNull().default([]),
   numTeams: integer("num_teams").notNull().default(4),
   teamSize: integer("team_size").notNull().default(6),

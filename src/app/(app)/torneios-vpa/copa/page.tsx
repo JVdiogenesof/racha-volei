@@ -15,7 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCommunity, COMMUNITY_INFO } from "@/lib/community";
-import { cupCapacity, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
+import { cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
@@ -31,6 +31,7 @@ import {
   removeCupPlayer,
   removeCupQualifier,
   reprocessQualifier,
+  setCupFinalDate,
   setCupFinalEvent,
   syncCupFinal,
 } from "./actions";
@@ -140,7 +141,9 @@ export default async function CopaVpaPage() {
 
   const myRow = qualified.find((row) => row.profile_id === profile.id) ?? null;
   const myQueueIndex = rankingQueue.findIndex((candidate) => candidate.profileId === profile.id);
-  const remaining = daysUntilInBrazil(cup.final_date);
+  const remaining = cup.final_date ? daysUntilInBrazil(cup.final_date) : null;
+  const monthReference = cup.final_date ?? cup.qualifier_dates[0] ?? qualifierEvents[0]?.date ?? null;
+  const finalLabel = cupFinalDateLabel(cup);
   const finalChampions = finalChampionIds ? qualified.filter((row) => finalChampionIds.includes(row.profile_id)) : [];
 
   const sortedQualified = [...qualified].sort((a, b) => {
@@ -157,9 +160,10 @@ export default async function CopaVpaPage() {
 
       <CopaHero
         name={cup.name}
-        eyebrow={`${COMMUNITY_INFO[community].shortLabel} · Dinâmica de ${new Date(`${cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { month: "long" })}`}
-        finalDateShort={shortDate(cup.final_date)}
-        finalWeekday={longDate(cup.final_date).split(",")[0].replace(/^./, (letter) => letter.toUpperCase())}
+        eyebrow={`${COMMUNITY_INFO[community].shortLabel}${monthReference ? ` · Dinâmica de ${new Date(`${monthReference}T00:00:00`).toLocaleDateString("pt-BR", { month: "long" })}` : ""}`}
+        finalDateShort={cup.final_date ? shortDate(cup.final_date) : null}
+        finalWeekday={cup.final_date ? longDate(cup.final_date).split(",")[0].replace(/^./, (letter) => letter.toUpperCase()) : null}
+        qualifierCount={qualifierSlots.length}
         remaining={remaining}
         numTeams={cup.num_teams}
         teamSize={cup.team_size}
@@ -295,7 +299,7 @@ export default async function CopaVpaPage() {
         <SectionTitle
           icon={BadgeCheck}
           title={`Classificados · ${qualified.length}/${capacity}`}
-          subtitle={`Entram automaticamente na lista da final de ${shortDate(cup.final_date)}.`}
+          subtitle={cup.final_date ? `Entram automaticamente na lista da final de ${finalLabel}.` : "Entram automaticamente na lista da final (data a definir)."}
         />
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {sortedQualified.map((row) => (
@@ -371,7 +375,7 @@ export default async function CopaVpaPage() {
 
       {/* Final */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-        <SectionTitle icon={Trophy} title={`A final · ${longDate(cup.final_date)}`} subtitle={`${cup.num_teams} times de ${cup.team_size}, montados com os ${capacity} classificados.`} />
+        <SectionTitle icon={Trophy} title={`A final · ${cup.final_date ? longDate(cup.final_date) : "data a definir"}`} subtitle={`${cup.num_teams} times de ${cup.team_size}, montados com os ${capacity} classificados.`} />
         {finalEvent ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link href={`/racha/${finalEvent.id}/confirmar`} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-brand-purple px-4 text-sm font-bold text-white hover:bg-brand-purple-dark">
@@ -399,7 +403,7 @@ export default async function CopaVpaPage() {
           <Rule n={3}>Se um classificado vencer de novo, a vaga dele vai para o ranking (Índice VPA): entra o próximo melhor colocado que ainda não está na copa.</Rule>
           <Rule n={4}>Nas vagas do ranking, levantadores têm prioridade.</Rule>
           <Rule n={5}>
-            Os {capacity} classificados entram automaticamente na lista do dia {shortDate(cup.final_date)} e disputam a copa em {cup.num_teams} times.
+            Os {capacity} classificados entram automaticamente na lista da final{cup.final_date ? ` (${finalLabel})` : ", com data ainda a definir,"} e disputam a copa em {cup.num_teams} times.
           </Rule>
           <Rule n={6}>A copa marca a estreia oficial do uniforme VPA, e o time campeão leva troféu.</Rule>
         </ol>
@@ -463,7 +467,7 @@ function MyStatus({
   queueIndex: number;
   isSetter: boolean;
   eventDateById: Map<string, string>;
-  finalDate: string;
+  finalDate: string | null;
 }) {
   if (row) {
     const eventDate = row.source_event_id ? eventDateById.get(row.source_event_id) : undefined;
@@ -479,7 +483,7 @@ function MyStatus({
         <div>
           <p className="font-bold text-emerald-50">Você está classificado(a)!</p>
           <p className="mt-0.5 text-sm leading-relaxed text-emerald-50/75">
-            {how} Seu nome já entra na lista da final de {shortDate(finalDate)}. Você pode continuar jogando as classificatórias — se vencer de novo, sua vaga extra vai pro ranking.
+            {how} Seu nome já entra na lista da final{finalDate ? ` de ${shortDate(finalDate)}` : " (data a definir)"}. Você pode continuar jogando as classificatórias — se vencer de novo, sua vaga extra vai pro ranking.
           </p>
         </div>
       </section>
@@ -511,8 +515,8 @@ async function OrganizerPanel({
   missingFromFinal: number;
 }) {
   const supabase = await createClient();
-  const windowStart = new Date(`${cup.final_date}T00:00:00Z`);
-  windowStart.setUTCDate(windowStart.getUTCDate() - 90);
+  const windowStart = new Date();
+  windowStart.setUTCDate(windowStart.getUTCDate() - 60);
   const [{ data: events }, { data: linked }, { data: players }] = await Promise.all([
     supabase
       .from("events")
@@ -525,7 +529,7 @@ async function OrganizerPanel({
     supabase.from("profiles").select("id, full_name").eq("status", "approved").contains("communities", [cup.community]).order("full_name"),
   ]);
   const linkedIds = new Set((linked ?? []).map((row) => row.event_id));
-  const qualifierOptions = (events ?? []).filter((event) => !linkedIds.has(event.id) && event.id !== cup.final_event_id && event.date < cup.final_date);
+  const qualifierOptions = (events ?? []).filter((event) => !linkedIds.has(event.id) && event.id !== cup.final_event_id && (!cup.final_date || event.date < cup.final_date));
   const finalOptions = (events ?? []).filter((event) => !linkedIds.has(event.id));
   const playerOptions = (players ?? []).filter((player) => !qualifiedIds.has(player.id));
   const eventLabel = (event: { date: string; time: string | null; is_mini_torneio: boolean; is_pre_torneio: boolean }) =>
@@ -542,6 +546,20 @@ async function OrganizerPanel({
           A classificatória precisa ser mini torneio ou pré-torneio, pra ter final.
         </p>
       </div>
+
+      <ActionForm action={setCupFinalDate} successMessage="Data da final atualizada." className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <input type="hidden" name="cupId" value={cup.id} />
+        <label className="block min-w-0 flex-1 text-xs font-medium text-white/60">
+          Data da final <span className="text-white/30">(em branco = a definir)</span>
+          <input
+            type="date"
+            name="finalDate"
+            defaultValue={cup.final_date ?? ""}
+            className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white"
+          />
+        </label>
+        <button type="submit" className={buttonClass}>Salvar data</button>
+      </ActionForm>
 
       <ActionForm action={setCupFinalEvent} successMessage="Final atualizada." className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <input type="hidden" name="cupId" value={cup.id} />
@@ -637,8 +655,8 @@ function CreateCupForm({ embedded = false }: { embedded?: boolean }) {
         <input name="name" defaultValue="Copa VPA" maxLength={80} className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white" />
       </label>
       <label className="block text-xs font-medium text-white/60">
-        Data da final
-        <input type="date" name="finalDate" required className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white" />
+        Data da final <span className="text-white/30">(opcional)</span>
+        <input type="date" name="finalDate" className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white" />
       </label>
       <label className="block text-xs font-medium text-white/60 sm:col-span-2">
         Datas das classificatórias (ex.: 01/11, 08/11, 15/11, 22/11)

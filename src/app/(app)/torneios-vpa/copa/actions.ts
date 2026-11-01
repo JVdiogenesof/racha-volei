@@ -24,6 +24,14 @@ function requiredId(formData: FormData, key: string, label: string) {
   return value;
 }
 
+/** Data da final é opcional: em branco = "a definir". */
+function parseOptionalFinalDate(formData: FormData) {
+  const value = String(formData.get("finalDate") ?? "").trim();
+  if (!value) return null;
+  if (!DATE_PATTERN.test(value)) throw new Error("Data da final inválida.");
+  return value;
+}
+
 function revalidateCup(eventIds: (string | null | undefined)[] = []) {
   revalidatePath(COPA_PATH);
   revalidatePath("/");
@@ -46,7 +54,7 @@ async function loadCup(supabase: Awaited<ReturnType<typeof createClient>>, cupId
 }
 
 async function requireEventInCommunity(supabase: Awaited<ReturnType<typeof createClient>>, eventId: string, cup: Cup) {
-  const { data: event, error } = await supabase.from("events").select("id, community, status").eq("id", eventId).maybeSingle();
+  const { data: event, error } = await supabase.from("events").select("id, community, status, date").eq("id", eventId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!event || event.community !== cup.community) throw new Error("Racha não encontrado nesta modalidade.");
   return event;
@@ -58,7 +66,7 @@ export async function createCup(formData: FormData) {
   const community = await getActiveCommunity(organizer);
 
   const name = String(formData.get("name") ?? "").trim() || "Copa VPA";
-  const finalDate = String(formData.get("finalDate") ?? "");
+  const finalDate = parseOptionalFinalDate(formData);
   const numTeams = Number(formData.get("numTeams") ?? 4);
   const teamSize = Number(formData.get("teamSize") ?? 6);
   const qualifierDates = String(formData.get("qualifierDates") ?? "")
@@ -67,14 +75,14 @@ export async function createCup(formData: FormData) {
     .filter(Boolean);
 
   if (name.length > 80) throw new Error("O nome deve ter no máximo 80 caracteres.");
-  if (!DATE_PATTERN.test(finalDate)) throw new Error("Informe a data da final.");
   if (!Number.isInteger(numTeams) || numTeams < 2 || numTeams > 8) throw new Error("Informe entre 2 e 8 times.");
   if (!Number.isInteger(teamSize) || teamSize < 2 || teamSize > 12) throw new Error("Informe entre 2 e 12 jogadores por time.");
+  const year = (finalDate ?? new Date().toISOString()).slice(0, 4);
   const parsedDates = qualifierDates.map((value) => {
     const match = value.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/);
-    const iso = match ? `${match[3] ?? finalDate.slice(0, 4)}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}` : value;
+    const iso = match ? `${match[3] ?? year}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}` : value;
     if (!DATE_PATTERN.test(iso)) throw new Error(`Data de classificatória inválida: ${value}`);
-    if (iso >= finalDate) throw new Error("As classificatórias precisam acontecer antes da final.");
+    if (finalDate && iso >= finalDate) throw new Error("As classificatórias precisam acontecer antes da final.");
     return iso;
   });
 
@@ -95,7 +103,7 @@ export async function createCup(formData: FormData) {
     .select("id, date")
     .eq("community", community)
     .neq("status", "cancelled")
-    .in("date", [...parsedDates, finalDate]);
+    .in("date", finalDate ? [...parsedDates, finalDate] : parsedDates);
   for (const event of events ?? []) {
     await linkEventToCup(supabase, { id: event.id, date: event.date, community });
     if (event.date !== finalDate) await reprocessCupQualifier(supabase, event.id, organizer.id);
@@ -155,13 +163,16 @@ export async function setCupFinalEvent(formData: FormData) {
   const cup = await loadCup(supabase, requiredId(formData, "cupId", "a copa"));
   const eventId = String(formData.get("eventId") ?? "").trim() || null;
 
+  let finalDate = cup.final_date;
   if (eventId) {
-    await requireEventInCommunity(supabase, eventId, cup);
+    const event = await requireEventInCommunity(supabase, eventId, cup);
     const { data: qualifier } = await supabase.from("cup_qualifiers").select("id").eq("event_id", eventId).maybeSingle();
     if (qualifier) throw new Error("Esse racha é uma classificatória, não pode ser a final.");
+    // A data da final passa a ser a do racha escolhido.
+    finalDate = event.date;
   }
 
-  const { error } = await supabase.from("cups").update({ final_event_id: eventId }).eq("id", cup.id);
+  const { error } = await supabase.from("cups").update({ final_event_id: eventId, final_date: finalDate }).eq("id", cup.id);
   if (error) throw new Error(error.message);
 
   let message = eventId ? "Final definida!" : "Final desvinculada.";
@@ -173,6 +184,40 @@ export async function setCupFinalEvent(formData: FormData) {
 
   revalidateCup([eventId, cup.final_event_id]);
   return message;
+}
+
+export async function setCupFinalDate(formData: FormData) {
+  await requireOrganizer();
+  const supabase = await createClient();
+  const cup = await loadCup(supabase, requiredId(formData, "cupId", "a copa"));
+  const finalDate = parseOptionalFinalDate(formData);
+  if (finalDate && cup.qualifier_dates.some((date) => date >= finalDate)) {
+    throw new Error("A final precisa ser depois da última classificatória.");
+  }
+
+  const { error } = await supabase.from("cups").update({ final_date: finalDate }).eq("id", cup.id);
+  if (error) throw new Error(error.message);
+
+  // Já existe racha nesse dia? Vira a final na hora e recebe os classificados.
+  let linked = false;
+  if (finalDate && !cup.final_event_id) {
+    const { data: event } = await supabase
+      .from("events")
+      .select("id, date")
+      .eq("community", cup.community)
+      .eq("date", finalDate)
+      .neq("status", "cancelled")
+      .limit(1)
+      .maybeSingle();
+    if (event) {
+      await linkEventToCup(supabase, { id: event.id, date: event.date, community: cup.community });
+      linked = true;
+    }
+  }
+
+  revalidateCup([cup.final_event_id]);
+  if (!finalDate) return "Data da final marcada como a definir.";
+  return linked ? "Data definida e racha desse dia ligado como final!" : "Data da final definida!";
 }
 
 export async function syncCupFinal(formData: FormData) {

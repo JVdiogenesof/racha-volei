@@ -10,7 +10,8 @@ export type Cup = {
   id: string;
   community: Community;
   name: string;
-  final_date: string;
+  /** Nula enquanto a organização ainda não decidiu o dia da final. */
+  final_date: string | null;
   qualifier_dates: string[];
   num_teams: number;
   team_size: number;
@@ -42,23 +43,37 @@ export function cupCapacity(cup: Pick<Cup, "num_teams" | "team_size">) {
   return cup.num_teams * cup.team_size;
 }
 
-/** A copa em destaque: a próxima final, ou a mais recente se todas já passaram. */
-export async function getFeaturedCup(supabase: SupabaseClient, community: Community): Promise<Cup | null> {
+/** "29/11", ou "a definir" enquanto a data da final não foi decidida. */
+export function cupFinalDateLabel(cup: Pick<Cup, "final_date">) {
+  return cup.final_date
+    ? new Date(`${cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+    : "a definir";
+}
+
+/** Copa em andamento: final ainda sem data ou ainda por vir. A mais próxima primeiro. */
+async function getUpcomingCup(supabase: SupabaseClient, community: Community): Promise<Cup | null> {
   const today = new Date().toISOString().slice(0, 10);
-  const { data: upcoming } = await supabase
+  const { data } = await supabase
     .from("cups")
     .select(CUP_COLUMNS)
     .eq("community", community)
-    .gte("final_date", today)
-    .order("final_date", { ascending: true })
+    .or(`final_date.is.null,final_date.gte.${today}`)
+    .order("final_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (upcoming) return upcoming as Cup;
+  return (data as Cup | null) ?? null;
+}
+
+/** A copa em destaque: a em andamento, ou a mais recente se todas já passaram. */
+export async function getFeaturedCup(supabase: SupabaseClient, community: Community): Promise<Cup | null> {
+  const upcoming = await getUpcomingCup(supabase, community);
+  if (upcoming) return upcoming;
   const { data: latest } = await supabase
     .from("cups")
     .select(CUP_COLUMNS)
     .eq("community", community)
-    .order("final_date", { ascending: false })
+    .order("final_date", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
   return (latest as Cup | null) ?? null;
@@ -66,21 +81,13 @@ export async function getFeaturedCup(supabase: SupabaseClient, community: Commun
 
 /** Resumo da copa para o card da tela de início (só enquanto a final não passou). */
 export async function getCopaHomeSummary(supabase: SupabaseClient, community: Community, profileId: string) {
-  const today = new Date().toISOString().slice(0, 10);
-  const { data: cup } = await supabase
-    .from("cups")
-    .select(CUP_COLUMNS)
-    .eq("community", community)
-    .gte("final_date", today)
-    .order("final_date", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const cup = await getUpcomingCup(supabase, community);
   if (!cup) return null;
   const [{ count }, { data: mine }] = await Promise.all([
     supabase.from("cup_qualified_players").select("id", { count: "exact", head: true }).eq("cup_id", cup.id),
     supabase.from("cup_qualified_players").select("id").eq("cup_id", cup.id).eq("profile_id", profileId).maybeSingle(),
   ]);
-  return { cup: cup as Cup, qualifiedCount: count ?? 0, iAmQualified: Boolean(mine) };
+  return { cup, qualifiedCount: count ?? 0, iAmQualified: Boolean(mine) };
 }
 
 /**
@@ -288,15 +295,15 @@ export async function qualifyCupChampions(
   const rankingIds = rows.filter((row) => row.source === "ranking" && !previous.has(row.profile_id)).map((row) => row.profile_id);
   if (!newChampionsToNotify.length && !rankingIds.length) return;
 
-  const finalLabel = new Date(`${cup.final_date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const finalNote = cup.final_date ? ` Final em ${cupFinalDateLabel(cup)}.` : " A data da final ainda será definida.";
   await sendPushToProfiles(supabase, newChampionsToNotify, {
     title: `Classificado(a) para a ${cup.name}! 🏆`,
-    body: `Seu time venceu a classificatória. Você está na final de ${finalLabel}.`,
+    body: `Seu time venceu a classificatória e você está na final.${finalNote}`,
     url: COPA_PATH,
   });
   await sendPushToProfiles(supabase, rankingIds, {
     title: `Vaga na ${cup.name} pelo ranking! 🏆`,
-    body: `Um campeão repetiu a vitória e a vaga veio pra você pelo Índice VPA. Final em ${finalLabel}.`,
+    body: `Um campeão repetiu a vitória e a vaga veio pra você pelo Índice VPA.${finalNote}`,
     url: COPA_PATH,
   });
 }
@@ -328,7 +335,7 @@ export async function reprocessCupQualifier(supabase: SupabaseClient, eventId: s
   return true;
 }
 
-/** Racha recém-criado numa data da copa vira classificatória ou final sozinho. */
+/** Racha criado (ou já existente) numa data da copa vira classificatória ou final sozinho. */
 export async function linkEventToCup(
   supabase: SupabaseClient,
   event: { id: string; date: string; community: Community },

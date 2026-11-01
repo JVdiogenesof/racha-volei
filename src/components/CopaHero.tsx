@@ -7,6 +7,7 @@ export function CopaHero({
   finalDateShort,
   finalWeekday,
   remaining,
+  qualifierCount,
   numTeams,
   teamSize,
   capacity,
@@ -14,15 +15,18 @@ export function CopaHero({
 }: {
   name: string;
   eyebrow: string;
-  finalDateShort: string;
-  finalWeekday: string;
-  remaining: number;
+  /** null enquanto a data da final não foi decidida. */
+  finalDateShort: string | null;
+  finalWeekday: string | null;
+  remaining: number | null;
+  qualifierCount: number;
   numTeams: number;
   teamSize: number;
   capacity: number;
   qualifiedCount: number;
 }) {
-  const countdown = remaining > 0 ? `${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? "É hoje!" : "Encerrada";
+  const countdown =
+    remaining === null ? null : remaining > 0 ? `${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? "É hoje!" : "Encerrada";
 
   return (
     <header className="copa-frame rounded-[28px]">
@@ -61,8 +65,12 @@ export function CopaHero({
         </div>
 
         <div className="relative z-10 mt-5 grid grid-cols-3 gap-2">
-          <Stat icon={CalendarDays} label="Final" value={finalDateShort} detail={finalWeekday} />
-          <Stat icon={Clock3} label={remaining > 0 ? "Faltam" : "Status"} value={countdown} />
+          <Stat icon={CalendarDays} label="Final" value={finalDateShort ?? "A definir"} detail={finalWeekday ?? "data em breve"} />
+          {countdown ? (
+            <Stat icon={Clock3} label={remaining !== null && remaining > 0 ? "Faltam" : "Status"} value={countdown} />
+          ) : (
+            <Stat icon={Clock3} label="Classificatórias" value={`${qualifierCount} rachas`} detail="aos domingos" />
+          )}
           <Stat icon={Users} label="Formato" value={`${numTeams} times`} detail={`${teamSize} por time`} />
         </div>
 
