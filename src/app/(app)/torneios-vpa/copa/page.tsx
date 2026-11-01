@@ -7,7 +7,7 @@ import {
   ListChecks,
   Medal,
   RefreshCw,
-  Sparkles,
+  Target,
   Trophy,
   UserMinus,
   UserPlus,
@@ -180,7 +180,7 @@ export default async function CopaVpaPage() {
             {finalChampions.map((row) => (
               <li key={row.profile_id} className="flex w-20 flex-col items-center gap-1.5">
                 <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="lg" ring="ring-pink-300/70" />
-                <span className="line-clamp-2 text-xs font-semibold text-white">{row.player?.full_name}</span>
+                <span className="break-words text-xs font-semibold text-white">{row.player?.full_name}</span>
               </li>
             ))}
           </ul>
@@ -236,7 +236,7 @@ export default async function CopaVpaPage() {
                       {champions.map((row) => (
                         <li key={row.profile_id} className="flex min-w-0 items-center gap-2 rounded-full bg-pink-400/10 py-1 pl-1 pr-3">
                           <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="sm" ring="ring-pink-300/50" />
-                          <span className="truncate text-xs font-semibold text-white">{row.player?.full_name}</span>
+                          <span className="break-words text-xs font-semibold text-white">{row.player?.full_name}</span>
                         </li>
                       ))}
                     </ul>
@@ -306,7 +306,7 @@ export default async function CopaVpaPage() {
             <li key={row.profile_id} className={`flex min-w-0 items-center gap-3 rounded-xl border px-3 py-2.5 ${row.profile_id === profile.id ? "border-pink-300/50 bg-pink-400/10" : "border-white/10 bg-white/[0.02]"}`}>
               <Avatar src={row.player?.avatar_url} name={row.player?.full_name ?? "?"} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{row.player?.full_name}</p>
+                <p className="break-words text-sm font-semibold text-white">{row.player?.full_name}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-1">
                   <SourceChip row={row} eventDateById={eventDateById} />
                   {row.player?.is_setter && <SetterBadge />}
@@ -356,7 +356,7 @@ export default async function CopaVpaPage() {
                 </span>
                 <Avatar src={candidate.avatarUrl} name={candidate.fullName} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-white">{candidate.fullName}</p>
+                  <p className="break-words text-sm font-semibold text-white">{candidate.fullName}</p>
                   <p className="text-[11px] text-white/45">
                     {candidate.position ? `Nº ${candidate.position} no Índice VPA · ${candidate.averageIndex.toFixed(1)} pts` : "Em classificação no Índice VPA"}
                   </p>
@@ -491,7 +491,7 @@ function MyStatus({
   }
   return (
     <section className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-      <Sparkles className="mt-0.5 h-6 w-6 shrink-0 text-pink-300" strokeWidth={2} />
+      <Target className="mt-0.5 h-6 w-6 shrink-0 text-pink-300" strokeWidth={2} />
       <div>
         <p className="font-bold text-white">Ainda não classificado(a)</p>
         <p className="mt-0.5 text-sm leading-relaxed text-white/65">

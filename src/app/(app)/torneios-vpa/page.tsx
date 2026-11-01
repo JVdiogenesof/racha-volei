@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, Award, BadgeCheck, CalendarDays, Crown, Gauge, ListChecks, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowRight, Award, BadgeCheck, CalendarDays, Crown, Gauge, ListChecks, Target, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { Avatar } from "@/components/Avatar";
@@ -179,7 +179,7 @@ export default async function TorneiosVpaPage() {
               <h3 className="flex items-center gap-2 text-sm font-bold text-white">
                 {group.key === "manual" ? (
                   <>
-                    <Sparkles className="h-4 w-4 text-violet-300" strokeWidth={2} />
+                    <Award className="h-4 w-4 text-violet-300" strokeWidth={2} />
                     Escolhidos pela organização
                   </>
                 ) : (
@@ -203,7 +203,7 @@ export default async function TorneiosVpaPage() {
                 >
                   <Avatar src={r.profiles?.avatar_url ?? null} name={r.profiles?.full_name ?? "?"} size="sm" ring="ring-amber-300/40" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{r.profiles?.full_name}</p>
+                    <p className="break-words text-sm font-semibold text-white">{r.profiles?.full_name}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-1">
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
                         <BadgeCheck className="h-3 w-3" strokeWidth={2.5} /> Garantido
@@ -254,7 +254,7 @@ export default async function TorneiosVpaPage() {
                   </span>
                   <Avatar src={player.avatar_url} name={player.full_name} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-white">{player.full_name}</p>
+                    <p className="break-words text-sm font-semibold text-white">{player.full_name}</p>
                     <p className="text-[11px] text-white/45">
                       {score.averageIndex.toFixed(1)} pts · {score.totalWins}V-{score.totalLosses}D
                     </p>
@@ -284,7 +284,7 @@ export default async function TorneiosVpaPage() {
                   <li key={score.profileId} className={`flex items-center gap-3 rounded-xl px-2 py-1.5 ${score.profileId === profile.id ? "bg-amber-400/10" : ""}`}>
                     <span className="w-7 shrink-0 text-center text-xs font-bold text-white/50">{TOURNAMENT_QUALIFYING_SLOTS + index + 1}</span>
                     <Avatar src={player.avatar_url} name={player.full_name} size="sm" />
-                    <p className="min-w-0 flex-1 truncate text-sm text-white/80">{player.full_name}</p>
+                    <p className="min-w-0 flex-1 break-words text-sm text-white/80">{player.full_name}</p>
                     {gap !== null && <span className="shrink-0 text-[11px] font-semibold text-amber-200/80">−{gap.toFixed(1)} pts</span>}
                   </li>
                 );

@@ -1,4 +1,4 @@
-import { Award, CalendarDays, Crown, Gauge, Shirt, Sparkles, Trophy, Volleyball } from "lucide-react";
+import { Award, CalendarDays, Crown, Gauge, Shirt, Trophy, Volleyball } from "lucide-react";
 
 /** Capa animada do Torneio oficial: mesma linguagem da Copa VPA, em dourado + roxo. */
 export function TorneioOficialHero({
@@ -40,7 +40,7 @@ export function TorneioOficialHero({
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-amber-100/90">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={2.25} />
+              <Volleyball className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
               {eyebrow}
             </p>
             <h1 className="copa-title theme-gold mt-2 text-4xl font-black uppercase leading-[0.95] tracking-tight sm:text-6xl">
@@ -112,8 +112,8 @@ function Stat({ icon: Icon, label, value, detail }: { icon: typeof Trophy; label
       <p className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-white/60 sm:text-[10px]">
         <Icon className="h-3 w-3 shrink-0" strokeWidth={2.5} /> {label}
       </p>
-      <p className="mt-0.5 truncate text-base font-black text-white sm:text-lg">{value}</p>
-      {detail && <p className="truncate text-[10px] text-white/55 sm:text-[11px]">{detail}</p>}
+      <p className="mt-0.5 break-words text-base font-black text-white sm:text-lg">{value}</p>
+      {detail && <p className="break-words text-[10px] text-white/55 sm:text-[11px]">{detail}</p>}
     </div>
   );
 }

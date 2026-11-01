@@ -158,6 +158,8 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
       </div>
       <RankingTabs
         currentProfileId={currentProfile.id}
+        eyebrow={`${community === "sand" ? "Areia" : "Quadra"} · ${isSeasonView ? `${ROLLING_INDEX_EVENT_COUNT} rachas` : formatMonthLabel(monthKey!)}`}
+        badge={isSeasonView ? "ao vivo" : "histórico"}
         rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
         qualifying={isSeasonView ? { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL } : undefined}
       />

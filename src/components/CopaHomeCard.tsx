@@ -34,12 +34,12 @@ export function CopaHomeCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <span className="copa-pulse shrink-0 whitespace-nowrap rounded-full bg-pink-400 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-pink-950">Novo</span>
-              <span className="truncate text-[10px] font-bold uppercase tracking-[0.08em] text-pink-100/85">
+              <span className="break-words text-[10px] font-bold uppercase tracking-[0.08em] text-pink-100/85">
                 Final {finalDateLabel}
                 {remaining === null ? "" : remaining > 0 ? ` · faltam ${remaining} dia${remaining === 1 ? "" : "s"}` : remaining === 0 ? " · é hoje!" : ""}
               </span>
             </div>
-            <p className="copa-title mt-0.5 truncate text-2xl font-black uppercase leading-tight">{name}</p>
+            <p className="copa-title mt-0.5 break-words text-2xl font-black uppercase leading-tight">{name}</p>
             <p className="text-xs leading-snug text-white/80">
               {iAmQualified ? "Você está classificado(a) para a final!" : "Vença um racha classificatório e garanta sua vaga."}
             </p>

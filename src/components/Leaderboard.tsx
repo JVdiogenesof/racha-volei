@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState, type ReactNode } from "react";
-import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Minus, Sparkles, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Minus, TrendingDown, TrendingUp, Trophy, Volleyball } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
@@ -38,13 +38,21 @@ const STAT_TONE: Record<NonNullable<RankingStat["tone"]>, string> = {
   bad: "border-rose-300/20 bg-rose-400/10 text-rose-200/90",
 };
 
-function StatChips({ stats, className = "" }: { stats: RankingStat[]; className?: string }) {
+// Sobre o fundo roxo do topo: vidro escuro, com o texto mais claro pra ler bem.
+const STAT_TONE_GLASS: Record<NonNullable<RankingStat["tone"]>, string> = {
+  default: "border-white/15 bg-black/25 text-white/80",
+  good: "border-emerald-300/30 bg-emerald-950/40 text-emerald-200",
+  bad: "border-rose-300/30 bg-rose-950/40 text-rose-200",
+};
+
+function StatChips({ stats, className = "", glass = false }: { stats: RankingStat[]; className?: string; glass?: boolean }) {
+  const tones = glass ? STAT_TONE_GLASS : STAT_TONE;
   return (
     <div className={`flex flex-wrap items-center gap-1 ${className}`}>
       {stats.map((stat) => (
         <span
           key={stat.label}
-          className={`inline-flex items-baseline gap-1 rounded-md border px-1.5 py-0.5 text-[10px] leading-tight ${STAT_TONE[stat.tone ?? "default"]}`}
+          className={`inline-flex items-baseline gap-1 rounded-md border px-1.5 py-0.5 text-[10px] leading-tight ${tones[stat.tone ?? "default"]}`}
         >
           <span className="font-semibold uppercase tracking-wide opacity-60">{stat.label}</span>
           <span className="font-bold tabular-nums">{stat.value}</span>
@@ -63,7 +71,7 @@ function BreakdownPanel({ breakdown }: { breakdown: NonNullable<RankingEntry["br
         {breakdown.parts.map((part) => (
           <div key={part.label} className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1">
             <span className="flex min-w-0 items-baseline gap-1.5">
-              <span className="truncate text-[11px] font-medium text-white/70">{part.label}</span>
+              <span className="break-words text-[11px] font-medium text-white/70">{part.label}</span>
               <span className="shrink-0 rounded bg-white/[0.06] px-1 text-[9px] font-bold text-white/40">
                 {Math.round(part.weight * 100)}%
               </span>
@@ -113,14 +121,14 @@ function tierFor(rankedPosition: number | null, cutoff: { slots: number } | unde
 
 // Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
 const PODIUM_STYLE = [
-  { height: "h-12", bar: "from-yellow-300/35 to-yellow-500/5", border: "border-yellow-300/40", text: "text-yellow-300" },
-  { height: "h-9", bar: "from-white/25 to-white/0", border: "border-white/25", text: "text-white/75" },
-  { height: "h-7", bar: "from-orange-300/30 to-orange-500/0", border: "border-orange-300/35", text: "text-orange-300" },
+  { height: "h-16", medal: "from-yellow-200 to-yellow-500 text-yellow-950" },
+  { height: "h-12", medal: "from-slate-100 to-slate-400 text-slate-900" },
+  { height: "h-10", medal: "from-orange-200 to-orange-500 text-orange-950" },
 ];
 
 function TrendBadge({ entry }: { entry: RankingEntry }) {
   if (!entry.trend) return null;
-  if (entry.trend === "new") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-sky-200"><Sparkles className="h-3 w-3" />novo</span>;
+  if (entry.trend === "new") return <span className="mt-1 inline-flex items-center rounded-full bg-sky-400/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-sky-100">novo</span>;
   if (entry.trend === "up") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-300"><TrendingUp className="h-3 w-3" />+{entry.positionChange}</span>;
   if (entry.trend === "down") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-rose-300"><TrendingDown className="h-3 w-3" />{entry.positionChange}</span>;
   return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-white/35"><Minus className="h-3 w-3" />estável</span>;
@@ -133,8 +141,19 @@ export function Leaderboard({
   ranking,
   currentProfileId,
   cutoff,
+  eyebrow,
+  badge,
+  footer,
+  afterHero,
 }: {
   title: string;
+  /** Linha pequena acima do título do topo (ex.: "Quadra · 8 rachas"). */
+  eyebrow: string;
+  badge?: string;
+  /** Mostrado dentro do topo, abaixo do pódio (ex.: "Sua posição"). */
+  footer?: ReactNode;
+  /** Mostrado entre o topo e a lista (ex.: faixa de resumo). */
+  afterHero?: ReactNode;
   icon: ReactNode;
   unit: string;
   ranking: RankingEntry[];
@@ -160,23 +179,28 @@ export function Leaderboard({
   const leaderCount = Math.max(0.0001, rankedEntries[0]?.count ?? 0);
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
-      <header className="flex items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
-        <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-white">
-          {icon}
-          <span className="truncate">{title}</span>
-        </h2>
-        <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-white/50">
-          {rankedEntries.length} {rankedEntries.length === 1 ? "pessoa" : "pessoas"}
-        </span>
-      </header>
+    <div className="space-y-3">
+      <header className="copa-frame rounded-[28px]">
+        <div className="copa-hero theme-ranking copa-shine rounded-[26px] px-3 pb-3 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
+          <span aria-hidden className="copa-orb -left-10 -top-12 h-40 w-40 bg-fuchsia-400" />
+          <span aria-hidden className="copa-orb copa-orb-slow -bottom-16 -right-10 h-48 w-48 bg-violet-500" />
+          {["left-[10%] top-[16%]", "left-[84%] top-[10%]", "left-[70%] top-[50%]", "left-[18%] top-[62%]"].map((position, index) => (
+            <span key={position} aria-hidden className={`copa-twinkle absolute h-1.5 w-1.5 rounded-full bg-white ${position}`} style={{ animationDelay: `${index * 0.5}s` }} />
+          ))}
 
-      {!ranking.length ? (
-        <div className="p-4"><EmptyState compact icon={<BarChart3 className="h-5 w-5" />} title="Ranking sendo formado" description="Os resultados aparecem aqui conforme os rachas e confrontos forem registrados." /></div>
-      ) : (
-        <>
+          <div className="relative z-10 px-1">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-fuchsia-100/90">
+                <Volleyball className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
+                {eyebrow}
+              </p>
+              {badge && <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-bold text-white">{badge}</span>}
+            </div>
+            <h1 className="copa-title mt-1.5 text-[28px] font-black uppercase leading-[1.05] tracking-tight sm:text-5xl">{title}</h1>
+          </div>
+
           {podium.length > 0 && (
-            <div className="grid grid-cols-3 items-end gap-1.5 px-3 pt-5 sm:gap-3 sm:px-6">
+            <div className="relative z-10 mt-5 grid grid-cols-[repeat(3,minmax(0,1fr))] items-end gap-1.5 sm:gap-3">
               {podiumOrder.map((entry, slot) => {
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
@@ -197,49 +221,42 @@ export function Leaderboard({
                           "aria-label": `Ver conta da nota de ${entry.fullName}`,
                         }
                       : {})}
-                    className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""} ${entry.breakdown ? "cursor-pointer rounded-xl transition hover:bg-white/[0.03]" : ""}`}
+                    className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""} ${entry.breakdown ? "cursor-pointer rounded-xl transition hover:bg-white/[0.06]" : ""}`}
                   >
                     <div className="relative">
-                      {isFirst && <Crown className="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 text-yellow-300" strokeWidth={2.25} fill="currentColor" fillOpacity={0.25} />}
+                      {isFirst && (
+                        <span className="copa-float absolute -top-6 left-1/2 -translate-x-1/2">
+                          <Crown className="h-6 w-6 text-yellow-200 drop-shadow-[0_0_10px_rgba(253,224,71,0.9)]" strokeWidth={2} fill="currentColor" fillOpacity={0.25} />
+                        </span>
+                      )}
                       <Avatar
                         src={entry.avatarUrl}
                         name={entry.fullName}
                         size={isFirst ? "lg" : "md"}
-                        ring={podiumTier ? TIER_STYLE[podiumTier].ring : undefined}
+                        ring={podiumTier ? TIER_STYLE[podiumTier].ring : "ring-white/40"}
                       />
                     </div>
-                    <p className="mt-1.5 line-clamp-2 w-full px-0.5 text-[11px] font-semibold leading-tight text-white sm:text-sm">
+                    <p className="mt-1.5 w-full break-words px-0.5 text-[12px] font-bold leading-tight text-white sm:text-sm">
                       {entry.fullName}
-                      {isMe && <span className="ml-1 align-middle text-[8px] font-black text-purple-200">VOCÊ</span>}
+                      {isMe && <span className="ml-1 align-middle text-[8px] font-black text-fuchsia-200">VOCÊ</span>}
                     </p>
-                    <p className="mt-0.5 text-[11px] font-bold text-white/70 sm:text-xs">
+                    <p className="mt-0.5 text-[12px] font-black tabular-nums text-white sm:text-sm">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
                     {entry.stats?.length ? (
-                      <div className="mt-0.5 flex w-full flex-col items-center gap-0.5">
-                        {/* Só as duas primeiras pra não empurrar o pedestal: o resto
-                            aparece na lista e na conta da nota, que abre ao tocar. */}
-                        {entry.stats.slice(0, 2).map((stat) => (
-                          <span key={stat.label} className="flex items-baseline gap-1 text-[9px] leading-tight">
-                            <span className="uppercase tracking-wide text-white/25">{stat.label}</span>
-                            <span className={`font-bold tabular-nums ${stat.tone === "good" ? "text-emerald-300/80" : stat.tone === "bad" ? "text-rose-300/80" : "text-white/50"}`}>
-                              {stat.value}
-                            </span>
-                          </span>
-                        ))}
-                      </div>
+                      <StatChips stats={entry.stats} glass className="mt-1 w-full justify-center" />
                     ) : entry.detail ? (
-                      <p className="line-clamp-1 w-full px-0.5 text-[9px] leading-tight text-white/35">{entry.detail}</p>
+                      <p className="mt-0.5 w-full break-words px-0.5 text-[10px] leading-tight text-white/65">{entry.detail}</p>
                     ) : null}
                     <TrendBadge entry={entry} />
                     <div
-                      className={`mt-1.5 flex w-full items-start justify-center gap-1 rounded-t-lg border border-b-0 bg-gradient-to-b pt-1 ${style.height} ${style.bar} ${style.border}`}
+                      className={`mt-1.5 flex w-full items-start justify-center gap-1.5 rounded-t-xl border border-b-0 border-white/20 bg-gradient-to-b from-white/25 to-white/5 pt-1.5 ${style.height}`}
                     >
-                      <span className={`text-sm font-black leading-none ${style.text}`}>
+                      <span className={`flex h-6 min-w-6 items-center justify-center rounded-full bg-gradient-to-br px-1 text-[11px] font-black ${style.medal}`}>
                         <AnimatedMetric value={`${place + 1}º`} />
                       </span>
                       {insideCutoff && podiumTier && (
-                        <CheckCircle2 className={`h-3 w-3 ${TIER_STYLE[podiumTier].text}`} strokeWidth={2.5} aria-label="Classificado" />
+                        <CheckCircle2 className={`mt-1 h-4 w-4 ${TIER_STYLE[podiumTier].text}`} strokeWidth={2.5} aria-label="Classificado" />
                       )}
                     </div>
                   </Wrapper>
@@ -249,12 +266,33 @@ export function Leaderboard({
           )}
 
           {podiumExpanded?.breakdown && (
-            <div className="px-3 pt-2 sm:px-6">
-              <p className="text-[11px] font-bold text-white/70">{podiumExpanded.fullName}</p>
+            <div className="relative z-10 mt-3 rounded-xl bg-black/20 px-2.5 pb-2.5 pt-2">
+              <p className="text-[11px] font-bold text-white/80">{podiumExpanded.fullName}</p>
               <BreakdownPanel breakdown={podiumExpanded.breakdown} />
             </div>
           )}
 
+          {footer && <div className="relative z-10 mt-3">{footer}</div>}
+        </div>
+      </header>
+
+      {afterHero}
+
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
+        <h2 className="flex min-w-0 items-center gap-2 text-sm font-bold text-white">
+          {icon}
+          <span>Classificação completa</span>
+        </h2>
+        <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-bold text-white/60">
+          {rankedEntries.length} {rankedEntries.length === 1 ? "pessoa" : "pessoas"}
+        </span>
+      </header>
+
+      {!ranking.length ? (
+        <div className="p-4"><EmptyState compact icon={<BarChart3 className="h-5 w-5" />} title="Ranking sendo formado" description="Os resultados aparecem aqui conforme os rachas e confrontos forem registrados." /></div>
+      ) : (
+        <>
           {rest.length > 0 && (
             <ul className="border-t border-white/10 px-2 py-1 sm:px-4">
               {rest.map((entry, i) => {
@@ -291,8 +329,8 @@ export function Leaderboard({
                           <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" ring={tier ? TIER_STYLE[tier].ring : undefined} />
                         </span>
                         <div className="min-w-0 flex-1 pt-0.5">
-                          <p className="flex min-w-0 items-center gap-1 text-[13px] font-medium leading-tight text-white">
-                            <span className="truncate">{entry.fullName}</span>
+                          <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-medium leading-tight text-white">
+                            <span className="break-words">{entry.fullName}</span>
                             {isMe && <span className="shrink-0 text-[8px] font-black text-purple-200">VOCÊ</span>}
                             {entry.guaranteed && (
                               <span className="shrink-0 rounded-full bg-emerald-400/15 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide text-emerald-300">
@@ -303,7 +341,7 @@ export function Leaderboard({
                           {entry.stats?.length ? (
                             <StatChips stats={entry.stats} className="mt-1" />
                           ) : entry.detail ? (
-                            <p className="truncate text-[10px] leading-tight text-white/35">{entry.detail}</p>
+                            <p className="break-words text-[10px] leading-tight text-white/50">{entry.detail}</p>
                           ) : null}
                         </div>
                         <div className="shrink-0 pt-0.5 text-right">
@@ -368,5 +406,6 @@ export function Leaderboard({
         </>
       )}
     </section>
+    </div>
   );
 }

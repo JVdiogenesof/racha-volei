@@ -728,6 +728,12 @@ form[aria-busy="true"] button[type="submit"]::after {
   animation: copa-pulse 1.8s ease-in-out infinite;
 }
 
+/* Variante roxo + magenta (Ranking), mesmas animações da Copa. */
+.copa-hero.theme-ranking {
+  background: linear-gradient(120deg, #2e1065, #5b21b6, #7c3aed, #a21caf, #6d28d9, #2e1065);
+  background-size: 320% 320%;
+}
+
 /* Variante dourado + roxo (Torneio oficial), mesmas animações da Copa. */
 .copa-frame.theme-gold {
   box-shadow: 0 24px 60px -24px rgb(217 119 6 / 0.5), 0 12px 40px -20px rgb(109 40 217 / 0.6);
