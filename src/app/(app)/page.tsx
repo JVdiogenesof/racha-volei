@@ -1,28 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
-import { CalendarDays, Clock, CreditCard, MapPin, Megaphone, ArrowRight, ThumbsUp, Sparkles, ChevronRight, Trophy, Medal, Users, Zap, Shirt, Gauge, CheckCircle2, Target, type LucideIcon } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Shirt, Gauge, CheckCircle2, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { InterestButton } from "@/components/InterestButton";
-import { ConfirmedCounter } from "@/components/ConfirmedCounter";
+import { HomeRachaCard } from "@/components/HomeRachaCard";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
 import { CopaHomeCard } from "@/components/CopaHomeCard";
 import { COPA_PATH, cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
-import { RachaLevelBadge } from "@/components/RachaLevelBadge";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
-import { EventCountdown } from "@/components/EventCountdown";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
-import { teamFormatLabel } from "@/lib/rachaFormat";
 import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
-import { isRegistrationOpen } from "@/lib/registrationSchedule";
-import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
 import { getTournamentZone } from "@/lib/tournamentQualification";
@@ -31,17 +25,6 @@ import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { AbsenceWarningBanner } from "@/components/AbsenceWarningBanner";
 import { getAbsenceStreaks, ATTENDANCE_ALERT_THRESHOLD } from "@/lib/attendancePolicy";
 import { acceptSpotOffer, declineSpotOffer } from "./racha/[id]/confirmar/actions";
-
-function HomeStep({ icon: Icon, label, done }: { icon: LucideIcon; label: string; done: boolean }) {
-  return (
-    <span className="flex min-w-0 items-center gap-1.5">
-      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${done ? "border-emerald-300/50 bg-emerald-400/25 text-emerald-100" : "border-white/20 bg-white/10 text-white/50"}`}>
-        {done ? <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.75} /> : <Icon className="h-3 w-3" strokeWidth={2.25} />}
-      </span>
-      <span className={`whitespace-nowrap text-[10px] font-bold uppercase ${done ? "text-emerald-100" : "text-white/55"}`}>{label}</span>
-    </span>
-  );
-}
 
 function hoursAgoIso(hours: number) {
   return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
@@ -128,19 +111,39 @@ export default async function HomePage() {
     | null;
 
   const proximoRacha = upcomingRachas?.[0] ?? null;
-  // Mostra o segundo racha marcado mesmo depois que as inscrições dele
-  // abrirem -- antes sumia da tela inicial assim que abria (a contagem
-  // regressiva se auto-desligava e o filtro escondia o card junto), dando a
-  // impressão de que o racha tinha sumido, quando só dava pra se inscrever
-  // normalmente pela aba Rachas.
-  const secondaryScheduledCandidates = (upcomingRachas ?? [])
+  // Mostra o segundo racha marcado com o mesmo card do primeiro, tanto antes
+  // quanto depois de as inscrições abrirem (assim ninguém confunde os dois).
+  const secondaryCandidates = (upcomingRachas ?? [])
     .slice(1)
-    .filter((event) => event.registration_opens_at);
-  const secondaryScheduledRacha =
-    secondaryScheduledCandidates.find((event) => event.is_pre_torneio) ?? secondaryScheduledCandidates[0] ?? null;
-  const secondaryRegistrationOpen = secondaryScheduledRacha
-    ? isRegistrationOpen(secondaryScheduledRacha.registration_opens_at, secondaryScheduledRacha.official_list_open)
-    : false;
+    .filter((event) => event.registration_opens_at || event.official_list_open);
+  const secondaryRacha = secondaryCandidates.find((event) => event.is_pre_torneio) ?? secondaryCandidates[0] ?? null;
+
+  // Situação da pessoa e contagens do segundo racha (o primeiro usa as consultas abaixo).
+  const loadSecondaryState = async (event: NonNullable<typeof secondaryRacha>) => {
+    const [{ data: attendance }, { data: payment }, { count: confirmed }, { count: newcomers }, { count: setters }, level] = await Promise.all([
+      supabase.from("attendance").select("status").eq("event_id", event.id).eq("profile_id", profile.id).maybeSingle(),
+      supabase.from("payments").select("paid").eq("event_id", event.id).eq("profile_id", profile.id).maybeSingle(),
+      supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed"),
+      supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed").eq("uses_newcomer_spot", true),
+      supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed").eq("uses_setter_spot", true),
+      event.official_list_open ? getRachaLevel(supabase, event.id) : Promise.resolve(null),
+    ]);
+    const confirmedTotal = confirmed ?? 0;
+    const regularConfirmed = Math.max(0, confirmedTotal - (newcomers ?? 0));
+    const memberSlots = event.max_players != null ? Math.max(0, event.max_players - (event.newcomer_reserved_spots ?? 0)) : null;
+    const full =
+      event.max_players != null &&
+      (profile.status === "guest" ? confirmedTotal >= event.max_players : memberSlots !== null && regularConfirmed >= memberSlots);
+    return {
+      status: attendance?.status,
+      paid: Boolean(payment?.paid),
+      confirmedCount: confirmedTotal,
+      setterCount: setters ?? 0,
+      level,
+      isFull: full,
+      canRespond: profile.status === "approved" || (profile.status === "guest" && profile.guest_for_event_id === event.id),
+    };
+  };
 
   type RecentChampion = { eventDateLabel: string; teamName: string; players: { fullName: string; avatarUrl: string | null }[] };
   const loadChampion = async (): Promise<RecentChampion | null> => {
@@ -188,6 +191,7 @@ export default async function HomePage() {
     { count: interessadosCount },
     { data: declineRows },
     rachaLevel,
+    secondaryState,
   ] = await Promise.all([
     loadChampion(),
     proximoRacha
@@ -221,6 +225,7 @@ export default async function HomePage() {
           .gte("cancelled_at", declineWindowStart)
       : Promise.resolve({ data: [] as { profile_id: string; profiles: unknown }[] }),
     proximoRacha?.official_list_open ? getRachaLevel(supabase, proximoRacha.id) : Promise.resolve(null),
+    secondaryRacha ? loadSecondaryState(secondaryRacha) : Promise.resolve(null),
   ]);
   const reservedSpots = proximoRacha?.newcomer_reserved_spots ?? 0;
   const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
@@ -232,26 +237,11 @@ export default async function HomePage() {
       ? (confirmedCount ?? 0) >= proximoRacha.max_players
       : memberCapacity !== null && regularConfirmedCount >= memberCapacity);
 
-  const isInProgress = proximoRacha?.status === "in_progress";
   const myStatus = myAttendance?.status;
   const canRespondToNextEvent =
     profile.status === "approved" ||
     (profile.status === "guest" && profile.guest_for_event_id === proximoRacha?.id);
-  const registrationOpen = proximoRacha
-    ? isRegistrationOpen(proximoRacha.registration_opens_at, proximoRacha.official_list_open)
-    : false;
-  const racePhase = isInProgress
-    ? { label: "Rolando agora", className: "bg-red-400/25 text-red-100", dot: "bg-red-300" }
-    : registrationOpen
-      ? { label: "Inscrições abertas", className: "bg-emerald-400/25 text-emerald-100", dot: "bg-emerald-300" }
-      : proximoRacha?.registration_opens_at
-        ? { label: "Inscrições em breve", className: "bg-amber-400/25 text-amber-100", dot: "bg-amber-300" }
-        : null;
-  const needsPayment = Boolean(proximoRacha?.price_per_player) && !isPaymentExempt;
-  const showSteps = canRespondToNextEvent && registrationOpen && !isInProgress;
-  const interestDone = myStatus === "interested" || myStatus === "confirmed";
   const paymentDone = Boolean(myPayment?.paid);
-  const listDone = myStatus === "confirmed";
   const ultimoAviso = avisos?.[0] ?? null;
   const avisoAuthor = ultimoAviso
     ? (ultimoAviso.profiles as unknown as { full_name: string } | null)?.full_name
@@ -281,11 +271,6 @@ export default async function HomePage() {
     : null;
 
   const firstName = profile.full_name.split(" ")[0];
-  const preTorneio = Boolean(proximoRacha?.is_pre_torneio);
-  const raceDate = proximoRacha ? new Date(`${proximoRacha.date}T00:00:00`) : null;
-  const raceWeekday = raceDate?.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
-  const raceDay = raceDate?.toLocaleDateString("pt-BR", { day: "2-digit" });
-  const raceMonth = raceDate?.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
 
   return (
     <div className="space-y-3">
@@ -371,157 +356,23 @@ export default async function HomePage() {
         </Link>
       )}
 
-      <section className={`copa-frame rounded-3xl ${preTorneio ? "theme-gold" : ""}`}>
-        <div className={`copa-hero ${preTorneio ? "theme-gold" : "theme-ranking"} copa-shine rounded-[22px]`}>
-          <span aria-hidden className="copa-orb -left-10 -top-12 h-40 w-40 bg-fuchsia-400" />
-          <span aria-hidden className="copa-orb copa-orb-slow -bottom-16 -right-10 h-44 w-44 bg-violet-500" />
-
-          {proximoRacha ? (
-            <div className="relative z-10 space-y-2.5 p-3.5">
-              <div className="flex items-start gap-3">
-                <div className="shrink-0 text-center" aria-label={`Racha em ${raceWeekday} ${raceDay} de ${raceMonth}`}>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-100">{raceWeekday}</p>
-                  <p className="copa-title -mt-0.5 text-[46px] font-black leading-none">{raceDay}</p>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-purple-100">{raceMonth}</p>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {racePhase && (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${racePhase.className}`}>
-                        <span className={`h-1.5 w-1.5 animate-pulse rounded-full ${racePhase.dot}`} /> {racePhase.label}
-                      </span>
-                    )}
-                    {preTorneio && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-950">
-                        <Trophy className="h-3 w-3" strokeWidth={2.75} />
-                        Pré-torneio
-                      </span>
-                    )}
-                    {proximoRacha.is_mini_torneio && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-cyan-400/25 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-cyan-100">
-                        <Medal className="h-3 w-3" />
-                        Mini torneio
-                      </span>
-                    )}
-                    <span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold text-white">
-                      {teamFormatLabel(proximoRacha.team_size)}
-                    </span>
-                    {myStatus === "confirmed" && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/25 px-2 py-0.5 text-[10px] font-bold text-emerald-100">
-                        <CheckCircle2 className="h-3 w-3" strokeWidth={2.75} />
-                        Confirmado
-                      </span>
-                    )}
-                    {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
-                  </div>
-                  <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] font-bold text-white">
-                    {proximoRacha.time && (
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-purple-100" strokeWidth={2.5} />
-                        {proximoRacha.time.slice(0, 5)}
-                      </span>
-                    )}
-                    {proximoRacha.location && (
-                      <span className="inline-flex items-start gap-1 font-medium text-purple-50">
-                        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-purple-100" strokeWidth={2.5} />
-                        <span className="break-words">{proximoRacha.location}</span>
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-
-              {!registrationOpen && proximoRacha.registration_opens_at ? (
-                <>
-                  <RegistrationCountdown opensAt={proximoRacha.registration_opens_at} compact />
-                  <Link
-                    href={`/racha/${proximoRacha.id}`}
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-1 rounded-xl bg-white/15 px-3 text-sm font-bold text-white hover:bg-white/20"
-                  >
-                    Ver detalhes do racha
-                    <ChevronRight className="h-4 w-4" strokeWidth={2.25} />
-                  </Link>
-                </>
-              ) : (
-                <>
-                  {proximoRacha.time && (
-                    <EventCountdown
-                      startIso={`${proximoRacha.date}T${proximoRacha.time}-03:00`}
-                      isInProgress={isInProgress}
-                      inline
-                    />
-                  )}
-                  <div className="rounded-xl border border-white/15 bg-black/25 p-2.5">
-                    <ConfirmedCounter eventId={proximoRacha.id} maxPlayers={proximoRacha.max_players} initialConfirmedCount={confirmedCount ?? 0} initialSetterCount={setterConfirmedCount ?? 0} compact showFullCapacity={profile.is_organizer} />
-                  </div>
-                  {showSteps && (
-                    <div className="flex items-center justify-between gap-1 rounded-xl border border-white/15 bg-black/25 px-2.5 py-2" aria-label="Seu caminho até a quadra">
-                      <HomeStep icon={ThumbsUp} label="Interesse" done={interestDone} />
-                      {needsPayment && (
-                        <>
-                          <span className={`h-px min-w-2 flex-1 ${interestDone ? "bg-emerald-300/50" : "bg-white/15"}`} />
-                          <HomeStep icon={CreditCard} label={proximoRacha.pix_payment_enabled ? "Pix pago" : "Pagamento"} done={paymentDone} />
-                        </>
-                      )}
-                      <span className={`h-px min-w-2 flex-1 ${listDone ? "bg-emerald-300/50" : "bg-white/15"}`} />
-                      <HomeStep icon={Users} label="Na lista" done={listDone} />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-[1fr_auto] gap-2">
-                    {!canRespondToNextEvent ? (
-                      <Link
-                        href={`/racha/${proximoRacha.id}/confirmar`}
-                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-amber-300/25 bg-amber-400/15 px-3 text-center text-sm font-bold text-amber-100 hover:bg-amber-400/20"
-                      >
-                        <Users className="h-4 w-4" strokeWidth={2.25} />
-                        Acompanhar
-                      </Link>
-                    ) : myStatus === "confirmed" ? (
-                      <Link
-                        href={`/racha/${proximoRacha.id}`}
-                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                      >
-                        <Zap className="h-4 w-4" strokeWidth={2.75} />
-                        Abrir racha
-                      </Link>
-                    ) : myStatus === "interested" ? (
-                      <Link
-                        href={`/racha/${proximoRacha.id}/confirmar`}
-                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                      >
-                        <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
-                        Ver interesse
-                      </Link>
-                    ) : isPaymentExempt ? (
-                      <Link
-                        href={`/racha/${proximoRacha.id}/confirmar`}
-                        className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50"
-                      >
-                        <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
-                        Entrar na lista
-                      </Link>
-                    ) : (
-                      <InterestButton
-                        eventId={proximoRacha.id}
-                        price={proximoRacha.price_per_player ? Number(proximoRacha.price_per_player) : null}
-                        isFull={isFull}
-                        pixPaymentEnabled={proximoRacha.pix_payment_enabled}
-                        action={setAttendance}
-                        className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 text-sm font-black text-[#4c1d95] shadow-lg shadow-black/20 hover:bg-purple-50 disabled:opacity-50"
-                      />
-                    )}
-                    <Link
-                      href={`/racha/${proximoRacha.id}/confirmar`}
-                      className="inline-flex min-h-11 items-center justify-center gap-1 rounded-xl bg-white/15 px-4 text-center text-sm font-bold text-white hover:bg-white/20"
-                    >
-                      Ver lista
-                      <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
+      {proximoRacha ? (
+        <HomeRachaCard
+          event={proximoRacha}
+          myStatus={myStatus}
+          paid={paymentDone}
+          confirmedCount={confirmedCount ?? 0}
+          setterConfirmedCount={setterConfirmedCount ?? 0}
+          rachaLevel={rachaLevel}
+          canRespond={canRespondToNextEvent}
+          isPaymentExempt={isPaymentExempt}
+          isFull={isFull}
+          isOrganizer={profile.is_organizer}
+          action={setAttendance}
+        />
+      ) : (
+        <section className="copa-frame rounded-3xl">
+          <div className="copa-hero theme-ranking copa-shine rounded-[22px]">
             <div className="relative z-10 p-3.5">
               <div className="rounded-2xl border border-dashed border-white/20 bg-black/15 px-4 py-6 text-center">
                 <CalendarDays className="mx-auto h-7 w-7 text-white/30" strokeWidth={1.5} />
@@ -529,65 +380,24 @@ export default async function HomePage() {
                 <p className="mt-0.5 text-xs text-white/50">O próximo evento vai aparecer aqui.</p>
               </div>
             </div>
-          )}
-        </div>
-      </section>
-
-      {secondaryScheduledRacha?.registration_opens_at && (
-        <section
-          className={`overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent ${
-            secondaryRegistrationOpen ? "border-emerald-300/25 from-emerald-400/[0.09]" : "border-amber-300/25 from-amber-400/[0.09]"
-          }`}
-        >
-          <div className="flex items-center gap-3 p-3">
-            <div className="shrink-0 text-center">
-              <p className={`text-[8px] font-black uppercase tracking-[0.14em] ${secondaryRegistrationOpen ? "text-emerald-200/70" : "text-amber-200/70"}`}>
-                {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")}
-              </p>
-              <p className="-mt-0.5 text-2xl font-black leading-none text-white">
-                {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit" })}
-              </p>
-              <p className={`text-[8px] font-black uppercase tracking-[0.14em] ${secondaryRegistrationOpen ? "text-emerald-200/70" : "text-amber-200/70"}`}>
-                {new Date(`${secondaryScheduledRacha.date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}
-              </p>
-            </div>
-            <span className="h-10 w-px bg-white/10" />
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-sm font-bold text-white">
-                {secondaryRegistrationOpen
-                  ? "Inscrições abertas"
-                  : secondaryScheduledRacha.is_pre_torneio
-                    ? "Pré-torneio agendado"
-                    : secondaryScheduledRacha.is_mini_torneio
-                      ? "Mini torneio agendado"
-                      : "Próximo racha agendado"}
-              </h2>
-              {secondaryScheduledRacha.time && (
-                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-white/55">
-                  <Clock className={`h-3 w-3 ${secondaryRegistrationOpen ? "text-emerald-200/80" : "text-amber-200/80"}`} strokeWidth={2.25} />
-                  {secondaryScheduledRacha.time.slice(0, 5)}
-                </p>
-              )}
-            </div>
-            <Link
-              href={secondaryRegistrationOpen ? `/racha/${secondaryScheduledRacha.id}/confirmar` : `/racha/${secondaryScheduledRacha.id}`}
-              aria-label={secondaryRegistrationOpen ? "Entrar na lista deste racha" : "Ver racha agendado"}
-              className={`inline-flex min-h-9 shrink-0 items-center gap-0.5 rounded-xl px-2.5 text-xs font-semibold ${
-                secondaryRegistrationOpen
-                  ? "bg-emerald-500 text-white hover:bg-emerald-400"
-                  : "border border-white/12 text-white/75 hover:bg-white/10"
-              }`}
-            >
-              {secondaryRegistrationOpen ? "Entrar na lista" : "Ver"}
-              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
-            </Link>
           </div>
-          {!secondaryRegistrationOpen && (
-            <div className="px-3 pb-3">
-              <RegistrationCountdown opensAt={secondaryScheduledRacha.registration_opens_at} compact />
-            </div>
-          )}
         </section>
+      )}
+
+      {secondaryRacha && secondaryState && (
+        <HomeRachaCard
+          event={secondaryRacha}
+          myStatus={secondaryState.status}
+          paid={secondaryState.paid}
+          confirmedCount={secondaryState.confirmedCount}
+          setterConfirmedCount={secondaryState.setterCount}
+          rachaLevel={secondaryState.level}
+          canRespond={secondaryState.canRespond}
+          isPaymentExempt={isPaymentExempt}
+          isFull={secondaryState.isFull}
+          isOrganizer={profile.is_organizer}
+          action={setAttendance}
+        />
       )}
 
       {community === "sand" ? (

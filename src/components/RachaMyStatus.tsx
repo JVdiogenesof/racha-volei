@@ -18,7 +18,7 @@ export function RachaSteps({
   pix: boolean;
 }) {
   const steps: Step[] = [
-    { icon: ThumbsUp, label: "Interesse", done: interestDone },
+    { icon: ThumbsUp, label: "Quero jogar", done: interestDone },
     ...(needsPayment ? [{ icon: CreditCard, label: pix ? "Pix pago" : "Pagamento", done: paymentDone }] : []),
     { icon: Users, label: "Na lista", done: listDone },
   ];

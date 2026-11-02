@@ -231,7 +231,7 @@ export function PixReservationButton({
       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 disabled:opacity-60"
     >
       {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : guaranteedSpot ? "Pagar vaga garantida por Pix" : hasInterest ? "Reservar e pagar por Pix" : "Tenho interesse e quero pagar"}
+      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : guaranteedSpot ? "Pagar vaga garantida por Pix" : hasInterest ? "Pagar o Pix e garantir vaga" : "Quero jogar e pagar o Pix"}
     </button>
   );
 }

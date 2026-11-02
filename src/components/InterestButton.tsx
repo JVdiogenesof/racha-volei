@@ -33,11 +33,11 @@ export function InterestButton({
     let message: string | null = null;
     if (isFull) {
       message =
-        "A lista de confirmados já está cheia. Você vai entrar na lista de interessados e só será chamado(a) se alguém desistir.\n\nNão faça nenhum pagamento agora.";
+        "A lista já está cheia. Você entra na fila de espera e só é chamado(a) se alguém desistir.\n\nNão pague nada agora.";
     } else if (price && pixPaymentEnabled) {
-      message = `Sua vaga NÃO está garantida só por marcar interesse.\n\nNa próxima tela, gere o Pix de R$ ${price.toFixed(2)} pelo app e pague com o código gerado. Não pague direto na chave do grupo, senão o sistema não confirma seu nome.`;
+      message = `Só marcar não garante a vaga.\n\nNa próxima tela, gere o Pix de R$ ${price.toFixed(2)} e pague com o código gerado. Não pague direto na chave do grupo: o sistema não confirma seu nome.`;
     } else if (price) {
-      message = `Sua vaga NÃO está garantida só por marcar interesse.\n\nEfetue o pagamento de R$ ${price.toFixed(2)} via Pix pra entrar na lista de confirmados.\n\nChave Pix: ${PIX_KEY}`;
+      message = `Só marcar não garante a vaga.\n\nPara entrar na lista, pague R$ ${price.toFixed(2)} por Pix.\n\nChave Pix: ${PIX_KEY}`;
     }
     if (message && !window.confirm(message)) return;
 
@@ -48,7 +48,7 @@ export function InterestButton({
     startTransition(async () => {
       try {
         await action(formData);
-        showToast("Interesse registrado!");
+        showToast(isFull ? "Você entrou na fila de espera." : "Pedido registrado!");
         if (pixPaymentEnabled && price && !isFull) {
           router.push(`/racha/${eventId}/confirmar`);
         } else {
@@ -75,7 +75,7 @@ export function InterestButton({
       ) : (
         <ThumbsUp className="h-4 w-4" strokeWidth={2} />
       )}
-      Tenho interesse
+      {isFull ? "Entrar na fila de espera" : "Quero jogar"}
     </button>
   );
 }
