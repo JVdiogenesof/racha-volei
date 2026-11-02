@@ -5,6 +5,7 @@ import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Minus, Trending
 import { Avatar } from "./Avatar";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { EmptyState } from "./EmptyState";
+import { getTournamentZone } from "@/lib/tournamentQualification";
 
 /** Chip de estatística: quebra linha em vez de ser cortado no meio. */
 export type RankingStat = { label: string; value: string; tone?: "default" | "good" | "bad" };
@@ -110,13 +111,20 @@ const TIER_STYLE: Record<Tier, { ring: string; text: string; bg: string; progres
   red: { ring: "ring-rose-400/60", text: "text-rose-300", bg: "", progress: "bg-purple-300/40" },
 };
 
-/** Faixa de cor dentro do corte de classificação: top 10 = verde, até o corte = azul, fora = vermelho. */
-function tierFor(rankedPosition: number | null, cutoff: { slots: number } | undefined, guaranteed?: boolean): Tier | null {
+/**
+ * Faixa de cor dentro do corte de classificação: garantidos e top 10 = verde,
+ * até o fim da zona = azul, depois = vermelho. `zoneEnd` já desconta quem
+ * garantiu vaga no pré-torneio.
+ */
+function tierFor(rankedPosition: number | null, zoneEnd: number | null, guaranteed?: boolean): Tier | null {
   if (guaranteed) return "green";
-  if (!cutoff || rankedPosition === null) return null;
-  if (rankedPosition <= 10) return "green";
-  if (rankedPosition <= cutoff.slots) return "blue";
-  return "red";
+  if (zoneEnd === null || rankedPosition === null) return null;
+  if (rankedPosition > zoneEnd) return "red";
+  return rankedPosition <= 10 ? "green" : "blue";
+}
+
+function hasMoreDetails(entry: RankingEntry) {
+  return Boolean(entry.stats?.length || entry.breakdown || (entry.ranked !== false && entry.detail));
 }
 
 // Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
@@ -144,7 +152,7 @@ export function Leaderboard({
   eyebrow,
   badge,
   footer,
-  afterHero,
+  belowList,
 }: {
   title: string;
   /** Linha pequena acima do título do topo (ex.: "Quadra · 8 rachas"). */
@@ -152,8 +160,8 @@ export function Leaderboard({
   badge?: string;
   /** Mostrado dentro do topo, abaixo do pódio (ex.: "Sua posição"). */
   footer?: ReactNode;
-  /** Mostrado entre o topo e a lista (ex.: faixa de resumo). */
-  afterHero?: ReactNode;
+  /** Mostrado depois da lista (ex.: faixa de resumo e "como funciona"). */
+  belowList?: ReactNode;
   icon: ReactNode;
   unit: string;
   ranking: RankingEntry[];
@@ -169,17 +177,26 @@ export function Leaderboard({
   const remainingEntries = [...rankedEntries.slice(3), ...classifyingEntries];
   // Com corte ativo, garante que a linha (e pelo menos 2 pessoas depois dela)
   // fique visível sem precisar clicar em "ver todo mundo".
-  const cutoffIndexInRest = cutoff && cutoff.slots > 3 ? cutoff.slots - 3 : null;
+  const zone = cutoff
+    ? getTournamentZone(
+        rankedEntries.map((entry) => entry.profileId),
+        new Set(rankedEntries.filter((entry) => entry.guaranteed).map((entry) => entry.profileId)),
+        cutoff.slots,
+      )
+    : null;
+  const zoneEnd = zone ? zone.zoneEnd : null;
+  const cutoffPosition = zone?.cutoffPosition ?? null;
+  const cutoffIndexInRest = cutoffPosition !== null && cutoffPosition > 3 ? cutoffPosition - 3 : null;
   const defaultRestCount = cutoffIndexInRest ? Math.max(7, cutoffIndexInRest + 2) : 7;
   const rest = showAll ? remainingEntries : remainingEntries.slice(0, defaultRestCount);
   const hasMore = remainingEntries.length > defaultRestCount;
   const podiumOrder = [podium[1], podium[0], podium[2]];
   const podiumExpanded = podium.find((entry) => entry?.profileId === expandedId) ?? null;
-  const cutoffScore = cutoff && rankedEntries.length >= cutoff.slots ? rankedEntries[cutoff.slots - 1].count : null;
+  const cutoffScore = cutoffPosition !== null ? rankedEntries[cutoffPosition - 1].count : null;
   const leaderCount = Math.max(0.0001, rankedEntries[0]?.count ?? 0);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <header className="copa-frame rounded-[28px]">
         <div className="copa-hero theme-ranking copa-shine rounded-[26px] px-3 pb-3 pt-4 sm:px-6 sm:pb-5 sm:pt-5">
           <span aria-hidden className="copa-orb -left-10 -top-12 h-40 w-40 bg-fuchsia-400" />
@@ -200,28 +217,30 @@ export function Leaderboard({
           </div>
 
           {podium.length > 0 && (
-            <div className="relative z-10 mt-5 grid grid-cols-[repeat(3,minmax(0,1fr))] items-end gap-1.5 sm:gap-3">
+            <div className="relative z-10 mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))] items-end gap-1.5 sm:gap-3">
               {podiumOrder.map((entry, slot) => {
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
                 const isFirst = place === 0;
                 const style = PODIUM_STYLE[place];
-                const podiumTier = tierFor(place + 1, cutoff, entry.guaranteed);
+                const podiumTier = tierFor(place + 1, zoneEnd, entry.guaranteed);
                 const insideCutoff = podiumTier === "green" || podiumTier === "blue";
                 const isMe = entry.profileId === currentProfileId;
-                const Wrapper = entry.breakdown ? "button" : "div";
+                const podiumHasMore = hasMoreDetails(entry);
+                const podiumOpen = expandedId === entry.profileId;
+                const Wrapper = podiumHasMore ? "button" : "div";
                 return (
                   <Wrapper
                     key={entry.profileId}
-                    {...(entry.breakdown
+                    {...(podiumHasMore
                       ? {
                           type: "button" as const,
                           onClick: () => setExpandedId((id) => (id === entry.profileId ? null : entry.profileId)),
                           "aria-expanded": expandedId === entry.profileId,
-                          "aria-label": `Ver conta da nota de ${entry.fullName}`,
+                          "aria-label": `Ver mais de ${entry.fullName}`,
                         }
                       : {})}
-                    className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""} ${entry.breakdown ? "cursor-pointer rounded-xl transition hover:bg-white/[0.06]" : ""}`}
+                    className={`podium-avatar flex min-w-0 flex-col items-center text-center ${isFirst ? "podium-avatar-first" : ""} ${podiumHasMore ? "cursor-pointer rounded-xl transition hover:bg-white/[0.06]" : ""}`}
                   >
                     <div className="relative">
                       {isFirst && (
@@ -243,11 +262,12 @@ export function Leaderboard({
                     <p className="mt-0.5 text-[12px] font-black tabular-nums text-white sm:text-sm">
                       <AnimatedMetric value={entry.displayValue ?? `${entry.count} ${unit}`} />
                     </p>
-                    {entry.stats?.length ? (
-                      <StatChips stats={entry.stats} glass className="mt-1 w-full justify-center" />
-                    ) : entry.detail ? (
-                      <p className="mt-0.5 w-full break-words px-0.5 text-[10px] leading-tight text-white/65">{entry.detail}</p>
-                    ) : null}
+                    {podiumHasMore && (
+                      <span className="mt-1 inline-flex items-center gap-0.5 text-[11px] font-semibold text-white/75">
+                        {podiumOpen ? "Ver menos" : "Ver mais"}
+                        <ChevronDown className={`h-3 w-3 transition-transform ${podiumOpen ? "rotate-180" : ""}`} strokeWidth={2.5} />
+                      </span>
+                    )}
                     <TrendBadge entry={entry} />
                     <div
                       className={`mt-1.5 flex w-full items-start justify-center gap-1.5 rounded-t-xl border border-b-0 border-white/20 bg-gradient-to-b from-white/25 to-white/5 pt-1.5 ${style.height}`}
@@ -265,18 +285,20 @@ export function Leaderboard({
             </div>
           )}
 
-          {podiumExpanded?.breakdown && (
+          {podiumExpanded && hasMoreDetails(podiumExpanded) && (
             <div className="relative z-10 mt-3 rounded-xl bg-black/20 px-2.5 pb-2.5 pt-2">
               <p className="text-[11px] font-bold text-white/80">{podiumExpanded.fullName}</p>
-              <BreakdownPanel breakdown={podiumExpanded.breakdown} />
+              {podiumExpanded.stats?.length ? <StatChips stats={podiumExpanded.stats} glass className="mt-1.5" /> : null}
+              {!podiumExpanded.stats?.length && podiumExpanded.detail ? (
+                <p className="mt-1 break-words text-[11px] leading-tight text-white/70">{podiumExpanded.detail}</p>
+              ) : null}
+              {podiumExpanded.breakdown && <BreakdownPanel breakdown={podiumExpanded.breakdown} />}
             </div>
           )}
 
-          {footer && <div className="relative z-10 mt-3">{footer}</div>}
+          {footer && <div className="relative z-10 mt-2.5">{footer}</div>}
         </div>
       </header>
-
-      {afterHero}
 
     <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5">
@@ -297,7 +319,8 @@ export function Leaderboard({
             <ul className="border-t border-white/10 px-2 py-1 sm:px-4">
               {rest.map((entry, i) => {
                 const rankedPosition = entry.ranked === false ? null : rankedEntries.indexOf(entry) + 1;
-                const tier = tierFor(rankedPosition, cutoff, entry.guaranteed);
+                const tier = tierFor(rankedPosition, zoneEnd, entry.guaranteed);
+                const rowHasMore = hasMoreDetails(entry);
                 const insideCutoff = tier === "green" || tier === "blue";
                 const outsideCutoff = tier === "red";
                 const gap = outsideCutoff && cutoffScore !== null ? Math.max(0, Math.round((cutoffScore! - entry.count) * 10) / 10) : null;
@@ -338,11 +361,20 @@ export function Leaderboard({
                               </span>
                             )}
                           </p>
-                          {entry.stats?.length ? (
-                            <StatChips stats={entry.stats} className="mt-1" />
-                          ) : entry.detail ? (
+                          {entry.ranked === false && entry.detail ? (
                             <p className="break-words text-[10px] leading-tight text-white/50">{entry.detail}</p>
                           ) : null}
+                          {rowHasMore && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId((id) => (id === entry.profileId ? null : entry.profileId))}
+                              aria-expanded={isExpanded}
+                              className="mt-0.5 inline-flex min-h-6 items-center gap-0.5 text-[11px] font-semibold text-purple-200/80 transition hover:text-white"
+                            >
+                              {isExpanded ? "Ver menos" : "Ver mais"}
+                              <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} strokeWidth={2.5} />
+                            </button>
+                          )}
                         </div>
                         <div className="shrink-0 pt-0.5 text-right">
                           <p className="flex items-center justify-end gap-1 text-[13px] font-bold leading-tight text-white/80">
@@ -363,19 +395,14 @@ export function Leaderboard({
                           />
                         </span>
                       )}
-                      {entry.breakdown && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setExpandedId((id) => (id === entry.profileId ? null : entry.profileId))}
-                            aria-expanded={isExpanded}
-                            className="mt-1 flex min-h-7 w-full items-center justify-center gap-1 rounded-md text-[10px] font-semibold text-white/35 transition hover:bg-white/[0.04] hover:text-white/70"
-                          >
-                            {isExpanded ? "Fechar conta da nota" : "Ver conta da nota"}
-                            <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} strokeWidth={2.25} />
-                          </button>
-                          {isExpanded && <BreakdownPanel breakdown={entry.breakdown} />}
-                        </>
+                      {rowHasMore && isExpanded && (
+                        <div className="mt-2 space-y-2">
+                          {entry.stats?.length ? <StatChips stats={entry.stats} /> : null}
+                          {!entry.stats?.length && entry.ranked !== false && entry.detail ? (
+                            <p className="break-words text-[11px] leading-tight text-white/60">{entry.detail}</p>
+                          ) : null}
+                          {entry.breakdown && <BreakdownPanel breakdown={entry.breakdown} />}
+                        </div>
                       )}
                     </li>
                   </Fragment>
@@ -406,6 +433,8 @@ export function Leaderboard({
         </>
       )}
     </section>
+
+      {belowList}
     </div>
   );
 }

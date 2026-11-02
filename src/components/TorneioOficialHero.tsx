@@ -64,7 +64,7 @@ export function TorneioOficialHero({
         <div className="relative z-10 mt-5 grid grid-cols-3 gap-2">
           <Stat icon={CalendarDays} label="Quando" value={whenLabel} detail={whenDetail} />
           <Stat icon={Award} label="Campeões" value={`${guaranteedCount}`} detail="garantidos" />
-          <Stat icon={Gauge} label="Ranking" value={`${indexSlots}`} detail="vagas" />
+          <Stat icon={Gauge} label="Ranking" value={`${indexSlots}`} detail="vagas extras" />
         </div>
 
         <div className="relative z-10 mt-4 rounded-2xl border border-white/15 bg-black/20 p-3">

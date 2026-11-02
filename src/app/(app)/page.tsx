@@ -25,6 +25,7 @@ import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
 import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
+import { getTournamentZone } from "@/lib/tournamentQualification";
 import { todayStringInFortaleza } from "@/lib/today";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { AbsenceWarningBanner } from "@/components/AbsenceWarningBanner";
@@ -105,9 +106,9 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myReservedRow }, { data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
+  const [{ data: reservedRows }, { data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
     profile.status === "approved"
-      ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community).eq("profile_id", profile.id).maybeSingle()
+      ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community)
       : Promise.resolve({ data: null }),
     supabase
       .from("spot_offers")
@@ -120,7 +121,8 @@ export default async function HomePage() {
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
   ]);
   const isPaymentExempt = Boolean(myExemption);
-  const amGuaranteed = Boolean(myReservedRow);
+  const reservedIds = new Set((reservedRows ?? []).map((row) => row.profile_id));
+  const amGuaranteed = reservedIds.has(profile.id);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
     | null;
@@ -270,8 +272,10 @@ export default async function HomePage() {
   const mySeason = seasonScores?.get(profile.id) ?? null;
   const myRankIndex = rankedSeason.findIndex((item) => item.profileId === profile.id);
   const myPosition = myRankIndex >= 0 ? myRankIndex + 1 : null;
-  const cutoffScore = rankedSeason.length >= TOURNAMENT_QUALIFYING_SLOTS ? rankedSeason[TOURNAMENT_QUALIFYING_SLOTS - 1].averageIndex : null;
-  const myQualified = amGuaranteed || (myPosition !== null && myPosition <= TOURNAMENT_QUALIFYING_SLOTS);
+  // Quem já garantiu vaga no pré-torneio não ocupa vaga do ranking: a zona desce.
+  const qualificationZone = getTournamentZone(rankedSeason.map((item) => item.profileId), reservedIds, TOURNAMENT_QUALIFYING_SLOTS);
+  const cutoffScore = qualificationZone.cutoffPosition !== null ? rankedSeason[qualificationZone.cutoffPosition - 1].averageIndex : null;
+  const myQualified = amGuaranteed || (myPosition !== null && myPosition <= qualificationZone.zoneEnd);
   const myGap = myPosition !== null && !myQualified && cutoffScore !== null && mySeason
     ? Math.max(0, Math.round((cutoffScore - mySeason.averageIndex) * 10) / 10)
     : null;

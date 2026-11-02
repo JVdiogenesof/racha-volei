@@ -14,6 +14,7 @@ import { addReservedPlayer, removeReservedPlayer, clearReservedList } from "./ac
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_TOP_TIER_SLOTS } from "@/lib/rankings";
 import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
+import { getTournamentZone } from "@/lib/tournamentQualification";
 
 type ReservedRow = {
   profile_id: string;
@@ -68,10 +69,17 @@ export default async function TorneiosVpaPage() {
   const ranked = [...season.values()]
     .filter((score) => score.eligible && profileById.has(score.profileId))
     .sort((a, b) => b.averageIndex - a.averageIndex || b.totalWins - a.totalWins);
-  const zone = ranked.slice(0, TOURNAMENT_QUALIFYING_SLOTS);
-  const chasing = ranked.slice(TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_SLOTS + CHASING_PREVIEW);
-  const cutoffScore = ranked.length >= TOURNAMENT_QUALIFYING_SLOTS ? ranked[TOURNAMENT_QUALIFYING_SLOTS - 1].averageIndex : null;
-  const indexOnlyCount = zone.filter((score) => !reservedIds.has(score.profileId)).length;
+  // Quem já garantiu vaga no pré-torneio fica no ranking, mas não ocupa uma das
+  // vagas do ranking: a zona desce até completar as vagas.
+  const qualification = getTournamentZone(ranked.map((score) => score.profileId), reservedIds, TOURNAMENT_QUALIFYING_SLOTS);
+  const zone = ranked.slice(0, qualification.zoneEnd);
+  const chasing = ranked
+    .map((score, index) => ({ score, position: index + 1 }))
+    .slice(qualification.zoneEnd)
+    .filter(({ score }) => !reservedIds.has(score.profileId))
+    .slice(0, CHASING_PREVIEW);
+  const cutoffScore = qualification.cutoffPosition !== null ? ranked[qualification.cutoffPosition - 1].averageIndex : null;
+  const indexOnlyCount = qualification.rankingQualifiedIds.size;
 
   // Cada pré-torneio reserva o time campeão de uma vez: agrupar pelo racha de
   // origem já mostra "esse time venceu esse pré-torneio". Reservas manuais
@@ -98,7 +106,7 @@ export default async function TorneiosVpaPage() {
   const myRankIndex = ranked.findIndex((score) => score.profileId === profile.id);
   const myPosition = myRankIndex >= 0 ? myRankIndex + 1 : null;
   const myGuaranteed = reservedIds.has(profile.id);
-  const myInZone = myPosition !== null && myPosition <= TOURNAMENT_QUALIFYING_SLOTS;
+  const myInZone = myPosition !== null && myPosition <= qualification.zoneEnd;
   const myGap = !myGuaranteed && !myInZone && myScore?.eligible && cutoffScore !== null
     ? Math.max(0, Math.round((cutoffScore - myScore.averageIndex) * 10) / 10)
     : null;
@@ -123,7 +131,7 @@ export default async function TorneiosVpaPage() {
         </StatusCard>
       ) : myInZone ? (
         <StatusCard tone="violet" icon={<Gauge className="mt-0.5 h-6 w-6 shrink-0 text-violet-300" strokeWidth={2} />} title={`Você está na zona: ${myPosition}º no Índice VPA`}>
-          Hoje você entraria no torneio pelo ranking. A nota é viva — continue jogando pra se manter entre os {TOURNAMENT_QUALIFYING_SLOTS} primeiros.
+          Hoje você entraria no torneio pelo ranking. A nota é viva — continue jogando pra se manter dentro das {TOURNAMENT_QUALIFYING_SLOTS} vagas do ranking.
         </StatusCard>
       ) : (
         <StatusCard tone="neutral" icon={<Target className="mt-0.5 h-6 w-6 shrink-0 text-amber-300" strokeWidth={2} />} title="Ainda fora da zona de classificação">
@@ -234,8 +242,8 @@ export default async function TorneiosVpaPage() {
       <section className="space-y-3">
         <SectionTitle
           icon={Gauge}
-          title={`Zona do Índice VPA · top ${TOURNAMENT_QUALIFYING_SLOTS}`}
-          subtitle="Classificação provisória: a nota é viva e muda a cada racha até o torneio."
+          title={`Zona do Índice VPA · ${TOURNAMENT_QUALIFYING_SLOTS} vagas`}
+          subtitle="Quem já garantiu vaga no pré-torneio aparece aqui, mas não ocupa vaga do ranking. A nota é viva e muda a cada racha até o torneio."
         />
         {zone.length ? (
           <ol className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10">
@@ -277,12 +285,12 @@ export default async function TorneiosVpaPage() {
           <div className="rounded-2xl border border-dashed border-white/15 p-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-white/45">Na briga pela vaga</p>
             <ul className="mt-2 space-y-1.5">
-              {chasing.map((score, index) => {
+              {chasing.map(({ score, position }) => {
                 const player = profileById.get(score.profileId)!;
                 const gap = cutoffScore !== null ? Math.max(0, Math.round((cutoffScore - score.averageIndex) * 10) / 10) : null;
                 return (
                   <li key={score.profileId} className={`flex items-center gap-3 rounded-xl px-2 py-1.5 ${score.profileId === profile.id ? "bg-amber-400/10" : ""}`}>
-                    <span className="w-7 shrink-0 text-center text-xs font-bold text-white/50">{TOURNAMENT_QUALIFYING_SLOTS + index + 1}</span>
+                    <span className="w-7 shrink-0 text-center text-xs font-bold text-white/50">{position}</span>
                     <Avatar src={player.avatar_url} name={player.full_name} size="sm" />
                     <p className="min-w-0 flex-1 break-words text-sm text-white/80">{player.full_name}</p>
                     {gap !== null && <span className="shrink-0 text-[11px] font-semibold text-amber-200/80">−{gap.toFixed(1)} pts</span>}
@@ -304,7 +312,7 @@ export default async function TorneiosVpaPage() {
         <ol className="mt-3 space-y-2.5 text-sm leading-relaxed text-white/75">
           <Rule n={1}>O torneio oficial está previsto para abril de 2027. Data e local ainda vão ser definidos.</Rule>
           <Rule n={2}>O time campeão de cada racha pré-torneio garante vaga direto, sem depender da nota do Índice.</Rule>
-          <Rule n={3}>As {TOURNAMENT_QUALIFYING_SLOTS} primeiras posições do Índice VPA também garantem vaga. A nota vale os últimos rachas, então a zona muda até o torneio.</Rule>
+          <Rule n={3}>O ranking do Índice VPA dá mais {TOURNAMENT_QUALIFYING_SLOTS} vagas, além dos campeões. Quem já garantiu vaga no pré-torneio continua aparecendo no ranking, mas não ocupa uma dessas {TOURNAMENT_QUALIFYING_SLOTS}: a zona desce até completar as vagas. A nota vale os últimos rachas, então a zona muda até o torneio.</Rule>
           <Rule n={4}>Quem for removido do grupo por faltas perde a vaga, que é redistribuída pelos critérios do ranking.</Rule>
           <Rule n={5}>O uniforme oficial do VPA é obrigatório no torneio.</Rule>
         </ol>

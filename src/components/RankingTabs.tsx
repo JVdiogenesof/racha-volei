@@ -5,6 +5,7 @@ import { CalendarCheck, CheckCircle2, Gauge, Info, Star, Swords, Target, type Lu
 import { Leaderboard, type RankingEntry } from "./Leaderboard";
 import { AnimatedMetric } from "./AnimatedMetric";
 import { ROLLING_INDEX_EVENT_COUNT } from "@/lib/seasonRanking";
+import { getTournamentZone } from "@/lib/tournamentQualification";
 
 type RankingId = "performance" | "wins" | "mvp" | "attendance";
 
@@ -49,8 +50,16 @@ export function RankingTabs({
 
   const mine = currentEntry(active);
   const rankedActive = rankings[active].filter((item) => item.ranked !== false);
-  const cutoffScore = cutoff && rankedActive.length >= cutoff.slots ? rankedActive[cutoff.slots - 1].count : null;
-  const isQualified = Boolean(cutoff && mine.entry && (mine.entry.guaranteed || (mine.position && mine.position <= cutoff.slots)));
+  // Quem já garantiu vaga no pré-torneio não ocupa vaga do ranking: a zona desce.
+  const zone = cutoff
+    ? getTournamentZone(
+        rankedActive.map((item) => item.profileId),
+        new Set(rankedActive.filter((item) => item.guaranteed).map((item) => item.profileId)),
+        cutoff.slots,
+      )
+    : null;
+  const cutoffScore = zone && zone.cutoffPosition !== null ? rankedActive[zone.cutoffPosition - 1].count : null;
+  const isQualified = Boolean(cutoff && zone && mine.entry && (mine.entry.guaranteed || (mine.position && mine.position <= zone.zoneEnd)));
   const missing = cutoff && mine.position && !isQualified && cutoffScore !== null && mine.entry
     ? Math.max(0, Math.round((cutoffScore - mine.entry.count) * 10) / 10)
     : null;
@@ -88,7 +97,7 @@ export function RankingTabs({
   const summaryTiles = cutoff ? (
     <div className="grid grid-cols-3 gap-2">
       {[
-        { label: "Zona", value: `Top ${cutoff.slots}`, detail: "vagas no torneio" },
+        { label: "Ranking", value: `${cutoff.slots} vagas`, detail: "além dos campeões do pré-torneio" },
         { label: "Top 10", value: "Verde", detail: "em destaque" },
         { label: "Peso", value: "2,5x", detail: "nos 4 rachas mais recentes" },
       ].map((tile) => (
@@ -142,7 +151,7 @@ export function RankingTabs({
           ) : (
             <p>{activeConfig.description}</p>
           )}
-          {cutoff && <span className="mt-1.5 block font-semibold text-emerald-300/80">As {cutoff.slots} primeiras posições garantem vaga no torneio oficial de abril/2027 (número provisório).</span>}
+          {cutoff && <span className="mt-1.5 block font-semibold text-emerald-300/80">O ranking dá {cutoff.slots} vagas no torneio oficial de abril/2027 (número provisório). Quem já garantiu vaga num pré-torneio continua no ranking, mas não ocupa uma dessas vagas: a zona desce até completar {cutoff.slots} pessoas.</span>}
         </div>
       )}
     </div>
@@ -179,7 +188,7 @@ export function RankingTabs({
         eyebrow={eyebrow}
         badge={badge}
         footer={positionCard}
-        afterHero={
+        belowList={
           <>
             {summaryTiles}
             {infoBox}
