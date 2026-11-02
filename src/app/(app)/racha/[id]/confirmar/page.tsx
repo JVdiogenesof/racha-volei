@@ -480,6 +480,14 @@ export default async function ConfirmarPresencaPage({
                 Entrar na lista (isento)
               </button>
             </ActionForm>
+          ) : event.pix_payment_enabled && event.price_per_player && isFull && myStatus !== "interested" ? (
+            // Lista cheia: não há Pix pra pagar, só dá pra entrar na fila de espera.
+            <InterestButton
+              eventId={id}
+              price={Number(event.price_per_player)}
+              isFull
+              action={setAttendance}
+            />
           ) : event.pix_payment_enabled && event.price_per_player ? (
             <PixReservationButton
               eventId={id}
