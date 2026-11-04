@@ -31,7 +31,7 @@ import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
-import { reconcileEventPayments } from "@/lib/mercadoPagoSettle";
+import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
 import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
 import { ForfeitPixSpotButton } from "@/components/ForfeitPixSpotButton";
@@ -46,7 +46,7 @@ export default async function ConfirmarPresencaPage({
   const supabase = await createClient();
   const selectedCommunity = await getActiveCommunity(profile);
   // Confere Pix recém-pagos antes de montar a lista (não depende só do webhook).
-  await reconcileEventPayments(id, profile.is_organizer ? undefined : profile.id);
+  await reconcileWithinBudget(id, profile.is_organizer ? undefined : profile.id);
 
   const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }, { data: lockedRows }, { data: qualificationExceptions }, { data: qualifiedPlayers }] =
     await Promise.all([
@@ -111,7 +111,7 @@ export default async function ConfirmarPresencaPage({
   if (!event) notFound();
   if (event.community !== selectedCommunity) notFound();
 
-  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }, { data: myExemption }] = await Promise.all([
+  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }, { data: myExemption }, { data: myOpenReservation }] = await Promise.all([
     supabase.from("payments").select("paid, payment_source, paid_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
     profile.is_organizer
       ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
@@ -129,7 +129,19 @@ export default async function ConfirmarPresencaPage({
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
+    // Reserva em aberto: reabre o código Pix sozinho quando a pessoa volta do
+    // app do banco, mesmo que o celular tenha recarregado a tela.
+    supabase
+      .from("event_payment_intents")
+      .select("id")
+      .eq("event_id", id)
+      .eq("profile_id", profile.id)
+      .eq("status", "pending")
+      .gt("reservation_expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const hasOpenReservation = Boolean(myOpenReservation);
   const isPaymentExempt = Boolean(myExemption);
 
   // Dispara o banner de "pagamento confirmado" só se o Pix foi concluído há
@@ -400,6 +412,8 @@ export default async function ConfirmarPresencaPage({
                 isFull={false}
                 action={setAttendance}
                 guaranteedSpot
+                activeReservation={hasOpenReservation}
+                eventLabel={dateLabel}
               />
             </div>
           )}
@@ -480,7 +494,7 @@ export default async function ConfirmarPresencaPage({
                 Entrar na lista (isento)
               </button>
             </ActionForm>
-          ) : event.pix_payment_enabled && event.price_per_player && isFull && myStatus !== "interested" ? (
+          ) : event.pix_payment_enabled && event.price_per_player && isFull && myStatus !== "interested" && !hasOpenReservation ? (
             // Lista cheia: não há Pix pra pagar, só dá pra entrar na fila de espera.
             <InterestButton
               eventId={id}
@@ -499,6 +513,8 @@ export default async function ConfirmarPresencaPage({
                   : null
               }
               action={setAttendance}
+              activeReservation={hasOpenReservation}
+              eventLabel={dateLabel}
             />
           ) : (
             <InterestButton

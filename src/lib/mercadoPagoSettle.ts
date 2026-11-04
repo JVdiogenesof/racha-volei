@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getMercadoPagoOrder, isApprovedMercadoPagoOrder } from "@/lib/mercadoPago";
 
@@ -82,4 +83,15 @@ export async function reconcileEventPayments(eventId: string, profileId?: string
     console.error("[pix-reconcile] Falha", error instanceof Error ? error.message : error);
     return 0;
   }
+}
+
+/**
+ * Para quem abre a tela: confere os Pix, mas não segura a página se o Mercado
+ * Pago estiver lento (ele pode levar até 25s para responder). O que não
+ * terminar a tempo continua depois da resposta.
+ */
+export async function reconcileWithinBudget(eventId: string, profileId?: string, budgetMs = 1500) {
+  const work = reconcileEventPayments(eventId, profileId);
+  after(() => work);
+  await Promise.race([work, new Promise((resolve) => setTimeout(resolve, budgetMs))]);
 }

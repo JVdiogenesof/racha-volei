@@ -1,17 +1,53 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { CheckCircle2, Copy, Loader2, QrCode } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2, Clock3, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { PixCheckoutSheet, formatTimer, type PixData, type PixPhase } from "./PixCheckoutSheet";
 import { useToast } from "./Toast";
 
-type PixData = {
-  qrCode: string;
-  qrCodeBase64: string;
-  ticketUrl: string;
-  reservationExpiresAt: string;
-  fellBackToRegular?: boolean;
-};
+// Cada tentativa espera no máximo isso (o servidor já tenta o Mercado Pago duas vezes).
+const REQUEST_TIMEOUT_MS = 30_000;
+// Tentativas sozinhas antes de pedir ajuda à pessoa: repetir é seguro porque a
+// reserva pendente e a cobrança são reaproveitadas.
+const AUTO_ATTEMPTS = 3;
+const SLOW_NOTICE_MS = 5_000;
+const POLL_MS = 5_000;
+// A cobrança vale 30 minutos no Mercado Pago: até lá ainda dá pra reconhecer um pagamento atrasado.
+const LATE_PAYMENT_WINDOW_MS = 31 * 60 * 1000;
+
+type RequestResult =
+  | { kind: "ok"; pix: PixData }
+  | { kind: "paid" }
+  | { kind: "blocked"; message: string }
+  | { kind: "retry"; message: string };
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestPix(eventId: string): Promise<RequestResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const response = await fetch("/api/payments/mercado-pago/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+      signal: controller.signal,
+    });
+    // Uma resposta de erro da hospedagem pode nem ser JSON.
+    const payload = (await response.json().catch(() => null)) as (PixData & { error?: string; blocked?: boolean; alreadyPaid?: boolean }) | null;
+    if (payload?.alreadyPaid) return { kind: "paid" };
+    if (payload?.blocked) return { kind: "blocked", message: payload.error || "Não foi possível reservar sua vaga." };
+    if (!response.ok || !payload?.qrCode) return { kind: "retry", message: payload?.error || "Não conseguimos gerar o Pix agora." };
+    return { kind: "ok", pix: payload };
+  } catch {
+    return { kind: "retry", message: "A conexão falhou enquanto gerávamos o Pix." };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export function PixReservationButton({
   eventId,
@@ -19,6 +55,8 @@ export function PixReservationButton({
   isFull,
   blockedReason,
   guaranteedSpot = false,
+  activeReservation = false,
+  eventLabel,
   action,
 }: {
   eventId: string;
@@ -28,210 +66,250 @@ export function PixReservationButton({
   blockedReason?: string | null;
   /** A organização já ocupou esta vaga; o Pix só conclui o pagamento. */
   guaranteedSpot?: boolean;
+  /** Já existe uma reserva em aberto: reabre o código sozinho (ex.: voltou do app do banco e a tela recarregou). */
+  activeReservation?: boolean;
+  /** Dia do racha, mostrado na tela de pagamento. */
+  eventLabel?: string;
   action: (formData: FormData) => Promise<void> | void;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const [pix, setPix] = useState<PixData | null>(null);
-  // Falha técnica (Mercado Pago fora do ar, rede): pede pra tentar de novo --
-  // a nova tentativa reaproveita a mesma reserva pendente. Não mostra a chave
-  // fixa: um Pix nela não se liga à reserva, que vence em 5 minutos e libera
-  // a vaga pra outra pessoa enquanto a organização ainda nem viu o pagamento.
-  const [failure, setFailure] = useState<string | null>(null);
-  // Vaga/cota cheia, inscrições fechadas etc.: a reserva nem existe, não há o
-  // que pagar (caso do Ryan no racha de domingo).
-  const [blocked, setBlocked] = useState<string | null>(null);
+  const [phase, setPhase] = useState<PixPhase>({ kind: "idle" });
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [now, setNow] = useState(0);
+  const [checkNotice, setCheckNotice] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const busy = useRef(false);
+  const interestDone = useRef(false);
+  const checking = useRef(false);
+  const started = useRef(false);
   const { showToast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    if (!pix) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, [pix]);
-
-  useEffect(() => {
-    if (!pix) return;
-    // A cada 4s confere o pagamento direto no Mercado Pago, sem depender só do
-    // aviso (webhook), e atualiza a lista quando a vaga for confirmada.
-    const refresh = window.setInterval(async () => {
+  const startPayment = useCallback(
+    async (resuming = false) => {
+      if (busy.current) return;
+      busy.current = true;
+      started.current = true;
+      setCheckNotice(null);
+      setSheetOpen(true);
+      setPhase({ kind: "generating", slow: false });
+      const slowTimer = window.setTimeout(() => setPhase({ kind: "generating", slow: true }), SLOW_NOTICE_MS);
       try {
-        await fetch("/api/payments/mercado-pago/status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId }),
-        });
-      } catch {
-        // tenta de novo no próximo ciclo
-      }
-      router.refresh();
-    }, 4000);
-    return () => window.clearInterval(refresh);
-  }, [pix, router, eventId]);
-
-  const seconds = pix ? Math.max(0, Math.ceil((new Date(pix.reservationExpiresAt).getTime() - now) / 1000)) : 0;
-  const timerText = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-
-  function startPayment() {
-    if (isFull || blockedReason) {
-      showToast(blockedReason || "As vagas deste racha já foram reservadas.");
-      return;
-    }
-    startTransition(async () => {
-      setFailure(null);
-      setBlocked(null);
-      try {
-        if (!hasInterest && !guaranteedSpot) {
+        if (!resuming && !hasInterest && !guaranteedSpot && !interestDone.current) {
           const formData = new FormData();
           formData.set("eventId", eventId);
           formData.set("status", "interested");
           try {
             await action(formData);
+            interestDone.current = true;
           } catch (interestError) {
-            // Inscrições fechadas, racha encerrado/cancelado: nem dá pra
-            // marcar interesse, quanto mais reservar.
-            const message = interestError instanceof Error ? interestError.message : "Não foi possível marcar seu interesse.";
-            showToast(message);
-            setBlocked(message);
+            // Em produção o Next esconde o texto do erro da action, então
+            // uma mensagem que não é nossa é tratada como falha técnica.
+            const message = interestError instanceof Error ? interestError.message : "";
+            const ours = /inscri|racha|responder/i.test(message) && !/server component/i.test(message);
+            setPhase(ours ? { kind: "blocked", message } : { kind: "failure", message: "Não conseguimos registrar seu pedido." });
             router.refresh();
             return;
           }
         }
-        const response = await fetch("/api/payments/mercado-pago/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId }),
-        });
-        const payload = (await response.json()) as PixData & { error?: string; blocked?: boolean };
-        if (!response.ok || payload.error) {
-          if (payload.blocked) {
-            const message = payload.error || "Não foi possível reservar sua vaga.";
-            showToast(message);
-            setBlocked(message);
+
+        for (let attempt = 1; ; attempt += 1) {
+          const result = await requestPix(eventId);
+          if (result.kind === "ok") {
+            const expires = new Date(result.pix.reservationExpiresAt).getTime();
+            const serverNow = new Date(result.pix.serverNow).getTime();
+            const clockOffset = serverNow - Date.now();
+            setNow(Date.now());
+            setPhase({ kind: "paying", pix: result.pix, clockOffset, totalSeconds: Math.max(1, Math.ceil((expires - serverNow) / 1000)) });
+            return;
+          }
+          if (result.kind === "paid") {
+            setPhase({ kind: "paid" });
             router.refresh();
             return;
           }
-          throw new Error(payload.error || "Não foi possível gerar o Pix.");
+          if (result.kind === "blocked") {
+            setPhase({ kind: "blocked", message: result.message });
+            router.refresh();
+            return;
+          }
+          if (attempt >= AUTO_ATTEMPTS) {
+            setPhase({ kind: "failure", message: result.message });
+            return;
+          }
+          // Intervalo um pouco diferente pra cada pessoa, pra não voltarem todas juntas.
+          await wait(1200 * attempt + Math.random() * 800);
         }
-        setNow(Date.now());
-        setPix(payload);
-        if (payload.fellBackToRegular) {
-          showToast("As vagas de levantador já estavam cheias — você entra como jogador comum (atacante).");
-        }
-        router.refresh();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Não foi possível iniciar o pagamento.";
-        showToast(message);
-        setFailure(message);
-        router.refresh();
+      } finally {
+        window.clearTimeout(slowTimer);
+        busy.current = false;
       }
-    });
-  }
+    },
+    [action, eventId, guaranteedSpot, hasInterest, router],
+  );
 
-  async function copyCode() {
-    if (!pix) return;
+  // Reabre o pagamento em aberto. Fora do corpo do efeito porque a tela de
+  // pagamento só existe no navegador.
+  useEffect(() => {
+    if (!activeReservation || started.current) return;
+    const timer = window.setTimeout(() => void startPayment(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [activeReservation, startPayment]);
+
+  const checkStatus = useCallback(async () => {
+    if (checking.current) return "pending" as const;
+    checking.current = true;
     try {
-      await navigator.clipboard.writeText(pix.qrCode);
-      showToast("Código Pix copiado!");
+      const response = await fetch("/api/payments/mercado-pago/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId }),
+      });
+      const payload = (await response.json().catch(() => null)) as { paid?: boolean; credited?: boolean } | null;
+      if (payload?.paid) {
+        setPhase({ kind: "paid" });
+        setSheetOpen(true);
+        router.refresh();
+        return "paid" as const;
+      }
+      if (payload?.credited) {
+        setPhase({ kind: "credited" });
+        setSheetOpen(true);
+        router.refresh();
+        return "credited" as const;
+      }
     } catch {
-      showToast("Não foi possível copiar o código Pix.");
+      // tenta de novo no próximo ciclo
+    } finally {
+      checking.current = false;
     }
+    return "pending" as const;
+  }, [eventId, router]);
+
+  const payingPix = phase.kind === "paying" ? phase.pix : null;
+  const clockOffset = phase.kind === "paying" ? phase.clockOffset : 0;
+
+  useEffect(() => {
+    if (!payingPix) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [payingPix]);
+
+  // Confere o pagamento direto no Mercado Pago, sem depender só do aviso
+  // (webhook). A lista só é recarregada quando o pagamento entra: recarregar a
+  // cada ciclo pesaria muito com várias pessoas pagando ao mesmo tempo.
+  useEffect(() => {
+    if (!payingPix) return;
+    const giveUpAt = new Date(payingPix.reservationExpiresAt).getTime() + LATE_PAYMENT_WINDOW_MS;
+    let stopped = false;
+    let timer: number | undefined;
+
+    const schedule = () => {
+      if (stopped || Date.now() + clockOffset > giveUpAt) return;
+      timer = window.setTimeout(run, POLL_MS + Math.random() * 1500);
+    };
+    const run = async () => {
+      // Com a tela escondida (no app do banco) espera a volta, que confere na hora.
+      const result = document.hidden ? "pending" : await checkStatus();
+      if (result === "pending") schedule();
+    };
+    const onReturn = () => {
+      if (document.hidden || stopped) return;
+      window.clearTimeout(timer);
+      void run();
+    };
+
+    schedule();
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("pageshow", onReturn);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("pageshow", onReturn);
+    };
+  }, [payingPix, clockOffset, checkStatus]);
+
+  const secondsLeft = payingPix ? Math.max(0, Math.ceil((new Date(payingPix.reservationExpiresAt).getTime() - (now + clockOffset)) / 1000)) : 0;
+
+  async function checkNow() {
+    setIsChecking(true);
+    setCheckNotice(null);
+    const result = await checkStatus();
+    setIsChecking(false);
+    if (result === "pending") setCheckNotice("Ainda não recebemos o pagamento. Se acabou de pagar, ele costuma chegar em alguns segundos.");
   }
 
-  if (pix) {
-    if (seconds === 0) {
-      return (
-        <section className="w-full rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4 text-center">
-          <p className="text-sm font-bold text-amber-100">O prazo de reserva terminou.</p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-50/75">
-            Se você já pagou, aguarde a confirmação. Caso ainda não tenha pago, tente reservar novamente para gerar uma nova vaga de 5 minutos.
-          </p>
-          <button
-            type="button"
-            onClick={() => setPix(null)}
-            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10"
-          >
-            Tentar reservar novamente
-          </button>
-        </section>
-      );
-    }
-    return (
-      <section className="w-full rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-center">
-        <div className="flex items-center justify-center gap-2 text-sm font-bold text-emerald-100">
-          <QrCode className="h-4 w-4" /> Vaga reservada por {timerText}
-        </div>
-        <p className="mt-1 text-xs leading-relaxed text-emerald-50/75">Copie o código, pague no app do seu banco (Pix copia e cola) e seu nome entra na lista automaticamente.</p>
-        {pix.fellBackToRegular && (
-          <p className="mt-2 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-2 text-[11px] leading-relaxed text-cyan-100">
-            As vagas de levantador já estavam cheias: essa reserva é como jogador comum (atacante).
-          </p>
-        )}
-        <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-emerald-100/60">Pix copia e cola</p>
-        <p className="mt-1 max-h-20 overflow-hidden break-all rounded-xl bg-black/20 px-3 py-2 text-left font-mono text-[11px] leading-snug text-white/80">{pix.qrCode}</p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <button type="button" onClick={copyCode} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 text-sm font-bold text-white transition hover:bg-emerald-400">
-            <Copy className="h-4 w-4" /> Copiar código Pix
-          </button>
-          <a href={pix.ticketUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10">
-            Abrir pagamento
-          </a>
-        </div>
-        <p className="mt-3 text-xs text-white/55">Após pagar, sua confirmação aparece automaticamente.</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-amber-200/80">
-          Importante: pague colando esse código (ou pelo botão acima), não mandando um Pix manual pra uma chave salva -- só assim o sistema confirma sozinho.
-        </p>
-      </section>
-    );
+  function closeSheet() {
+    setSheetOpen(false);
+    // Sem pagamento em andamento não há o que retomar: volta ao botão.
+    if (phase.kind !== "paying" && phase.kind !== "generating") setPhase({ kind: "idle" });
   }
 
-  if (blocked) {
+  function handleMainClick() {
+    if (isFull || blockedReason) {
+      showToast(blockedReason || "As vagas deste racha já foram reservadas.");
+      return;
+    }
+    void startPayment();
+  }
+
+  const sheet = sheetOpen && phase.kind !== "idle" && (
+    <PixCheckoutSheet
+      phase={phase}
+      secondsLeft={secondsLeft}
+      eventLabel={eventLabel}
+      checkNotice={checkNotice}
+      isChecking={isChecking}
+      onClose={closeSheet}
+      onCheckNow={checkNow}
+      onRetry={() => void startPayment(interestDone.current || hasInterest || guaranteedSpot)}
+    />
+  );
+
+  if (phase.kind === "paying") {
+    const expired = secondsLeft === 0;
     return (
-      <section className="w-full rounded-2xl border border-orange-400/25 bg-orange-500/10 p-4 text-center">
-        <p className="text-sm font-bold text-orange-100">Não deu pra reservar sua vaga.</p>
-        <p className="mt-1 text-xs leading-relaxed text-orange-50/80">{blocked}</p>
-        <p className="mt-2 text-[11px] text-orange-50/60">Não pague por fora pra tentar entrar -- sem vaga reservada, o pagamento não é confirmado e não garante lugar nenhum. Se abrir vaga, tente de novo aqui.</p>
+      <>
+        {sheet}
         <button
           type="button"
-          onClick={() => setBlocked(null)}
-          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+          onClick={() => setSheetOpen(true)}
+          className={`flex min-h-11 w-full min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-left font-bold text-white shadow-lg shadow-emerald-950/30 transition ${expired ? "bg-amber-500 hover:bg-amber-400" : "bg-emerald-500 hover:bg-emerald-400"}`}
         >
-          Entendi
+          <span className="min-w-0 text-sm leading-tight">{expired ? "O prazo da reserva terminou" : "Continuar pagamento"}</span>
+          <span className="inline-flex shrink-0 items-center gap-1.5 text-sm tabular-nums">
+            {expired ? "Ver" : <><Clock3 className="h-4 w-4" /> {formatTimer(secondsLeft)}</>}
+          </span>
         </button>
-      </section>
+      </>
     );
   }
 
-  if (failure) {
-    return (
-      <section className="w-full rounded-2xl border border-amber-300/25 bg-amber-400/10 p-4 text-center">
-        <p className="text-sm font-bold text-amber-100">Não conseguimos gerar o Pix agora.</p>
-        <p className="mt-1 text-xs leading-relaxed text-amber-50/80">
-          Seu interesse está registrado, mas a vaga só fica garantida com o pagamento pelo código gerado aqui. Tente de novo em instantes -- não pague por fora.
-        </p>
-        <p className="mt-2 text-[11px] text-amber-50/60">Detalhe: {failure}</p>
-        <button
-          type="button"
-          onClick={startPayment}
-          disabled={isPending}
-          className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-white/20 px-4 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-60"
-        >
-          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-          Tentar gerar o Pix de novo
-        </button>
-      </section>
-    );
-  }
+  const generating = phase.kind === "generating";
+  const label = activeReservation
+    ? "Continuar pagamento"
+    : blockedReason
+      ? "Vagas de levantador preenchidas"
+      : isFull
+        ? "Vagas reservadas"
+        : guaranteedSpot
+          ? "Pagar vaga garantida por Pix"
+          : hasInterest
+            ? "Pagar o Pix e garantir vaga"
+            : "Quero jogar e pagar o Pix";
 
   return (
-    <button
-      type="button"
-      disabled={isPending || isFull || Boolean(blockedReason)}
-      onClick={startPayment}
-      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 disabled:opacity-60"
-    >
-      {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-      {blockedReason ? "Vagas de levantador preenchidas" : isFull ? "Vagas reservadas" : guaranteedSpot ? "Pagar vaga garantida por Pix" : hasInterest ? "Pagar o Pix e garantir vaga" : "Quero jogar e pagar o Pix"}
-    </button>
+    <>
+      {sheet}
+      <button
+        type="button"
+        disabled={generating || (!activeReservation && (isFull || Boolean(blockedReason)))}
+        onClick={activeReservation ? () => void startPayment(true) : handleMainClick}
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 font-bold text-white shadow-lg shadow-emerald-950/30 transition hover:bg-emerald-400 disabled:opacity-60"
+      >
+        {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+        {label}
+      </button>
+    </>
   );
 }
