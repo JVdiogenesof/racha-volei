@@ -258,6 +258,7 @@ export function PixReservationButton({
       phase={phase}
       secondsLeft={secondsLeft}
       eventLabel={eventLabel}
+      guaranteedSpot={guaranteedSpot}
       checkNotice={checkNotice}
       isChecking={isChecking}
       onClose={closeSheet}
@@ -276,7 +277,7 @@ export function PixReservationButton({
           onClick={() => setSheetOpen(true)}
           className={`flex min-h-11 w-full min-w-0 flex-1 items-center justify-between gap-3 rounded-xl px-4 py-2.5 text-left font-bold text-white shadow-lg shadow-emerald-950/30 transition ${expired ? "bg-amber-500 hover:bg-amber-400" : "bg-emerald-500 hover:bg-emerald-400"}`}
         >
-          <span className="min-w-0 text-sm leading-tight">{expired ? "O prazo da reserva terminou" : "Continuar pagamento"}</span>
+          <span className="min-w-0 text-sm leading-tight">{expired ? (guaranteedSpot ? "O prazo do código terminou" : "O prazo da reserva terminou") : "Continuar pagamento"}</span>
           <span className="inline-flex shrink-0 items-center gap-1.5 text-sm tabular-nums">
             {expired ? "Ver" : <><Clock3 className="h-4 w-4" /> {formatTimer(secondsLeft)}</>}
           </span>

@@ -51,6 +51,7 @@ export async function PaymentNotices({ profileId, community }: Props) {
     .select("event_id, reservation_expires_at, events!inner(community)")
     .eq("profile_id", profileId)
     .eq("status", "pending")
+    .eq("reserves_capacity", true)
     .eq("events.community", community)
     .gt("reservation_expires_at", new Date().toISOString());
   const reservations = openReservations ?? [];

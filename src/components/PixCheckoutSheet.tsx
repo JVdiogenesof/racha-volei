@@ -72,6 +72,7 @@ function PayingContent({
   phase,
   secondsLeft,
   eventLabel,
+  guaranteedSpot,
   checkNotice,
   isChecking,
   onCheckNow,
@@ -81,6 +82,7 @@ function PayingContent({
   phase: Extract<PixPhase, { kind: "paying" }>;
   secondsLeft: number;
   eventLabel?: string;
+  guaranteedSpot: boolean;
   checkNotice: string | null;
   isChecking: boolean;
   onCheckNow: () => void;
@@ -100,11 +102,15 @@ function PayingContent({
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-400/15 text-amber-300">
           <Clock3 className="h-7 w-7" />
         </span>
-        <h2 id="pix-sheet-title" className="mt-3 text-xl font-black text-white">O prazo da reserva terminou</h2>
-        <p className="mt-2 text-sm leading-relaxed text-white/70">A vaga voltou para a lista porque o pagamento não chegou a tempo.</p>
+        <h2 id="pix-sheet-title" className="mt-3 text-xl font-black text-white">{guaranteedSpot ? "O prazo deste código terminou" : "O prazo da reserva terminou"}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-white/70">
+          {guaranteedSpot ? "Sua vaga garantida continua sua. Se ainda não pagou, é só gerar um novo código." : "A vaga voltou para a lista porque o pagamento não chegou a tempo."}
+        </p>
         <div className="mt-4 rounded-2xl border border-amber-300/25 bg-amber-400/10 p-3 text-left">
           <p className="text-sm font-bold text-amber-100">Já pagou? Não gere outro código.</p>
-          <p className="mt-1 text-xs leading-relaxed text-amber-50/75">Continuamos conferindo por aqui. Se ainda houver vaga, você entra na lista. Se não houver, o valor vira saldo para outro racha.</p>
+          <p className="mt-1 text-xs leading-relaxed text-amber-50/75">
+            {guaranteedSpot ? "Continuamos conferindo por aqui e o pagamento aparece assim que for reconhecido." : "Continuamos conferindo por aqui. Se ainda houver vaga, você entra na lista. Se não houver, o valor vira saldo para outro racha."}
+          </p>
           <button type="button" onClick={onCheckNow} disabled={isChecking} className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/20 text-sm font-bold text-white hover:bg-white/10 disabled:opacity-60">
             {isChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             Conferir meu pagamento
@@ -112,7 +118,7 @@ function PayingContent({
           {checkNotice && <p role="status" className="mt-2 text-xs leading-relaxed text-amber-50/80">{checkNotice}</p>}
         </div>
         <button type="button" onClick={onRetry} className="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-emerald-500 font-bold text-white hover:bg-emerald-400">
-          Ainda não paguei: reservar de novo
+          {guaranteedSpot ? "Ainda não paguei: gerar novo código" : "Ainda não paguei: reservar de novo"}
         </button>
         <button type="button" onClick={onClose} className="mt-2 min-h-10 w-full text-sm font-semibold text-white/60 hover:text-white">Fechar</button>
       </div>
@@ -126,7 +132,7 @@ function PayingContent({
 
   return (
     <div className="px-5 pb-6 pt-1">
-      <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Falta só o pagamento</p>
+      <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">{guaranteedSpot ? "Vaga garantida · falta o pagamento" : "Falta só o pagamento"}</p>
       <div className="mt-1 flex items-end justify-between gap-3">
         <h2 id="pix-sheet-title" className="text-3xl font-black tabular-nums text-white">{money.format(pix.amount)}</h2>
         {eventLabel && <p className="pb-1 text-right text-xs font-medium text-white/60">Racha de {eventLabel}</p>}
@@ -135,7 +141,7 @@ function PayingContent({
       <div className={`mt-3 rounded-2xl border p-3 ${urgent ? "border-red-300/30 bg-red-500/10" : warning ? "border-amber-300/25 bg-amber-400/10" : "border-white/10 bg-white/5"}`}>
         <div className="flex items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/85">
-            <Lock className="h-3.5 w-3.5" /> Sua vaga está guardada por
+            <Lock className="h-3.5 w-3.5" /> {guaranteedSpot ? "Este código vale por" : "Sua vaga está guardada por"}
           </span>
           <span className={`text-xl font-black tabular-nums ${urgent ? "text-red-200" : warning ? "text-amber-200" : "text-white"}`} role="timer">{formatTimer(secondsLeft)}</span>
         </div>
@@ -213,7 +219,7 @@ function PayingContent({
 
       <button type="button" onClick={onClose} className="mt-3 min-h-10 w-full text-sm font-semibold text-white/60 hover:text-white">
         Fechar e pagar depois
-        <span className="block text-[11px] font-normal text-white/40">A vaga fica guardada até o tempo acabar</span>
+        <span className="block text-[11px] font-normal text-white/40">{guaranteedSpot ? "Sua vaga garantida continua sua" : "A vaga fica guardada até o tempo acabar"}</span>
       </button>
     </div>
   );
@@ -260,6 +266,7 @@ export function PixCheckoutSheet({
   phase,
   secondsLeft,
   eventLabel,
+  guaranteedSpot = false,
   checkNotice,
   isChecking,
   onClose,
@@ -269,6 +276,8 @@ export function PixCheckoutSheet({
   phase: Exclude<PixPhase, { kind: "idle" }>;
   secondsLeft: number;
   eventLabel?: string;
+  /** A vaga já é da pessoa (organização garantiu): o prazo vale só para o código. */
+  guaranteedSpot?: boolean;
   checkNotice: string | null;
   isChecking: boolean;
   onClose: () => void;
@@ -301,8 +310,8 @@ export function PixCheckoutSheet({
     content = (
       <div className="px-5 pb-8 pt-3 text-center" aria-live="polite">
         <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-300" />
-        <h2 id="pix-sheet-title" className="mt-4 text-xl font-black text-white">Guardando sua vaga...</h2>
-        <p className="mt-2 text-sm leading-relaxed text-white/70">Estamos reservando a vaga e gerando o seu Pix.</p>
+        <h2 id="pix-sheet-title" className="mt-4 text-xl font-black text-white">{guaranteedSpot ? "Gerando seu Pix..." : "Guardando sua vaga..."}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-white/70">{guaranteedSpot ? "Sua vaga já está garantida. Só falta o código para pagar." : "Estamos reservando a vaga e gerando o seu Pix."}</p>
         {phase.slow && (
           <p className="mt-3 rounded-xl bg-white/5 px-3 py-2 text-xs leading-relaxed text-white/70">
             Tem bastante gente entrando agora. Não precisa tocar de novo: continuamos tentando sozinhos.
@@ -316,6 +325,7 @@ export function PixCheckoutSheet({
         phase={phase}
         secondsLeft={secondsLeft}
         eventLabel={eventLabel}
+        guaranteedSpot={guaranteedSpot}
         checkNotice={checkNotice}
         isChecking={isChecking}
         onCheckNow={onCheckNow}
