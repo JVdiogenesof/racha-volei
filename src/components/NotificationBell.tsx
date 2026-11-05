@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X, Home, TrendingUp } from "lucide-react";
+import { Bell, CalendarCheck, Users2, Trophy, Rocket, Megaphone, X } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
@@ -14,22 +13,48 @@ const ICONS: Record<NotificationType, typeof Bell> = {
   avisos: Megaphone,
 };
 
+/** Sino do cabeçalho, com a lista de notificações. */
 export function NotificationBell({ items }: { items: NotificationItem[] }) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", escape);
+    };
+  }, []);
 
   return (
-    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2">
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Notificações"
+        aria-expanded={open}
+        className={`relative grid h-9 w-9 place-items-center rounded-full border border-white/10 text-white/85 transition hover:bg-white/15 ${open ? "bg-white/20" : "bg-white/[0.08]"}`}
+      >
+        <Bell className="h-[18px] w-[18px]" strokeWidth={2.2} />
+        {items.length > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black leading-none text-white ring-2 ring-[#261660]">
+            {items.length > 9 ? "9+" : items.length}
+          </span>
+        )}
+      </button>
+
       {open && (
-        <div className="animate-toast-in absolute bottom-[calc(100%+0.75rem)] left-1/2 w-80 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/10 bg-brand-navy-light shadow-2xl shadow-black/40">
+        <div className="animate-toast-in absolute right-0 top-[calc(100%+0.6rem)] z-50 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-white/15 bg-[#171039]/95 shadow-2xl shadow-black/40 backdrop-blur-xl max-sm:-right-12">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="font-semibold text-white">Notificações</p>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-md p-1 text-white/40 hover:bg-white/10"
-              aria-label="Fechar notificações"
-            >
+            <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 text-white/40 hover:bg-white/10" aria-label="Fechar notificações">
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
@@ -40,11 +65,7 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
                   const Icon = ICONS[item.type];
                   return (
                     <li key={item.id}>
-                      <Link
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className="flex items-start gap-3 px-4 py-3 text-sm hover:bg-white/5"
-                      >
+                      <Link href={item.href} onClick={() => setOpen(false)} className="flex items-start gap-3 px-4 py-3 text-sm hover:bg-white/5">
                         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-purple/10 text-purple-300">
                           <Icon className="h-4 w-4" strokeWidth={2} />
                         </span>
@@ -60,70 +81,6 @@ export function NotificationBell({ items }: { items: NotificationItem[] }) {
           </div>
         </div>
       )}
-
-      <nav
-        aria-label="Atalhos pessoais"
-        className="flex items-center gap-1 rounded-full border border-white/15 bg-brand-navy/90 p-1.5 shadow-2xl shadow-black/40 backdrop-blur-xl"
-      >
-        <IslandLink href="/" label="Início" active={pathname === "/"}>
-          <Home className="h-5 w-5" strokeWidth={2} />
-        </IslandLink>
-        <IslandLink href="/evolucao" label="Minha evolução" active={pathname.startsWith("/evolucao")}>
-          <TrendingUp className="h-5 w-5" strokeWidth={2} />
-        </IslandLink>
-        <IslandLink href="/selecao-do-mes" label="Seleção do mês" active={pathname.startsWith("/selecao-do-mes")}>
-          <VolleyballCourtIcon className="h-5 w-5" />
-        </IslandLink>
-        <span aria-hidden className="mx-0.5 h-6 w-px bg-white/15" />
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-label="Notificações"
-          aria-expanded={open}
-          className={`relative flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-brand-purple-dark ${open ? "bg-brand-purple" : "bg-white/5"}`}
-        >
-          <Bell className="h-5 w-5" strokeWidth={2} />
-          {items.length > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-brand-navy">
-              {items.length > 9 ? "9+" : items.length}
-            </span>
-          )}
-        </button>
-      </nav>
     </div>
-  );
-}
-
-function VolleyballCourtIcon({ className }: { className?: string }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="16" rx="1.5" />
-      <path d="M12 4v16M3 12h18" />
-      <path d="M9.5 4v16M14.5 4v16" strokeDasharray="1.5 2" opacity="0.65" />
-    </svg>
-  );
-}
-
-function IslandLink({
-  href,
-  label,
-  active,
-  children,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      title={label}
-      aria-current={active ? "page" : undefined}
-      className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-colors hover:bg-brand-purple-dark ${active ? "bg-brand-purple" : "bg-white/5"}`}
-    >
-      {children}
-    </Link>
   );
 }

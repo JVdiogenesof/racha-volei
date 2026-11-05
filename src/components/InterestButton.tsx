@@ -13,6 +13,7 @@ export function InterestButton({
   pixPaymentEnabled = false,
   action,
   className,
+  label,
 }: {
   eventId: string;
   price: number | null;
@@ -22,6 +23,8 @@ export function InterestButton({
   pixPaymentEnabled?: boolean;
   action: (formData: FormData) => Promise<void> | void;
   className?: string;
+  /** Troca o texto do botão, quando falta espaço. */
+  label?: string;
 }) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -76,7 +79,7 @@ export function InterestButton({
       ) : (
         <ThumbsUp className="h-4 w-4" strokeWidth={2} />
       )}
-      {isFull ? "Entrar na fila de espera" : "Quero jogar"}
+      {label ?? (isFull ? "Entrar na fila de espera" : "Quero jogar")}
     </button>
   );
 }

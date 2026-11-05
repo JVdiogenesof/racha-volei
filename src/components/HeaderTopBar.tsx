@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Bell,
-  CalendarDays,
   ChevronDown,
   CircleUserRound,
   Download,
@@ -14,21 +13,13 @@ import {
   TrendingUp,
   UserRound,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { LogoMark } from "@/components/Logo";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 import { CommunitySwitcher } from "@/components/CommunitySwitcher";
 import type { Community } from "@/lib/community";
 import { OPEN_PWA_INSTALL_EVENT } from "@/components/PwaInstallPrompt";
-
-export type HeaderEventSummary = {
-  id: string;
-  dateLabel: string;
-  time: string | null;
-  startsAt: string;
-  attendanceStatus: "confirmed" | "interested" | "declined" | null;
-};
 
 const PAGE_TITLES: { prefix: string; title: string; eyebrow: string }[] = [
   { prefix: "/racha", title: "Rachas", eyebrow: "Agenda VPA" },
@@ -57,60 +48,41 @@ const STATUS_STYLE = {
   declined: { label: "Não vou", dot: "bg-white/35", ring: "ring-white/20" },
 };
 
-function formatCountdown(startsAt: string, now: number | null) {
-  if (now === null) return "Calculando...";
-  const difference = new Date(startsAt).getTime() - now;
-  if (difference <= 0) return "Racha em andamento";
-
-  const totalMinutes = Math.ceil(difference / 60_000);
-  const days = Math.floor(totalMinutes / 1_440);
-  const hours = Math.floor((totalMinutes % 1_440) / 60);
-  const minutes = totalMinutes % 60;
-
-  if (days > 0) return `Faltam ${days}d ${hours}h`;
-  if (hours > 0) return `Faltam ${hours}h ${minutes}min`;
-  return `Faltam ${minutes}min`;
-}
-
 export function HeaderTopBar({
   fullName,
   avatarUrl,
   isOrganizer,
   isVisitor = false,
-  nextEvent,
+  attendanceStatus,
   activeCommunity,
   availableCommunities,
   signOutAction,
-  previewPath,
+  navigation,
+  wideStrip,
+  bell,
 }: {
   fullName: string;
   avatarUrl: string | null;
   isOrganizer: boolean;
   isVisitor?: boolean;
-  nextEvent: HeaderEventSummary | null;
+  attendanceStatus: string | null;
   activeCommunity: Community;
   availableCommunities: Community[];
   signOutAction?: () => Promise<void>;
-  previewPath?: string;
+  /** Menu principal em telas grandes. */
+  navigation: ReactNode;
+  /** Faixa da próxima ação, ao lado do menu nas telas bem largas. */
+  wideStrip: ReactNode;
+  bell: ReactNode;
 }) {
   const pathname = usePathname();
   const compact = useCompactHeader();
   const [open, setOpen] = useState(false);
-  const [now, setNow] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const heading = pageHeading(previewPath ?? pathname);
+  const heading = pageHeading(pathname);
   const firstName = fullName.trim().split(/\s+/)[0] || "Atleta";
-  const eventStatus = nextEvent?.attendanceStatus ? STATUS_STYLE[nextEvent.attendanceStatus] : null;
-  const countdown = nextEvent ? formatCountdown(nextEvent.startsAt, now) : null;
-
-  useEffect(() => {
-    const update = window.setInterval(() => setNow(Date.now()), 30_000);
-    const initial = window.setTimeout(() => setNow(Date.now()), 0);
-    return () => {
-      window.clearInterval(update);
-      window.clearTimeout(initial);
-    };
-  }, []);
+  const isHome = pathname === "/";
+  const eventStatus = attendanceStatus ? STATUS_STYLE[attendanceStatus as keyof typeof STATUS_STYLE] : null;
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -128,45 +100,25 @@ export function HeaderTopBar({
   }, []);
 
   return (
-    <div className={`mx-auto flex max-w-5xl items-center px-3 transition-[height,padding] duration-300 sm:px-4 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem] ${compact ? "h-14" : "h-[4.5rem] sm:h-20"}`}>
-      <Link href="/" aria-label="Ir para o início" className="group flex shrink-0 items-center gap-2.5">
-        <span className={`relative grid place-items-center overflow-visible transition-all duration-300 group-hover:scale-105 ${compact ? "h-10 w-11" : "h-12 w-14"}`}>
-          <LogoMark className={`object-contain transition-all duration-300 ${compact ? "h-11 w-11" : "h-14 w-14"}`} />
-          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#29165f] bg-emerald-400" />
-        </span>
-        <span className="hidden leading-none sm:block">
-          <strong className="block text-sm tracking-[0.14em] text-white">VPA</strong>
-          <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.16em] text-purple-200/70">Vôlei por Amor</span>
-        </span>
+    <div className={`mx-auto flex max-w-5xl items-center gap-2 px-3 transition-[height] duration-300 sm:px-4 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem] ${compact ? "h-14" : "h-[3.75rem] lg:h-[4.75rem]"}`}>
+      <Link href="/" aria-label="Ir para o início" className="group shrink-0">
+        <LogoMark className={`object-contain transition-all duration-300 group-hover:scale-105 ${compact ? "h-11 w-11" : "h-[3.25rem] w-[3.25rem] lg:h-[4.1rem] lg:w-[4.1rem]"}`} />
       </Link>
 
-      <span className="mx-3 h-8 w-px shrink-0 bg-white/12 sm:mx-4" />
-
-      <div className="min-w-0 flex-1">
-        <p className={`truncate font-semibold text-white transition-all duration-300 ${compact ? "text-sm" : "text-base sm:text-lg"}`}>{heading.title}</p>
-        <p className={`truncate text-[10px] font-medium uppercase tracking-[0.12em] text-purple-200/70 transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "mt-1 max-h-4 opacity-100"}`}>
-          <span className="md:hidden">{countdown ?? heading.eyebrow}</span>
-          <span className="hidden md:inline">{heading.eyebrow}</span>
-        </p>
+      <div className="min-w-0 flex-1 leading-tight lg:hidden">
+        <p className="truncate text-[17px] font-black text-white">{isHome ? `Fala, ${firstName}!` : heading.title}</p>
+        <p className={`truncate text-[10px] font-bold uppercase tracking-[0.14em] text-purple-200/70 transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "max-h-4 opacity-100"}`}>{heading.eyebrow}</p>
       </div>
 
-      <div className="mr-2 shrink-0">
+      {navigation}
+      <span className="hidden flex-1 lg:block" />
+      <div className={`hidden shrink-0 2xl:block ${compact ? "2xl:opacity-90" : ""}`}>{wideStrip}</div>
+
+      <div className="shrink-0">
         <CommunitySwitcher active={activeCommunity} available={availableCommunities} />
       </div>
 
-      {nextEvent && (
-        <Link
-          href={`/racha/${nextEvent.id}`}
-          className="mr-2 hidden min-w-0 items-center gap-2 rounded-2xl border border-white/10 bg-black/10 px-3 py-2 text-left transition hover:border-white/20 hover:bg-white/10 md:flex"
-        >
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-purple-400/15 text-purple-200"><CalendarDays className="h-4 w-4" /></span>
-          <span className="min-w-0 leading-tight">
-            <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">Próximo racha{countdown ? ` · ${countdown}` : ""}</span>
-            <span className="mt-0.5 block truncate text-xs font-semibold text-white/90">{nextEvent.dateLabel}{nextEvent.time ? ` · ${nextEvent.time.slice(0, 5)}` : ""}</span>
-          </span>
-          {eventStatus && <span title={eventStatus.label} className={`h-2 w-2 shrink-0 rounded-full ${eventStatus.dot}`} />}
-        </Link>
-      )}
+      {bell}
 
       <div ref={menuRef} className="relative shrink-0">
         <button
