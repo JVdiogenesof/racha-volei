@@ -56,18 +56,21 @@ export function PixReservationButton({
   blockedReason,
   guaranteedSpot = false,
   activeReservation = false,
+  autoStart = false,
   eventLabel,
   action,
 }: {
   eventId: string;
   hasInterest: boolean;
   isFull: boolean;
-  /** Impede gerar Pix quando a cota exclusiva da pessoa já foi preenchida. */
+  /** Impede gerar Pix enquanto a última vaga está guardada para a fila de interessados. */
   blockedReason?: string | null;
   /** A organização já ocupou esta vaga; o Pix só conclui o pagamento. */
   guaranteedSpot?: boolean;
   /** Já existe uma reserva em aberto: reabre o código sozinho (ex.: voltou do app do banco e a tela recarregou). */
   activeReservation?: boolean;
+  /** A pessoa veio de um botão "Quero jogar" ou "Pagar": já abre o pagamento ao chegar. */
+  autoStart?: boolean;
   /** Dia do racha, mostrado na tela de pagamento. */
   eventLabel?: string;
   action: (formData: FormData) => Promise<void> | void;
@@ -149,11 +152,16 @@ export function PixReservationButton({
 
   // Reabre o pagamento em aberto. Fora do corpo do efeito porque a tela de
   // pagamento só existe no navegador.
+  const shouldStart = activeReservation || (autoStart && !isFull && !blockedReason);
   useEffect(() => {
-    if (!activeReservation || started.current) return;
-    const timer = window.setTimeout(() => void startPayment(true), 0);
+    if (!shouldStart || started.current) return;
+    const timer = window.setTimeout(() => {
+      // Tira o "pagar=1" do endereço: recarregar a tela não pode gerar outra reserva.
+      if (autoStart) window.history.replaceState(null, "", window.location.pathname);
+      void startPayment(activeReservation);
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [activeReservation, startPayment]);
+  }, [activeReservation, autoStart, shouldStart, startPayment]);
 
   const checkStatus = useCallback(async () => {
     if (checking.current) return "pending" as const;
@@ -290,7 +298,7 @@ export function PixReservationButton({
   const label = activeReservation
     ? "Continuar pagamento"
     : blockedReason
-      ? "Vagas de levantador preenchidas"
+      ? "Vaga guardada para a fila"
       : isFull
         ? "Vagas reservadas"
         : guaranteedSpot

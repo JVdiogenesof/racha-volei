@@ -38,10 +38,13 @@ import { ForfeitPixSpotButton } from "@/components/ForfeitPixSpotButton";
 
 export default async function ConfirmarPresencaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ pagar?: string }>;
 }) {
   const { id } = await params;
+  const autoStartPayment = (await searchParams).pagar === "1";
   const profile = await requireProfile();
   const supabase = await createClient();
   const selectedCommunity = await getActiveCommunity(profile);
@@ -196,10 +199,9 @@ export default async function ConfirmarPresencaPage({
       ? confirmados.length >= eventCapacity
       : regularConfirmedCount >= memberCapacity;
   const setterSlotsFull = profile.is_setter && setterConfirmedCount >= setterCapacity;
-  // Vaga com oferta de fila ativa pra outra pessoa: ninguém mais pode pagar
-  // e furar a fila até o prazo dela vencer ou ela recusar (o banco já
-  // bloqueia isso; aqui é só pra nem mostrar a opção de pagar).
-  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer;
+  // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
+  // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
+  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && eventCapacity - confirmados.length <= 1;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
@@ -413,6 +415,7 @@ export default async function ConfirmarPresencaPage({
                 action={setAttendance}
                 guaranteedSpot
                 activeReservation={hasOpenReservation}
+                autoStart={autoStartPayment}
                 eventLabel={dateLabel}
               />
             </div>
@@ -494,8 +497,9 @@ export default async function ConfirmarPresencaPage({
                 Entrar na lista (isento)
               </button>
             </ActionForm>
-          ) : event.pix_payment_enabled && event.price_per_player && isFull && myStatus !== "interested" && !hasOpenReservation ? (
-            // Lista cheia: não há Pix pra pagar, só dá pra entrar na fila de espera.
+          ) : event.pix_payment_enabled && event.price_per_player && (isFull || queueLockedForMe) && myStatus !== "interested" && !hasOpenReservation ? (
+            // Lista cheia (ou a última vaga guardada para a fila): não há Pix
+            // pra pagar, só dá pra entrar na fila de espera.
             <InterestButton
               eventId={id}
               price={Number(event.price_per_player)}
@@ -514,6 +518,7 @@ export default async function ConfirmarPresencaPage({
               }
               action={setAttendance}
               activeReservation={hasOpenReservation}
+              autoStart={autoStartPayment}
               eventLabel={dateLabel}
             />
           ) : (

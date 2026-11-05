@@ -66,9 +66,8 @@ export function HomeRachaCard({
   const mode = joinMode({ price, pixAuto: event.pix_payment_enabled, exempt: isPaymentExempt });
   const status: JoinStatus = myStatus === "confirmed" || myStatus === "interested" || myStatus === "declined" ? myStatus : "none";
   const confirmUrl = `/racha/${event.id}/confirmar`;
-  // Racha com Pix automático: o botão leva direto pra tela do Pix, onde um toque
-  // só marca o interesse e gera o pagamento (sem passo intermediário).
-  const goStraightToPix = mode === "pix" && !isFull && status !== "confirmed" && status !== "interested";
+  // Racha com Pix automático: esses botões já abrem o pagamento na tela da lista.
+  const payUrl = `${confirmUrl}?pagar=1`;
 
   const phase = isInProgress
     ? { label: "Rolando agora", className: "bg-red-400/25 text-red-100", dot: "bg-red-300" }
@@ -168,7 +167,7 @@ export function HomeRachaCard({
                     Acompanhar
                   </Link>
                 ) : status === "confirmed" && mode !== "free" && !paid ? (
-                  <Link href={confirmUrl} className={PRIMARY_BUTTON}>
+                  <Link href={mode === "pix" ? payUrl : confirmUrl} className={PRIMARY_BUTTON}>
                     <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
                     {mode === "pix" ? "Pagar o Pix da vaga" : "Ver como pagar"}
                   </Link>
@@ -178,7 +177,7 @@ export function HomeRachaCard({
                     Abrir racha
                   </Link>
                 ) : status === "interested" ? (
-                  <Link href={confirmUrl} className={PRIMARY_BUTTON}>
+                  <Link href={mode === "pix" && !paid && !isFull ? payUrl : confirmUrl} className={PRIMARY_BUTTON}>
                     <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
                     {mode === "pix" && !paid ? "Pagar o Pix da vaga" : mode === "manual" && !paid ? "Ver como pagar" : "Ver minha vaga"}
                   </Link>
@@ -186,11 +185,6 @@ export function HomeRachaCard({
                   <Link href={confirmUrl} className={PRIMARY_BUTTON}>
                     <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
                     Entrar na lista
-                  </Link>
-                ) : goStraightToPix ? (
-                  <Link href={confirmUrl} className={PRIMARY_BUTTON}>
-                    <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
-                    Quero jogar
                   </Link>
                 ) : (
                   <InterestButton

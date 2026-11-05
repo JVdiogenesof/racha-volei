@@ -18,7 +18,7 @@ export function InterestButton({
   price: number | null;
   /** Já tem gente confirmada suficiente pra esse racha (vagas configuradas). */
   isFull?: boolean;
-  /** Racha com Pix automático: o pagamento é gerado na tela da lista, nunca na chave fixa. */
+  /** Racha com Pix automático: marca o interesse e já abre o pagamento na tela da lista. */
   pixPaymentEnabled?: boolean;
   action: (formData: FormData) => Promise<void> | void;
   className?: string;
@@ -28,15 +28,14 @@ export function InterestButton({
   const { showToast } = useToast();
 
   function handleClick() {
+    const goesToPix = Boolean(pixPaymentEnabled && price && !isFull);
     // Lista cheia: não fala em pagamento nenhum. Qualquer Pix agora (na
     // chave ou não) não vira vaga -- a pessoa só entra na fila.
     let message: string | null = null;
     if (isFull) {
       message =
         "A lista já está cheia. Você entra na fila de espera e só é chamado(a) se alguém desistir.\n\nNão pague nada agora.";
-    } else if (price && pixPaymentEnabled) {
-      message = `Só marcar não garante a vaga.\n\nNa próxima tela, gere o Pix de R$ ${price.toFixed(2)} e pague com o código gerado. Não pague direto na chave do grupo: o sistema não confirma seu nome.`;
-    } else if (price) {
+    } else if (price && !goesToPix) {
       message = `Só marcar não garante a vaga.\n\nPara entrar na lista, pague R$ ${price.toFixed(2)} por Pix.\n\nChave Pix: ${PIX_KEY}`;
     }
     if (message && !window.confirm(message)) return;
@@ -48,14 +47,16 @@ export function InterestButton({
     startTransition(async () => {
       try {
         await action(formData);
-        showToast(isFull ? "Você entrou na fila de espera." : "Pedido registrado!");
-        if (pixPaymentEnabled && price && !isFull) {
-          router.push(`/racha/${eventId}/confirmar`);
+        if (goesToPix) {
+          router.push(`/racha/${eventId}/confirmar?pagar=1`);
         } else {
+          showToast(isFull ? "Você entrou na fila de espera." : "Pedido registrado!");
           router.refresh();
         }
       } catch (err) {
-        showToast(err instanceof Error ? err.message : "Não foi possível concluir a ação.");
+        // Em produção o Next esconde o texto do erro da action.
+        const message = err instanceof Error ? err.message : "";
+        showToast(!message || /server component/i.test(message) ? "Não foi possível concluir. Tente de novo." : message);
       }
     });
   }
