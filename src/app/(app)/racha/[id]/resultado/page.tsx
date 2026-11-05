@@ -56,9 +56,9 @@ const PLACE_STYLE = {
 
 export default async function ResultadoFinalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const profile = await requireProfile();
+  await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: event }, { data: generation }] = await Promise.all([
     supabase.from("events").select("id, date, is_pre_torneio, is_mini_torneio, community").eq("id", id).maybeSingle(),

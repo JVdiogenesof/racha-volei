@@ -65,7 +65,7 @@ function formatTime(time: string | null) {
 export default async function CopaVpaPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const cup = await getFeaturedCup(supabase, community);
 
   if (!cup) {

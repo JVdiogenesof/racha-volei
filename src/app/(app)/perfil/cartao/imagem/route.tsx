@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   if (profileError) return new Response("Não foi possível carregar o perfil", { status: 500 });
   if (!profile) return new Response("Perfil não encontrado", { status: 404 });
 
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const [rankingCounts, seasonScores, { data: approvedProfiles }] = await Promise.all([
     getRankingCounts(supabase, community),
     getSeasonRanking(supabase, community),
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
 
           <span style={{ marginTop: "-16px", maxWidth: "900px", textAlign: "center", fontSize: "56px", fontWeight: 900, lineHeight: 1.05 }}>{profile.full_name}</span>
           {profile.nickname_badge && <span style={{ marginTop: "12px", color: "#ddd6fe", fontSize: "24px", fontWeight: 700 }}>{profile.nickname_badge}</span>}
-          <span style={{ marginTop: "13px", color: "rgba(255,255,255,.62)", fontSize: "20px", letterSpacing: "3px" }}>MINHA HISTÓRIA NA {community === "sand" ? "AREIA" : "QUADRA"}</span>
+          <span style={{ marginTop: "13px", color: "rgba(255,255,255,.62)", fontSize: "20px", letterSpacing: "3px" }}>MINHA HISTÓRIA NA QUADRA</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "43px" }}>

@@ -9,8 +9,8 @@ import { getActiveCommunity } from "@/lib/community";
 
 export default async function RachaSummaryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const profile = await requireProfile();
-  const community = await getActiveCommunity(profile);
+  await requireProfile();
+  const community = await getActiveCommunity();
   const summary = await getEventSummary(await createClient(), id);
   if (!summary || summary.event.community !== community) notFound();
 

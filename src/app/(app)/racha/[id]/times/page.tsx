@@ -49,7 +49,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: event }, { data: generation }, { data: confirmedAttendance }, { data: setterOverrideRows }] = await Promise.all([
     supabase

@@ -16,7 +16,7 @@ import { AnimatedMetric } from "@/components/AnimatedMetric";
 export default async function PerfilPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const [{ self, organizer }, weights, rankingCounts, seasonScores, { data: approvedProfiles }] = await Promise.all([
     getPlayerRatings(supabase, profile.id),
     getRatingWeights(supabase),
@@ -71,7 +71,7 @@ export default async function PerfilPage() {
     <div className="space-y-10">
       <div>
         <h1 className="text-2xl font-bold text-white">Meu perfil</h1>
-        <p className="mt-1 text-sm text-white/60">Suas estatísticas no racha de {community === "sand" ? "areia" : "quadra"}.</p>
+        <p className="mt-1 text-sm text-white/60">Suas estatísticas no racha de quadra.</p>
       </div>
 
       <SharePlayerCard

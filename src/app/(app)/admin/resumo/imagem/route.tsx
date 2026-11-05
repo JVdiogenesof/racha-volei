@@ -37,7 +37,7 @@ function metricDetail(metric: MonthlyReportMetric, player: MonthlyReportPlayer) 
   return `${player.wins} vitórias · ${player.mvp} destaques`;
 }
 
-function baseStyle(community: "court" | "sand") {
+function baseStyle() {
   return {
     width: "100%",
     height: "100%",
@@ -48,9 +48,7 @@ function baseStyle(community: "court" | "sand") {
     overflow: "hidden",
     padding: "90px 64px 66px",
     color: "white",
-    backgroundImage: community === "sand"
-      ? "radial-gradient(circle at 90% 4%, rgba(251,191,36,.28), transparent 30%), radial-gradient(circle at 3% 92%, rgba(34,211,238,.22), transparent 34%), linear-gradient(155deg, #4a2871 0%, #211743 48%, #0b1732 100%)"
-      : "radial-gradient(circle at 90% 4%, rgba(167,139,250,.42), transparent 30%), radial-gradient(circle at 3% 92%, rgba(37,99,235,.26), transparent 34%), linear-gradient(155deg, #48218a 0%, #211044 48%, #090d25 100%)",
+    backgroundImage: "radial-gradient(circle at 90% 4%, rgba(167,139,250,.42), transparent 30%), radial-gradient(circle at 3% 92%, rgba(37,99,235,.26), transparent 34%), linear-gradient(155deg, #48218a 0%, #211044 48%, #090d25 100%)",
     fontFamily: "sans-serif",
   };
 }
@@ -72,9 +70,9 @@ function Footer() {
 }
 
 function OverviewArt({ report, logoUrl, watermarkUrl }: { report: Awaited<ReturnType<typeof getMonthlyReport>>; logoUrl: string; watermarkUrl: string }) {
-  const communityLabel = report.community === "sand" ? "Areia" : "Quadra";
+  const communityLabel = "Quadra";
   return (
-    <div style={baseStyle(report.community)}>
+    <div style={baseStyle()}>
       <ArtWatermark src={watermarkUrl} />
       <div style={{ position: "absolute", right: "-160px", top: "320px", width: "480px", height: "480px", display: "flex", borderRadius: "999px", border: "3px solid rgba(255,255,255,.04)" }} />
       <Header logoUrl={logoUrl} title="RESUMO DO MÊS" subtitle={`${report.monthLabel} · ciclo completo com ${report.finishedEvents.length} rachas`} communityLabel={communityLabel} />
@@ -126,10 +124,10 @@ function RankingArt({ report, metric, logoUrl, watermarkUrl }: { report: Awaited
   const rows = players.length > 20 ? Math.ceil(players.length / 2) : players.length;
   const columns = players.length > 20 ? [players.slice(0, rows), players.slice(rows)] : [players];
   const rowHeight = Math.max(38, Math.min(58, Math.floor(1010 / Math.max(rows, 1))));
-  const communityLabel = report.community === "sand" ? "Areia" : "Quadra";
+  const communityLabel = "Quadra";
 
   return (
-    <div style={baseStyle(report.community)}>
+    <div style={baseStyle()}>
       <ArtWatermark src={watermarkUrl} />
       <Header logoUrl={logoUrl} title={config.title} subtitle={`${report.monthLabel} · ranking mensal completo`} communityLabel={communityLabel} />
       <div style={{ minHeight: 0, display: "flex", flex: 1, flexDirection: "column", justifyContent: "flex-start" }}>
@@ -173,9 +171,9 @@ function renderMonthlyArt(
 }
 
 export async function GET(request: Request) {
-  const profile = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const url = new URL(request.url);
   const monthKey = normalizeMonthKey(url.searchParams.get("month"));
   const requestedArt = url.searchParams.get("art");

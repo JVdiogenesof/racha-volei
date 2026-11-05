@@ -64,14 +64,6 @@ export default async function CadastroPage() {
                 <option value="advanced">Avançado</option>
               </select>
             </Field>
-            <fieldset className="sm:col-span-2">
-              <legend className="text-sm font-medium text-white">Onde você joga?</legend>
-              <div className="mt-2 grid gap-2 sm:grid-cols-3">
-                <Radio name="playCommunity" value="court" label="🏐 Quadra" defaultChecked={(profile?.communities ?? ["court"]).length === 1 && (profile?.communities ?? ["court"]).includes("court")} />
-                <Radio name="playCommunity" value="sand" label="🏖️ Areia" defaultChecked={profile?.communities?.length === 1 && profile.communities.includes("sand")} />
-                <Radio name="playCommunity" value="both" label="Quadra e areia" defaultChecked={profile?.communities?.includes("court") && profile.communities.includes("sand")} />
-              </div>
-            </fieldset>
           </section>
 
           {!completingApprovedProfile && (

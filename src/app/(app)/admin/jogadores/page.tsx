@@ -12,9 +12,9 @@ import { getActiveCommunity } from "@/lib/community";
 import { ATTENDANCE_REMOVE_THRESHOLD } from "@/lib/attendancePolicy";
 
 export default async function AdminJogadoresPage() {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const [{ data: players }, { data: removedPlayers }, { data: suspendedPlayers }, { selfByProfile, organizerByProfile }, weights] = await Promise.all([
     supabase
@@ -42,7 +42,7 @@ export default async function AdminJogadoresPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Notas · {community === "sand" ? "Areia" : "Quadra"}</h1>
+        <h1 className="text-2xl font-bold text-white">Notas · Quadra</h1>
         <p className="mt-1 text-sm text-white/60">
           A nota final combina autoavaliação e nota do organizador conforme o peso abaixo.
         </p>
@@ -101,7 +101,6 @@ export default async function AdminJogadoresPage() {
               fullName={player.full_name}
               avatarUrl={player.avatar_url}
               nicknameBadge={player.nickname_badge}
-              communities={player.communities as ("court" | "sand")[]}
               overall={overallScore(finalScores)}
               organizerRatings={organizer}
             />

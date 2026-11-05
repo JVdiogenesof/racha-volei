@@ -6,9 +6,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { History } from "lucide-react";
 
 export default async function HistoricoPage() {
-  const profile = await requireProfile();
+  await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const { data: events } = await supabase
     .from("events")
@@ -41,7 +41,7 @@ export default async function HistoricoPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-white">Histórico · {community === "sand" ? "Areia" : "Quadra"}</h1>
+      <h1 className="text-2xl font-bold text-white">Histórico · Quadra</h1>
 
       <div className="mt-6 space-y-3">
         {!rows.length && <EmptyState icon={<History className="h-5 w-5" />} title="A história começa no próximo racha" description="Quando um evento for encerrado, os resultados e destaques ficarão guardados aqui." actionHref="/racha" actionLabel="Ver próximos rachas" />}

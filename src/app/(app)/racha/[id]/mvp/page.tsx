@@ -14,7 +14,7 @@ export default async function MvpPage({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: event }, { data: confirmed }] = await Promise.all([
     supabase.from("events").select("id, date, status, mvp_profile_id, mvp_profile_id_2, community").eq("id", id).maybeSingle(),

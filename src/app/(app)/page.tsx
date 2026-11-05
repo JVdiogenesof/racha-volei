@@ -1,6 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
-import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Shirt, Gauge, CheckCircle2, Target } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Gauge, CheckCircle2, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
@@ -49,7 +48,7 @@ function relativeDate(dateStr: string) {
 export default async function HomePage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const today = todayStringInFortaleza();
   const [{ data: upcomingRachas }, { data: avisos }, { data: birthdayProfiles }, { data: recentFinal }, seasonScores, absenceStreaks] =
     await Promise.all([
@@ -288,7 +287,7 @@ export default async function HomePage() {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">VPA · {community === "sand" ? "Racha de Areia" : "Racha de Quadra"}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">VPA · Racha de Quadra</p>
           <h1 className="mt-0.5 truncate text-[22px] font-extrabold leading-tight text-white sm:text-3xl">Fala, {firstName}!</h1>
         </div>
         <div className="flex shrink-0 gap-1.5">
@@ -412,34 +411,7 @@ export default async function HomePage() {
         />
       )}
 
-      {community === "sand" ? (
-      <section className="overflow-hidden rounded-2xl border border-purple-300/25 bg-[#10071f] shadow-xl shadow-purple-950/20">
-        <div className={`relative overflow-hidden bg-black aspect-[8/5]`}>
-          <Image src="/camisas/colecao-areia-vpa.webp" alt="Camisas roxas do Racha de Areia VPA" fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-contain object-center" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#130827] via-[#130827]/40 to-transparent" />
-          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-purple-200/25 bg-black/45 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.14em] text-purple-100 backdrop-blur">
-            <Sparkles className="h-3 w-3" strokeWidth={2.5} />
-            Nova coleção
-          </span>
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 p-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[15px] font-extrabold leading-tight text-white">A nova pele do nosso racha</h2>
-              <p className="truncate text-[11px] text-white/70">Veja os modelos e peça a sua camisa</p>
-            </div>
-            <Link
-              href="/camisas"
-              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-purple px-3 text-xs font-bold text-white shadow-lg shadow-purple-950/40 hover:bg-brand-purple-dark"
-            >
-              <Shirt className="h-3.5 w-3.5" strokeWidth={2.25} />
-              Ver modelos
-              <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.5} />
-            </Link>
-          </div>
-        </div>
-      </section>
-      ) : (
-        <HomeTeamsVideo />
-      )}
+      <HomeTeamsVideo />
 
       {recentChampion && (
         <RecentTournamentChampionCard

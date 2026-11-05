@@ -29,7 +29,7 @@ export async function GET(request: Request) {
   if (!user) return new Response("Não autorizado", { status: 401 });
   const { data: profile } = await supabase.from("profiles").select("is_organizer, communities").eq("id", user.id).maybeSingle();
   if (!profile?.is_organizer) return new Response("Acesso restrito aos organizadores", { status: 403 });
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
 
   const params = new URL(request.url).searchParams;
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   const groups = groupShirtOrders(orders);
   const displayed = groups;
   const imageHeight = Math.max(1600, 1040 + Math.ceil(groups.length / 2) * 210);
-  const collectionUrl = new URL(getShirtModels(community)[model].image.replace(".webp", "-export.jpg"), request.url).toString();
+  const collectionUrl = new URL(getShirtModels()[model].image.replace(".webp", "-export.jpg"), request.url).toString();
   const logoUrl = new URL("/logo.png", request.url).toString();
   const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
 

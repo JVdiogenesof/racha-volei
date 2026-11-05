@@ -19,7 +19,7 @@ function manualAmount(formData: FormData) {
 
 export async function addManualShirtFinanceTransaction(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const transactionType = String(formData.get("transactionType") ?? "");
   const description = String(formData.get("description") ?? "").trim();
   const transactionDate = String(formData.get("transactionDate") ?? "").trim();
@@ -51,7 +51,7 @@ export async function addManualShirtFinanceTransaction(formData: FormData) {
 
 export async function voidManualShirtFinanceTransaction(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const transactionId = String(formData.get("transactionId") ?? "").trim();
   if (!transactionId) throw new Error("Movimentação inválida.");
   const supabase = await createClient();
@@ -65,8 +65,8 @@ export async function voidManualShirtFinanceTransaction(formData: FormData) {
 }
 
 export async function setShirtOrderStatus(formData: FormData) {
-  const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  await requireOrganizer();
+  const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   const status = String(formData.get("status") ?? "");
   if (!orderId || !Object.hasOwn(SHIRT_ORDER_STATUS_LABELS, status)) throw new Error("Status do pedido inválido.");
@@ -82,7 +82,7 @@ export async function setShirtOrderStatus(formData: FormData) {
 
 export async function setShirtOrderPaid(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId") ?? "");
   const payment = String(formData.get("payment") ?? "");
   const ids = formData.getAll("orderId").map(String);
@@ -104,8 +104,8 @@ export async function setShirtOrderPaid(formData: FormData) {
 }
 
 export async function deleteShirtOrder(formData: FormData) {
-  const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  await requireOrganizer();
+  const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   if (!orderId) throw new Error("Pedido inválido.");
 
@@ -154,8 +154,8 @@ export async function deleteShirtOrder(formData: FormData) {
 }
 
 export async function updateShirtOrder(formData: FormData) {
-  const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  await requireOrganizer();
+  const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   const model = String(formData.get("model") ?? "");
   const fit = String(formData.get("fit") ?? "");

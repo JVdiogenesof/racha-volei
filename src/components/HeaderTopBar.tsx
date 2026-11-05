@@ -17,8 +17,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { LogoMark } from "@/components/Logo";
 import { useCompactHeader } from "@/components/CompactAppHeader";
-import { CommunitySwitcher } from "@/components/CommunitySwitcher";
-import type { Community } from "@/lib/community";
 import { OPEN_PWA_INSTALL_EVENT } from "@/components/PwaInstallPrompt";
 
 const PAGE_TITLES: { prefix: string; title: string; eyebrow: string }[] = [
@@ -54,8 +52,6 @@ export function HeaderTopBar({
   isOrganizer,
   isVisitor = false,
   attendanceStatus,
-  activeCommunity,
-  availableCommunities,
   signOutAction,
   navigation,
   wideStrip,
@@ -66,8 +62,6 @@ export function HeaderTopBar({
   isOrganizer: boolean;
   isVisitor?: boolean;
   attendanceStatus: string | null;
-  activeCommunity: Community;
-  availableCommunities: Community[];
   signOutAction?: () => Promise<void>;
   /** Menu principal em telas grandes. */
   navigation: ReactNode;
@@ -113,10 +107,6 @@ export function HeaderTopBar({
       {navigation}
       <span className="hidden flex-1 lg:block" />
       <div className={`hidden shrink-0 2xl:block ${compact ? "2xl:opacity-90" : ""}`}>{wideStrip}</div>
-
-      <div className="shrink-0">
-        <CommunitySwitcher active={activeCommunity} available={availableCommunities} />
-      </div>
 
       {bell}
 

@@ -97,7 +97,7 @@ export default function LinksPage() {
           })}
         </div>
 
-        <p className="mt-8 text-[10px] font-bold uppercase tracking-[.23em] text-white/45">Quadra · Areia · Uma só paixão</p>
+        <p className="mt-8 text-[10px] font-bold uppercase tracking-[.23em] text-white/45">Uma só paixão</p>
       </section>
     </main>
   );

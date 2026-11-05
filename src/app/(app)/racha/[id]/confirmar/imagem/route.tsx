@@ -192,7 +192,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
         <div style={{ display: "flex", alignItems: "center", marginTop: "42px", marginBottom: "20px" }}>
           <span style={{ fontSize: "30px" }}>✓</span>
-          <span style={{ marginLeft: "12px", fontSize: "28px", fontWeight: 800 }}>Quem vai estar na {event.community === "sand" ? "areia" : "quadra"}</span>
+          <span style={{ marginLeft: "12px", fontSize: "28px", fontWeight: 800 }}>Quem vai estar na quadra</span>
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignContent: "flex-start" }}>

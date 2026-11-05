@@ -23,9 +23,9 @@ function formatDay(date: string) {
 export default async function AdminRankingPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const term = (q ?? "").trim().toLocaleLowerCase("pt-BR");
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const [{ data: profiles }, counts, seasonScores, { data: adjustmentRows }] = await Promise.all([
     supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]).order("full_name"),
@@ -54,7 +54,7 @@ export default async function AdminRankingPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · {community === "sand" ? "Areia" : "Quadra"}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · Quadra</p>
         <h1 className="mt-0.5 text-2xl font-black text-white">Ajustar rankings</h1>
         <p className="mt-1 text-xs text-white/50">Escolha um jogador para corrigir presenças, vitórias, derrotas e destaques racha a racha. O Índice VPA muda na hora.</p>
       </header>

@@ -1,4 +1,3 @@
-import type { Community } from "@/lib/community";
 
 // Pedidos temporariamente encerrados; os pedidos e o painel administrativo seguem disponíveis.
 export const SHIRT_ORDERS_OPEN = false;
@@ -82,25 +81,12 @@ export function groupShirtOrders<T extends { profile_id: string; community: stri
   return [...groups.values()];
 }
 
-export const SAND_SHIRT_MODELS: Record<ShirtModel, ShirtModelInfo> = {
-  tank: {
-    label: "Regata",
-    image: "/camisas/regata-areia-vpa.webp",
-    description: "Modelo roxo leve e ideal para os rachas na areia.",
-  },
-  sleeve: {
-    label: "Com manga",
-    image: "/camisas/manga-areia-vpa.webp",
-    description: "Modelo roxo tradicional com acabamento nas mangas.",
-  },
-};
-
-export function getShirtModels(community: Community): Record<ShirtModel, ShirtModelInfo> {
-  return community === "sand" ? SAND_SHIRT_MODELS : SHIRT_MODELS;
+export function getShirtModels(): Record<ShirtModel, ShirtModelInfo> {
+  return SHIRT_MODELS;
 }
 
-export function getShirtCollectionImage(community: Community) {
-  return community === "sand" ? "/camisas/colecao-areia-vpa.webp" : "/camisas/colecao-vpa-v2.webp";
+export function getShirtCollectionImage() {
+  return "/camisas/colecao-vpa-v2.webp";
 }
 export const SHIRT_SIZES = ["PP", "P", "M", "G", "GG"] as const;
 export const SLEEVE_SHIRT_SIZES = [...SHIRT_SIZES, "EG"] as const;

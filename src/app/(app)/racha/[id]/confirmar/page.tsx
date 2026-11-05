@@ -48,7 +48,7 @@ export default async function ConfirmarPresencaPage({
   const autoStartPayment = (await searchParams).pagar === "1";
   const profile = await requireProfile();
   const supabase = await createClient();
-  const selectedCommunity = await getActiveCommunity(profile);
+  const selectedCommunity = await getActiveCommunity();
   // Confere Pix recém-pagos antes de montar a lista (não depende só do webhook).
   await reconcileWithinBudget(id, profile.is_organizer ? undefined : profile.id);
 

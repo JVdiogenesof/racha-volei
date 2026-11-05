@@ -54,7 +54,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     month: "long",
     year: "numeric",
   });
-  const communityLabel = event.community === "sand" ? "RACHA DE AREIA" : "RACHA DE QUADRA";
+  const communityLabel = "RACHA DE QUADRA";
   const watermarkUrl = new URL("/logo-vpa-oficial.jpg", _request.url).toString();
 
   return new ImageResponse(
@@ -107,7 +107,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
               )}
               <span style={{ marginTop: "42px", maxWidth: "100%", textAlign: "center", fontSize: destaques.length > 1 ? "46px" : "58px", lineHeight: 1.08, fontWeight: 900 }}>{destaque.fullName}</span>
               <span style={{ marginTop: "18px", color: "#d8b4fe", fontSize: "23px", fontWeight: 700 }}>
-                {event.community === "sand" ? "BRILHOU NA AREIA ✨" : "BRILHOU EM QUADRA ✨"}
+                BRILHOU EM QUADRA ✨
               </span>
             </div>
           ))}

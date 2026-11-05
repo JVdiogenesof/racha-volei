@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/EmptyState";
 export default async function AvisosPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: announcements }, { data: birthdayProfiles }] = await Promise.all([
     supabase
@@ -28,7 +28,7 @@ export default async function AvisosPage() {
     <div className="space-y-8">
       <h1 className="flex items-center gap-2 text-2xl font-bold text-white">
         <Megaphone className="h-6 w-6 text-purple-300" strokeWidth={2} />
-        Avisos · {community === "sand" ? "Areia" : "Quadra"}
+        Avisos · Quadra
       </h1>
 
       <BirthdaysCard profiles={birthdayProfiles ?? []} />

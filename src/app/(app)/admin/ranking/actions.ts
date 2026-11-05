@@ -11,7 +11,7 @@ const VALID_METRICS = ["attendance", "mvp", "wins"];
 export async function adjustRanking(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
   const metric = String(formData.get("metric"));
   const delta = Number(formData.get("delta"));
@@ -63,7 +63,7 @@ async function saveEventAdjustment(params: {
   metric: "attendance" | "mvp" | "wins" | "losses";
   delta: number;
   organizerId: string;
-  community: "court" | "sand";
+  community: "court";
 }) {
   const supabase = await createClient();
   const { error: deleteError } = await supabase
@@ -91,7 +91,7 @@ async function saveEventAdjustment(params: {
 export async function adjustEventResult(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
   const eventId = String(formData.get("eventId"));
   const metric = String(formData.get("metric"));
@@ -114,7 +114,7 @@ export async function adjustEventResult(formData: FormData) {
 export async function setEventFlag(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
   const eventId = String(formData.get("eventId"));
   const metric = String(formData.get("metric"));

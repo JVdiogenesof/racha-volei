@@ -24,7 +24,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [
     { data: event },
@@ -107,7 +107,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
 
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Racha de {community === "sand" ? "areia" : "quadra"}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Racha de quadra</p>
           <h1 className="mt-0.5 text-2xl font-black capitalize text-white">
             {dateObj.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(".", "")}
           </h1>

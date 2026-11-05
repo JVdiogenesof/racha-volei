@@ -85,28 +85,6 @@ body {
   padding-top: env(safe-area-inset-top);
 }
 
-/* O ambiente Areia mantém a identidade roxa do VPA, mas ganha luz de sol,
-   areia e azul para ficar imediatamente diferente do ambiente Quadra. */
-.community-sand {
-  --brand-purple: #a86419;
-  --brand-purple-dark: #7c4510;
-  background-color: #101a38;
-  background-image:
-    radial-gradient(105% 70% at 8% -8%, rgba(251, 191, 36, 0.28), transparent 58%),
-    radial-gradient(95% 80% at 102% 8%, rgba(34, 211, 238, 0.2), transparent 55%),
-    linear-gradient(165deg, #3b2767 0%, #231c4d 45%, #101a38 100%);
-  background-attachment: fixed;
-}
-
-.community-sand .app-header-background {
-  background:
-    radial-gradient(75% 180% at 8% -55%, rgba(251, 191, 36, 0.3), transparent 62%),
-    radial-gradient(65% 170% at 96% -45%, rgba(34, 211, 238, 0.2), transparent 62%),
-    linear-gradient(165deg, rgba(67, 43, 111, 0.97), rgba(31, 28, 72, 0.98));
-}
-
-/* A troca Quadra/Areia mantém o conteúdo funcional enquanto uma camada curta
-   apresenta a identidade do novo ambiente. */
 .community-shell {
   position: relative;
   isolation: isolate;
@@ -124,63 +102,6 @@ body {
 
 .community-aura-court {
   background: radial-gradient(circle at 50% 8%, rgba(139, 92, 246, 0.2), transparent 54%);
-}
-
-.community-aura-sand {
-  background: radial-gradient(circle at 50% 8%, rgba(251, 191, 36, 0.2), transparent 48%);
-}
-
-.community-switch-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  text-align: center;
-  backdrop-filter: blur(14px);
-  animation: community-overlay-in 0.24s ease-out both;
-}
-
-.community-switch-overlay-court {
-  background: radial-gradient(circle at 50% 40%, rgba(124, 58, 237, 0.42), transparent 45%), rgba(10, 13, 36, 0.86);
-}
-
-.community-switch-overlay-sand {
-  background: radial-gradient(circle at 50% 40%, rgba(251, 191, 36, 0.34), transparent 44%), rgba(16, 26, 56, 0.88);
-}
-
-.community-switch-orb {
-  display: grid;
-  height: 5rem;
-  width: 5rem;
-  place-items: center;
-  border: 1px solid rgb(255 255 255 / 0.18);
-  border-radius: 999px;
-  color: white;
-  background: rgb(255 255 255 / 0.1);
-  box-shadow: 0 0 45px rgb(196 181 253 / 0.24);
-  animation: community-orb 0.7s cubic-bezier(0.16, 1, 0.3, 1) infinite alternate;
-}
-
-.animate-community-icon-out {
-  animation: community-icon-out 0.7s ease-in-out infinite;
-}
-
-@keyframes community-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes community-orb {
-  from { transform: scale(0.94) rotate(-4deg); }
-  to { transform: scale(1.06) rotate(4deg); }
-}
-
-@keyframes community-icon-out {
-  50% { opacity: 0.45; transform: rotate(12deg) scale(0.88); }
 }
 
 @keyframes community-aura-in {
@@ -608,9 +529,6 @@ form[aria-busy="true"] button[type="submit"]::after {
   .animate-page-in,
   .page-stagger > * > *,
   .community-aura,
-  .community-switch-overlay,
-  .community-switch-orb,
-  .animate-community-icon-out,
   .skeleton-shimmer::after {
     animation: none;
   }

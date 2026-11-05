@@ -7,13 +7,6 @@ import { SKILL_CATEGORIES } from "@/lib/scoring";
 
 const PLAYER_LEVELS = ["beginner", "intermediate", "advanced"] as const;
 
-function registrationCommunities(value: string) {
-  if (value === "court") return ["court"];
-  if (value === "sand") return ["sand"];
-  if (value === "both") return ["court", "sand"];
-  throw new Error("Escolha se você joga na quadra, na areia ou nos dois.");
-}
-
 export async function submitSignup(formData: FormData) {
   const supabase = await createClient();
   const {
@@ -34,7 +27,7 @@ export async function submitSignup(formData: FormData) {
   const isSetter = formData.get("position") === "setter";
   const hasVpaShirt = formData.get("hasVpaShirt") === "on";
   const wantsTournaments = formData.get("wantsTournaments") === "on";
-  const communities = registrationCommunities(String(formData.get("playCommunity") ?? ""));
+  const communities = ["court"];
 
   if (!fullName || !birthdate || !phone || !/^@[a-z0-9._]{1,30}$/.test(instagramHandle) || !PLAYER_LEVELS.includes(playerLevel as (typeof PLAYER_LEVELS)[number])) {
     throw new Error("Preencha nome, aniversário, telefone, Instagram e nível.");

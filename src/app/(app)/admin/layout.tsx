@@ -5,9 +5,9 @@ import { getActiveCommunity } from "@/lib/community";
 import { AdminTabs } from "@/components/AdminTabs";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   // Contadores de pendências nas abas. Qualquer falha aqui só some com o número.
   const [reserve, shirts] = await Promise.all([

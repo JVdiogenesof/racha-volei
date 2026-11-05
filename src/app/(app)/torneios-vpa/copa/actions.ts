@@ -63,7 +63,7 @@ async function requireEventInCommunity(supabase: Awaited<ReturnType<typeof creat
 export async function createCup(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const name = String(formData.get("name") ?? "").trim() || "Copa VPA";
   const finalDate = parseOptionalFinalDate(formData);

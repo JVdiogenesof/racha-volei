@@ -9,9 +9,9 @@ import { PlayerSearch } from "@/components/PlayerSearch";
 import { getActiveCommunity } from "@/lib/community";
 
 export default async function JogadoresPage() {
-  const profile = await requireProfile();
+  await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: players }, { selfByProfile, organizerByProfile }, weights, rankingCounts] = await Promise.all([
     supabase
@@ -58,7 +58,7 @@ export default async function JogadoresPage() {
           <Users className="h-5 w-5 text-purple-300" strokeWidth={2} />
         </span>
         <div>
-          <h1 className="text-2xl font-black text-white">Jogadores · {community === "sand" ? "Areia" : "Quadra"}</h1>
+          <h1 className="text-2xl font-black text-white">Jogadores · Quadra</h1>
           <p className="text-sm text-white/50">Toque em um jogador para ver o perfil completo.</p>
         </div>
       </div>

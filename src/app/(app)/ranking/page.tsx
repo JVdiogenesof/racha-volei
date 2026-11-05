@@ -12,7 +12,7 @@ import { FormSelect } from "@/components/FormSelect";
 export default async function RankingPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const currentProfile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(currentProfile);
+  const community = await getActiveCommunity();
   const requestedMonth = (await searchParams).month;
   // A visão principal é a janela viva dos últimos rachas. Um mês específico
   // continua disponível como foto histórica daquele período.
@@ -138,7 +138,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         <div className="min-w-0">
           <h1 className="flex items-center gap-2 text-xl font-bold text-white">
             <Trophy className="h-5 w-5 shrink-0 text-purple-300" strokeWidth={2.25} />
-            Ranking · {community === "sand" ? "Areia" : "Quadra"}
+            Ranking · Quadra
           </h1>
           <p className="mt-0.5 text-xs leading-snug text-white/55">
             {isSeasonView
@@ -158,7 +158,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
       </div>
       <RankingTabs
         currentProfileId={currentProfile.id}
-        eyebrow={`${community === "sand" ? "Areia" : "Quadra"} · ${isSeasonView ? `${ROLLING_INDEX_EVENT_COUNT} rachas` : formatMonthLabel(monthKey!)}`}
+        eyebrow={`Quadra · ${isSeasonView ? `${ROLLING_INDEX_EVENT_COUNT} rachas` : formatMonthLabel(monthKey!)}`}
         badge={isSeasonView ? "ao vivo" : "histórico"}
         rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
         qualifying={isSeasonView ? { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL } : undefined}

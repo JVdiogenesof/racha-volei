@@ -15,7 +15,7 @@ export type EventSummary = {
     date: string;
     location: string | null;
     status: string;
-    community: "court" | "sand";
+    community: "court";
     isPreTournament: boolean;
   };
   players: EventSummaryPlayer[];

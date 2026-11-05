@@ -17,8 +17,8 @@ type Order = { id: string; model: ShirtModel; shirt_name: string; shirt_number: 
 export default async function CamisasPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
-  const shirtModels = getShirtModels(community);
+  const community = await getActiveCommunity();
+  const shirtModels = getShirtModels();
   const { data, error } = await supabase.from("shirt_orders").select("id, model, shirt_name, shirt_number, size, quantity, paid, half_paid, fulfillment_status, fit, created_at").eq("profile_id", profile.id).eq("community", community).order("created_at");
   if (error) throw new Error(error.message);
   const orders = (data ?? []) as Order[];
@@ -27,8 +27,8 @@ export default async function CamisasPage() {
   return (
     <div className="space-y-6">
       <section className="relative overflow-hidden rounded-3xl border border-purple-300/20 bg-[#1b0b38] shadow-2xl shadow-purple-950/25">
-        <div className={`relative ${community === "sand" ? "aspect-[8/5]" : "aspect-square sm:aspect-[16/10] lg:aspect-[16/8]"}`}>
-          <Image src={getShirtCollectionImage(community)} alt={`Coleção VPA ${community === "sand" ? "de areia" : "de quadra"} com os modelos de manga e regata`} fill priority sizes="(max-width: 1024px) 100vw, 960px" className={community === "sand" ? "object-contain object-center" : "object-cover"} />
+        <div className={`relative aspect-square sm:aspect-[16/10] lg:aspect-[16/8]`}>
+          <Image src={getShirtCollectionImage()} alt={`Coleção VPA de quadra com os modelos de manga e regata`} fill priority sizes="(max-width: 1024px) 100vw, 960px" className="object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#100620] via-transparent to-black/10" />
           <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/20 bg-black/35 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-purple-100 backdrop-blur">{SHIRT_ORDERS_OPEN ? <><Sparkles className="h-3.5 w-3.5" />Nova coleção</> : <><CircleAlert className="h-3.5 w-3.5" />Pedidos encerrados</>}</span>
@@ -48,7 +48,7 @@ export default async function CamisasPage() {
         <section className="rounded-2xl border border-white/10 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><h2 className="text-lg font-bold">Meu pedido</h2>
-              <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · {community === "sand" ? "Areia" : "Quadra"}</p></div>
+              <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · Quadra</p></div>
             {profile.is_organizer && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-purple-500/10 px-3 text-sm text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}
           </div>
           <ul className="mt-3 divide-y divide-white/10">
@@ -80,7 +80,7 @@ export default async function CamisasPage() {
         </section>
       )}
 
-      {canOrder ? <ShirtOrderForm action={saveShirtOrder} existingOrders={orders} community={community} /> : (
+      {canOrder ? <ShirtOrderForm action={saveShirtOrder} existingOrders={orders} /> : (
         <section className="rounded-2xl border border-purple-300/15 bg-purple-500/[0.07] p-5 text-center">
           {SHIRT_ORDERS_OPEN ? <Eye className="mx-auto h-7 w-7 text-purple-300" /> : <CircleAlert className="mx-auto h-7 w-7 text-amber-200" />}
           <h2 className="mt-3 font-bold text-white">{SHIRT_ORDERS_OPEN ? "Conheça a nova camisa" : "Pedidos de camisa encerrados"}</h2>

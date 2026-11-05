@@ -14,9 +14,9 @@ const RANKING_CONFIG = [
 ];
 
 export default async function AdminResumoPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  const profile = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const monthKey = normalizeMonthKey((await searchParams).month);
 
   const { data: monthEvents } = await supabase.from("events").select("date").eq("community", community).order("date", { ascending: false });

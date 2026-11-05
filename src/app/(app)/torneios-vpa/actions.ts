@@ -8,7 +8,7 @@ import { getActiveCommunity } from "@/lib/community";
 export async function addReservedPlayer(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
 
   const { error } = await supabase.from("tournament_reserved_players").insert({
@@ -23,9 +23,9 @@ export async function addReservedPlayer(formData: FormData) {
 }
 
 export async function removeReservedPlayer(formData: FormData) {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
 
   const { error } = await supabase.from("tournament_reserved_players").delete().eq("profile_id", profileId).eq("community", community);
@@ -35,9 +35,9 @@ export async function removeReservedPlayer(formData: FormData) {
 }
 
 export async function clearReservedList() {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const { error } = await supabase.from("tournament_reserved_players").delete().eq("community", community).not("id", "is", null);
   if (error) throw new Error(error.message);

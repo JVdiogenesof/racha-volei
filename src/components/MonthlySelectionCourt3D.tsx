@@ -6,7 +6,6 @@ import { Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { Crown } from "lucide-react";
 import { Avatar } from "@/components/Avatar";
-import type { Community } from "@/lib/community";
 import type { MonthlySelection, MonthlySelectionPlayer } from "@/lib/monthlySelection";
 
 function initials(name: string) {
@@ -31,21 +30,15 @@ function toWorld([px, pz]: [number, number]): [number, number, number] {
   return [px * COURT_WIDTH, 0, pz * COURT_DEPTH];
 }
 
-function makeCourtTexture(sand: boolean) {
+function makeCourtTexture() {
   const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 768;
   const ctx = canvas.getContext("2d")!;
   const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  if (sand) {
-    gradient.addColorStop(0, "#d8ad62");
-    gradient.addColorStop(0.45, "#edca82");
-    gradient.addColorStop(1, "#c99348");
-  } else {
-    gradient.addColorStop(0, "#6541a5");
-    gradient.addColorStop(0.45, "#7954bd");
-    gradient.addColorStop(1, "#52318f");
-  }
+  gradient.addColorStop(0, "#6541a5");
+  gradient.addColorStop(0.45, "#7954bd");
+  gradient.addColorStop(1, "#52318f");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -72,8 +65,8 @@ function makeCourtTexture(sand: boolean) {
   return texture;
 }
 
-function Court({ community }: { community: Community }) {
-  const texture = useMemo(() => makeCourtTexture(community === "sand"), [community]);
+function Court() {
+  const texture = useMemo(() => makeCourtTexture(), []);
   const logoTexture = useLoader(THREE.TextureLoader, "/vpa-nova-logo.png");
 
   return (
@@ -154,7 +147,7 @@ function PlayerFigure({ player, spot, featured = false }: { player: MonthlySelec
   );
 }
 
-function Scene({ selection, community }: { selection: MonthlySelection; community: Community }) {
+function Scene({ selection }: { selection: MonthlySelection }) {
   const controlsRef = useRef(null);
   if (!selection.setter) return null;
 
@@ -163,7 +156,7 @@ function Scene({ selection, community }: { selection: MonthlySelection; communit
       <ambientLight intensity={0.75} />
       <directionalLight position={[3, 6, 4]} intensity={1.1} castShadow />
       <directionalLight position={[-4, 3, -3]} intensity={0.35} />
-      <Court community={community} />
+      <Court />
       {selection.players.map((player, index) => (
         <PlayerFigure key={player.profileId} player={player} spot={PLAYER_SPOTS[index]} />
       ))}
@@ -180,11 +173,11 @@ function Scene({ selection, community }: { selection: MonthlySelection; communit
   );
 }
 
-export function MonthlySelectionCourt3D({ selection, community }: { selection: MonthlySelection; community: Community }) {
+export function MonthlySelectionCourt3D({ selection }: { selection: MonthlySelection }) {
   return (
     <div className="relative mx-auto aspect-[3/4] w-full max-w-xl overflow-hidden rounded-2xl border-4 border-white/80 bg-[#120d2d] shadow-inner">
       <Canvas shadows camera={{ position: [0, 8.6, 9.2], fov: 38 }} dpr={[1, 1.75]}>
-        <Scene selection={selection} community={community} />
+        <Scene selection={selection} />
       </Canvas>
       <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/35 px-3 py-1 text-[9px] font-bold uppercase tracking-wide text-white/60 backdrop-blur">
         Arraste pra girar a maquete

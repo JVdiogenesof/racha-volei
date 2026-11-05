@@ -20,9 +20,9 @@ function dateLabel(date: string | null) {
 
 export default async function AdminAtividadePage({ searchParams }: { searchParams: PageSearchParams }) {
   const { view = "all", q = "" } = await searchParams;
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const [{ data: players }, { data: finishedEvents }, absenceStreaks] = await Promise.all([
     supabase
@@ -93,7 +93,7 @@ export default async function AdminAtividadePage({ searchParams }: { searchParam
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · {community === "sand" ? "Areia" : "Quadra"}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · Quadra</p>
         <h1 className="mt-0.5 text-2xl font-black text-white">Atividade dos jogadores</h1>
         <p className="mt-1 text-sm text-white/55">Presenças em rachas encerrados. Use como apoio antes de remover alguém.</p>
       </header>

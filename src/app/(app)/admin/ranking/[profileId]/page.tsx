@@ -30,9 +30,9 @@ function Tile({ value, label }: { value: string | number; label: string }) {
 
 export default async function AdminRankingPlayerPage({ params }: { params: Promise<{ profileId: string }> }) {
   const { profileId } = await params;
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const { data: profile } = await supabase.from("profiles").select("id, full_name, avatar_url").eq("id", profileId).maybeSingle();
   if (!profile) notFound();
@@ -74,7 +74,7 @@ export default async function AdminRankingPlayerPage({ params }: { params: Promi
         <Avatar src={profile.avatar_url} name={profile.full_name} size="lg" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-black text-white">{profile.full_name}</h1>
-          <p className="text-xs text-white/50">Ajustes de ranking · {community === "sand" ? "Areia" : "Quadra"}</p>
+          <p className="text-xs text-white/50">Ajustes de ranking · Quadra</p>
         </div>
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-300"><Radio className="h-3.5 w-3.5" /> ao vivo</span>
       </header>

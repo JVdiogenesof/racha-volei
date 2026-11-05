@@ -6,7 +6,6 @@ import { CompactAppHeader } from "@/components/CompactAppHeader";
 import { HeaderActionStrip } from "@/components/HeaderActionStrip";
 import { HeaderTopBar } from "@/components/HeaderTopBar";
 import { NotificationBell } from "@/components/NotificationBell";
-import { parseCommunities, type Community } from "@/lib/community";
 import type { AppChromeData } from "@/lib/appChromeData";
 import type { HeaderAction } from "@/lib/headerAction";
 
@@ -21,17 +20,14 @@ type NavProfile = {
 
 export async function NavBar({
   profile,
-  activeCommunity,
   chromeData,
   headerAction,
 }: {
   profile: NavProfile;
-  activeCommunity: Community;
   chromeData: Promise<AppChromeData>;
   headerAction: Promise<HeaderAction | null>;
 }) {
   const [{ newAvisosCount, upcomingEvents, attendanceByEvent, notifications }, action] = await Promise.all([chromeData, headerAction]);
-  const availableCommunities = parseCommunities(profile.communities);
 
   const respondedIds = new Set(attendanceByEvent.keys());
   const pendingConfirmCount = profile.status === "approved" ? (upcomingEvents ?? []).filter((event) => !respondedIds.has(event.id)).length : 0;
@@ -54,8 +50,6 @@ export async function NavBar({
             isOrganizer={profile.is_organizer}
             isVisitor={profile.status !== "approved"}
             attendanceStatus={attendanceStatus}
-            activeCommunity={activeCommunity}
-            availableCommunities={availableCommunities}
             signOutAction={signOut}
             navigation={<DesktopNav badgeByHref={badgeByHref} isOrganizer={profile.is_organizer} />}
             wideStrip={strip}

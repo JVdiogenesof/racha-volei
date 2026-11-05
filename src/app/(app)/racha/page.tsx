@@ -81,7 +81,7 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
   const showPast = aba === "passados";
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
 
   const [{ data: events }, { data: attendanceRows }] = await Promise.all([
     supabase
@@ -163,7 +163,7 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
         <CreateRachaPanel
           title={
             <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{community === "sand" ? "Areia" : "Quadra"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Quadra</p>
               <h1 className="mt-0.5 text-2xl font-black text-white">Rachas</h1>
             </div>
           }
@@ -173,7 +173,7 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
         />
       ) : (
         <header className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">{community === "sand" ? "Areia" : "Quadra"}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Quadra</p>
           <h1 className="mt-0.5 text-2xl font-black text-white">Rachas</h1>
         </header>
       )}

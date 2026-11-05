@@ -10,9 +10,9 @@ function formatDay(date: string) {
 }
 
 export default async function AdminPainelPage() {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const today = todayStringInFortaleza();
 
   const [{ data: nextEvents }, reserve, neverContacted, shirts, reminders] = await Promise.all([

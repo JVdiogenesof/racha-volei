@@ -9,9 +9,9 @@ import { MonthlySelectionCourt } from "@/components/MonthlySelectionCourt";
 const INAUGURAL_SELECTION_MONTH = "2026-09";
 
 export default async function MonthlySelectionPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  const profile = await requireProfile();
+  await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const { data: eventRows } = await supabase
     .from("events")
     .select("date, status")
@@ -76,7 +76,7 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
               Edição inaugural formada com os 3 rachas encerrados em setembro.
             </div>
           ) : null}
-          <MonthlySelectionCourt selection={selection} community={community} monthLabel={report.monthLabel} />
+          <MonthlySelectionCourt selection={selection} monthLabel={report.monthLabel} />
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <InfoCard icon={Sparkles} label="Índice VPA" value="60%" />
             <InfoCard icon={Crown} label="Vitórias" value="20%" />

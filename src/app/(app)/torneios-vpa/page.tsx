@@ -35,7 +35,7 @@ function shortDate(date: string) {
 export default async function TorneiosVpaPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: reserved }, { data: profiles }, season, { data: upcomingPreTournaments }] = await Promise.all([

@@ -9,7 +9,7 @@ import { getActiveCommunity } from "@/lib/community";
 export async function createAnnouncement(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();

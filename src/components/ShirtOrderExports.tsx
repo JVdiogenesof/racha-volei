@@ -48,7 +48,7 @@ function ModelExports({ orders, community, model, filter }: {
   const filename = `pedidos-vpa-${community}-${fileModel}-${filter}`;
   const empty = selected.length === 0;
   const filterLabel = { received: "Com entrada ou quitados", half: "Metade paga", paid: "Quitados", all: "Todos os pedidos" }[filter];
-  const communityLabel = community === "sand" ? "Areia" : "Quadra";
+  const communityLabel = "Quadra";
   const [busy, setBusy] = useState<"share" | "download" | null>(null);
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();

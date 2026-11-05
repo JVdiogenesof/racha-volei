@@ -15,7 +15,7 @@ export async function saveShirtOrder(
   if (!SHIRT_ORDERS_OPEN) return { status: "error", message: "Os pedidos de camisa estão encerrados no momento." };
   const profile = await requireMember();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const model = String(formData.get("model") ?? "") as ShirtModel;
   const shirtName = String(formData.get("shirtName") ?? "").trim();
   const shirtNumberText = String(formData.get("shirtNumber") ?? "").trim();
@@ -66,7 +66,7 @@ export async function saveShirtOrder(
 export async function cancelShirtOrder(formData: FormData) {
   const profile = await requireMember();
   const supabase = await createClient();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   const { data, error } = await supabase
     .from("shirt_orders")
@@ -83,7 +83,7 @@ export async function cancelShirtOrder(formData: FormData) {
 
 export async function updateShirtFit(formData: FormData) {
   const profile = await requireMember();
-  const community = await getActiveCommunity(profile);
+  const community = await getActiveCommunity();
   const fit = String(formData.get("fit"));
   if (!Object.hasOwn(SHIRT_FITS, fit) || fit === "unspecified") throw new Error("Escolha Feminina ou Tradicional.");
   const supabase = await createClient();

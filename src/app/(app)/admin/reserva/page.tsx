@@ -28,9 +28,9 @@ function levelLabel(level: string | null) {
 }
 
 export default async function AdminReservaPage({ searchParams }: { searchParams: PageSearchParams }) {
-  const organizer = await requireOrganizer();
+  await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const filters = await searchParams;
   const today = todayStringInFortaleza();
 
@@ -88,7 +88,7 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · {community === "sand" ? "Areia" : "Quadra"}</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">Administração · Quadra</p>
         <h1 className="mt-0.5 text-2xl font-black text-white">Cadastros</h1>
       </header>
 

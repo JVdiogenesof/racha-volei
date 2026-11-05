@@ -64,7 +64,7 @@ function parseEventCapacity(formData: FormData) {
 export async function createEvent(formData: FormData) {
   const organizer = await requireOrganizer();
   const supabase = await createClient();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
 
   const date = String(formData.get("date") ?? "");
   const time = String(formData.get("time") ?? "") || null;
@@ -129,7 +129,7 @@ export async function createEvent(formData: FormData) {
   await sendPushToProfiles(
     supabase,
     (approvedProfiles ?? []).map((p) => p.id),
-    { title: `Novo racha de ${community === "sand" ? "areia" : "quadra"}!`, body: `Racha de ${dateLabel}. Diga se você vai.`, url: `/racha/${data.id}` },
+    { title: `Novo racha de quadra!`, body: `Racha de ${dateLabel}. Diga se você vai.`, url: `/racha/${data.id}` },
   );
 
   revalidatePath("/admin/rachas");

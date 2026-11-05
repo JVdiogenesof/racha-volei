@@ -41,8 +41,8 @@ function revalidateFinance(eventId?: string) {
 }
 
 export async function addPlayerBalance(formData: FormData) {
-  const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  await requireOrganizer();
+  const community = await getActiveCommunity();
   const profileId = requiredText(formData, "profileId", "Pessoa", 50);
   const amount = positiveAmount(formData);
   const category = requiredText(formData, "category", "Motivo", 40);
@@ -92,7 +92,7 @@ export async function deletePlayerBalance(formData: FormData) {
 
 export async function addFinanceTransaction(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const transactionType = requiredText(formData, "transactionType", "Tipo", 20);
   const category = requiredText(formData, "category", "Categoria", 30);
   const description = requiredText(formData, "description", "Descrição", 160);
@@ -120,7 +120,7 @@ export async function addFinanceTransaction(formData: FormData) {
 
 export async function voidFinanceTransaction(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const transactionId = requiredText(formData, "transactionId", "Movimentação", 50);
   const supabase = await createClient();
   const { data, error } = await supabase.from("finance_transactions")
@@ -134,7 +134,7 @@ export async function voidFinanceTransaction(formData: FormData) {
 
 export async function addFinanceReminder(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const title = requiredText(formData, "title", "Lembrete", 140);
   const notes = optionalText(formData, "notes", 500);
   const dueDate = String(formData.get("dueDate") ?? "").trim() || null;
@@ -147,7 +147,7 @@ export async function addFinanceReminder(formData: FormData) {
 
 export async function toggleFinanceReminder(formData: FormData) {
   const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  const community = await getActiveCommunity();
   const reminderId = requiredText(formData, "reminderId", "Lembrete", 50);
   const completed = String(formData.get("completed")) === "true";
   const supabase = await createClient();

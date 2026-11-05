@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import { Sparkles } from "lucide-react";
-import type { Community } from "@/lib/community";
 import type { MonthlySelection } from "@/lib/monthlySelection";
 
 // A cena usa Canvas/WebGL (react-three-fiber), que só existe no navegador --
@@ -21,11 +20,9 @@ const MonthlySelectionCourt3D = dynamic(
 
 export function MonthlySelectionCourt({
   selection,
-  community,
   monthLabel,
 }: {
   selection: MonthlySelection;
-  community: Community;
   monthLabel: string;
 }) {
   if (!selection.setter) return null;
@@ -38,12 +35,12 @@ export function MonthlySelectionCourt({
           <h2 className="mt-1 text-xl font-black text-white">Seleção de <span className="capitalize">{monthLabel}</span></h2>
         </div>
         <span className="rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-purple-100">
-          {community === "sand" ? "Areia" : "Quadra"}
+          Quadra
         </span>
       </div>
 
       <div className="p-3 sm:p-6">
-        <MonthlySelectionCourt3D selection={selection} community={community} />
+        <MonthlySelectionCourt3D selection={selection} />
       </div>
     </section>
   );

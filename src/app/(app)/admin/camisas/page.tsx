@@ -49,8 +49,8 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
   const requested = params.view ?? legacy;
   const view: View = Object.hasOwn(LIST_VIEWS, requested) || Object.hasOwn(TOOLS, requested) ? requested as View : "home";
   const listView = Object.hasOwn(LIST_VIEWS, view) ? view as ShirtListView : null;
-  const organizer = await requireOrganizer();
-  const community = await getActiveCommunity(organizer);
+  await requireOrganizer();
+  const community = await getActiveCommunity();
   const supabase = await createClient();
   const [ordersResult, financeResult] = await Promise.all([
     supabase.from("shirt_orders")

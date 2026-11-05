@@ -45,21 +45,12 @@ export async function updatePlayerProfile(formData: FormData) {
   const profileId = String(formData.get("profileId"));
   const fullName = String(formData.get("fullName") ?? "").trim();
   const nicknameBadge = String(formData.get("nicknameBadge") ?? "").trim().slice(0, 40) || null;
-  const playCommunity = String(formData.get("playCommunity") ?? "");
-  const communities = playCommunity === "court"
-    ? ["court"]
-    : playCommunity === "sand"
-      ? ["sand"]
-      : playCommunity === "both"
-        ? ["court", "sand"]
-        : null;
 
   if (!fullName) throw new Error("O nome não pode ficar em branco.");
-  if (!communities) throw new Error("Escolha Quadra, Areia ou os dois.");
 
   const { data: updated, error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, nickname_badge: nicknameBadge, communities })
+    .update({ full_name: fullName, nickname_badge: nicknameBadge })
     .eq("id", profileId)
     .eq("status", "approved")
     .select("id")

@@ -15,7 +15,7 @@ export interface CurrentProfile {
   has_vpa_shirt: boolean;
   wants_tournaments: boolean;
   player_level: "beginner" | "intermediate" | "advanced" | null;
-  communities: ("court" | "sand")[];
+  communities: string[];
   is_organizer: boolean;
   status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor" | "suspended";
   guest_for_event_id: string | null;
