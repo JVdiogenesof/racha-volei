@@ -6,6 +6,7 @@ import { requireEventParticipant, requireOrganizer } from "@/lib/auth";
 import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 import { sendPushToProfiles } from "@/lib/push";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
+import { setterSpotsFor } from "@/lib/rachaSpots";
 
 /**
  * Vaga de confirmado abriu: oferece pra próxima pessoa da fila de
@@ -453,11 +454,38 @@ export async function setEventSetterRole(formData: FormData) {
     throw new Error("Só é possível ajustar levantadores que estão confirmados.");
   }
 
+  const isSetter = setterValue === "true";
+  if (isSetter) {
+    const [{ data: event }, { count: setters }] = await Promise.all([
+      supabase.from("events").select("max_players, num_teams, team_size").eq("id", eventId).maybeSingle(),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", eventId)
+        .eq("status", "confirmed")
+        .eq("uses_setter_spot", true)
+        .neq("profile_id", profileId),
+    ]);
+    const capacity = event ? (event.max_players ?? event.num_teams * event.team_size) : 0;
+    if (capacity && (setters ?? 0) >= setterSpotsFor(capacity)) {
+      throw new Error(`As ${setterSpotsFor(capacity)} vagas de levantador já estão ocupadas. Desmarque um levantador antes.`);
+    }
+  }
+
+  // Levantador marcado à mão conta na cota de levantadores da lista.
+  const { data: person } = await supabase.from("profiles").select("status").eq("id", profileId).maybeSingle();
+  const { error: spotError } = await supabase
+    .from("attendance")
+    .update({ uses_setter_spot: isSetter, uses_newcomer_spot: !isSetter && person?.status === "guest" })
+    .eq("event_id", eventId)
+    .eq("profile_id", profileId);
+  if (spotError) throw new Error(spotError.message);
+
   const { error } = await supabase.from("event_setter_overrides").upsert(
     {
       event_id: eventId,
       profile_id: profileId,
-      is_setter: setterValue === "true",
+      is_setter: isSetter,
       changed_by: organizer.id,
       updated_at: new Date().toISOString(),
     },

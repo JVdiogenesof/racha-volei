@@ -9,6 +9,7 @@ import { getActiveCommunity } from "@/lib/community";
 import type { EventGameStyle } from "@/lib/eventGameStyle";
 import { registrationOpensAtFromForm } from "@/lib/registrationSchedule";
 import { COPA_PATH, linkEventToCup } from "@/lib/copaVpa";
+import { setterSpotsFor } from "@/lib/rachaSpots";
 
 function validateRegistrationSchedule(registrationOpensAt: string, eventDate: string, eventTime: string | null) {
   const eventStartsAt = new Date(`${eventDate}T${eventTime ?? "23:59"}:00-03:00`);
@@ -52,7 +53,7 @@ function parseEventCapacity(formData: FormData) {
   ) {
     throw new Error("A quantidade de vagas para novatos não pode ultrapassar o total de vagas.");
   }
-  const setterReservedSpots = Math.max(1, Math.ceil(maxPlayers / 6));
+  const setterReservedSpots = setterSpotsFor(maxPlayers);
   if (newcomerReservedSpots + setterReservedSpots > maxPlayers) {
     throw new Error(`Reserve no máximo ${maxPlayers - setterReservedSpots} vagas para novatos: ${setterReservedSpots} já ficam protegidas para levantadores.`);
   }
@@ -192,7 +193,7 @@ export async function updateEvent(formData: FormData) {
   const setterCount = confirmed.filter((row) => row.uses_setter_spot).length;
   const newcomerCount = confirmed.filter((row) => row.uses_newcomer_spot).length;
   const regularCount = confirmed.length - setterCount - newcomerCount;
-  const setterReservedSpots = Math.max(1, Math.ceil(maxPlayers / 6));
+  const setterReservedSpots = setterSpotsFor(maxPlayers);
   if (confirmed.length > maxPlayers) {
     throw new Error(`Já existem ${confirmed.length} confirmados. Aumente o total de vagas antes de salvar.`);
   }

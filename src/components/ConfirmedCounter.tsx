@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Users, Volleyball } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { setterSpotsFor } from "@/lib/rachaSpots";
 
 export function ConfirmedCounter({
   eventId,
@@ -57,7 +58,7 @@ export function ConfirmedCounter({
   }, [refresh]);
 
   const totalSlotsRemaining = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
-  const setterCapacity = maxPlayers != null ? Math.max(1, Math.ceil(maxPlayers / 6)) : null;
+  const setterCapacity = maxPlayers != null ? setterSpotsFor(maxPlayers) : null;
   const isFull = totalSlotsRemaining === 0;
   const shouldShowAvailability =
     totalSlotsRemaining !== null && (showFullCapacity || totalSlotsRemaining <= 10);

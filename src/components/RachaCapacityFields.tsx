@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ListChecks, Medal, Settings2, ShieldCheck, Trophy, UsersRound } from "lucide-react";
+import { setterSpotsFor } from "@/lib/rachaSpots";
 import { eventGameStyleFromFlags, type EventGameStyle } from "@/lib/eventGameStyle";
 
 const PRE_TORNEIO_TEAMS = 4;
@@ -41,7 +42,7 @@ export function RachaCapacityFields({
 
   const teamCapacity = numTeams * teamSize;
   const chosenCapacity = typeof maxPlayers === "number" ? maxPlayers : teamCapacity;
-  const setterReservedSpots = Math.max(1, Math.ceil(chosenCapacity / 6));
+  const setterReservedSpots = setterSpotsFor(chosenCapacity);
   const maxNewcomerReservedSpots = Math.max(0, chosenCapacity - setterReservedSpots);
 
   function selectGameStyle(style: EventGameStyle) {

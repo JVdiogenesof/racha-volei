@@ -13,6 +13,7 @@ import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
+import { isListFullFor } from "@/lib/rachaSpots";
 import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
@@ -129,11 +130,17 @@ export default async function HomePage() {
       event.official_list_open ? getRachaLevel(supabase, event.id) : Promise.resolve(null),
     ]);
     const confirmedTotal = confirmed ?? 0;
-    const regularConfirmed = Math.max(0, confirmedTotal - (newcomers ?? 0));
-    const memberSlots = event.max_players != null ? Math.max(0, event.max_players - (event.newcomer_reserved_spots ?? 0)) : null;
     const full =
       event.max_players != null &&
-      (profile.status === "guest" ? confirmedTotal >= event.max_players : memberSlots !== null && regularConfirmed >= memberSlots);
+      isListFullFor({
+        capacity: event.max_players,
+        newcomerReserved: event.newcomer_reserved_spots ?? 0,
+        confirmed: confirmedTotal,
+        setters: setters ?? 0,
+        newcomers: newcomers ?? 0,
+        isSetter: Boolean(profile.is_setter),
+        isGuest: profile.status === "guest",
+      });
     return {
       status: attendance?.status,
       paid: Boolean(payment?.paid),
@@ -227,15 +234,20 @@ export default async function HomePage() {
     proximoRacha?.official_list_open ? getRachaLevel(supabase, proximoRacha.id) : Promise.resolve(null),
     secondaryRacha ? loadSecondaryState(secondaryRacha) : Promise.resolve(null),
   ]);
-  const reservedSpots = proximoRacha?.newcomer_reserved_spots ?? 0;
-  const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
   const memberCapacity =
-    proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - reservedSpots) : null;
+    proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - (proximoRacha.newcomer_reserved_spots ?? 0)) : null;
+  const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
   const isFull =
     proximoRacha?.max_players != null &&
-    (profile.status === "guest"
-      ? (confirmedCount ?? 0) >= proximoRacha.max_players
-      : memberCapacity !== null && regularConfirmedCount >= memberCapacity);
+    isListFullFor({
+      capacity: proximoRacha.max_players,
+      newcomerReserved: proximoRacha.newcomer_reserved_spots ?? 0,
+      confirmed: confirmedCount ?? 0,
+      setters: setterConfirmedCount ?? 0,
+      newcomers: newcomerConfirmedCount ?? 0,
+      isSetter: Boolean(profile.is_setter),
+      isGuest: profile.status === "guest",
+    });
 
   const myStatus = myAttendance?.status;
   const canRespondToNextEvent =

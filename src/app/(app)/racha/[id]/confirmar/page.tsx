@@ -25,6 +25,7 @@ import { OrganizerListDock } from "@/components/OrganizerListDock";
 import { RachaListTabs } from "@/components/RachaListTabs";
 import { RachaHowToJoin, joinMode, type JoinStatus } from "@/components/RachaHowToJoin";
 import { PIX_KEY } from "@/lib/payment";
+import { isListFullFor, setterSpotsFor } from "@/lib/rachaSpots";
 import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, joinAsExempt, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
@@ -187,18 +188,27 @@ export default async function ConfirmarPresencaPage({
   const newcomerConfirmedCount = confirmados.filter((attendance) => attendance.uses_newcomer_spot).length;
   const regularConfirmedCount = confirmados.length - newcomerConfirmedCount;
   const eventCapacity = event.max_players ?? event.num_teams * event.team_size;
-  const setterCapacity = Math.max(1, Math.ceil(eventCapacity / 6));
+  const setterCapacity = setterSpotsFor(eventCapacity);
   const setterConfirmedCount = confirmados.filter((attendance) => attendance.uses_setter_spot).length;
   const memberCapacity = Math.max(0, eventCapacity - event.newcomer_reserved_spots);
   const regularSlotsRemaining = Math.max(
     0,
     memberCapacity - regularConfirmedCount,
   );
-  const isFull =
-    profile.status === "guest"
-      ? confirmados.length >= eventCapacity
-      : regularConfirmedCount >= memberCapacity;
-  const setterSlotsFull = profile.is_setter && setterConfirmedCount >= setterCapacity;
+  // A marcação manual de levantador neste racha vale mais que o perfil.
+  const amSetter = (setterOverrideRows ?? []).find((row) => row.profile_id === profile.id)?.is_setter ?? Boolean(profile.is_setter);
+  const isFull = isListFullFor({
+    capacity: eventCapacity,
+    newcomerReserved: event.newcomer_reserved_spots,
+    confirmed: confirmados.length,
+    setters: setterConfirmedCount,
+    newcomers: newcomerConfirmedCount,
+    isSetter: amSetter,
+    isGuest: profile.status === "guest",
+  });
+  // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
+  const onlyProtectedSpotsLeft = isFull && confirmados.length < eventCapacity;
+  const setterSlotsFull = amSetter && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
   // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
   const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && eventCapacity - confirmados.length <= 1;
@@ -481,6 +491,12 @@ export default async function ConfirmarPresencaPage({
             <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
               <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
               As {setterCapacity} vagas reservadas para levantadores já foram preenchidas. Você pode continuar e entrar como jogador comum (atacante) normalmente.
+            </p>
+          )}
+          {onlyProtectedSpotsLeft && (
+            <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
+              <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
+              As vagas que restam são reservadas para levantadores. Você pode entrar na fila de espera.
             </p>
           )}
           {queueLockedForMe && !setterSlotsFull && (
