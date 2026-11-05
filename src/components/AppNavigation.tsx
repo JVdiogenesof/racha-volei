@@ -120,13 +120,19 @@ export function DesktopNav({ badgeByHref, isOrganizer }: NavProps) {
   );
 }
 
-/** Menu embaixo da tela no celular, na altura do polegar. */
+/** Ilha flutuante embaixo da tela no celular, na altura do polegar. */
 export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
   const pathname = usePathname();
   const [sheet, setSheet] = useState(false);
+  // O destaque anda já no toque, sem esperar a página nova carregar.
+  const [pressed, setPressed] = useState<{ href: string; from: string } | null>(null);
+  const [ripple, setRipple] = useState<{ index: number; id: number } | null>(null);
   const extras = moreItems(isOrganizer, true);
   const moreActive = extras.some((item) => isActive(pathname, item.href));
   const moreBadge = extras.reduce((sum, item) => sum + (badgeByHref[item.href] ?? 0), 0);
+  // Chegou em outra página: o toque já fez efeito (senão o botão Voltar acenderia a aba antiga).
+  if (pressed && pressed.from !== pathname) setPressed(null);
+  const pendingHref = pressed && pressed.from === pathname ? pressed.href : null;
 
   useEffect(() => {
     if (!sheet) return;
@@ -137,28 +143,37 @@ export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
     return () => window.removeEventListener("keydown", escape);
   }, [sheet]);
 
-  const tabClass = (active: boolean) =>
-    `relative flex h-8 w-14 items-center justify-center rounded-full transition ${active ? "bg-gradient-to-r from-purple-600 to-violet-500 text-white shadow-md shadow-purple-950/40" : "text-white/55"}`;
-  const labelClass = (active: boolean) => `text-[10px] font-bold ${active ? "text-white" : "text-white/50"}`;
+  const routeIndex = moreActive ? MAIN.length : MAIN.findIndex((item) => isActive(pathname, item.href));
+  const pendingIndex = pendingHref ? MAIN.findIndex((item) => item.href === pendingHref) : -1;
+  const activeIndex = sheet ? MAIN.length : pendingIndex >= 0 ? pendingIndex : routeIndex;
+
+  function press(index: number) {
+    setRipple((current) => ({ index, id: (current?.id ?? 0) + 1 }));
+    navigator.vibrate?.(8);
+  }
+
+  const tabClass = "relative z-10 flex min-w-0 touch-manipulation select-none flex-col items-center justify-center gap-0.5 rounded-full py-1.5 outline-none transition-transform duration-100 ease-out [-webkit-tap-highlight-color:transparent] active:scale-90";
+  const iconClass = (active: boolean) => `relative flex items-center justify-center transition-[color,transform] duration-200 ${active ? "-translate-y-px scale-110 text-white" : "text-white/70"}`;
+  const labelClass = (active: boolean) => `text-[10px] font-bold leading-none transition-colors duration-200 ${active ? "text-white" : "text-white/60"}`;
+  const rippleFor = (index: number) =>
+    ripple?.index === index ? <span key={ripple.id} aria-hidden className="animate-tab-ripple pointer-events-none absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/30" /> : null;
 
   return (
     <div className="lg:hidden">
       {sheet && (
-        <div className="fixed inset-0 z-[45] flex items-end bg-black/60 pb-[calc(3.75rem+env(safe-area-inset-bottom))] backdrop-blur-sm" role="presentation" onClick={(event) => event.target === event.currentTarget && setSheet(false)}>
-          <div role="dialog" aria-label="Mais opções" className="animate-payment-sheet-in w-full rounded-t-3xl border-t border-white/15 bg-gradient-to-br from-[#2a1a58] to-[#11132e] p-4">
-            <span className="mx-auto mb-3 block h-1 w-10 rounded-full bg-white/25" />
-            <p className="mb-3 text-sm font-black text-white">Mais opções</p>
-            <div className="grid grid-cols-4 gap-2">
+        <div className="fixed inset-0 z-[45] flex items-end bg-black/50 px-3 pb-[calc(5.25rem+env(safe-area-inset-bottom))] backdrop-blur-sm" role="presentation" onClick={(event) => event.target === event.currentTarget && setSheet(false)}>
+          <div role="dialog" aria-label="Mais opções" className="animate-payment-sheet-in w-full rounded-[2rem] border border-white/15 bg-[#17103a]/80 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl">
+            <div className="grid grid-cols-4 gap-1.5">
               {extras.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setSheet(false)}
                   aria-current={isActive(pathname, item.href) ? "page" : undefined}
-                  className={`relative flex min-h-[4.75rem] flex-col items-center justify-center gap-1.5 rounded-2xl border px-1 py-2.5 text-center ${isActive(pathname, item.href) ? "border-purple-300/40 bg-purple-500/20" : "border-white/10 bg-white/[0.05]"}`}
+                  className={`relative flex min-h-[4.5rem] touch-manipulation flex-col items-center justify-center gap-1.5 rounded-3xl px-1 py-2.5 text-center transition-transform duration-100 [-webkit-tap-highlight-color:transparent] active:scale-90 ${isActive(pathname, item.href) ? "bg-purple-500/30" : "bg-white/[0.06]"}`}
                 >
-                  <item.icon className={`h-5 w-5 ${item.href === ADMIN.href ? "text-red-300" : "text-purple-200"}`} strokeWidth={2.2} />
-                  <span className="text-[10px] font-bold leading-tight text-white/85">{item.label}</span>
+                  <item.icon className={`h-5 w-5 ${item.href === ADMIN.href ? "text-red-300" : "text-purple-100"}`} strokeWidth={2.2} />
+                  <span className="text-[10px] font-bold leading-tight text-white/90">{item.label}</span>
                   <Badge count={badgeByHref[item.href] ?? 0} className="right-1.5 top-1.5" />
                 </Link>
               ))}
@@ -166,26 +181,45 @@ export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
           </div>
         </div>
       )}
-      <nav aria-label="Navegação principal" className="fixed inset-x-0 bottom-0 z-[46] border-t border-white/10 bg-[#1a1049]/95 px-2 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl">
-        <div className="grid grid-cols-5">
-          {MAIN.map((item) => {
-            const active = !sheet && isActive(pathname, item.href);
+      <nav aria-label="Navegação principal" className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[46] mx-auto max-w-md rounded-full border border-white/15 bg-[#0c0722]/45 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="relative grid grid-cols-5">
+          {/* Destaque que desliza até a aba tocada */}
+          <span
+            aria-hidden
+            className={`absolute inset-y-0 left-0 w-1/5 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 shadow-lg shadow-purple-900/50 transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] ${activeIndex < 0 ? "opacity-0" : "opacity-100"}`}
+            style={{ transform: `translateX(${Math.max(0, activeIndex) * 100}%)` }}
+          />
+          {MAIN.map((item, index) => {
+            const active = index === activeIndex;
             return (
-              <Link key={item.href} href={item.href} onClick={() => setSheet(false)} aria-current={active ? "page" : undefined} className="flex flex-col items-center gap-0.5">
-                <span className={tabClass(active)}>
+              <Link
+                key={item.href}
+                href={item.href}
+                onPointerDown={() => {
+                  press(index);
+                  setPressed({ href: item.href, from: pathname });
+                }}
+                onPointerCancel={() => setPressed(null)}
+                onClick={() => setSheet(false)}
+                aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                className={tabClass}
+              >
+                {rippleFor(index)}
+                <span className={iconClass(active)}>
                   <item.icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
-                  {!active && <Badge count={badgeByHref[item.href] ?? 0} className="right-2 top-0" />}
+                  {!active && <Badge count={badgeByHref[item.href] ?? 0} className="-right-2.5 -top-1.5" />}
                 </span>
                 <span className={labelClass(active)}>{item.label}</span>
               </Link>
             );
           })}
-          <button type="button" onClick={() => setSheet((value) => !value)} aria-expanded={sheet} className="flex flex-col items-center gap-0.5">
-            <span className={tabClass(sheet || moreActive)}>
+          <button type="button" onPointerDown={() => press(MAIN.length)} onClick={() => setSheet((value) => !value)} aria-expanded={sheet} className={tabClass}>
+            {rippleFor(MAIN.length)}
+            <span className={iconClass(MAIN.length === activeIndex)}>
               <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={2.2} />
-              {!sheet && <Badge count={moreBadge} className="right-2 top-0" />}
+              {!sheet && <Badge count={moreBadge} className="-right-2.5 -top-1.5" />}
             </span>
-            <span className={labelClass(sheet || moreActive)}>Mais</span>
+            <span className={labelClass(MAIN.length === activeIndex)}>Mais</span>
           </button>
         </div>
       </nav>

@@ -54,7 +54,6 @@ export function HeaderTopBar({
   attendanceStatus,
   signOutAction,
   navigation,
-  wideStrip,
   bell,
 }: {
   fullName: string;
@@ -65,8 +64,6 @@ export function HeaderTopBar({
   signOutAction?: () => Promise<void>;
   /** Menu principal em telas grandes. */
   navigation: ReactNode;
-  /** Faixa da próxima ação, ao lado do menu nas telas bem largas. */
-  wideStrip: ReactNode;
   bell: ReactNode;
 }) {
   const pathname = usePathname();
@@ -106,7 +103,6 @@ export function HeaderTopBar({
 
       {navigation}
       <span className="hidden flex-1 lg:block" />
-      <div className={`hidden shrink-0 2xl:block ${compact ? "2xl:opacity-90" : ""}`}>{wideStrip}</div>
 
       {bell}
 

@@ -3,9 +3,8 @@ import { CircleDollarSign, Clock3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { Community } from "@/lib/community";
 import { todayStringInFortaleza } from "@/lib/today";
-import type { HeaderAction } from "@/lib/headerAction";
 
-type Props = { profileId: string; community: Community; headerAction: Promise<HeaderAction | null> };
+type Props = { profileId: string; community: Community };
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -17,7 +16,7 @@ function formatDay(date: string) {
  * Avisos de pagamento na tela da pessoa. Somem sozinhos assim que o pagamento
  * é registrado (Pix, saldo ou marcação manual) ou o saldo é usado.
  */
-export async function PaymentNotices({ profileId, community, headerAction }: Props) {
+export async function PaymentNotices({ profileId, community }: Props) {
   const supabase = await createClient();
   const today = todayStringInFortaleza();
 
@@ -55,11 +54,7 @@ export async function PaymentNotices({ profileId, community, headerAction }: Pro
     .eq("reserves_capacity", true)
     .eq("events.community", community)
     .gt("reservation_expires_at", new Date().toISOString());
-  // O racha que já está na faixa do cabeçalho não precisa de um segundo aviso.
-  const action = await headerAction;
-  const coveredEventId = action?.coversPaymentNotice ? action.eventId : null;
-  const reservations = (openReservations ?? []).filter((row) => row.event_id !== coveredEventId);
-  pending = pending.filter((event) => event.id !== coveredEventId);
+  const reservations = openReservations ?? [];
 
   if (!pending.length && !reservations.length) return null;
 

@@ -312,6 +312,16 @@ a[href]:active svg,
   animation: payment-banner-in 0.25s ease-out;
 }
 
+/* Efeito de toque nas abas da barra de baixo. */
+@keyframes tab-ripple {
+  from { opacity: 0.9; transform: translate(-50%, -50%) scale(0.35); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.25); }
+}
+
+.animate-tab-ripple {
+  animation: tab-ripple 0.38s ease-out forwards;
+}
+
 @keyframes payment-sheet-in {
   from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
@@ -335,6 +345,7 @@ a[href]:active svg,
 
 @media (prefers-reduced-motion: reduce) {
   .animate-payment-banner-in,
+  .animate-tab-ripple,
   .animate-payment-sheet-in {
     animation: none;
   }
