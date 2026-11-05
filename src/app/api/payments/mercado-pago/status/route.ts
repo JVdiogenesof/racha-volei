@@ -19,8 +19,9 @@ export async function POST(request: Request) {
 
     // Olha o resultado salvo, e não só o que esta chamada conferiu: o aviso
     // (webhook) do Mercado Pago pode ter confirmado a vaga um instante antes.
-    const [{ data: payment }, { data: latestIntent }] = await Promise.all([
+    const [{ data: payment }, { data: attendance }, { data: latestIntent }] = await Promise.all([
       supabase.from("payments").select("paid").eq("event_id", body.eventId).eq("profile_id", auth.user.id).maybeSingle(),
+      supabase.from("attendance").select("status").eq("event_id", body.eventId).eq("profile_id", auth.user.id).maybeSingle(),
       supabase
         .from("event_payment_intents")
         .select("status")
@@ -31,7 +32,10 @@ export async function POST(request: Request) {
         .maybeSingle(),
     ]);
 
-    return Response.json({ paid: Boolean(payment?.paid), credited: latestIntent?.status === "credited" });
+    // Quem desistiu de um Pix pago continua com o pagamento antigo marcado como
+    // pago: só vale se a pessoa estiver confirmada na lista agora.
+    const paid = latestIntent?.status === "paid" || (Boolean(payment?.paid) && attendance?.status === "confirmed");
+    return Response.json({ paid, credited: latestIntent?.status === "credited" });
   } catch (error) {
     console.error("[pix-status] Falha ao conferir o pagamento", error instanceof Error ? error.message : error);
     return Response.json({ paid: false, credited: false }, { status: 200 });

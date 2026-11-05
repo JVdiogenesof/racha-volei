@@ -376,7 +376,8 @@ export default async function ConfirmarPresencaPage({
             exempt: isPaymentExempt,
           })}
           status={(myStatus === "confirmed" || myStatus === "interested" || myStatus === "declined" ? myStatus : "none") as JoinStatus}
-          paid={Boolean(myPayment?.paid)}
+          // No Pix automático, pago sem estar confirmado é um pagamento antigo de quem desistiu.
+          paid={Boolean(myPayment?.paid) && (myStatus === "confirmed" || !event.pix_payment_enabled)}
           isFull={isFull}
         />
       )}

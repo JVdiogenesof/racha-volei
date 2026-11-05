@@ -177,9 +177,10 @@ export function HomeRachaCard({
                     Abrir racha
                   </Link>
                 ) : status === "interested" ? (
-                  <Link href={mode === "pix" && !paid && !isFull ? payUrl : confirmUrl} className={PRIMARY_BUTTON}>
+                  <Link href={mode === "pix" && !isFull ? payUrl : confirmUrl} className={PRIMARY_BUTTON}>
                     <ThumbsUp className="h-4 w-4" strokeWidth={2.5} />
-                    {mode === "pix" && !paid ? "Pagar o Pix da vaga" : mode === "manual" && !paid ? "Ver como pagar" : "Ver minha vaga"}
+                    {/* No Pix automático, quem só está interessado ainda não pagou esta vaga, mesmo com um pagamento antigo de quando desistiu. */}
+                    {mode === "pix" ? "Pagar o Pix da vaga" : mode === "manual" && !paid ? "Ver como pagar" : "Ver minha vaga"}
                   </Link>
                 ) : isPaymentExempt ? (
                   <Link href={confirmUrl} className={PRIMARY_BUTTON}>
