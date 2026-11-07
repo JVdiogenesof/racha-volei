@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
 import type { Community } from "./community";
-import { countsTowardMatchRanking } from "./matchRankingEligibility";
+import { countsTowardIndexResults } from "./matchRankingEligibility";
 
 export type AdjustMetric = "attendance" | "mvp" | "wins" | "losses";
 
@@ -70,7 +70,7 @@ export async function getProfileRankingSheet(
     membersByTeam.set(member.team_id, list);
   }
 
-  const matchRankedEventIds = new Set(events.filter(countsTowardMatchRanking).map((event) => event.id));
+  const matchRankedEventIds = new Set(events.filter(countsTowardIndexResults).map((event) => event.id));
 
   return events.map((event) => {
     let wins = 0;

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getPresentProfileIdsByEvent } from "./presence";
 import type { Community } from "./community";
 import { monthRange } from "./monthlyReport";
-import { countsTowardMatchRanking } from "./matchRankingEligibility";
+import { countsTowardIndexResults, countsTowardMatchRanking } from "./matchRankingEligibility";
 
 export type RankingMetric = "attendance" | "mvp" | "wins";
 
@@ -139,6 +139,9 @@ export async function getRankingCounts(
   // Racha normal com 3 times fica fora do ranking de partidas (ver
   // matchRankingEligibility) -- presença acima já não depende disso.
   const matchRankedEventIds = new Set((communityEvents ?? []).filter(countsTowardMatchRanking).map((event) => event.id));
+  // O aproveitamento/Índice ignora também os rachas de sábado (só presença);
+  // a aba Vitórias (matchRankedEventIds) continua contando os jogos de sábado.
+  const indexResultEventIds = new Set((communityEvents ?? []).filter(countsTowardIndexResults).map((event) => event.id));
 
   const profileIdsByTeam = new Map<string, string[]>();
   for (const m of memberRows ?? []) {
@@ -180,7 +183,7 @@ export async function getRankingCounts(
 
   for (const match of winRows ?? []) {
     if (!match.loser_team_id) continue;
-    if (!matchRankedEventIds.has(match.event_id)) continue;
+    if (!indexResultEventIds.has(match.event_id)) continue;
 
     const winnerIds = match.winning_profile_ids?.length
       ? match.winning_profile_ids
@@ -213,9 +216,9 @@ export async function getRankingCounts(
     if (adj.event_id) {
       if (!eventIdSet.has(adj.event_id)) continue;
       if (adj.metric === "wins") {
-        if (matchRankedEventIds.has(adj.event_id)) bumpResult(adj.profile_id, adj.delta, 0);
+        if (indexResultEventIds.has(adj.event_id)) bumpResult(adj.profile_id, adj.delta, 0);
       } else if (adj.metric === "losses") {
-        if (matchRankedEventIds.has(adj.event_id)) bumpResult(adj.profile_id, 0, adj.delta);
+        if (indexResultEventIds.has(adj.event_id)) bumpResult(adj.profile_id, 0, adj.delta);
       } else if (adj.metric === "attendance" || adj.metric === "mvp") {
         const target = byMetric[adj.metric as RankingMetric];
         target.set(adj.profile_id, (target.get(adj.profile_id) ?? 0) + adj.delta);

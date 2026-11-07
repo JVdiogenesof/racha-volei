@@ -1,4 +1,6 @@
 export type MatchEligibilityEvent = {
+  /** Data do racha (AAAA-MM-DD). Necessária para a regra do sábado no Índice. */
+  date?: string;
   num_teams: number;
   is_pre_torneio: boolean;
   is_mini_torneio: boolean;
@@ -15,4 +17,19 @@ export type MatchEligibilityEvent = {
 export function countsTowardMatchRanking(event: MatchEligibilityEvent): boolean {
   if (event.is_pre_torneio || event.is_mini_torneio) return true;
   return event.num_teams !== 3;
+}
+
+/** Racha normal (nem pré-torneio, nem mini torneio) marcado para um sábado. */
+export function isSaturdayRacha(event: MatchEligibilityEvent): boolean {
+  if (event.is_pre_torneio || event.is_mini_torneio || !event.date) return false;
+  return new Date(`${event.date}T12:00:00`).getDay() === 6;
+}
+
+/**
+ * Rachas de sábado contam só presença no Índice VPA: os jogos deles não entram
+ * em vitórias/derrotas do Índice. Na aba Vitórias do ranking os jogos de
+ * sábado continuam valendo (essa aba usa countsTowardMatchRanking).
+ */
+export function countsTowardIndexResults(event: MatchEligibilityEvent): boolean {
+  return countsTowardMatchRanking(event) && !isSaturdayRacha(event);
 }

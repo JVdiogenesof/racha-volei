@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "./community";
 import { getPresentProfileIdsByEvent } from "./presence";
 import { INDEX_BASE_PERCENTAGE, INDEX_CONFIDENCE_MATCHES } from "./rankings";
-import { countsTowardMatchRanking } from "./matchRankingEligibility";
+import { countsTowardIndexResults } from "./matchRankingEligibility";
 
 // A temporada continua sendo usada como referência do torneio oficial. O
 // Índice em si é uma janela viva: os oito últimos rachas deixam a tabela
@@ -203,9 +203,9 @@ export async function getSeasonRanking(
   const events = ([...(eventRows ?? [])] as EventRow[]).reverse();
   if (!events.length) return new Map();
   const eventIds = events.map((event) => event.id);
-  // Racha normal de 3 times fica fora do ranking de partidas (ver
-  // matchRankingEligibility) -- continua contando presença normalmente.
-  const matchRankedEventIds = new Set(events.filter(countsTowardMatchRanking).map((event) => event.id));
+  // Fora do Índice: racha normal de 3 times e racha de sábado (ver
+  // matchRankingEligibility) -- os dois continuam contando presença normalmente.
+  const matchRankedEventIds = new Set(events.filter(countsTowardIndexResults).map((event) => event.id));
   // Consultas independentes entre si (só dependem dos ids dos rachas): rodam juntas.
   const [presentByEvent, { data: matchRows, error: matchError }, { data: scoreRows, error: scoreError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, eventIds),
