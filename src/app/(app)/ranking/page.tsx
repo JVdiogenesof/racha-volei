@@ -100,6 +100,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             ranked: season.eligible,
             trend: season.trend,
             positionChange: season.positionChange,
+            indexChange: season.indexChange,
             guaranteed: guaranteedIds.has(profileId),
           }];
         })
@@ -142,7 +143,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
           </h1>
           <p className="mt-0.5 text-xs leading-snug text-white/55">
             {isSeasonView
-              ? `Índice VPA vivo: últimos ${ROLLING_INDEX_EVENT_COUNT} rachas, com peso maior para os ${Math.min(4, ROLLING_INDEX_EVENT_COUNT)} mais recentes.`
+              ? `Índice VPA vivo: últimos ${ROLLING_INDEX_EVENT_COUNT} rachas, com peso maior para os ${Math.min(4, ROLLING_INDEX_EVENT_COUNT)} mais recentes. As setas mostram quanto cada um subiu ou caiu, em posições e pontos, no último racha.`
               : `Foto isolada de ${formatMonthLabel(monthKey!)}, só pra conferir como estava aquele mês.`}
           </p>
         </div>

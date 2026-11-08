@@ -29,6 +29,8 @@ export type RankingEntry = {
   /** Movimento desde o racha anterior, usado pelo Índice VPA vivo. */
   trend?: "up" | "down" | "same" | "new";
   positionChange?: number | null;
+  /** Quanto o Índice mudou em pontos desde o racha anterior. */
+  indexChange?: number | null;
   /** Já garantiu vaga via pré-torneio -- fica "classificado" (verde) mesmo fora do corte pela nota. */
   guaranteed?: boolean;
 };
@@ -64,7 +66,7 @@ function StatChips({ stats, className = "", glass = false }: { stats: RankingSta
 }
 
 /** Mostra a conta do Índice: cada parte, quanto ela rendeu, e o total. */
-function BreakdownPanel({ breakdown }: { breakdown: NonNullable<RankingEntry["breakdown"]> }) {
+function BreakdownPanel({ breakdown, trendText }: { breakdown: NonNullable<RankingEntry["breakdown"]>; trendText?: string | null }) {
   return (
     <div className="mt-2 rounded-lg border border-white/10 bg-black/20 p-2.5">
       <p className="mb-2 text-[9px] font-black uppercase tracking-wide text-white/35">Como essa nota foi formada</p>
@@ -99,6 +101,7 @@ function BreakdownPanel({ breakdown }: { breakdown: NonNullable<RankingEntry["br
         <span className="text-[11px] font-black uppercase tracking-wide text-white/50">Índice</span>
         <span className="text-sm font-black tabular-nums text-white">{breakdown.total.toFixed(1)}</span>
       </div>
+      {trendText && <p className="mt-1.5 break-words text-[10px] leading-snug text-white/55">{trendText}</p>}
     </div>
   );
 }
@@ -134,12 +137,42 @@ const PODIUM_STYLE = [
   { height: "h-10", medal: "from-orange-200 to-orange-500 text-orange-950" },
 ];
 
+/** Variação em pontos com uma casa; some quando é praticamente zero (evita "+0.0"). */
+function pointsChangeOf(entry: RankingEntry) {
+  const points = entry.indexChange;
+  return points != null && Math.abs(points) >= 0.05 ? points : null;
+}
+
+const signedPoints = (value: number) => `${value > 0 ? "+" : "−"}${Math.abs(value).toFixed(1)}`;
+
+/** Frase completa do movimento desde o racha anterior, para o "Ver mais" e o toque longo. */
+function trendSentence(entry: RankingEntry) {
+  if (!entry.trend) return null;
+  if (entry.trend === "new") return "Entrou na classificação neste racha.";
+  const places = Math.abs(entry.positionChange ?? 0);
+  const noun = places === 1 ? "posição" : "posições";
+  const move = entry.trend === "up" ? `Subiu ${places} ${noun}` : entry.trend === "down" ? `Caiu ${places} ${noun}` : "Manteve a posição";
+  const points = pointsChangeOf(entry);
+  return `${move}${points !== null ? ` (${signedPoints(points)} pts)` : ""} desde o racha anterior.`;
+}
+
 function TrendBadge({ entry }: { entry: RankingEntry }) {
   if (!entry.trend) return null;
   if (entry.trend === "new") return <span className="mt-1 inline-flex items-center rounded-full bg-sky-400/20 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-sky-100">novo</span>;
-  if (entry.trend === "up") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-300"><TrendingUp className="h-3 w-3" />+{entry.positionChange}</span>;
-  if (entry.trend === "down") return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-rose-300"><TrendingDown className="h-3 w-3" />{entry.positionChange}</span>;
-  return <span className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black uppercase tracking-wide text-white/35"><Minus className="h-3 w-3" />estável</span>;
+  const points = pointsChangeOf(entry);
+  const positionTone = entry.trend === "up" ? "text-emerald-300" : entry.trend === "down" ? "text-rose-300" : "text-white/35";
+  const Icon = entry.trend === "up" ? TrendingUp : entry.trend === "down" ? TrendingDown : Minus;
+  // Posições e pontos na mesma linha; se faltar espaço, a segunda parte desce para
+  // a linha de baixo em vez de ser cortada.
+  return (
+    <span title={trendSentence(entry) ?? undefined} className="mt-1 flex max-w-[8.5rem] flex-wrap items-center justify-end gap-x-1.5 text-[9px] font-black leading-tight tracking-wide">
+      <span className={`inline-flex items-center gap-0.5 uppercase ${positionTone}`}>
+        <Icon className="h-3 w-3" />
+        {entry.trend === "up" ? `+${entry.positionChange}` : entry.trend === "down" ? entry.positionChange : "estável"}
+      </span>
+      {points !== null && <span className={`tabular-nums ${points > 0 ? "text-emerald-300/90" : "text-rose-300/90"}`}>{signedPoints(points)} pts</span>}
+    </span>
+  );
 }
 
 export function Leaderboard({
@@ -292,7 +325,7 @@ export function Leaderboard({
               {!podiumExpanded.stats?.length && podiumExpanded.detail ? (
                 <p className="mt-1 break-words text-[11px] leading-tight text-white/70">{podiumExpanded.detail}</p>
               ) : null}
-              {podiumExpanded.breakdown && <BreakdownPanel breakdown={podiumExpanded.breakdown} />}
+              {podiumExpanded.breakdown && <BreakdownPanel breakdown={podiumExpanded.breakdown} trendText={trendSentence(podiumExpanded)} />}
             </div>
           )}
 
@@ -401,7 +434,7 @@ export function Leaderboard({
                           {!entry.stats?.length && entry.ranked !== false && entry.detail ? (
                             <p className="break-words text-[11px] leading-tight text-white/60">{entry.detail}</p>
                           ) : null}
-                          {entry.breakdown && <BreakdownPanel breakdown={entry.breakdown} />}
+                          {entry.breakdown && <BreakdownPanel breakdown={entry.breakdown} trendText={trendSentence(entry)} />}
                         </div>
                       )}
                     </li>

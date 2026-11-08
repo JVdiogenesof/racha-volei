@@ -35,6 +35,8 @@ export type SeasonPlayerScore = {
   progressBonus: number;
   trend: RankingTrend;
   positionChange: number | null;
+  /** Quanto o Índice mudou em pontos desde o racha anterior (mesma base da seta de posição). */
+  indexChange: number | null;
   // Saldo em pontos reais das partidas com placar dentro da janela do Índice.
   pointsFor: number;
   pointsAgainst: number;
@@ -54,7 +56,7 @@ export type SeasonPlayerScore = {
 
 type EventRow = { id: string; date: string; is_pre_torneio: boolean; is_mini_torneio: boolean; num_teams: number };
 type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number; pointsFor: number; pointsAgainst: number };
-type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange">;
+type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange" | "indexChange">;
 
 export { formatPointsDiff } from "./pointsDiff";
 
@@ -86,9 +88,11 @@ function adjustedForm(events: EventRow[], records: Map<string, Map<string, Event
 }
 
 function buildScores(events: EventRow[], records: Map<string, Map<string, EventPlayerRecord>>) {
+  // Só quem aparece nos rachas desta janela: os registros guardam um racha a mais
+  // (usado para recriar a tabela de antes), e quem só esteve nele não entra aqui.
   const playerIds = new Set<string>();
-  for (const eventRecords of records.values()) {
-    for (const profileId of eventRecords.keys()) playerIds.add(profileId);
+  for (const event of events) {
+    for (const profileId of records.get(event.id)?.keys() ?? []) playerIds.add(profileId);
   }
 
   const recentStart = Math.max(0, events.length - RECENT_EVENT_COUNT);
@@ -197,15 +201,20 @@ export async function getSeasonRanking(
     .eq("community", community)
     .eq("status", "finished")
     .order("date", { ascending: false })
-    .limit(ROLLING_INDEX_EVENT_COUNT);
+    // Um racha além da janela: com ele dá para recriar o Índice exatamente como
+    // estava antes do último racha, e comparar posições e pontos com a tabela real.
+    .limit(ROLLING_INDEX_EVENT_COUNT + 1);
   if (eventError) throw new Error(eventError.message);
 
-  const events = ([...(eventRows ?? [])] as EventRow[]).reverse();
-  if (!events.length) return new Map();
-  const eventIds = events.map((event) => event.id);
+  const fetchedEvents = ([...(eventRows ?? [])] as EventRow[]).reverse();
+  if (!fetchedEvents.length) return new Map();
+  // Janela atual: os 8 últimos. Janela anterior: os 8 que terminavam no racha anterior.
+  const events = fetchedEvents.slice(-ROLLING_INDEX_EVENT_COUNT);
+  const previousEvents = fetchedEvents.slice(Math.max(0, fetchedEvents.length - 1 - ROLLING_INDEX_EVENT_COUNT), -1);
+  const eventIds = fetchedEvents.map((event) => event.id);
   // Fora do Índice: racha normal de 3 times e racha de sábado (ver
   // matchRankingEligibility) -- os dois continuam contando presença normalmente.
-  const matchRankedEventIds = new Set(events.filter(countsTowardIndexResults).map((event) => event.id));
+  const matchRankedEventIds = new Set(fetchedEvents.filter(countsTowardIndexResults).map((event) => event.id));
   // Consultas independentes entre si (só dependem dos ids dos rachas): rodam juntas.
   const [presentByEvent, { data: matchRows, error: matchError }, { data: scoreRows, error: scoreError }, { data: adjustmentRows, error: adjustmentError }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, eventIds),
@@ -321,7 +330,7 @@ export async function getSeasonRanking(
   }
 
   const currentScores = buildScores(events, records);
-  const previousScores = events.length > 1 ? buildScores(events.slice(0, -1), records) : new Map<string, ScoreDraft>();
+  const previousScores = previousEvents.length ? buildScores(previousEvents, records) : new Map<string, ScoreDraft>();
   const currentPositions = positionsFor(currentScores);
   const previousPositions = positionsFor(previousScores);
   const result = new Map<string, SeasonPlayerScore>();
@@ -329,11 +338,14 @@ export async function getSeasonRanking(
   for (const [profileId, score] of currentScores) {
     const currentPosition = currentPositions.get(profileId);
     const previousPosition = previousPositions.get(profileId);
+    const previousScore = previousScores.get(profileId);
     const positionChange = currentPosition && previousPosition ? previousPosition - currentPosition : null;
+    const indexChange = currentPosition && previousPosition && previousScore ? roundOne(score.averageIndex - previousScore.averageIndex) : null;
     result.set(profileId, {
       ...score,
       trend: positionChange === null ? "new" : positionChange > 0 ? "up" : positionChange < 0 ? "down" : "same",
       positionChange,
+      indexChange,
     });
   }
   return result;
