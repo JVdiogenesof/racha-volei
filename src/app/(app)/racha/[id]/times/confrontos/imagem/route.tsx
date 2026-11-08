@@ -173,7 +173,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   } else {
     const { data: winRows, error } = await supabase
       .from("match_wins")
-      .select("id, team_id, loser_team_id, recorded_at")
+      .select("id, team_id, loser_team_id, recorded_at, winner_score, loser_score")
       .eq("event_id", id)
       .not("loser_team_id", "is", null)
       .order("recorded_at");
@@ -183,8 +183,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       stage: "normal" as const,
       teamA: teamLabelById.get(match.team_id) ?? "Time vencedor",
       teamB: teamLabelById.get(match.loser_team_id) ?? "Time adversário",
-      scoreA: null,
-      scoreB: null,
+      // O vencedor fica à esquerda; jogos lançados sem placar continuam com "VS".
+      scoreA: match.winner_score,
+      scoreB: match.loser_score,
     }] : []);
   }
 
