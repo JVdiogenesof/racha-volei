@@ -40,7 +40,7 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
       ? { box: "border-amber-300/25 bg-amber-400/10", icon: "text-amber-300", chip: "bg-amber-400/20 text-amber-200", text: "text-amber-100" }
       : { box: "border-sky-300/25 bg-sky-400/10", icon: "text-sky-300", chip: "bg-sky-400/20 text-sky-200", text: "text-sky-100" };
 
-  const label = notOpen ? "Lote 1 em breve" : secondOpen ? "Lote 2 aberto" : firstFull ? (hold > 0 ? "Lote 1 · só levantadores" : "Lote 1 esgotado") : "Lote 1 aberto";
+  const label = notOpen ? "Lote 1 em breve" : secondOpen ? "Lote 2 aberto" : firstFull ? (hold > 0 ? "Lote 1 · só levantadores" : "Lote 1 encerrado") : "Lote 1 aberto";
   const lote2 = `Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`;
   const setterNote = hold > 0
     ? ` Ainda ${hold === 1 ? "resta 1 vaga" : `restam ${hold} vagas`} de levantador neste lote.`
@@ -50,7 +50,9 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
     : secondOpen
       ? "Todas as vagas restantes estão liberadas. Quando completar, a lista vira uma só."
       : firstFull
-        ? `${lote2}${setterNote}`
+        ? hold > 0
+          ? `${lote2}${setterNote}`
+          : `Próximo: Lote 2 — ${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}, abre ${formatBatchOpening(secondBatchOpensAt)}.`
         : `${firstSpots} vagas neste lote, ${setterLimit} guardadas para levantadores (${Math.min(setterCount, setterLimit)}/${setterLimit} preenchidas). ${lote2}`;
 
   return (

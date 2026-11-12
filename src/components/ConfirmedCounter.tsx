@@ -89,7 +89,7 @@ export function ConfirmedCounter({
             Lista confirmada
           </span>
           <span className="flex items-center gap-2">
-            {shouldShowAvailability && <span className={`font-semibold ${isFull ? "text-red-300" : "text-green-300"}`}>{isFull ? "Lista completa" : `${totalSlotsRemaining} vaga${totalSlotsRemaining === 1 ? "" : "s"} livre${totalSlotsRemaining === 1 ? "" : "s"}`}</span>}
+            {shouldShowAvailability && <span className={`font-semibold ${isFull ? "text-red-300" : "text-green-300"}`}>{isFull ? (batchActive && !showFullCapacity ? "Lote 1 completo" : "Lista completa") : `${totalSlotsRemaining} vaga${totalSlotsRemaining === 1 ? "" : "s"} livre${totalSlotsRemaining === 1 ? "" : "s"}`}</span>}
             <b className="tabular-nums text-white">{count}{showFullCapacity && maxPlayers != null ? ` / ${maxPlayers}` : ""}</b>
           </span>
         </div>
@@ -119,7 +119,7 @@ export function ConfirmedCounter({
             }`}
           >
             {isFull
-              ? "Lista completa"
+              ? (batchActive && !showFullCapacity ? "Lote 1 completo" : "Lista completa")
               : `${totalSlotsRemaining} vaga${totalSlotsRemaining === 1 ? "" : "s"} livre${totalSlotsRemaining === 1 ? "" : "s"}`}
           </span>
         )}

@@ -6,7 +6,7 @@ import { BatchStatus } from "./BatchStatus";
 import { RachaLevelBadge } from "./RachaLevelBadge";
 import { RegistrationOpensNotice } from "./RegistrationOpensNotice";
 import { joinMode, type JoinStatus } from "./RachaHowToJoin";
-import { formatBatchOpening, isRegistrationOpen } from "@/lib/registrationSchedule";
+import { formatBatchOpening, isRegistrationOpen, waitingForSecondBatch } from "@/lib/registrationSchedule";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { formatRegistrationOpening, rachaDayParts } from "@/lib/rachaDates";
 
@@ -72,8 +72,12 @@ export function HomeRachaCard({
   // Racha com Pix automático: esses botões já abrem o pagamento na tela da lista.
   const payUrl = `${confirmUrl}?pagar=1`;
 
+  // Lote 1 encerrado e Lote 2 ainda fechado: o card avisa que o próximo é o Lote 2.
+  const secondBatchLabel = registrationOpen ? waitingForSecondBatch(event, confirmedCount, setterConfirmedCount) : null;
   const phase = isInProgress
     ? { label: "Rolando agora", className: "bg-red-400/25 text-red-100", dot: "bg-red-300" }
+    : secondBatchLabel
+      ? { label: "Lote 1 encerrado · próximo: Lote 2", className: "bg-amber-400/25 text-amber-100", dot: "bg-amber-300" }
     : registrationOpen
       ? { label: "Inscrições abertas", className: "bg-emerald-400/25 text-emerald-100", dot: "bg-emerald-300" }
       : event.registration_opens_at
