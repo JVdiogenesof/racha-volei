@@ -7,7 +7,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
 import { getActiveCommunity } from "@/lib/community";
 import type { EventGameStyle } from "@/lib/eventGameStyle";
-import { registrationOpensAtFromForm } from "@/lib/registrationSchedule";
+import { registrationOpensAtFromForm, spotBatchesFromForm } from "@/lib/registrationSchedule";
 import { COPA_PATH, linkEventToCup } from "@/lib/copaVpa";
 import { setterSpotsFor } from "@/lib/rachaSpots";
 
@@ -71,6 +71,7 @@ export async function createEvent(formData: FormData) {
   const location = String(formData.get("location") ?? "").trim() || null;
   const registrationOpensAt = parseRegistrationSchedule(formData, date, time);
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
+  const spotBatches = spotBatchesFromForm(formData, maxPlayers, registrationOpensAt, date);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
@@ -103,6 +104,7 @@ export async function createEvent(formData: FormData) {
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
       registration_opens_at: registrationOpensAt,
+      ...spotBatches,
       created_by: organizer.id,
       official_list_open: false,
     })
@@ -166,6 +168,7 @@ export async function updateEvent(formData: FormData) {
     : currentEvent.registration_opens_at;
   if (registrationOpensAt) validateRegistrationSchedule(registrationOpensAt, date, time);
   const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
+  const spotBatches = spotBatchesFromForm(formData, maxPlayers, registrationOpensAt, date);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
   const pixPaymentEnabled = String(formData.get("pixPaymentEnabled")) === "true";
@@ -224,6 +227,7 @@ export async function updateEvent(formData: FormData) {
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
       registration_opens_at: registrationOpensAt,
+      ...spotBatches,
     })
     .eq("id", eventId);
 

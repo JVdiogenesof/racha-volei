@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock, Layers } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -31,7 +31,7 @@ import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOff
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
-import { isRegistrationOpen } from "@/lib/registrationSchedule";
+import { isRegistrationOpen, publicCapacityNow } from "@/lib/registrationSchedule";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
@@ -57,7 +57,7 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio")
+        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio, first_batch_spots, second_batch_opens_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -198,7 +198,10 @@ export default async function ConfirmarPresencaPage({
   );
   // A marcação manual de levantador neste racha vale mais que o perfil.
   const amSetter = (setterOverrideRows ?? []).find((row) => row.profile_id === profile.id)?.is_setter ?? Boolean(profile.is_setter);
-  const isFull = isListFullFor({
+  const publicCapacity = publicCapacityNow(event);
+  const batchActive = publicCapacity < eventCapacity;
+  const batchFull = batchActive && confirmados.length >= publicCapacity;
+  const isFull = batchFull || isListFullFor({
     capacity: eventCapacity,
     newcomerReserved: event.newcomer_reserved_spots,
     confirmed: confirmados.length,
@@ -208,11 +211,11 @@ export default async function ConfirmarPresencaPage({
     isGuest: profile.status === "guest",
   });
   // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
-  const onlyProtectedSpotsLeft = isFull && confirmados.length < eventCapacity;
+  const onlyProtectedSpotsLeft = isFull && !batchFull && confirmados.length < eventCapacity;
   const setterSlotsFull = amSetter && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
   // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
-  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && eventCapacity - confirmados.length <= 1;
+  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && publicCapacity - confirmados.length <= 1;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
@@ -328,10 +331,25 @@ export default async function ConfirmarPresencaPage({
         <RegistrationCountdown opensAt={event.registration_opens_at} />
       )}
 
+      {batchActive && event.second_batch_opens_at && !eventFinished && !eventCancelled && (
+        <div className="space-y-2">
+          <p className="flex items-start gap-2 rounded-xl border border-sky-300/25 bg-sky-400/10 px-3.5 py-3 text-sm leading-relaxed text-sky-100">
+            <Layers className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" strokeWidth={2.25} />
+            <span>
+              {batchFull ? "Lote 1 esgotado. " : "Lote 1 aberto. "}
+              As demais vagas abrem em {new Date(event.second_batch_opens_at).toLocaleString("pt-BR", { timeZone: "America/Fortaleza", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.
+            </span>
+          </p>
+          <RegistrationCountdown opensAt={event.second_batch_opens_at} compact label="Lote 2 abre em" />
+        </div>
+      )}
+
       {!eventFinished && !eventCancelled && (
         <ConfirmedCounter
           eventId={id}
           maxPlayers={eventCapacity}
+          firstBatchSpots={event.first_batch_spots}
+          secondBatchOpensAt={event.second_batch_opens_at}
           initialConfirmedCount={confirmados.length}
           initialSetterCount={setterConfirmedCount}
           showFullCapacity={profile.is_organizer}

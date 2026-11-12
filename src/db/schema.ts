@@ -167,6 +167,9 @@ export const events = pgTable("events", {
   // confirmados manualmente e só a publica quando estiver pronta.
   officialListOpen: boolean("official_list_open").notNull().default(true),
   registrationOpensAt: timestamp("registration_opens_at", { withTimezone: true, mode: "string" }),
+  // Lotes de vagas: o público vê só firstBatchSpots até secondBatchOpensAt; depois todas as vagas.
+  firstBatchSpots: integer("first_batch_spots"),
+  secondBatchOpensAt: timestamp("second_batch_opens_at", { withTimezone: true, mode: "string" }),
   // Até dois "Jogadores Destaque" escolhidos pelos organizadores depois que o
   // racha termina (sem votação, dois slots independentes).
   mvpProfileId: uuid("mvp_profile_id").references(() => profiles.id, { onDelete: "set null" }),

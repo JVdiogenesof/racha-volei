@@ -18,7 +18,7 @@ function remainingUntil(opensAt: string): Remaining | null {
   };
 }
 
-export function RegistrationCountdown({ opensAt, compact = false }: { opensAt: string; compact?: boolean }) {
+export function RegistrationCountdown({ opensAt, compact = false, label = "Inscrições abrem em" }: { opensAt: string; compact?: boolean; label?: string }) {
   const router = useRouter();
   const [remaining, setRemaining] = useState<Remaining | null | undefined>(undefined);
 
@@ -51,7 +51,7 @@ export function RegistrationCountdown({ opensAt, compact = false }: { opensAt: s
     <section className={`overflow-hidden rounded-2xl border border-fuchsia-300/25 bg-gradient-to-br from-fuchsia-500/15 via-purple-500/10 to-transparent ${compact ? "p-3" : "p-4"}`} aria-label="Contagem regressiva para abertura das inscrições">
       <p className="flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-fuchsia-100/80">
         <AlarmClock className="h-4 w-4" strokeWidth={2} />
-        Inscrições abrem em
+        {label}
       </p>
       <div className={`${compact ? "mt-2" : "mt-3"} grid grid-cols-4 ${compact ? "gap-1.5" : "gap-2"}`} aria-live="polite">
         {units.map((unit) => (

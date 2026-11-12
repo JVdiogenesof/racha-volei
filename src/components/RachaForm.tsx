@@ -6,6 +6,7 @@ import { FormField } from "./FormField";
 import { ToggleCard } from "./ToggleCard";
 import { RegistrationScheduleFields } from "./RegistrationScheduleFields";
 import { RachaCapacityFields } from "./RachaCapacityFields";
+import { SpotBatchFields } from "./SpotBatchFields";
 
 export type RachaFormDefaults = {
   date: string;
@@ -13,6 +14,8 @@ export type RachaFormDefaults = {
   location: string;
   pixPaymentEnabled: boolean;
   registrationOpensAt: string | null;
+  firstBatchSpots: number | null;
+  secondBatchOpensAt: string | null;
   numTeams: number;
   maxPlayers: number | null;
   teamSize: number;
@@ -67,6 +70,8 @@ export function RachaForm({
       />
 
       <RegistrationScheduleFields defaultOpensAt={defaults.registrationOpensAt} required={registrationRequired} />
+
+      <SpotBatchFields defaultFirstBatchSpots={defaults.firstBatchSpots} defaultSecondBatchOpensAt={defaults.secondBatchOpensAt} />
 
       <ToggleCard
         name="pixPaymentEnabled"

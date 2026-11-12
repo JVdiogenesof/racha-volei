@@ -10,6 +10,8 @@ export function ConfirmedCounter({
   maxPlayers: initialMaxPlayers,
   initialConfirmedCount,
   initialSetterCount = 0,
+  firstBatchSpots: initialFirstBatchSpots = null,
+  secondBatchOpensAt: initialSecondBatchOpensAt = null,
   compact = false,
   showFullCapacity = false,
 }: {
@@ -17,6 +19,9 @@ export function ConfirmedCounter({
   maxPlayers: number | null;
   initialConfirmedCount: number;
   initialSetterCount?: number;
+  /** Lotes: até secondBatchOpensAt o público só vê as vagas do Lote 1. */
+  firstBatchSpots?: number | null;
+  secondBatchOpensAt?: string | null;
   compact?: boolean;
   /** Organizadores acompanham a ocupação completa; participantes só veem as últimas vagas. */
   showFullCapacity?: boolean;
@@ -24,6 +29,9 @@ export function ConfirmedCounter({
   const [count, setCount] = useState(initialConfirmedCount);
   const [setterCount, setSetterCount] = useState(initialSetterCount);
   const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
+  const [firstBatchSpots, setFirstBatchSpots] = useState(initialFirstBatchSpots);
+  const [secondBatchOpensAt, setSecondBatchOpensAt] = useState(initialSecondBatchOpensAt);
+  const [now, setNow] = useState(() => Date.now());
 
   const refresh = useCallback(async () => {
     const supabase = createClient();
@@ -39,12 +47,14 @@ export function ConfirmedCounter({
         .eq("event_id", eventId)
         .eq("status", "confirmed")
         .eq("uses_setter_spot", true),
-      supabase.from("events").select("max_players").eq("id", eventId).maybeSingle(),
+      supabase.from("events").select("max_players, first_batch_spots, second_batch_opens_at").eq("id", eventId).maybeSingle(),
     ]);
     if (fresh != null) setCount(fresh);
     if (freshSetters != null) setSetterCount(freshSetters);
     if (eventRow) {
       setMaxPlayers(eventRow.max_players);
+      setFirstBatchSpots(eventRow.first_batch_spots);
+      setSecondBatchOpensAt(eventRow.second_batch_opens_at);
     }
   }, [eventId]);
 
@@ -53,16 +63,22 @@ export function ConfirmedCounter({
     // websocket pra passar pela RLS — em teste ao vivo isso não disparou de
     // forma confiável. Poll simples é mais robusto pra esse caso de uso (o
     // número não precisa mudar no milissegundo exato em que alguém confirma).
-    const interval = setInterval(refresh, 10000);
+    const interval = setInterval(() => {
+      setNow(Date.now());
+      refresh();
+    }, 10000);
     return () => clearInterval(interval);
   }, [refresh]);
 
-  const totalSlotsRemaining = maxPlayers != null ? Math.max(0, maxPlayers - count) : null;
+  // Enquanto o Lote 2 não abre, o público enxerga só as vagas do Lote 1.
+  const batchActive = firstBatchSpots != null && maxPlayers != null && secondBatchOpensAt != null && new Date(secondBatchOpensAt).getTime() > now;
+  const visibleMax = batchActive && !showFullCapacity ? Math.min(firstBatchSpots, maxPlayers) : maxPlayers;
+  const totalSlotsRemaining = visibleMax != null ? Math.max(0, visibleMax - count) : null;
   const setterCapacity = maxPlayers != null ? setterSpotsFor(maxPlayers) : null;
   const isFull = totalSlotsRemaining === 0;
   const shouldShowAvailability =
     totalSlotsRemaining !== null && (showFullCapacity || totalSlotsRemaining <= 10);
-  const pct = maxPlayers ? Math.min(100, Math.round((count / maxPlayers) * 100)) : null;
+  const pct = visibleMax ? Math.min(100, Math.round((count / visibleMax) * 100)) : null;
 
   if (compact) {
     return (
@@ -83,7 +99,7 @@ export function ConfirmedCounter({
             Levantadores: {setterCount}/{setterCapacity}
           </p>
         )}
-        {pct !== null && <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="img" aria-label={showFullCapacity || shouldShowAvailability ? `${count} de ${maxPlayers} vagas preenchidas` : "Andamento da lista"}><div className={`h-full rounded-full transition-all ${isFull ? "bg-red-400" : "bg-gradient-to-r from-violet-400 to-purple-300"}`} style={{ width: `${pct}%` }} /></div>}
+        {pct !== null && <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10" role="img" aria-label={showFullCapacity || shouldShowAvailability ? `${count} de ${visibleMax} vagas preenchidas` : "Andamento da lista"}><div className={`h-full rounded-full transition-all ${isFull ? "bg-red-400" : "bg-gradient-to-r from-violet-400 to-purple-300"}`} style={{ width: `${pct}%` }} /></div>}
       </div>
     );
   }

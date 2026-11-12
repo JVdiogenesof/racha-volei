@@ -12,6 +12,7 @@ import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
+import { publicCapacityNow } from "@/lib/registrationSchedule";
 import { isListFullFor } from "@/lib/rachaSpots";
 import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
@@ -54,7 +55,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at, first_batch_spots, second_batch_opens_at")
         .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
@@ -129,8 +130,10 @@ export default async function HomePage() {
       event.official_list_open ? getRachaLevel(supabase, event.id) : Promise.resolve(null),
     ]);
     const confirmedTotal = confirmed ?? 0;
+    const batchFull = event.max_players != null && event.first_batch_spots != null && confirmedTotal >= publicCapacityNow({ ...event, num_teams: 0 });
     const full =
-      event.max_players != null &&
+      batchFull ||
+      (event.max_players != null &&
       isListFullFor({
         capacity: event.max_players,
         newcomerReserved: event.newcomer_reserved_spots ?? 0,
@@ -139,7 +142,7 @@ export default async function HomePage() {
         newcomers: newcomers ?? 0,
         isSetter: Boolean(profile.is_setter),
         isGuest: profile.status === "guest",
-      });
+      }));
     return {
       status: attendance?.status,
       paid: Boolean(payment?.paid),
@@ -236,8 +239,13 @@ export default async function HomePage() {
   const memberCapacity =
     proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - (proximoRacha.newcomer_reserved_spots ?? 0)) : null;
   const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
-  const isFull =
+  const nextBatchFull =
     proximoRacha?.max_players != null &&
+    proximoRacha.first_batch_spots != null &&
+    (confirmedCount ?? 0) >= publicCapacityNow({ ...proximoRacha, num_teams: 0 });
+  const isFull =
+    nextBatchFull ||
+    (proximoRacha?.max_players != null &&
     isListFullFor({
       capacity: proximoRacha.max_players,
       newcomerReserved: proximoRacha.newcomer_reserved_spots ?? 0,
@@ -246,7 +254,7 @@ export default async function HomePage() {
       newcomers: newcomerConfirmedCount ?? 0,
       isSetter: Boolean(profile.is_setter),
       isGuest: profile.status === "guest",
-    });
+    }));
 
   const myStatus = myAttendance?.status;
   const canRespondToNextEvent =

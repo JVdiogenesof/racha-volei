@@ -37,6 +37,8 @@ type EditableEvent = {
   is_pre_torneio: boolean;
   is_mini_torneio: boolean;
   registration_opens_at: string | null;
+  first_batch_spots: number | null;
+  second_batch_opens_at: string | null;
 };
 
 function toFormDefaults(event: EditableEvent): RachaFormDefaults {
@@ -46,6 +48,8 @@ function toFormDefaults(event: EditableEvent): RachaFormDefaults {
     location: event.location ?? "",
     pixPaymentEnabled: event.pix_payment_enabled,
     registrationOpensAt: event.registration_opens_at,
+    firstBatchSpots: event.first_batch_spots,
+    secondBatchOpensAt: event.second_batch_opens_at,
     numTeams: event.num_teams,
     maxPlayers: event.max_players,
     teamSize: event.team_size,
@@ -87,7 +91,7 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
     supabase
       .from("events")
       .select(
-        "id, date, time, location, num_teams, team_size, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at",
+        "id, date, time, location, num_teams, team_size, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, status, official_list_open, is_pre_torneio, is_mini_torneio, registration_opens_at, first_batch_spots, second_batch_opens_at",
       )
       .eq("community", community)
       .order("date", { ascending: false }),
@@ -118,6 +122,8 @@ export default async function RachaListPage({ searchParams }: { searchParams: Pr
     location: lastEvent?.location ?? "",
     pixPaymentEnabled: true,
     registrationOpensAt: suggestedRegistrationOpensAt,
+    firstBatchSpots: null,
+    secondBatchOpensAt: null,
     numTeams: lastEvent?.num_teams ?? 2,
     maxPlayers: lastEvent?.max_players ?? null,
     teamSize: lastEvent?.team_size ?? 6,

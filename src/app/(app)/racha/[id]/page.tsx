@@ -41,7 +41,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       supabase
         .from("events")
         .select(
-          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, is_mini_torneio, community, registration_opens_at, pix_payment_enabled",
+          "id, date, time, location, num_teams, team_size, price_per_player, status, official_list_open, max_players, is_pre_torneio, is_mini_torneio, community, registration_opens_at, pix_payment_enabled, first_batch_spots, second_batch_opens_at",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -156,6 +156,8 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           <ConfirmedCounter
             eventId={id}
             maxPlayers={event.max_players}
+            firstBatchSpots={event.first_batch_spots}
+            secondBatchOpensAt={event.second_batch_opens_at}
             initialConfirmedCount={confirmedCount ?? 0}
             showFullCapacity={profile.is_organizer}
           />

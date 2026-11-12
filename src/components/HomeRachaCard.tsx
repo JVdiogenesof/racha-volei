@@ -23,6 +23,8 @@ export type HomeRachaEvent = {
   is_pre_torneio: boolean;
   is_mini_torneio: boolean;
   registration_opens_at: string | null;
+  first_batch_spots: number | null;
+  second_batch_opens_at: string | null;
 };
 
 const PRIMARY_BUTTON =
@@ -154,6 +156,8 @@ export function HomeRachaCard({
                 <ConfirmedCounter
                   eventId={event.id}
                   maxPlayers={event.max_players}
+                  firstBatchSpots={event.first_batch_spots}
+                  secondBatchOpensAt={event.second_batch_opens_at}
                   initialConfirmedCount={confirmedCount}
                   initialSetterCount={setterConfirmedCount}
                   compact
