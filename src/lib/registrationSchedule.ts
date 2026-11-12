@@ -64,3 +64,9 @@ export function spotBatchesFromForm(formData: FormData, maxPlayers: number, regi
   if (date > eventDate) throw new Error("O Lote 2 não pode abrir depois do dia do racha.");
   return { first_batch_spots: spots, second_batch_opens_at: opensAt };
 }
+
+/** Em que fase de lotes o racha está agora. */
+export function batchPhase(secondBatchOpensAt: string, firstSpots: number, confirmed: number, now = Date.now()) {
+  if (new Date(secondBatchOpensAt).getTime() <= now) return "second_open" as const;
+  return confirmed >= firstSpots ? ("first_full" as const) : ("first_open" as const);
+}

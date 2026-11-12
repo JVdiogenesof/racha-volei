@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
-import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock, Layers } from "lucide-react";
+import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -32,6 +32,7 @@ import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
 import { isRegistrationOpen, publicCapacityNow } from "@/lib/registrationSchedule";
+import { BatchStatus } from "@/components/BatchStatus";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
 import { PixReservationButton } from "@/components/PixReservationButton";
@@ -331,16 +332,17 @@ export default async function ConfirmarPresencaPage({
         <RegistrationCountdown opensAt={event.registration_opens_at} />
       )}
 
-      {batchActive && event.second_batch_opens_at && !eventFinished && !eventCancelled && (
+      {!eventFinished && !eventCancelled && (
         <div className="space-y-2">
-          <p className="flex items-start gap-2 rounded-xl border border-sky-300/25 bg-sky-400/10 px-3.5 py-3 text-sm leading-relaxed text-sky-100">
-            <Layers className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" strokeWidth={2.25} />
-            <span>
-              {batchFull ? "Lote 1 esgotado. " : "Lote 1 aberto. "}
-              As demais vagas abrem em {new Date(event.second_batch_opens_at).toLocaleString("pt-BR", { timeZone: "America/Fortaleza", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.
-            </span>
-          </p>
-          <RegistrationCountdown opensAt={event.second_batch_opens_at} compact label="Lote 2 abre em" />
+          <BatchStatus
+            maxPlayers={eventCapacity}
+            firstBatchSpots={event.first_batch_spots}
+            secondBatchOpensAt={event.second_batch_opens_at}
+            confirmedCount={confirmados.length}
+          />
+          {batchActive && event.second_batch_opens_at && (
+            <RegistrationCountdown opensAt={event.second_batch_opens_at} compact label="Lote 2 abre em" />
+          )}
         </div>
       )}
 

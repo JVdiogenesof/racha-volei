@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, ChevronRight, Clock, MapPin, Medal, ThumbsUp, Trophy, Users, Zap } from "lucide-react";
 import { InterestButton } from "./InterestButton";
 import { ConfirmedCounter } from "./ConfirmedCounter";
+import { BatchStatus } from "./BatchStatus";
 import { RachaLevelBadge } from "./RachaLevelBadge";
 import { RegistrationOpensNotice } from "./RegistrationOpensNotice";
 import { joinMode, type JoinStatus } from "./RachaHowToJoin";
@@ -152,6 +153,7 @@ export function HomeRachaCard({
             </>
           ) : (
             <>
+              <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} confirmedCount={confirmedCount} compact />
               <div className="rounded-xl border border-white/15 bg-black/25 p-2.5">
                 <ConfirmedCounter
                   eventId={event.id}

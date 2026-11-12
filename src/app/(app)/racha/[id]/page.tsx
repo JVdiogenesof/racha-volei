@@ -18,6 +18,7 @@ import { getActiveCommunity } from "@/lib/community";
 import { getEventSummary } from "@/lib/eventSummary";
 import { FinishEventCelebration } from "@/components/FinishEventCelebration";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
+import { BatchStatus } from "@/components/BatchStatus";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
 
 export default async function RachaHubPage({ params }: { params: Promise<{ id: string }> }) {
@@ -152,6 +153,9 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           </span>
           {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
         </div>
+        {!isFinished && !isCancelled && registrationOpen && (
+          <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} confirmedCount={confirmedCount ?? 0} />
+        )}
         {!isFinished && !isCancelled && registrationOpen && (
           <ConfirmedCounter
             eventId={id}
