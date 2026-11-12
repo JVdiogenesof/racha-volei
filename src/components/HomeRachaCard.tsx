@@ -6,7 +6,7 @@ import { BatchStatus } from "./BatchStatus";
 import { RachaLevelBadge } from "./RachaLevelBadge";
 import { RegistrationOpensNotice } from "./RegistrationOpensNotice";
 import { joinMode, type JoinStatus } from "./RachaHowToJoin";
-import { isRegistrationOpen, waitingForSecondBatch } from "@/lib/registrationSchedule";
+import { formatBatchOpening, isRegistrationOpen } from "@/lib/registrationSchedule";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { formatRegistrationOpening, rachaDayParts } from "@/lib/rachaDates";
 
@@ -198,7 +198,7 @@ export function HomeRachaCard({
                     eventId={event.id}
                     price={price}
                     isFull={isFull}
-                    secondBatchOpensLabel={isFull ? waitingForSecondBatch(event, confirmedCount, setterConfirmedCount) : null}
+                    secondBatchOpensLabel={isFull && event.first_batch_spots != null && event.second_batch_opens_at ? formatBatchOpening(event.second_batch_opens_at) : null}
                     pixPaymentEnabled={event.pix_payment_enabled}
                     action={action}
                     className={`${PRIMARY_BUTTON} w-full disabled:opacity-60`}

@@ -11,6 +11,7 @@ export function InterestButton({
   price,
   isFull,
   secondBatchOpensLabel = null,
+  batchSettersFull = false,
   pixPaymentEnabled = false,
   action,
   className,
@@ -21,6 +22,8 @@ export function InterestButton({
   isFull?: boolean;
   /** Lote 1 esgotado: quando o Lote 2 abre (ex.: "sexta-feira, 13/11 às 12:00"). */
   secondBatchOpensLabel?: string | null;
+  /** Levantador barrado: Lote 1 cheio e a cota de levantadores do lote já preenchida. */
+  batchSettersFull?: boolean;
   /** Racha com Pix automático: marca o interesse e já abre o pagamento na tela da lista. */
   pixPaymentEnabled?: boolean;
   action: (formData: FormData) => Promise<void> | void;
@@ -35,7 +38,9 @@ export function InterestButton({
     // Lista cheia: não fala em pagamento nenhum. Qualquer Pix agora (na
     // chave ou não) não vira vaga -- a pessoa só entra na fila.
     let message: string | null = null;
-    if (isFull && secondBatchOpensLabel) {
+    if (isFull && secondBatchOpensLabel && batchSettersFull) {
+      message = `A cota de levantadores do Lote 1 já foi preenchida e o lote lotou.\n\nVocê pode entrar na fila de espera como jogador(a) normal (é chamado(a) se alguém desistir) ou esperar o Lote 2, que abre ${secondBatchOpensLabel} e tem vaga guardada para levantador.\n\nNão pague nada agora.`;
+    } else if (isFull && secondBatchOpensLabel) {
       message = `O Lote 1 esgotou. As próximas vagas (Lote 2) abrem ${secondBatchOpensLabel}, e quem pagar primeiro garante.\n\nMarcando interesse agora você entra na fila e pode ser chamado(a) antes, se alguém do Lote 1 desistir.\n\nNão pague nada agora.`;
     } else if (isFull) {
       message =

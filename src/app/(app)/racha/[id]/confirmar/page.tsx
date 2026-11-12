@@ -31,7 +31,7 @@ import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOff
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
-import { isBlockedByBatch, isRegistrationOpen, lote1SetterHold, publicCapacityNow, waitingForSecondBatch } from "@/lib/registrationSchedule";
+import { batchBlockReason, formatBatchOpening, isRegistrationOpen, lote1SetterHold, lote1SetterLimit, publicCapacityNow } from "@/lib/registrationSchedule";
 import { BatchStatus } from "@/components/BatchStatus";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
@@ -202,7 +202,9 @@ export default async function ConfirmarPresencaPage({
   const publicCapacity = publicCapacityNow(event);
   const batchActive = publicCapacity < eventCapacity;
   // Levantador com vaga de levantador sobrando não é barrado pelo lote.
-  const batchFull = batchActive && isBlockedByBatch({ ...event, max_players: eventCapacity }, confirmados.length, setterConfirmedCount, amSetter);
+  const batchBlock = batchActive ? batchBlockReason({ ...event, max_players: eventCapacity }, confirmados.length, setterConfirmedCount, amSetter) : null;
+  const batchFull = batchBlock !== null;
+  const batchSettersFull = batchBlock === "setters_full";
   const lote1Hold = batchActive ? lote1SetterHold(eventCapacity, setterConfirmedCount) : 0;
   const isFull = batchFull || isListFullFor({
     capacity: eventCapacity,
@@ -214,9 +216,9 @@ export default async function ConfirmarPresencaPage({
     isGuest: profile.status === "guest",
   });
   // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
-  const secondBatchOpensLabel = batchFull ? waitingForSecondBatch({ ...event, max_players: eventCapacity }, confirmados.length, setterConfirmedCount) : null;
+  const secondBatchOpensLabel = batchFull && event.second_batch_opens_at ? formatBatchOpening(event.second_batch_opens_at) : null;
   const onlyProtectedSpotsLeft = isFull && !batchFull && confirmados.length < eventCapacity;
-  const setterSlotsFull = amSetter && setterConfirmedCount >= setterCapacity;
+  const setterSlotsFull = amSetter && !batchActive && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
   // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
   const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && publicCapacity - lote1Hold - confirmados.length <= 1;
@@ -513,6 +515,12 @@ export default async function ConfirmarPresencaPage({
         </p>
       ) : (
         <div className="space-y-2">
+          {batchSettersFull && (
+            <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
+              <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
+              A cota de {lote1SetterLimit(eventCapacity)} levantadores do Lote 1 já foi preenchida e o lote lotou. Você pode entrar na fila de espera como jogador(a) normal ou esperar o Lote 2{secondBatchOpensLabel ? ` (${secondBatchOpensLabel})` : ""}, que tem vaga guardada para levantador.
+            </p>
+          )}
           {setterSlotsFull && (
             <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
               <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
@@ -548,6 +556,7 @@ export default async function ConfirmarPresencaPage({
               price={Number(event.price_per_player)}
               isFull
               secondBatchOpensLabel={secondBatchOpensLabel}
+              batchSettersFull={batchSettersFull}
               action={setAttendance}
             />
           ) : event.pix_payment_enabled && event.price_per_player ? (
@@ -556,6 +565,7 @@ export default async function ConfirmarPresencaPage({
               hasInterest={myStatus === "interested"}
               isFull={isFull}
               secondBatchOpensLabel={secondBatchOpensLabel}
+              batchSettersFull={batchSettersFull}
               blockedReason={
                 queueLockedForMe
                   ? "Essa vaga está reservada pra próxima pessoa da fila de interessados."

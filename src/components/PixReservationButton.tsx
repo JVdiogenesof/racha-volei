@@ -54,6 +54,7 @@ export function PixReservationButton({
   hasInterest,
   isFull,
   secondBatchOpensLabel = null,
+  batchSettersFull = false,
   blockedReason,
   guaranteedSpot = false,
   activeReservation = false,
@@ -66,6 +67,8 @@ export function PixReservationButton({
   isFull: boolean;
   /** Lote 1 esgotado: quando o Lote 2 abre. Troca o texto de "vagas reservadas". */
   secondBatchOpensLabel?: string | null;
+  /** Levantador barrado: Lote 1 cheio e a cota de levantadores do lote já preenchida. */
+  batchSettersFull?: boolean;
   /** Impede gerar Pix enquanto a última vaga está guardada para a fila de interessados. */
   blockedReason?: string | null;
   /** A organização já ocupou esta vaga; o Pix só conclui o pagamento. */
@@ -260,7 +263,9 @@ export function PixReservationButton({
     if (isFull || blockedReason) {
       showToast(
         blockedReason ||
-          (secondBatchOpensLabel
+          (secondBatchOpensLabel && batchSettersFull
+            ? `A cota de levantadores do Lote 1 já foi preenchida e o lote lotou. Espere o Lote 2 (${secondBatchOpensLabel}), que tem vaga guardada para levantador.`
+            : secondBatchOpensLabel
             ? `O Lote 1 esgotou. O Lote 2 abre ${secondBatchOpensLabel}: volte nesse horário para pagar.`
             : "As vagas deste racha já foram reservadas."),
       );
@@ -309,7 +314,9 @@ export function PixReservationButton({
       ? "Vaga guardada para a fila"
       : isFull
         ? secondBatchOpensLabel
-          ? "Lote 1 esgotado"
+          ? batchSettersFull
+            ? "Cota de levantadores do Lote 1 preenchida"
+            : "Lote 1 esgotado"
           : "Vagas reservadas"
         : guaranteedSpot
           ? "Pagar vaga garantida por Pix"

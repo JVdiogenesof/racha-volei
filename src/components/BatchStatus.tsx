@@ -1,6 +1,5 @@
 import { Layers } from "lucide-react";
-import { setterSpotsFor } from "@/lib/rachaSpots";
-import { batchPhase, formatBatchOpening, lote1SetterHold } from "@/lib/registrationSchedule";
+import { batchPhase, formatBatchOpening, lote1SetterHold, lote1SetterLimit } from "@/lib/registrationSchedule";
 
 type Props = {
   maxPlayers: number | null;
@@ -25,7 +24,7 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
   const firstSpots = Math.min(firstBatchSpots, maxPlayers);
   const secondSpots = Math.max(0, maxPlayers - firstSpots);
   const hold = lote1SetterHold(maxPlayers, setterCount);
-  const setterSpotsLeft = Math.max(0, setterSpotsFor(maxPlayers) - setterCount);
+  const setterLimit = lote1SetterLimit(maxPlayers);
   const phase = batchPhase(secondBatchOpensAt, firstSpots, confirmedCount, undefined, registrationOpensAt, hold);
   const notOpen = phase === "not_open";
   const secondOpen = phase === "second_open";
@@ -39,17 +38,18 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
       ? { box: "border-amber-300/25 bg-amber-400/10", icon: "text-amber-300", chip: "bg-amber-400/20 text-amber-200", text: "text-amber-100" }
       : { box: "border-sky-300/25 bg-sky-400/10", icon: "text-sky-300", chip: "bg-sky-400/20 text-sky-200", text: "text-sky-100" };
 
-  const label = notOpen ? "Lote 1 em breve" : secondOpen ? "Lote 2 aberto" : firstFull ? "Lote 1 esgotado" : "Lote 1 aberto";
+  const label = notOpen ? "Lote 1 em breve" : secondOpen ? "Lote 2 aberto" : firstFull ? (hold > 0 ? "Lote 1 · só levantadores" : "Lote 1 esgotado") : "Lote 1 aberto";
   const lote2 = `Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`;
-  const setterNote =
-    setterSpotsLeft > 0 ? ` Levantadores têm prioridade e podem entrar a qualquer momento (${setterSpotsLeft} ${setterSpotsLeft === 1 ? "vaga" : "vagas"} de levantador).` : "";
+  const setterNote = hold > 0
+    ? ` Ainda ${hold === 1 ? "resta 1 vaga" : `restam ${hold} vagas`} de levantador neste lote.`
+    : ` As ${setterLimit} vagas de levantador deste lote já foram preenchidas.`;
   const detail = notOpen && registrationOpensAt
-    ? `Lote 1 (${firstSpots} vagas, ${Math.min(3, setterSpotsFor(maxPlayers))} delas para levantadores) abre ${formatBatchOpening(registrationOpensAt)}. ${lote2}`
+    ? `Lote 1 (${firstSpots} vagas, ${setterLimit} delas para levantadores) abre ${formatBatchOpening(registrationOpensAt)}. ${lote2}`
     : secondOpen
       ? "Todas as vagas restantes estão liberadas."
       : firstFull
         ? `${lote2}${setterNote}`
-        : `${firstSpots} vagas neste lote${hold > 0 ? `, ${hold} ${hold === 1 ? "guardada" : "guardadas"} para levantadores` : ""}. ${lote2}`;
+        : `${firstSpots} vagas neste lote, ${setterLimit} guardadas para levantadores (${Math.min(setterCount, setterLimit)}/${setterLimit} preenchidas). ${lote2}`;
 
   return (
     <div className={`flex items-start gap-2 rounded-xl border ${tone.box} ${compact ? "px-2.5 py-2" : "px-3.5 py-3"}`}>

@@ -71,14 +71,40 @@ export const LOTE1_MIN_SETTERS = 3;
 
 /** Vagas do Lote 1 ainda guardadas para levantadores. Mesma regra do banco. */
 export function lote1SetterHold(maxPlayers: number, setters: number) {
-  return Math.max(0, Math.min(LOTE1_MIN_SETTERS, setterSpotsFor(maxPlayers)) - setters);
+  return Math.max(0, lote1SetterLimit(maxPlayers) - setters);
+}
+
+/** Levantadores que cabem no Lote 1. */
+export function lote1SetterLimit(maxPlayers: number) {
+  return Math.min(LOTE1_MIN_SETTERS, setterSpotsFor(maxPlayers));
 }
 
 /**
- * Esta pessoa está barrada pelo Lote 1 agora? Levantador com vaga de
- * levantador sobrando nunca é barrado pelo lote; os demais respeitam o Lote 1
- * menos as vagas guardadas para levantadores. Espelha begin_event_payment_reservation.
+ * Por que esta pessoa está barrada pelo Lote 1 agora (ou null)? Ninguém passa
+ * do total do Lote 1. Levantador (com vaga de levantador sobrando) usa
+ * qualquer vaga livre do lote; os demais deixam guardadas até 3 vagas para
+ * levantadores. Lote cheio com a cota de 3 levantadores já preenchida, para um
+ * levantador, é "setters_full". Espelha begin_event_payment_reservation.
  */
+export function batchBlockReason(
+  event: { max_players: number | null; first_batch_spots: number | null; second_batch_opens_at: string | null },
+  confirmed: number,
+  setters: number,
+  isSetter: boolean,
+  now = Date.now(),
+): "full" | "setters_full" | null {
+  if (event.max_players == null || event.first_batch_spots == null || !event.second_batch_opens_at) return null;
+  if (new Date(event.second_batch_opens_at).getTime() <= now) return null;
+  const firstSpots = Math.min(event.first_batch_spots, event.max_players);
+  const full = confirmed >= firstSpots;
+  if (isSetter && setters < setterSpotsFor(event.max_players)) {
+    if (!full) return null;
+    return setters >= lote1SetterLimit(event.max_players) ? "setters_full" : "full";
+  }
+  if (full) return "full";
+  return confirmed + lote1SetterHold(event.max_players, setters) >= firstSpots ? "full" : null;
+}
+
 export function isBlockedByBatch(
   event: { max_players: number | null; first_batch_spots: number | null; second_batch_opens_at: string | null },
   confirmed: number,
@@ -86,11 +112,7 @@ export function isBlockedByBatch(
   isSetter: boolean,
   now = Date.now(),
 ) {
-  if (event.max_players == null || event.first_batch_spots == null || !event.second_batch_opens_at) return false;
-  if (new Date(event.second_batch_opens_at).getTime() <= now) return false;
-  if (isSetter && setters < setterSpotsFor(event.max_players)) return false;
-  const firstSpots = Math.min(event.first_batch_spots, event.max_players);
-  return confirmed + lote1SetterHold(event.max_players, setters) >= firstSpots;
+  return batchBlockReason(event, confirmed, setters, isSetter, now) !== null;
 }
 
 /** Em que fase de lotes o racha está agora. */
