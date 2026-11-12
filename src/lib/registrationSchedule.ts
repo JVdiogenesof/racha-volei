@@ -66,8 +66,15 @@ export function spotBatchesFromForm(formData: FormData, maxPlayers: number, regi
 }
 
 /** Em que fase de lotes o racha está agora. */
-export function batchPhase(secondBatchOpensAt: string, firstSpots: number, confirmed: number, now = Date.now()) {
+export function batchPhase(
+  secondBatchOpensAt: string,
+  firstSpots: number,
+  confirmed: number,
+  now = Date.now(),
+  registrationOpensAt: string | null = null,
+) {
   if (new Date(secondBatchOpensAt).getTime() <= now) return "second_open" as const;
+  if (registrationOpensAt && new Date(registrationOpensAt).getTime() > now) return "not_open" as const;
   return confirmed >= firstSpots ? ("first_full" as const) : ("first_open" as const);
 }
 

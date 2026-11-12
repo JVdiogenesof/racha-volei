@@ -339,9 +339,10 @@ export default async function ConfirmarPresencaPage({
             maxPlayers={eventCapacity}
             firstBatchSpots={event.first_batch_spots}
             secondBatchOpensAt={event.second_batch_opens_at}
+            registrationOpensAt={event.registration_opens_at}
             confirmedCount={confirmados.length}
           />
-          {batchActive && event.second_batch_opens_at && (
+          {registrationOpen && batchActive && event.second_batch_opens_at && (
             <RegistrationCountdown opensAt={event.second_batch_opens_at} compact label="Lote 2 abre em" />
           )}
         </div>

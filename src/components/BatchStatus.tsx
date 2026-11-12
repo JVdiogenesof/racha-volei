@@ -5,6 +5,8 @@ type Props = {
   maxPlayers: number | null;
   firstBatchSpots: number | null;
   secondBatchOpensAt: string | null;
+  /** Abertura das inscrições: antes dela o Lote 1 ainda não abriu. */
+  registrationOpensAt?: string | null;
   confirmedCount: number;
   compact?: boolean;
 };
@@ -14,23 +16,28 @@ type Props = {
  * Deixa claro em qual lote a lista está: Lote 1 aberto, Lote 1 esgotado ou
  * Lote 2 aberto. Não renderiza nada em rachas sem lotes.
  */
-export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, confirmedCount, compact = false }: Props) {
+export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, registrationOpensAt = null, confirmedCount, compact = false }: Props) {
   if (maxPlayers == null || firstBatchSpots == null || !secondBatchOpensAt) return null;
 
   const firstSpots = Math.min(firstBatchSpots, maxPlayers);
   const secondSpots = Math.max(0, maxPlayers - firstSpots);
-  const phase = batchPhase(secondBatchOpensAt, firstSpots, confirmedCount);
+  const phase = batchPhase(secondBatchOpensAt, firstSpots, confirmedCount, undefined, registrationOpensAt);
+  const notOpen = phase === "not_open";
   const secondOpen = phase === "second_open";
   const firstFull = phase === "first_full";
 
-  const tone = secondOpen
+  const tone = notOpen
+    ? { box: "border-white/15 bg-white/[0.05]", icon: "text-white/60", chip: "bg-white/15 text-white/80", text: "text-white/75" }
+    : secondOpen
     ? { box: "border-emerald-300/25 bg-emerald-400/10", icon: "text-emerald-300", chip: "bg-emerald-400/20 text-emerald-200", text: "text-emerald-100" }
     : firstFull
       ? { box: "border-amber-300/25 bg-amber-400/10", icon: "text-amber-300", chip: "bg-amber-400/20 text-amber-200", text: "text-amber-100" }
       : { box: "border-sky-300/25 bg-sky-400/10", icon: "text-sky-300", chip: "bg-sky-400/20 text-sky-200", text: "text-sky-100" };
 
-  const label = secondOpen ? "Lote 2 aberto" : firstFull ? "Lote 1 esgotado" : "Lote 1 aberto";
-  const detail = secondOpen
+  const label = notOpen ? "Lote 1 em breve" : secondOpen ? "Lote 2 aberto" : firstFull ? "Lote 1 esgotado" : "Lote 1 aberto";
+  const detail = notOpen && registrationOpensAt
+    ? `Lote 1 (${firstSpots} vagas) abre ${formatBatchOpening(registrationOpensAt)}. Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`
+    : secondOpen
     ? "Todas as vagas restantes estão liberadas."
     : firstFull
       ? `Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`
