@@ -28,6 +28,8 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
   const phase = batchPhase(secondBatchOpensAt, firstSpots, confirmedCount, undefined, registrationOpensAt, hold);
   const notOpen = phase === "not_open";
   const secondOpen = phase === "second_open";
+  // Lote 2 aberto e lista completa: vira uma lista só, sem falar mais em lotes.
+  if (secondOpen && confirmedCount >= maxPlayers) return null;
   const firstFull = phase === "first_full";
 
   const tone = notOpen
@@ -46,7 +48,7 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, r
   const detail = notOpen && registrationOpensAt
     ? `Lote 1 (${firstSpots} vagas, ${setterLimit} delas para levantadores) abre ${formatBatchOpening(registrationOpensAt)}. ${lote2}`
     : secondOpen
-      ? "Todas as vagas restantes estão liberadas."
+      ? "Todas as vagas restantes estão liberadas. Quando completar, a lista vira uma só."
       : firstFull
         ? `${lote2}${setterNote}`
         : `${firstSpots} vagas neste lote, ${setterLimit} guardadas para levantadores (${Math.min(setterCount, setterLimit)}/${setterLimit} preenchidas). ${lote2}`;
