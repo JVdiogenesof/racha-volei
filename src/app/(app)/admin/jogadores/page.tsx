@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
+import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { PlayerRatingEditor } from "@/components/PlayerRatingEditor";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar } from "@/components/Avatar";
@@ -12,7 +13,7 @@ import { getActiveCommunity } from "@/lib/community";
 import { ATTENDANCE_REMOVE_THRESHOLD } from "@/lib/attendancePolicy";
 
 export default async function AdminJogadoresPage() {
-  await requireOrganizer();
+  const viewer = await requireOrganizer();
   const supabase = await createClient();
   const community = await getActiveCommunity();
 
@@ -102,6 +103,7 @@ export default async function AdminJogadoresPage() {
               avatarUrl={player.avatar_url}
               nicknameBadge={player.nickname_badge}
               overall={overallScore(finalScores)}
+              showOverall={canSeePlayerNotes(viewer)}
               organizerRatings={organizer}
             />
           );

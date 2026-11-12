@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
 import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -244,7 +245,7 @@ export default async function ConfirmarPresencaPage({
   }
 
   function overallFor(profileId: string) {
-    if (!ratingsData) return null;
+    if (!ratingsData || !canSeePlayerNotes(profile)) return null;
     const [{ selfByProfile, organizerByProfile }, weights] = ratingsData;
     const scores = finalScoresForPlayer(
       selfByProfile.get(profileId) ?? {},
@@ -266,7 +267,7 @@ export default async function ConfirmarPresencaPage({
     };
   }
 
-  const confirmadosOrdenados = ratingsData
+  const confirmadosOrdenados = ratingsData && canSeePlayerNotes(profile)
     ? [...confirmados].sort((a, b) => (overallFor(b.profile_id) ?? 0) - (overallFor(a.profile_id) ?? 0))
     : confirmados;
 

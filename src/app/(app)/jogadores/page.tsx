@@ -1,4 +1,5 @@
 import { Users } from "lucide-react";
+import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
@@ -9,7 +10,8 @@ import { PlayerSearch } from "@/components/PlayerSearch";
 import { getActiveCommunity } from "@/lib/community";
 
 export default async function JogadoresPage() {
-  await requireProfile();
+  const profile = await requireProfile();
+  const canSeeNotes = canSeePlayerNotes(profile);
   const supabase = await createClient();
   const community = await getActiveCommunity();
 
@@ -42,14 +44,16 @@ export default async function JogadoresPage() {
       };
       return {
         ...p,
-        overall: overallScore(scores),
+        overall: canSeeNotes ? overallScore(scores) : null,
         performance: rankingCounts.performance.get(p.id) ?? null,
         streak: achievementStats.streak,
         achievements: getFeaturedAchievements(achievementStats),
         achievementCount: getPlayerAchievements(achievementStats).filter((achievement) => achievement.unlocked).length,
       };
     })
-    .sort((a, b) => b.overall - a.overall);
+    .sort((a, b) =>
+      canSeeNotes ? (b.overall ?? 0) - (a.overall ?? 0) : a.full_name.localeCompare(b.full_name, "pt-BR"),
+    );
 
   return (
     <div>
@@ -63,7 +67,7 @@ export default async function JogadoresPage() {
         </div>
       </div>
 
-      <PlayerSearch players={rows} />
+      <PlayerSearch players={rows} showNotes={canSeeNotes} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
 import { Medal, RefreshCw, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -293,6 +294,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               simulateAction={simulateTeams}
               hasGeneration={Boolean(generation)}
               canGenerate={Boolean(event.official_list_open || generation)}
+              showNotes={canSeePlayerNotes(profile)}
             />
           )}
           {generation && (
@@ -362,7 +364,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                       <h3 className="font-semibold text-white">{team.name}</h3>
                       <div className="flex items-center gap-2">
                         {!isTournament && <span className="rounded-full bg-purple-400/10 px-2 py-1 text-[11px] font-bold text-purple-200">{team.wins}V · {team.losses}D</span>}
-                        <span className="text-[11px] text-white/35">{sum.toFixed(1)}</span>
+                        {canSeePlayerNotes(profile) && <span className="text-[11px] text-white/35">{sum.toFixed(1)}</span>}
                       </div>
                     </div>
 
@@ -373,7 +375,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
                           <span className="min-w-0 flex-1 truncate text-sm text-white">{member.fullName}</span>
                           {member.isSetter && <SetterBadge />}
                           {orphanedTeamMemberIds.has(member.teamMemberId) && <span title="Não está mais confirmado(a)" className="h-2 w-2 shrink-0 rounded-full bg-red-400" />}
-                          <span className="shrink-0 text-xs text-white/35">{member.overall.toFixed(1)}</span>
+                          {canSeePlayerNotes(profile) && <span className="shrink-0 text-xs text-white/35">{member.overall.toFixed(1)}</span>}
                           {canManage && (
                             <PlayerActionSelect
                               moveAction={moveMember}

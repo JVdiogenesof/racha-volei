@@ -1,4 +1,5 @@
 import { CalendarCheck, Trophy, Crown, Percent, Scale } from "lucide-react";
+import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getPlayerRatings, getRatingWeights } from "@/lib/ratings";
@@ -104,6 +105,7 @@ export default async function PerfilPage() {
 
       <AchievementGallery achievements={achievements} />
 
+      {canSeePlayerNotes(profile) && (
       <section className="rounded-xl border border-white/10 p-6">
         <h2 className="font-semibold text-white">Nota final</h2>
         <p className="mt-1 text-sm text-white/60">Geral: {overall.toFixed(1)} / 5</p>
@@ -113,6 +115,7 @@ export default async function PerfilPage() {
           ))}
         </div>
       </section>
+      )}
     </div>
   );
 }

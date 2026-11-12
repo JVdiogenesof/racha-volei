@@ -13,12 +13,14 @@ export function SimulateTeamsButton({
   action,
   compact = false,
   fixedTeamProfileIds,
+  showNotes = false,
 }: {
   eventId: string;
   action: (eventId: string, previousSignature?: string, fixedTeamProfileIds?: string[]) => Promise<SimulatedTeam[]>;
   compact?: boolean;
   /** Mantém esse grupo junto no time 1; o resto é balanceado normalmente. */
   fixedTeamProfileIds?: string[];
+  showNotes?: boolean;
 }) {
   const [teams, setTeams] = useState<SimulatedTeam[] | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -96,7 +98,7 @@ export function SimulateTeamsButton({
                   <div key={team.teamNumber} className="rounded-xl border border-white/10 bg-white/[0.025] p-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-white">{team.name}</h3>
-                      <span className="text-xs text-white/40">soma {team.sum.toFixed(1)}</span>
+                      {showNotes && <span className="text-xs text-white/40">soma {team.sum.toFixed(1)}</span>}
                     </div>
                     <ul className="mt-2 space-y-1.5">
                       {team.members.map((member) => (
@@ -104,7 +106,7 @@ export function SimulateTeamsButton({
                           <Avatar src={member.avatarUrl} name={member.fullName} size="sm" />
                           <span className="min-w-0 flex-1 truncate text-white">{member.fullName}</span>
                           {member.isSetter && <SetterBadge />}
-                          <span className="text-xs text-white/40">{member.overall.toFixed(1)}</span>
+                          {showNotes && <span className="text-xs text-white/40">{member.overall.toFixed(1)}</span>}
                         </li>
                       ))}
                     </ul>
@@ -161,7 +163,7 @@ export function SimulateTeamsButton({
                     <Avatar src={m.avatarUrl} name={m.fullName} size="sm" />
                     <span className="min-w-0 flex-1 truncate text-white">{m.fullName}</span>
                     {m.isSetter && <SetterBadge />}
-                    <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>
+                    {showNotes && <span className="text-xs text-white/40">{m.overall.toFixed(1)}</span>}
                   </li>
                 ))}
               </ul>

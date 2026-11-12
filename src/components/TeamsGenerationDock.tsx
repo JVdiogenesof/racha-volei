@@ -22,6 +22,7 @@ export function TeamsGenerationDock({
   simulateAction,
   hasGeneration,
   canGenerate,
+  showNotes = false,
 }: {
   eventId: string;
   confirmedPlayers: Player[];
@@ -31,13 +32,14 @@ export function TeamsGenerationDock({
   hasGeneration: boolean;
   /** A lista oficial pode ainda não ter sido aberta -- nesse caso só dá pra simular, não gerar de verdade. */
   canGenerate: boolean;
+  showNotes?: boolean;
 }) {
   const [fixedTeamIds, setFixedTeamIds] = useState<string[]>([]);
 
   return (
     <>
       <FixedTeamPicker players={confirmedPlayers} teamSize={teamSize} selectedIds={fixedTeamIds} onChange={setFixedTeamIds} />
-      <SimulateTeamsButton eventId={eventId} action={simulateAction} fixedTeamProfileIds={fixedTeamIds} compact />
+      <SimulateTeamsButton eventId={eventId} action={simulateAction} fixedTeamProfileIds={fixedTeamIds} showNotes={showNotes} compact />
       {canGenerate && (
         <ActionForm action={generateAction} successMessage={hasGeneration ? "Times gerados novamente!" : "Times gerados com sucesso!"}>
           <input type="hidden" name="eventId" value={eventId} />

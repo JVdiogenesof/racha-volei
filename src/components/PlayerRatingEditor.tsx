@@ -16,6 +16,7 @@ export function PlayerRatingEditor({
   avatarUrl,
   nicknameBadge,
   overall,
+  showOverall = false,
   organizerRatings,
 }: {
   profileId: string;
@@ -23,6 +24,7 @@ export function PlayerRatingEditor({
   avatarUrl: string | null;
   nicknameBadge: string | null;
   overall: number;
+  showOverall?: boolean;
   organizerRatings: RatingsByCategory;
 }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +42,7 @@ export function PlayerRatingEditor({
           <NicknameBadge text={nicknameBadge} />
         </span>
         <span className="flex w-full items-center justify-end gap-2 text-sm text-white/60 sm:w-auto">
-          nota geral: <span className="font-semibold text-purple-300">{overall.toFixed(1)}</span>
+          {showOverall && <>nota geral: <span className="font-semibold text-purple-300">{overall.toFixed(1)}</span></>}
           <ChevronDown
             className={`h-4 w-4 text-white/40 transition-transform ${open ? "rotate-180" : ""}`}
             strokeWidth={2}

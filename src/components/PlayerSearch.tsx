@@ -13,7 +13,7 @@ type Player = {
   full_name: string;
   avatar_url: string | null;
   is_setter: boolean;
-  overall: number;
+  overall: number | null;
   streak?: number;
   nickname_badge?: string | null;
   achievements: Achievement[];
@@ -32,11 +32,13 @@ const FILTERS: { id: Filter; label: string }[] = [
 function PlayerDetails({
   player,
   rank,
+  showNotes,
   onClose,
   onAchievementClick,
 }: {
   player: Player;
   rank: number;
+  showNotes: boolean;
   onClose: () => void;
   onAchievementClick: (achievement: Achievement) => void;
 }) {
@@ -73,9 +75,11 @@ function PlayerDetails({
           <div className="flex min-w-0 items-center gap-3">
             <div className="relative">
               <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} />
-              <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#30215d] bg-white px-1 text-[10px] font-black text-brand-navy">
-                {rank}
-              </span>
+              {showNotes ? (
+                <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#30215d] bg-white px-1 text-[10px] font-black text-brand-navy">
+                  {rank}
+                </span>
+              ) : null}
             </div>
             <div className="min-w-0">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-purple-300">Perfil do jogador</p>
@@ -98,12 +102,14 @@ function PlayerDetails({
           </button>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-purple-300/15 bg-purple-300/8 p-3 text-center">
-            <Gauge className="mx-auto h-4 w-4 text-purple-300" />
-            <strong className="mt-1 block text-xl text-white">{player.overall.toFixed(1)}</strong>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-white/45">Nota geral</span>
-          </div>
+        <div className={`mt-5 grid gap-2 ${showNotes ? "grid-cols-3" : "grid-cols-2"}`}>
+          {showNotes && player.overall !== null ? (
+            <div className="rounded-2xl border border-purple-300/15 bg-purple-300/8 p-3 text-center">
+              <Gauge className="mx-auto h-4 w-4 text-purple-300" />
+              <strong className="mt-1 block text-xl text-white">{player.overall.toFixed(1)}</strong>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-white/45">Nota geral</span>
+            </div>
+          ) : null}
           <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/8 p-3 text-center">
             <UsersRound className="mx-auto h-4 w-4 text-emerald-300" />
             <strong className="mt-1 block text-xl text-white">{performance ? `${performance.percentage}%` : "—"}</strong>
@@ -116,6 +122,7 @@ function PlayerDetails({
           </div>
         </div>
 
+        {showNotes && player.overall !== null ? (
         <div className="mt-3 rounded-2xl border border-white/8 bg-black/15 p-4">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-white/60">Evolução da nota</span>
@@ -129,6 +136,7 @@ function PlayerDetails({
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-white/40">Nota combinada entre autoavaliação e avaliação dos organizadores.</p>
         </div>
+        ) : null}
 
         {performance ? (
           <div className="mt-3 rounded-2xl border border-white/8 bg-black/15 p-4">
@@ -193,7 +201,7 @@ function PlayerDetails({
   );
 }
 
-export function PlayerSearch({ players }: { players: Player[] }) {
+export function PlayerSearch({ players, showNotes = false }: { players: Player[]; showNotes?: boolean }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -256,7 +264,7 @@ export function PlayerSearch({ players }: { players: Player[] }) {
               <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-gradient-to-b from-purple-300 to-brand-purple opacity-50 transition group-hover:opacity-100" />
               <div className="relative shrink-0">
                 <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} />
-                <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#1a1836] bg-white px-1 text-[10px] font-black text-brand-navy">{rank}</span>
+                {showNotes ? <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#1a1836] bg-white px-1 text-[10px] font-black text-brand-navy">{rank}</span> : null}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-white">{player.full_name}</p>
@@ -272,10 +280,12 @@ export function PlayerSearch({ players }: { players: Player[] }) {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
-                <div className="text-right">
-                  <strong className="block text-xl leading-none text-purple-200">{player.overall.toFixed(1)}</strong>
-                  <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/30">Geral</span>
-                </div>
+                {showNotes && player.overall !== null ? (
+                  <div className="text-right">
+                    <strong className="block text-xl leading-none text-purple-200">{player.overall.toFixed(1)}</strong>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/30">Geral</span>
+                  </div>
+                ) : null}
                 <ChevronRight className="h-4 w-4 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-purple-200" />
               </div>
             </button>
@@ -294,6 +304,7 @@ export function PlayerSearch({ players }: { players: Player[] }) {
         <PlayerDetails
           player={selectedPlayer}
           rank={rankById.get(selectedPlayer.id) ?? 0}
+          showNotes={showNotes}
           onClose={() => setSelectedPlayer(null)}
           onAchievementClick={(achievement) => {
             setSelectedPlayer(null);
