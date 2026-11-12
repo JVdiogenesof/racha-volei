@@ -195,16 +195,15 @@ export async function updateEvent(formData: FormData) {
   const confirmed = confirmedRows ?? [];
   const setterCount = confirmed.filter((row) => row.uses_setter_spot).length;
   const newcomerCount = confirmed.filter((row) => row.uses_newcomer_spot).length;
-  const regularCount = confirmed.length - setterCount - newcomerCount;
+  // Novato além da cota de novatos ocupa vaga comum (mesma regra do banco), então
+  // não bloqueia a edição: só entra na conta das vagas comuns.
+  const regularCount = confirmed.length - setterCount - Math.min(newcomerCount, newcomerReservedSpots);
   const setterReservedSpots = setterSpotsFor(maxPlayers);
   if (confirmed.length > maxPlayers) {
     throw new Error(`Já existem ${confirmed.length} confirmados. Aumente o total de vagas antes de salvar.`);
   }
   if (setterCount > setterReservedSpots) {
     throw new Error(`Já existem ${setterCount} levantadores confirmados. Mantenha ao menos ${setterCount * 6} vagas ou ajuste a lista antes de salvar.`);
-  }
-  if (newcomerCount > newcomerReservedSpots) {
-    throw new Error(`Já existem ${newcomerCount} novatos usando vagas protegidas. Mantenha essa quantidade de vagas para novatos.`);
   }
   if (regularCount > maxPlayers - newcomerReservedSpots - setterReservedSpots) {
     throw new Error(
