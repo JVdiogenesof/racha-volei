@@ -12,7 +12,7 @@ import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
-import { publicCapacityNow } from "@/lib/registrationSchedule";
+import { isBlockedByBatch } from "@/lib/registrationSchedule";
 import { isListFullFor } from "@/lib/rachaSpots";
 import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
@@ -130,7 +130,7 @@ export default async function HomePage() {
       event.official_list_open ? getRachaLevel(supabase, event.id) : Promise.resolve(null),
     ]);
     const confirmedTotal = confirmed ?? 0;
-    const batchFull = event.max_players != null && event.first_batch_spots != null && confirmedTotal >= publicCapacityNow({ ...event, num_teams: 0 });
+    const batchFull = isBlockedByBatch(event, confirmedTotal, setters ?? 0, Boolean(profile.is_setter));
     const full =
       batchFull ||
       (event.max_players != null &&
@@ -240,9 +240,7 @@ export default async function HomePage() {
     proximoRacha?.max_players != null ? Math.max(0, proximoRacha.max_players - (proximoRacha.newcomer_reserved_spots ?? 0)) : null;
   const regularConfirmedCount = Math.max(0, (confirmedCount ?? 0) - (newcomerConfirmedCount ?? 0));
   const nextBatchFull =
-    proximoRacha?.max_players != null &&
-    proximoRacha.first_batch_spots != null &&
-    (confirmedCount ?? 0) >= publicCapacityNow({ ...proximoRacha, num_teams: 0 });
+    proximoRacha != null && isBlockedByBatch(proximoRacha, confirmedCount ?? 0, setterConfirmedCount ?? 0, Boolean(profile.is_setter));
   const isFull =
     nextBatchFull ||
     (proximoRacha?.max_players != null &&

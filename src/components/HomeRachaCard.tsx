@@ -153,7 +153,7 @@ export function HomeRachaCard({
             </>
           ) : (
             <>
-              <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount} compact />
+              <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount} setterCount={setterConfirmedCount} compact />
               <div className="rounded-xl border border-white/15 bg-black/25 p-2.5">
                 <ConfirmedCounter
                   eventId={event.id}
@@ -198,7 +198,7 @@ export function HomeRachaCard({
                     eventId={event.id}
                     price={price}
                     isFull={isFull}
-                    secondBatchOpensLabel={isFull ? waitingForSecondBatch(event, confirmedCount) : null}
+                    secondBatchOpensLabel={isFull ? waitingForSecondBatch(event, confirmedCount, setterConfirmedCount) : null}
                     pixPaymentEnabled={event.pix_payment_enabled}
                     action={action}
                     className={`${PRIMARY_BUTTON} w-full disabled:opacity-60`}

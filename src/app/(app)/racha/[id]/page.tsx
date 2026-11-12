@@ -37,6 +37,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
     { data: cupFinal },
     { data: myPayment },
     { data: myExemption },
+    { count: setterConfirmedCount },
   ] =
     await Promise.all([
       supabase
@@ -74,6 +75,12 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
       supabase.from("cups").select("name").eq("final_event_id", id).limit(1).maybeSingle(),
       supabase.from("payments").select("paid").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
       supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
+      supabase
+        .from("attendance")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", id)
+        .eq("status", "confirmed")
+        .eq("uses_setter_spot", true),
     ]);
 
   if (!event) notFound();
@@ -154,7 +161,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
         </div>
         {!isFinished && !isCancelled && registrationOpen && (
-          <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount ?? 0} />
+          <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount ?? 0} setterCount={setterConfirmedCount ?? 0} />
         )}
         {!isFinished && !isCancelled && registrationOpen && (
           <ConfirmedCounter

@@ -1,3 +1,4 @@
+import { setterSpotsFor } from "@/lib/rachaSpots";
 const FORTALEZA_OFFSET = "-03:00";
 
 export function isRegistrationOpen(registrationOpensAt: string | null, officialListOpen = false, now = Date.now()) {
@@ -65,6 +66,33 @@ export function spotBatchesFromForm(formData: FormData, maxPlayers: number, regi
   return { first_batch_spots: spots, second_batch_opens_at: opensAt };
 }
 
+/** Levantadores que o Lote 1 precisa ter (vagas guardadas para eles). */
+export const LOTE1_MIN_SETTERS = 3;
+
+/** Vagas do Lote 1 ainda guardadas para levantadores. Mesma regra do banco. */
+export function lote1SetterHold(maxPlayers: number, setters: number) {
+  return Math.max(0, Math.min(LOTE1_MIN_SETTERS, setterSpotsFor(maxPlayers)) - setters);
+}
+
+/**
+ * Esta pessoa está barrada pelo Lote 1 agora? Levantador com vaga de
+ * levantador sobrando nunca é barrado pelo lote; os demais respeitam o Lote 1
+ * menos as vagas guardadas para levantadores. Espelha begin_event_payment_reservation.
+ */
+export function isBlockedByBatch(
+  event: { max_players: number | null; first_batch_spots: number | null; second_batch_opens_at: string | null },
+  confirmed: number,
+  setters: number,
+  isSetter: boolean,
+  now = Date.now(),
+) {
+  if (event.max_players == null || event.first_batch_spots == null || !event.second_batch_opens_at) return false;
+  if (new Date(event.second_batch_opens_at).getTime() <= now) return false;
+  if (isSetter && setters < setterSpotsFor(event.max_players)) return false;
+  const firstSpots = Math.min(event.first_batch_spots, event.max_players);
+  return confirmed + lote1SetterHold(event.max_players, setters) >= firstSpots;
+}
+
 /** Em que fase de lotes o racha está agora. */
 export function batchPhase(
   secondBatchOpensAt: string,
@@ -72,10 +100,13 @@ export function batchPhase(
   confirmed: number,
   now = Date.now(),
   registrationOpensAt: string | null = null,
+  setterHold = 0,
 ) {
   if (new Date(secondBatchOpensAt).getTime() <= now) return "second_open" as const;
   if (registrationOpensAt && new Date(registrationOpensAt).getTime() > now) return "not_open" as const;
-  return confirmed >= firstSpots ? ("first_full" as const) : ("first_open" as const);
+  // "Esgotado" para quem não é levantador: as vagas guardadas para
+  // levantadores no Lote 1 também não estão disponíveis para os demais.
+  return confirmed + setterHold >= firstSpots ? ("first_full" as const) : ("first_open" as const);
 }
 
 /** "sexta-feira, 13/11 às 12:00" (horário de Fortaleza). */
@@ -103,9 +134,17 @@ export function formatBatchOpening(iso: string) {
 export function waitingForSecondBatch(
   event: { max_players: number | null; first_batch_spots: number | null; second_batch_opens_at: string | null },
   confirmed: number,
+  setters = 0,
   now = Date.now(),
 ) {
   if (event.max_players == null || event.first_batch_spots == null || !event.second_batch_opens_at) return null;
-  const phase = batchPhase(event.second_batch_opens_at, Math.min(event.first_batch_spots, event.max_players), confirmed, now);
+  const phase = batchPhase(
+    event.second_batch_opens_at,
+    Math.min(event.first_batch_spots, event.max_players),
+    confirmed,
+    now,
+    null,
+    lote1SetterHold(event.max_players, setters),
+  );
   return phase === "first_full" ? formatBatchOpening(event.second_batch_opens_at) : null;
 }

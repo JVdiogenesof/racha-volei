@@ -31,7 +31,7 @@ import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOff
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
-import { isRegistrationOpen, publicCapacityNow, waitingForSecondBatch } from "@/lib/registrationSchedule";
+import { isBlockedByBatch, isRegistrationOpen, lote1SetterHold, publicCapacityNow, waitingForSecondBatch } from "@/lib/registrationSchedule";
 import { BatchStatus } from "@/components/BatchStatus";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
@@ -201,7 +201,9 @@ export default async function ConfirmarPresencaPage({
   const amSetter = (setterOverrideRows ?? []).find((row) => row.profile_id === profile.id)?.is_setter ?? Boolean(profile.is_setter);
   const publicCapacity = publicCapacityNow(event);
   const batchActive = publicCapacity < eventCapacity;
-  const batchFull = batchActive && confirmados.length >= publicCapacity;
+  // Levantador com vaga de levantador sobrando não é barrado pelo lote.
+  const batchFull = batchActive && isBlockedByBatch({ ...event, max_players: eventCapacity }, confirmados.length, setterConfirmedCount, amSetter);
+  const lote1Hold = batchActive ? lote1SetterHold(eventCapacity, setterConfirmedCount) : 0;
   const isFull = batchFull || isListFullFor({
     capacity: eventCapacity,
     newcomerReserved: event.newcomer_reserved_spots,
@@ -212,12 +214,12 @@ export default async function ConfirmarPresencaPage({
     isGuest: profile.status === "guest",
   });
   // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
-  const secondBatchOpensLabel = batchFull ? waitingForSecondBatch({ ...event, max_players: eventCapacity }, confirmados.length) : null;
+  const secondBatchOpensLabel = batchFull ? waitingForSecondBatch({ ...event, max_players: eventCapacity }, confirmados.length, setterConfirmedCount) : null;
   const onlyProtectedSpotsLeft = isFull && !batchFull && confirmados.length < eventCapacity;
   const setterSlotsFull = amSetter && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
   // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
-  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && publicCapacity - confirmados.length <= 1;
+  const queueLockedForMe = Boolean(hasActiveSpotOffer) && !myPendingOffer && publicCapacity - lote1Hold - confirmados.length <= 1;
   const interessados = attendanceList?.filter((a) => a.status === "interested") ?? [];
   const transferCandidates = interessados.filter((attendance) => attendance.profile_id !== profile.id);
   const confirmedIds = new Set(confirmados.map((a) => a.profile_id));
@@ -341,6 +343,7 @@ export default async function ConfirmarPresencaPage({
             secondBatchOpensAt={event.second_batch_opens_at}
             registrationOpensAt={event.registration_opens_at}
             confirmedCount={confirmados.length}
+            setterCount={setterConfirmedCount}
           />
           {registrationOpen && batchActive && event.second_batch_opens_at && (
             <RegistrationCountdown opensAt={event.second_batch_opens_at} compact label="Lote 2 abre em" />
