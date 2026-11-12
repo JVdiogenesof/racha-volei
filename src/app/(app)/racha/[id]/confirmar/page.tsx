@@ -31,7 +31,7 @@ import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOff
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
-import { isRegistrationOpen, publicCapacityNow } from "@/lib/registrationSchedule";
+import { isRegistrationOpen, publicCapacityNow, waitingForSecondBatch } from "@/lib/registrationSchedule";
 import { BatchStatus } from "@/components/BatchStatus";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
@@ -212,6 +212,7 @@ export default async function ConfirmarPresencaPage({
     isGuest: profile.status === "guest",
   });
   // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
+  const secondBatchOpensLabel = batchFull ? waitingForSecondBatch({ ...event, max_players: eventCapacity }, confirmados.length) : null;
   const onlyProtectedSpotsLeft = isFull && !batchFull && confirmados.length < eventCapacity;
   const setterSlotsFull = amSetter && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
@@ -542,6 +543,7 @@ export default async function ConfirmarPresencaPage({
               eventId={id}
               price={Number(event.price_per_player)}
               isFull
+              secondBatchOpensLabel={secondBatchOpensLabel}
               action={setAttendance}
             />
           ) : event.pix_payment_enabled && event.price_per_player ? (
@@ -549,6 +551,7 @@ export default async function ConfirmarPresencaPage({
               eventId={id}
               hasInterest={myStatus === "interested"}
               isFull={isFull}
+              secondBatchOpensLabel={secondBatchOpensLabel}
               blockedReason={
                 queueLockedForMe
                   ? "Essa vaga está reservada pra próxima pessoa da fila de interessados."

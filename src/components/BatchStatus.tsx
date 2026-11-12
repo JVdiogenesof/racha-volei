@@ -1,5 +1,5 @@
 import { Layers } from "lucide-react";
-import { batchPhase } from "@/lib/registrationSchedule";
+import { batchPhase, formatBatchOpening } from "@/lib/registrationSchedule";
 
 type Props = {
   maxPlayers: number | null;
@@ -9,16 +9,6 @@ type Props = {
   compact?: boolean;
 };
 
-function whenLabel(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    timeZone: "America/Fortaleza",
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 /**
  * Deixa claro em qual lote a lista está: Lote 1 aberto, Lote 1 esgotado ou
@@ -43,8 +33,8 @@ export function BatchStatus({ maxPlayers, firstBatchSpots, secondBatchOpensAt, c
   const detail = secondOpen
     ? "Todas as vagas restantes estão liberadas."
     : firstFull
-      ? `Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${whenLabel(secondBatchOpensAt)}.`
-      : `${firstSpots} vagas neste lote. Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${whenLabel(secondBatchOpensAt)}.`;
+      ? `Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`
+      : `${firstSpots} vagas neste lote. Lote 2 (${secondSpots} ${secondSpots === 1 ? "vaga" : "vagas"}) abre ${formatBatchOpening(secondBatchOpensAt)}.`;
 
   return (
     <div className={`flex items-start gap-2 rounded-xl border ${tone.box} ${compact ? "px-2.5 py-2" : "px-3.5 py-3"}`}>

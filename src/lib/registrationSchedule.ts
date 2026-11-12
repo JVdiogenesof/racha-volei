@@ -70,3 +70,35 @@ export function batchPhase(secondBatchOpensAt: string, firstSpots: number, confi
   if (new Date(secondBatchOpensAt).getTime() <= now) return "second_open" as const;
   return confirmed >= firstSpots ? ("first_full" as const) : ("first_open" as const);
 }
+
+/** "sexta-feira, 13/11 às 12:00" (horário de Fortaleza). */
+export function formatBatchOpening(iso: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Fortaleza",
+      weekday: "long",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value]),
+  );
+  return `${parts.weekday}, ${parts.day}/${parts.month} às ${parts.hour}:${parts.minute}`;
+}
+
+/**
+ * Lote 1 esgotado e Lote 2 ainda fechado: devolve quando o Lote 2 abre, para
+ * os botões explicarem isso em vez de "lista cheia". Senão, null.
+ */
+export function waitingForSecondBatch(
+  event: { max_players: number | null; first_batch_spots: number | null; second_batch_opens_at: string | null },
+  confirmed: number,
+  now = Date.now(),
+) {
+  if (event.max_players == null || event.first_batch_spots == null || !event.second_batch_opens_at) return null;
+  const phase = batchPhase(event.second_batch_opens_at, Math.min(event.first_batch_spots, event.max_players), confirmed, now);
+  return phase === "first_full" ? formatBatchOpening(event.second_batch_opens_at) : null;
+}

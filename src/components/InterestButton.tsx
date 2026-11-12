@@ -10,6 +10,7 @@ export function InterestButton({
   eventId,
   price,
   isFull,
+  secondBatchOpensLabel = null,
   pixPaymentEnabled = false,
   action,
   className,
@@ -18,6 +19,8 @@ export function InterestButton({
   price: number | null;
   /** Já tem gente confirmada suficiente pra esse racha (vagas configuradas). */
   isFull?: boolean;
+  /** Lote 1 esgotado: quando o Lote 2 abre (ex.: "sexta-feira, 13/11 às 12:00"). */
+  secondBatchOpensLabel?: string | null;
   /** Racha com Pix automático: marca o interesse e já abre o pagamento na tela da lista. */
   pixPaymentEnabled?: boolean;
   action: (formData: FormData) => Promise<void> | void;
@@ -32,7 +35,9 @@ export function InterestButton({
     // Lista cheia: não fala em pagamento nenhum. Qualquer Pix agora (na
     // chave ou não) não vira vaga -- a pessoa só entra na fila.
     let message: string | null = null;
-    if (isFull) {
+    if (isFull && secondBatchOpensLabel) {
+      message = `O Lote 1 esgotou. As próximas vagas (Lote 2) abrem ${secondBatchOpensLabel}, e quem pagar primeiro garante.\n\nMarcando interesse agora você entra na fila e pode ser chamado(a) antes, se alguém do Lote 1 desistir.\n\nNão pague nada agora.`;
+    } else if (isFull) {
       message =
         "A lista já está cheia. Você entra na fila de espera e só é chamado(a) se alguém desistir.\n\nNão pague nada agora.";
     } else if (price && !goesToPix) {
