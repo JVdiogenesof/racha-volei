@@ -400,7 +400,7 @@ export default async function CopaVpaPage() {
             O time campeão de cada um garante vaga na {cup.name}.
           </Rule>
           <Rule n={2}>Quem já se classificou pode continuar jogando as classificatórias seguintes normalmente.</Rule>
-          <Rule n={3}>Se um classificado vencer de novo, a vaga dele vai para o ranking (Índice VPA): entra o próximo melhor colocado que ainda não está na copa.</Rule>
+          <Rule n={3}>Se um classificado vencer de novo, a vaga dele vai para o ranking (Índice VPA): entra o próximo melhor colocado que ainda não está na copa. Essas vagas só são definidas depois da última classificatória, com o ranking final.</Rule>
           <Rule n={4}>Nas vagas do ranking, levantadores têm prioridade.</Rule>
           <Rule n={5}>
             Os {capacity} classificados entram automaticamente na lista da final{cup.final_date ? ` (${finalLabel})` : ", com data ainda a definir,"} e disputam a copa em {cup.num_teams} times.
@@ -483,7 +483,7 @@ function MyStatus({
         <div>
           <p className="font-bold text-emerald-50">Você está classificado(a)!</p>
           <p className="mt-0.5 text-sm leading-relaxed text-emerald-50/75">
-            {how} Seu nome já entra na lista da final{finalDate ? ` de ${shortDate(finalDate)}` : " (data a definir)"}. Você pode continuar jogando as classificatórias — se vencer de novo, sua vaga extra vai pro ranking.
+            {how} Seu nome já entra na lista da final{finalDate ? ` de ${shortDate(finalDate)}` : " (data a definir)"}. Você pode continuar jogando as classificatórias — se vencer de novo, sua vaga extra vai pro ranking (definido só depois da última classificatória).
           </p>
         </div>
       </section>

@@ -12,6 +12,7 @@ import {
   lockCupPlayersIntoFinal,
   releaseCupPlayerFromFinal,
   reprocessCupQualifier,
+  settleCupRankingSpots,
   syncCupFinalList,
   type Cup,
 } from "@/lib/copaVpa";
@@ -133,7 +134,7 @@ export async function addCupQualifier(formData: FormData) {
 }
 
 export async function removeCupQualifier(formData: FormData) {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
   const cup = await loadCup(supabase, requiredId(formData, "cupId", "a copa"));
   const eventId = requiredId(formData, "eventId", "o racha");
@@ -141,6 +142,7 @@ export async function removeCupQualifier(formData: FormData) {
   await clearCupQualificationsFromEvent(supabase, eventId);
   const { error } = await supabase.from("cup_qualifiers").delete().eq("cup_id", cup.id).eq("event_id", eventId);
   if (error) throw new Error(error.message);
+  await settleCupRankingSpots(supabase, cup, organizer.id);
 
   revalidateCup([eventId, cup.final_event_id]);
 }

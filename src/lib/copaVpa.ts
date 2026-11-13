@@ -202,6 +202,19 @@ async function findCupForQualifier(supabase: SupabaseClient, eventId: string): P
   return data ? getCup(supabase, data.cup_id) : null;
 }
 
+/** Apaga as vagas do ranking geradas por classificatórias (sem mexer na lista da final). */
+async function dropAutoRankingRows(supabase: SupabaseClient, cupId: string) {
+  const { data, error } = await supabase
+    .from("cup_qualified_players")
+    .delete()
+    .eq("cup_id", cupId)
+    .eq("source", "ranking")
+    .not("source_event_id", "is", null)
+    .select("profile_id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => row.profile_id);
+}
+
 async function deleteEventQualifications(supabase: SupabaseClient, cupId: string, eventId: string) {
   const { data: removed, error } = await supabase
     .from("cup_qualified_players")
@@ -217,8 +230,11 @@ async function deleteEventQualifications(supabase: SupabaseClient, cupId: string
 export async function clearCupQualificationsFromEvent(supabase: SupabaseClient, eventId: string) {
   const cup = await findCupForQualifier(supabase, eventId);
   if (!cup) return;
+  const dropped = await dropAutoRankingRows(supabase, cup.id);
   const removed = await deleteEventQualifications(supabase, cup.id, eventId);
-  await releaseFromFinal(supabase, cup, removed);
+  await releaseFromFinal(supabase, cup, removed.filter((id) => !dropped.includes(id)));
+  // Placar desfeito: este racha volta a contar como pendente, então nada sai do ranking até a última final.
+  await settleCupRankingSpots(supabase, cup, "", dropped, eventId);
 }
 
 /**
@@ -238,12 +254,12 @@ export async function qualifyCupChampions(
   // Placar corrigido: refaz as vagas deste racha do zero, mas só tira da
   // lista da final quem realmente perdeu a vaga (sem liberar e reofertar à
   // toa a vaga de quem continua classificado).
+  const droppedRanking = await dropAutoRankingRows(supabase, cup.id);
   const previousIds = await deleteEventQualifications(supabase, cup.id, eventId);
   const qualified = await getQualifiedIds(supabase, cup.id);
 
   const champions = [...new Set(championIds)];
   const newChampions = champions.filter((id) => !qualified.has(id));
-  const repeatWinners = champions.filter((id) => qualified.has(id));
 
   const rows: {
     cup_id: string;
@@ -263,24 +279,6 @@ export async function qualifyCupChampions(
     added_by: organizerId,
   }));
 
-  if (repeatWinners.length) {
-    const taken = new Set([...qualified, ...champions]);
-    const queue = await getCupRankingQueue(supabase, cup.community, taken);
-    repeatWinners.forEach((repeatId, index) => {
-      const next = queue[index];
-      if (!next) return;
-      rows.push({
-        cup_id: cup.id,
-        profile_id: next.profileId,
-        source: "ranking",
-        source_event_id: eventId,
-        replaces_profile_id: repeatId,
-        ranking_position: next.position,
-        added_by: organizerId,
-      });
-    });
-  }
-
   if (rows.length) {
     const { error } = await supabase.from("cup_qualified_players").insert(rows);
     if (error) throw new Error(error.message);
@@ -288,11 +286,12 @@ export async function qualifyCupChampions(
 
   const currentIds = rows.map((row) => row.profile_id);
   const previous = new Set(previousIds);
-  await releaseFromFinal(supabase, cup, previousIds.filter((id) => !currentIds.includes(id)));
+  await releaseFromFinal(supabase, cup, previousIds.filter((id) => !currentIds.includes(id) && !droppedRanking.includes(id)));
   await lockIntoFinal(supabase, cup, currentIds);
+  const settledRankingIds = await settleCupRankingSpots(supabase, cup, organizerId, droppedRanking);
 
   const newChampionsToNotify = newChampions.filter((id) => !previous.has(id));
-  const rankingIds = rows.filter((row) => row.source === "ranking" && !previous.has(row.profile_id)).map((row) => row.profile_id);
+  const rankingIds = settledRankingIds;
   if (!newChampionsToNotify.length && !rankingIds.length) return;
 
   const finalNote = cup.final_date ? ` Final em ${cupFinalDateLabel(cup)}.` : " A data da final ainda será definida.";
@@ -303,9 +302,96 @@ export async function qualifyCupChampions(
   });
   await sendPushToProfiles(supabase, rankingIds, {
     title: `Vaga na ${cup.name} pelo ranking! 🏆`,
-    body: `Um campeão repetiu a vitória e a vaga veio pra você pelo Índice VPA.${finalNote}`,
+    body: `As classificatórias acabaram e uma vaga sobrou pro ranking: ela veio pra você pelo Índice VPA.${finalNote}`,
     url: COPA_PATH,
   });
+}
+
+/**
+ * Vagas herdadas pelo ranking (campeão que repetiu a vitória) só são
+ * distribuídas depois que TODAS as classificatórias têm final lançada, porque
+ * o Índice VPA ainda muda até lá. Antes disso, nenhuma vaga do ranking existe;
+ * no fim, ela é recalculada do zero (ordem das datas) com o ranking final.
+ * Devolve quem ganhou vaga pelo ranking agora (para avisar).
+ */
+export async function settleCupRankingSpots(
+  supabase: SupabaseClient,
+  cup: Cup,
+  organizerId: string,
+  alreadyDropped: string[] = [],
+  undecidedEventId?: string,
+): Promise<string[]> {
+  const { data: qualifierRows, error } = await supabase
+    .from("cup_qualifiers")
+    .select("event_id, events(id, date)")
+    .eq("cup_id", cup.id);
+  if (error) throw new Error(error.message);
+  const events = (qualifierRows ?? [])
+    .map((row) => row.events as unknown as { id: string; date: string } | null)
+    .filter((event): event is { id: string; date: string } => Boolean(event))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const championsByEvent = new Map<string, string[] | null>();
+  for (const event of events) {
+    championsByEvent.set(event.id, event.id === undecidedEventId ? null : await getEventChampionIds(supabase, event.id));
+  }
+  const plannedDates = new Set([...cup.qualifier_dates, ...events.map((event) => event.date)]);
+  const allDecided =
+    events.length > 0 &&
+    events.length >= plannedDates.size &&
+    events.every((event) => championsByEvent.get(event.id) != null);
+
+  // Vagas de ranking geradas automaticamente: sempre refeitas do zero.
+  const previousAuto = [...new Set([...alreadyDropped, ...(await dropAutoRankingRows(supabase, cup.id))])];
+
+  const rows: {
+    cup_id: string;
+    profile_id: string;
+    source: CupQualifiedSource;
+    source_event_id: string;
+    replaces_profile_id: string;
+    ranking_position: number | null;
+    added_by: string;
+  }[] = [];
+
+  if (allDecided) {
+    const qualified = await getQualifiedIds(supabase, cup.id);
+    const seen = new Set<string>();
+    const repeats: { eventId: string; profileId: string }[] = [];
+    for (const event of events) {
+      for (const id of championsByEvent.get(event.id) ?? []) {
+        if (seen.has(id)) repeats.push({ eventId: event.id, profileId: id });
+        seen.add(id);
+      }
+    }
+    if (repeats.length) {
+      const queue = await getCupRankingQueue(supabase, cup.community, new Set([...qualified, ...seen]));
+      repeats.forEach((repeat, index) => {
+        const next = queue[index];
+        if (!next) return;
+        rows.push({
+          cup_id: cup.id,
+          profile_id: next.profileId,
+          source: "ranking",
+          source_event_id: repeat.eventId,
+          replaces_profile_id: repeat.profileId,
+          ranking_position: next.position,
+          added_by: organizerId,
+        });
+      });
+    }
+  }
+
+  if (rows.length) {
+    const { error: insertError } = await supabase.from("cup_qualified_players").insert(rows);
+    if (insertError) throw new Error(insertError.message);
+  }
+
+  const currentIds = rows.map((row) => row.profile_id);
+  await releaseFromFinal(supabase, cup, previousAuto.filter((id) => !currentIds.includes(id)));
+  await lockIntoFinal(supabase, cup, currentIds);
+  const before = new Set(previousAuto);
+  return currentIds.filter((id) => !before.has(id));
 }
 
 /** Membros do time que venceu a final do racha, ou null se a final não tem placar. */
