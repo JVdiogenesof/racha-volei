@@ -162,3 +162,7 @@ as $$
 $$;
 
 revoke all on function public.check_notifications_cron_token(text) from public, anon, authenticated;
+
+grant select, insert, update on public.notification_dispatches to service_role;
+grant execute on function public.pending_event_notifications() to service_role;
+grant execute on function public.check_notifications_cron_token(text) to service_role;
