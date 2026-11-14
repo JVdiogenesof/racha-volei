@@ -1,23 +1,6 @@
 import { BadgeCheck, CalendarDays, MapPin, Receipt } from "lucide-react";
-
-const TZ = "America/Fortaleza";
-
-const SOURCE_LABEL: Record<string, string> = {
-  pix: "Pix (Mercado Pago)",
-  balance: "Saldo do app",
-  cash: "Pago à organização",
-  exempt: "Isento",
-};
-
-function money(value: number | null | undefined) {
-  if (value == null) return "—";
-  return Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
-function dateTime(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: TZ });
-}
+import { SaveReceiptImageButton } from "./SaveReceiptImageButton";
+import { SOURCE_LABEL, dateTime, eventDayLabel, money } from "@/lib/receiptFormat";
 
 /**
  * "Minha vaga": comprovante de quem está confirmado, pra tirar a dúvida
@@ -33,7 +16,9 @@ export function PaymentReceiptCard({
   confirmedAt,
   payment,
   orderId,
+  eventId,
 }: {
+  eventId: string;
   playerName: string;
   eventDate: string;
   eventTime: string | null;
@@ -44,7 +29,7 @@ export function PaymentReceiptCard({
   payment: { paid: boolean; payment_source: string | null; paid_at: string | null; amount: number | null } | null;
   orderId: string | null;
 }) {
-  const day = new Date(`${eventDate}T12:00:00-03:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", timeZone: TZ });
+  const day = eventDayLabel(eventDate);
   const paid = Boolean(payment?.paid);
   const source = payment?.payment_source ? SOURCE_LABEL[payment.payment_source] ?? payment.payment_source : null;
 
@@ -105,9 +90,10 @@ export function PaymentReceiptCard({
         ))}
       </dl>
 
-      <p className="border-t border-white/10 px-4 py-2.5 text-[11px] text-white/45">
-        Você aparece na aba &quot;Confirmados&quot; da lista. Pode mostrar esta tela se precisar.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-4 py-2.5">
+        <p className="text-[11px] text-white/45">Você aparece na aba &quot;Confirmados&quot; da lista.</p>
+        <SaveReceiptImageButton eventId={eventId} />
+      </div>
     </section>
   );
 }

@@ -612,6 +612,7 @@ export default async function ConfirmarPresencaPage({
         const position = confirmedOrder.indexOf(profile.id);
         return (
           <PaymentReceiptCard
+            eventId={id}
             playerName={profile.full_name}
             eventDate={event.date}
             eventTime={event.time}
