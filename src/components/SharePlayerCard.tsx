@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Heart, Loader2, Share2 } from "lucide-react";
+import { Download, Loader2, Share2 } from "lucide-react";
+import { ProfileHero } from "./ProfileHero";
+import type { Badge } from "@/lib/badges";
 import { useToast } from "./Toast";
 import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
@@ -25,16 +27,13 @@ type Props = {
   };
   achievements: FeaturedAchievement[];
   achievementCount: number;
+  avatarFrame: string | null;
+  banner: string | null;
+  effect: string | null;
+  streak: number;
+  isSetter: boolean;
+  featuredBadges: Badge[];
 };
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
 
 async function fetchCardImage() {
   const response = await fetch("/perfil/cartao/imagem", { cache: "no-store" });
@@ -54,6 +53,12 @@ export function SharePlayerCard({
   rankings,
   achievements,
   achievementCount,
+  avatarFrame,
+  banner,
+  effect,
+  streak,
+  isSetter,
+  featuredBadges,
 }: Props) {
   const [busyAction, setBusyAction] = useState<"share" | "download" | null>(null);
   const { showToast } = useToast();
@@ -96,59 +101,37 @@ export function SharePlayerCard({
   ];
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-purple-300/20 bg-gradient-to-br from-[#5523a5] via-[#2d155f] to-[#150b32] p-5 shadow-xl shadow-purple-950/20 sm:p-6">
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-        <div className="relative flex h-36 w-40 shrink-0 items-center justify-center" aria-label="Moldura de coração do perfil">
-          <svg viewBox="0 0 512 512" className="absolute inset-0 h-full w-full drop-shadow-[0_0_18px_rgba(196,181,253,0.35)]" aria-hidden="true">
-            <path d="M256 466S44 337 44 177C44 91 113 45 181 45c37 0 63 13 75 27 12-14 38-27 75-27 68 0 137 46 137 132 0 160-212 289-212 289Z" fill="rgba(124,58,237,.24)" stroke="#c4b5fd" strokeWidth="17" />
-          </svg>
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={fullName} className="relative -mt-3 h-24 w-24 rounded-full object-cover ring-4 ring-white/80" referrerPolicy="no-referrer" />
-          ) : (
-            <span className="relative -mt-3 flex h-24 w-24 items-center justify-center rounded-full bg-brand-purple text-2xl font-black text-white ring-4 ring-white/80">
-              {initials(fullName)}
-            </span>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1 text-center sm:text-left">
-          <div className="flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-purple-200 sm:justify-start">
-            <Heart className="h-4 w-4 fill-current" /> Meu cartão VPA
+    <ProfileHero
+      fullName={fullName}
+      avatarUrl={avatarUrl}
+      avatarFrame={avatarFrame}
+      banner={banner}
+      effect={effect}
+      nickname={nickname}
+      streak={streak}
+      isSetter={isSetter}
+      badges={featuredBadges}
+      showEmptyBadgeSlots
+      eyebrow="Meu cartão VPA"
+    >
+      <div className="mt-4 grid grid-cols-4 gap-1.5">
+        {statItems.map((item) => (
+          <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.07] px-1.5 py-2 text-center">
+            <span className="block text-lg font-black leading-none text-white">{item.value}</span>
+            <span className="mt-1 block text-[10px] font-bold text-purple-200">{rankLabel(item.rank)}</span>
+            <span className="mt-0.5 block truncate text-[10px] text-white/50">{item.label}</span>
           </div>
-          <h2 className="mt-2 truncate text-2xl font-black text-white">{fullName}</h2>
-          {nickname && <p className="mt-0.5 text-sm font-semibold text-purple-200">{nickname}</p>}
-          <p className="mt-2 text-sm text-white/60">Seu perfil do VPA pronto para compartilhar.</p>
+        ))}
+      </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {statItems.map((item) => (
-              <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.07] px-3 py-2.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-lg font-black text-white">{item.value}</span>
-                  <span className="text-xs font-bold text-purple-200">{rankLabel(item.rank)}</span>
-                </div>
-                <p className="truncate text-[11px] text-white/50">{item.label}</p>
-              </div>
-            ))}
-          </div>
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
+        <p className="text-xs font-semibold text-white/60">{achievementCount} níveis de conquista</p>
+        <div className="flex gap-1 text-base" aria-label="Conquistas em destaque">
+          {achievements.map((achievement) => <span key={achievement.title} title={achievement.title}>{achievement.emoji}</span>)}
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-black/10 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-white/55">Conquistas em destaque</p>
-          <span className="text-xs font-semibold text-purple-200">{achievementCount} desbloqueadas</span>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {achievements.length ? achievements.map((achievement) => (
-            <span key={achievement.title} className="inline-flex items-center gap-1.5 rounded-full border border-purple-200/15 bg-purple-200/10 px-3 py-1.5 text-xs font-semibold text-white">
-              <span>{achievement.emoji}</span> {achievement.title}
-            </span>
-          )) : <span className="text-sm text-white/45">A primeira conquista está chegando.</span>}
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <button type="button" onClick={handleShare} disabled={busyAction !== null} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#3b1975] hover:bg-purple-50 disabled:opacity-60">
           {busyAction === "share" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
           Gerar e compartilhar
@@ -158,6 +141,6 @@ export function SharePlayerCard({
           Salvar na galeria
         </button>
       </div>
-    </section>
+    </ProfileHero>
   );
 }

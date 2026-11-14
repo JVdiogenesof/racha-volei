@@ -6,13 +6,21 @@ import { ChevronRight, Flame, Gauge, Search, Trophy, UsersRound, X } from "lucid
 import { Avatar } from "./Avatar";
 import { NicknameBadge } from "./NicknameBadge";
 import { AchievementDetailsModal } from "./AchievementDetailsModal";
+import { ProfileHero } from "./ProfileHero";
+import { BadgeIcon } from "./BadgeIcon";
+import { BadgeDetail } from "./BadgeShowcase";
 import type { Achievement } from "@/lib/achievements";
+import type { Badge, EarnedBadge } from "@/lib/badges";
 
 type Player = {
   id: string;
   full_name: string;
   avatar_url: string | null;
   avatar_frame?: string | null;
+  profile_banner?: string | null;
+  profile_effect?: string | null;
+  featuredBadges: Badge[];
+  earnedBadges: { badge: Badge; earned: EarnedBadge }[];
   is_setter: boolean;
   overall: number | null;
   streak?: number;
@@ -36,12 +44,14 @@ function PlayerDetails({
   showNotes,
   onClose,
   onAchievementClick,
+  onBadgeClick,
 }: {
   player: Player;
   rank: number;
   showNotes: boolean;
   onClose: () => void;
   onAchievementClick: (achievement: Achievement) => void;
+  onBadgeClick: (badge: Badge, earned: EarnedBadge) => void;
 }) {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -70,38 +80,31 @@ function PlayerDetails({
         role="dialog"
         aria-modal="true"
         aria-labelledby="player-dialog-title"
-        className="animate-toast-in max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/15 bg-gradient-to-b from-[#30215d] via-[#1d173c] to-[#111329] p-5 shadow-2xl"
+        className="animate-toast-in max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/15 bg-gradient-to-b from-[#30215d] via-[#1d173c] to-[#111329] p-3 shadow-2xl"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="relative">
-              <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} frame={player.avatar_frame} />
-              {showNotes ? (
-                <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#30215d] bg-white px-1 text-[10px] font-black text-brand-navy">
-                  {rank}
-                </span>
-              ) : null}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-purple-300">Perfil do jogador</p>
-              <h2 id="player-dialog-title" className="truncate text-xl font-black text-white">{player.full_name}</h2>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                <NicknameBadge text={player.nickname_badge} />
-                {player.is_setter ? (
-                  <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-2 py-0.5 text-[10px] font-bold text-sky-200">🏐 Levantador(a)</span>
-                ) : null}
-              </div>
-            </div>
-          </div>
+        <div className="relative">
+          <ProfileHero
+            fullName={player.full_name}
+            avatarUrl={player.avatar_url}
+            avatarFrame={player.avatar_frame}
+            banner={player.profile_banner}
+            effect={player.profile_effect}
+            nickname={player.nickname_badge}
+            streak={player.streak}
+            isSetter={player.is_setter}
+            badges={player.featuredBadges}
+            eyebrow={showNotes ? `Perfil do jogador · #${rank}` : "Perfil do jogador"}
+          />
           <button
             type="button"
             onClick={onClose}
             aria-label="Fechar detalhes do jogador"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-white/60 transition hover:bg-white/15 hover:text-white"
+            className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white/80 transition hover:bg-black/60 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
+        <span id="player-dialog-title" className="sr-only">{player.full_name}</span>
 
         <div className={`mt-5 grid gap-2 ${showNotes ? "grid-cols-3" : "grid-cols-2"}`}>
           {showNotes && player.overall !== null ? (
@@ -160,6 +163,22 @@ function PlayerDetails({
           </div>
         ) : null}
 
+        {player.earnedBadges.length > 0 ? (
+          <div className="mt-3 rounded-2xl border border-white/8 bg-black/15 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-white">Medalhas</h3>
+              <span className="text-xs font-bold text-white/45">{player.earnedBadges.length}</span>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {player.earnedBadges.map(({ badge, earned }) => (
+                <button key={badge.id} type="button" onClick={() => onBadgeClick(badge, earned)} aria-label={`Ver medalha ${badge.title}`} className="transition hover:-translate-y-0.5">
+                  <BadgeIcon badge={badge} size="md" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-3 rounded-2xl border border-white/8 bg-black/15 p-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 text-sm font-bold text-white">
@@ -207,6 +226,7 @@ export function PlayerSearch({ players, showNotes = false }: { players: Player[]
   const [filter, setFilter] = useState<Filter>("all");
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedAchievement, setSelectedAchievement] = useState<{ achievement: Achievement; ownerName: string } | null>(null);
+  const [selectedBadge, setSelectedBadge] = useState<{ badge: Badge; earned: EarnedBadge } | null>(null);
 
   const rankById = useMemo(() => new Map(players.map((player, index) => [player.id, index + 1])), [players]);
   const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
@@ -311,8 +331,10 @@ export function PlayerSearch({ players, showNotes = false }: { players: Player[]
             setSelectedPlayer(null);
             setSelectedAchievement({ achievement, ownerName: selectedPlayer.full_name });
           }}
+          onBadgeClick={(badge, earned) => setSelectedBadge({ badge, earned })}
         />
       ) : null}
+      {selectedBadge ? <BadgeDetail badge={selectedBadge.badge} earned={selectedBadge.earned} onClose={() => setSelectedBadge(null)} /> : null}
       {selectedAchievement ? (
         <AchievementDetailsModal achievement={selectedAchievement.achievement} ownerName={selectedAchievement.ownerName} onClose={() => setSelectedAchievement(null)} />
       ) : null}

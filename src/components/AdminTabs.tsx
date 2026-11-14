@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Award, CalendarPlus, LayoutDashboard, Phone, Shirt, SlidersHorizontal, WalletCards, BarChart3, UserRoundX } from "lucide-react";
+import { Award, CalendarPlus, LayoutDashboard, Phone, Shirt, SlidersHorizontal, WalletCards, BarChart3, UserRoundX, Medal } from "lucide-react";
 
 const TABS = [
   { href: "/admin", label: "Painel", icon: LayoutDashboard, exact: true },
@@ -13,6 +13,7 @@ const TABS = [
   { href: "/admin/ranking", label: "Rankings", icon: Award },
   { href: "/admin/financas", label: "Finanças", icon: WalletCards },
   { href: "/admin/camisas", label: "Camisas", icon: Shirt },
+  { href: "/admin/medalhas", label: "Medalhas", icon: Medal },
   { href: "/admin/resumo", label: "Resumo", icon: BarChart3 },
 ];
 
