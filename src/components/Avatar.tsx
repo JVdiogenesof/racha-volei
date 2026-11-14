@@ -5,6 +5,7 @@ const SIZES = {
   sm: "h-8 w-8 text-xs",
   md: "h-11 w-11 text-sm",
   lg: "h-14 w-14 text-base",
+  xl: "h-20 w-20 text-xl",
 };
 
 /** A partir de quantos rachas seguidos o anel de fogo aparece. */
@@ -17,6 +18,7 @@ export function Avatar({
   streak,
   ring,
   frame,
+  still,
 }: {
   src?: string | null;
   name: string;
@@ -27,6 +29,8 @@ export function Avatar({
   ring?: string;
   /** Moldura escolhida pela pessoa (id de lib/avatarFrames). Sem valor válido, não desenha nada. */
   frame?: string | null;
+  /** Moldura parada (sem animação): usado em grades com muitas opções. */
+  still?: boolean;
 }) {
   const ringClass = ring ?? "ring-white/15";
   const initials = name
@@ -59,7 +63,7 @@ export function Avatar({
   );
 
   // Em tamanho pequeno (listas longas) a moldura fica parada: dezenas de animações juntas pesam no celular.
-  const art = frameId ? <AvatarFrameArt id={frameId} still={size === "sm"} /> : null;
+  const art = frameId ? <AvatarFrameArt id={frameId} still={still ?? size === "sm"} /> : null;
 
   if (!showStreak) return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
 
@@ -72,7 +76,7 @@ export function Avatar({
       aria-label={`${name}, ${streak} rachas seguidos`}
     >
       <span className="fire-ring__glow" aria-hidden />
-      {FLAMES.filter((_, index) => size === "lg" || index % (size === "md" ? 2 : 3) === 1 || index === 5).map((flame) => (
+      {FLAMES.filter((_, index) => size === "lg" || size === "xl" || index % (size === "md" ? 2 : 3) === 1 || index === 5).map((flame) => (
         <span key={flame.key} className="fire-ring__tongue" style={flame.style} aria-hidden />
       ))}
       <span className="fire-ring__band" aria-hidden />

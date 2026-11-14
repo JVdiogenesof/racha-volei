@@ -9,11 +9,11 @@ export const AVATAR_FRAMES = [
   { id: "ursinho", name: "Ursinho Dorminhoco", tagline: "Quentinho e redondinho" },
   { id: "margaridas", name: "Jardim da Vó", tagline: "Margaridas em volta da foto" },
   { id: "sakura", name: "Sakura", tagline: "Pétalas de cerejeira ao vento" },
-  { id: "magica", name: "Estrelinha Mágica", tagline: "Brilho de heroína de anime" },
-  { id: "aura", name: "Aura de Herói", tagline: "Energia no máximo, power-up!" },
-  { id: "trovao", name: "Trovão", tagline: "Pra quem chega eletrizando" },
-  { id: "coroa", name: "Majestade", tagline: "Quem manda na quadra" },
-  { id: "cortada", name: "Cortada no Talo", tagline: "A bola passa voando em volta" },
+  { id: "magica", name: "Estrelinha Mágica", tagline: "Brilho de heroína de anime", unlock: "destaque-silver" },
+  { id: "aura", name: "Aura de Herói", tagline: "Energia no máximo, power-up!", unlock: "presenca-legend" },
+  { id: "trovao", name: "Trovão", tagline: "Pra quem chega eletrizando", unlock: "vitorias-bronze" },
+  { id: "coroa", name: "Majestade", tagline: "Quem manda na quadra", unlock: "vitorias-legend" },
+  { id: "cortada", name: "Cortada no Talo", tagline: "A bola passa voando em volta", unlock: "vitorias-silver" },
   { id: "bola", name: "Bola Oficial", tagline: "Gomos azuis, amarelos e brancos" },
   { id: "rede", name: "Rede Armada", tagline: "Trançado de rede e bola no canto" },
   { id: "verao", name: "Verão no Areião", tagline: "Sol, areia e ondinhas" },
@@ -21,9 +21,9 @@ export const AVATAR_FRAMES = [
   { id: "pixel", name: "Três Vidas", tagline: "Retrô de fliperama, 8 bits" },
   { id: "amor", name: "Vôlei por Amor", tagline: "Corações roxos do VPA" },
   { id: "noite", name: "Noite Estrelada", tagline: "Lua, estrelas e céu fundo" },
-  { id: "grafite", name: "Rolê de Rua", tagline: "Spray, tinta e personalidade" },
-  { id: "neon", name: "Neon Noturno", tagline: "Brilha no escuro" },
-] as const;
+  { id: "grafite", name: "Rolê de Rua", tagline: "Spray, tinta e personalidade", unlock: "sequencia-silver" },
+  { id: "neon", name: "Neon Noturno", tagline: "Brilha no escuro", unlock: "sequencia-legend" },
+] as const satisfies readonly { id: string; name: string; tagline: string; unlock?: string }[];
 
 export type AvatarFrameId = (typeof AVATAR_FRAMES)[number]["id"];
 

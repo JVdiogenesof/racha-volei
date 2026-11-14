@@ -9,7 +9,7 @@ const TIER_LABELS: Record<Achievement["tier"], string> = {
   bronze: "Bronze",
   silver: "Prata",
   gold: "Ouro",
-  special: "Especial",
+  legend: "Lendária",
 };
 
 export function AchievementDetailsModal({

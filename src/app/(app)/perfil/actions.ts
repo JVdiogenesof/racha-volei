@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
-import { isAvatarFrameId } from "@/lib/avatarFrames";
+import { AVATAR_FRAMES, isAvatarFrameId } from "@/lib/avatarFrames";
+import { PROFILE_BANNERS, PROFILE_EFFECTS, isBannerId, isEffectId, isUnlocked } from "@/lib/cosmetics";
+import { getAchievementTracks, getUnlockedLevelIds, type AchievementStats } from "@/lib/achievements";
+import { getBadgeCatalog, getEarnedBadges, getProfileExtras, badgeStatsFrom } from "@/lib/profileCosmetics";
+import { getRankingCounts } from "@/lib/rankings";
+import { getActiveCommunity } from "@/lib/community";
 
 export async function updateProfileData(formData: FormData) {
   const profile = await requireMember();
@@ -93,12 +98,83 @@ export async function deletePushSubscription(endpoint: string) {
   if (error) throw new Error(error.message);
 }
 
-/** Troca (ou tira, com null) a moldura da foto de perfil da própria pessoa. */
-export async function setAvatarFrame(frameId: string | null) {
-  const profile = await requireMember();
-  if (frameId !== null && !isAvatarFrameId(frameId)) throw new Error("Moldura inválida.");
+/** Estatísticas que alimentam as conquistas (as mesmas da tela de perfil). */
+async function loadAchievementStats(profile: Awaited<ReturnType<typeof requireMember>>): Promise<AchievementStats> {
   const supabase = await createClient();
-  const { error } = await supabase.from("profiles").update({ avatar_frame: frameId }).eq("id", profile.id);
+  const community = await getActiveCommunity();
+  const [counts, earned, catalog] = await Promise.all([
+    getRankingCounts(supabase, community),
+    getEarnedBadges(supabase, profile.id),
+    getBadgeCatalog(supabase),
+  ]);
+  return {
+    attendance: counts.attendance.get(profile.id) ?? 0,
+    wins: counts.wins.get(profile.id) ?? 0,
+    mvp: counts.mvp.get(profile.id) ?? 0,
+    streak: counts.streaks.get(profile.id) ?? 0,
+    isSetter: profile.is_setter,
+    ...badgeStatsFrom(earned, catalog),
+  };
+}
+
+/**
+ * Equipa moldura, banner e efeito de uma vez. Cada item precisa estar liberado
+ * (livre ou desbloqueado por conquista) -- ou já estar equipado, pra quem
+ * escolheu antes de existirem os desbloqueios não perder o que tinha.
+ */
+export async function saveCosmetics(input: { frame: string | null; banner: string | null; effect: string | null }) {
+  const profile = await requireMember();
+  if (input.frame !== null && !isAvatarFrameId(input.frame)) throw new Error("Moldura inválida.");
+  if (input.banner !== null && !isBannerId(input.banner)) throw new Error("Banner inválido.");
+  if (input.effect !== null && !isEffectId(input.effect)) throw new Error("Efeito inválido.");
+
+  const supabase = await createClient();
+  const current = { frame: profile.avatar_frame, ...(await getProfileExtras(supabase, profile.id)) };
+  const unlocked = getUnlockedLevelIds(await loadAchievementStats(profile));
+
+  const checks: [string | null, string | null, readonly { id: string; unlock?: string }[], string][] = [
+    [input.frame, current.frame, AVATAR_FRAMES, "Essa moldura"],
+    [input.banner, current.profile_banner, PROFILE_BANNERS, "Esse banner"],
+    [input.effect, current.profile_effect, PROFILE_EFFECTS, "Esse efeito"],
+  ];
+  for (const [wanted, equipped, catalog, label] of checks) {
+    if (wanted === null || wanted === equipped) continue;
+    const item = catalog.find((entry) => entry.id === wanted);
+    if (!item || !isUnlocked(item, unlocked)) throw new Error(`${label} ainda está bloqueado.`);
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_frame: input.frame, profile_banner: input.banner, profile_effect: input.effect })
+    .eq("id", profile.id);
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
+}
+
+/** Até 3 medalhas em destaque no cartão; só vale medalha que a pessoa realmente ganhou. */
+export async function setFeaturedBadges(badgeIds: string[]) {
+  const profile = await requireMember();
+  const ids = [...new Set(badgeIds)].slice(0, 3);
+  const supabase = await createClient();
+  if (ids.length) {
+    const { data } = await supabase.from("profile_badges").select("badge_id").eq("profile_id", profile.id).in("badge_id", ids);
+    const owned = new Set((data ?? []).map((row) => row.badge_id as string));
+    if (ids.some((id) => !owned.has(id))) throw new Error("Você só pode destacar medalhas que já ganhou.");
+  }
+  const { error } = await supabase.from("profiles").update({ featured_badges: ids }).eq("id", profile.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
+/** Marca desbloqueios como já comemorados (a comemoração não repete). */
+export async function markUnlocksSeen(levelIds: string[]) {
+  const profile = await requireMember();
+  const supabase = await createClient();
+  const valid = new Set(getAchievementTracks({ attendance: 0, wins: 0, mvp: 0, streak: 0, isSetter: false }).flatMap((track) => track.levels.map((level) => level.id)));
+  const incoming = levelIds.filter((id) => valid.has(id));
+  if (!incoming.length) return;
+  const extras = await getProfileExtras(supabase, profile.id);
+  const merged = [...new Set([...extras.seen_unlocks, ...incoming])].slice(-200);
+  const { error } = await supabase.from("profiles").update({ seen_unlocks: merged }).eq("id", profile.id);
+  if (error) throw new Error(error.message);
 }

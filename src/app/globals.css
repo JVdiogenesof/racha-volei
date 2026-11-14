@@ -947,3 +947,199 @@ form[aria-busy="true"] button[type="submit"]::after {
 .fire-ring--framed > .avatar-photo {
   box-shadow: none !important;
 }
+
+/* ── Efeitos de perfil (components/ProfileEffect) ─────────────────────────────
+   Só transform/opacity animam. Partículas usam --x/--y/--s/--d/--delay/--dx. */
+.pfx {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.pfx i {
+  position: absolute;
+  display: block;
+  font-style: normal;
+  will-change: transform, opacity;
+}
+
+/* Faíscas de fogo: sobem da base com leve deriva */
+.pfx-brasas i {
+  left: var(--x); bottom: -8px;
+  width: calc(var(--s) * 5px); height: calc(var(--s) * 5px);
+  border-radius: 9999px;
+  background: radial-gradient(circle, #fff3b0 0%, #ff9d00 55%, #ff3b00 100%);
+  box-shadow: 0 0 6px 1px rgb(255 140 0 / .8);
+  animation: pfx-rise var(--d) linear infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-rise {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translate3d(var(--dx), -280px, 0) scale(.3); opacity: 0; }
+}
+
+/* Areia ao vento: grãos cruzando o cartão */
+.pfx-areia::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgb(253 230 138 / .16) 50%, transparent 80%);
+  transform: translateX(-100%);
+  animation: pfx-haze 7s ease-in-out infinite;
+}
+@keyframes pfx-haze { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(100%); } }
+.pfx-areia i {
+  left: -8px; top: var(--y);
+  width: calc(var(--s) * 3px); height: calc(var(--s) * 3px);
+  border-radius: 9999px; background: #f5d68a; opacity: 0;
+  animation: pfx-blow calc(var(--d) * .6) linear infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-blow {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10% { opacity: .9; }
+  50% { transform: translate3d(50vw, 14px, 0); }
+  100% { transform: translate3d(110vw, -10px, 0); opacity: 0; }
+}
+
+/* Bolhas */
+.pfx-bolhas i {
+  left: var(--x); bottom: -14px;
+  width: calc(var(--s) * 12px); height: calc(var(--s) * 12px);
+  border-radius: 9999px;
+  border: 1.5px solid rgb(186 230 253 / .75);
+  background: radial-gradient(circle at 30% 30%, rgb(255 255 255 / .5), rgb(255 255 255 / 0) 60%);
+  animation: pfx-bubble var(--d) ease-in infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-bubble {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate3d(var(--dx), -300px, 0) scale(1.15); opacity: 0; }
+}
+
+/* Corações */
+.pfx-coracoes i {
+  left: var(--x); bottom: -16px;
+  font-size: calc(var(--s) * 16px); line-height: 1;
+  color: #f0abfc; text-shadow: 0 0 8px rgb(217 70 239 / .8);
+  animation: pfx-bubble var(--d) ease-in infinite; animation-delay: var(--delay);
+}
+.pfx-coracoes i:nth-child(3n) { color: #c4b5fd; }
+.pfx-coracoes i:nth-child(4n) { color: #fff; }
+
+/* Estrelas cadentes */
+.pfx-estrelas i {
+  left: var(--x); top: -10%;
+  width: 70px; height: 2px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0), #fff);
+  border-radius: 9999px; box-shadow: 0 0 8px 1px rgb(196 181 253 / .9);
+  transform: rotate(35deg) translateX(-120px); opacity: 0;
+  animation: pfx-shoot calc(var(--d) * .55) ease-in infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-shoot {
+  0% { transform: translate3d(0, 0, 0) rotate(35deg); opacity: 0; }
+  8% { opacity: 1; }
+  40%, 100% { transform: translate3d(220px, 260px, 0) rotate(35deg); opacity: 0; }
+}
+
+/* Brilho neon: borda pulsando + varredura de luz */
+.pfx-neon::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 2px rgb(232 121 249 / .9), inset 0 0 26px 2px rgb(217 70 239 / .55), inset 0 0 60px rgb(34 211 238 / .22);
+  animation: pfx-neon 2.4s ease-in-out infinite alternate;
+}
+.pfx-neon::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / .22), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  animation: pfx-sweep 4.5s ease-in-out infinite;
+}
+@keyframes pfx-neon { from { opacity: .55; } to { opacity: 1; } }
+@keyframes pfx-sweep { 0% { transform: translateX(-120%) skewX(-18deg); } 55%, 100% { transform: translateX(380%) skewX(-18deg); } }
+
+/* Tempestade: clarão suave e raros (nada de pisca-pisca rápido) */
+.pfx-raios::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 60% 0%, rgb(254 249 195 / .55), transparent 60%);
+  opacity: 0;
+  animation: pfx-flash 6s ease-in-out infinite;
+}
+.pfx-raios::after {
+  content: ""; position: absolute; top: 0; left: 58%; width: 26px; height: 55%;
+  background: linear-gradient(#fef9c3, #facc15);
+  clip-path: polygon(55% 0, 15% 55%, 48% 55%, 20% 100%, 90% 40%, 55% 40%, 85% 0);
+  filter: drop-shadow(0 0 6px #fde047);
+  opacity: 0;
+  animation: pfx-bolt 6s ease-in-out infinite;
+}
+@keyframes pfx-flash { 0%, 62%, 100% { opacity: 0; } 66% { opacity: .55; } 74% { opacity: .1; } 78% { opacity: .4; } 90% { opacity: 0; } }
+@keyframes pfx-bolt { 0%, 63%, 100% { opacity: 0; } 66% { opacity: .95; } 76% { opacity: 0; } 79% { opacity: .7; } 88% { opacity: 0; } }
+
+/* Ondas de energia: anéis saindo do centro */
+.pfx-ondas i {
+  left: 50%; top: 55%;
+  width: 90px; height: 90px; margin: -45px 0 0 -45px;
+  border-radius: 9999px;
+  border: 2px solid rgb(103 232 249 / .8);
+  box-shadow: 0 0 14px rgb(34 211 238 / .6), inset 0 0 14px rgb(34 211 238 / .35);
+  animation: pfx-ring 4s ease-out infinite;
+}
+.pfx-ondas i:nth-child(2) { animation-delay: 1s; }
+.pfx-ondas i:nth-child(3) { animation-delay: 2s; }
+.pfx-ondas i:nth-child(4) { animation-delay: 3s; }
+@keyframes pfx-ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(5); opacity: 0; } }
+
+/* Partículas douradas: brilham e flutuam */
+.pfx-dourado i {
+  left: var(--x); top: var(--y);
+  width: calc(var(--s) * 11px); height: calc(var(--s) * 11px);
+  background: radial-gradient(circle, #fff7c2, #fbbf24 60%, transparent 62%);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: pfx-twinkle var(--d) ease-in-out infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-twinkle {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(.2) rotate(0); opacity: 0; }
+  50% { transform: translate3d(var(--dx), -18px, 0) scale(1) rotate(45deg); opacity: 1; }
+}
+
+/* Confete */
+.pfx-confete i {
+  left: var(--x); top: -12px;
+  width: calc(var(--s) * 6px); height: calc(var(--s) * 10px);
+  background: #f0abfc; border-radius: 1px;
+  animation: pfx-fall var(--d) linear infinite; animation-delay: var(--delay);
+}
+.pfx-confete i:nth-child(4n+1) { background: #fde047; }
+.pfx-confete i:nth-child(4n+2) { background: #38bdf8; }
+.pfx-confete i:nth-child(4n+3) { background: #fb7185; }
+@keyframes pfx-fall {
+  0% { transform: translate3d(0, 0, 0) rotate(0); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(var(--dx), 320px, 0) rotate(540deg); opacity: .9; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pfx { display: none; }
+}
+
+/* ── Comemoração de conquista (components/UnlockCelebration) ─────────────── */
+.unlock-pop { animation: unlock-pop .55s cubic-bezier(.16, 1.2, .3, 1) both; }
+@keyframes unlock-pop { from { opacity: 0; transform: scale(.7) translateY(24px); } to { opacity: 1; transform: none; } }
+.unlock-rays {
+  position: absolute; left: 50%; top: 90px; width: 420px; height: 420px; margin: -210px 0 0 -210px;
+  background: repeating-conic-gradient(from 0deg, rgb(253 224 71 / .16) 0 10deg, transparent 10deg 22deg);
+  -webkit-mask: radial-gradient(circle, #000 0%, transparent 68%); mask: radial-gradient(circle, #000 0%, transparent 68%);
+  animation: unlock-spin 14s linear infinite; pointer-events: none;
+}
+@keyframes unlock-spin { to { transform: rotate(360deg); } }
+.unlock-ring { box-shadow: 0 0 0 3px rgb(253 224 71 / .55), 0 0 40px 8px rgb(253 224 71 / .4); animation: unlock-pulse 1.8s ease-in-out infinite; }
+@keyframes unlock-pulse { 0%, 100% { transform: scale(.96); opacity: .7; } 50% { transform: scale(1.1); opacity: 1; } }
+.unlock-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.unlock-confetti i { position: absolute; top: -14px; width: 8px; height: 13px; border-radius: 2px; background: #f0abfc; animation: unlock-fall 3s linear infinite; --dx: 40px; }
+.unlock-confetti i:nth-child(4n+1) { background: #fde047; }
+.unlock-confetti i:nth-child(4n+2) { background: #38bdf8; --dx: -50px; }
+.unlock-confetti i:nth-child(4n+3) { background: #fb7185; }
+@keyframes unlock-fall { 0% { transform: translate3d(0, 0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 100% { transform: translate3d(var(--dx), 110vh, 0) rotate(600deg); opacity: .9; } }
+@media (prefers-reduced-motion: reduce) {
+  .unlock-pop, .unlock-rays, .unlock-ring, .unlock-confetti i { animation: none; }
+  .unlock-confetti { display: none; }
+}
