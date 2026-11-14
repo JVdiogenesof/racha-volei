@@ -8,6 +8,8 @@ export type ProfileTab = {
   icon?: ReactNode;
   /** Bolinha de novidade (número ou ponto). */
   badge?: number;
+  /** Aba em destaque (cor própria e brilho), pra chamar atenção. */
+  highlight?: boolean;
   content: ReactNode;
 };
 
@@ -44,7 +46,11 @@ export function ProfileTabs({ tabs, initial }: { tabs: ProfileTab[]; initial?: s
               aria-controls={`perfil-panel-${tab.id}`}
               onClick={() => setActive(tab.id)}
               className={`flex min-h-10 flex-1 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3 text-xs font-bold transition ${
-                selected ? "bg-brand-purple text-white shadow-md shadow-purple-950/40" : "text-white/55 hover:bg-white/5 hover:text-white/80"
+                tab.highlight
+                  ? `tab-highlight bg-gradient-to-r from-fuchsia-500 via-purple-500 to-amber-400 text-white ring-1 ring-white/40 ${selected ? "shadow-lg shadow-fuchsia-900/50" : "opacity-95 hover:opacity-100"}`
+                  : selected
+                    ? "bg-brand-purple text-white shadow-md shadow-purple-950/40"
+                    : "text-white/55 hover:bg-white/5 hover:text-white/80"
               }`}
             >
               {tab.icon}

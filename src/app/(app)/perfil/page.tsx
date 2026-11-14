@@ -155,6 +155,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
           {
             id: "personalizar",
             label: "Personalizar",
+            highlight: true,
             icon: <Palette className="h-3.5 w-3.5" aria-hidden />,
             content: (
               <ProfileCustomizer
