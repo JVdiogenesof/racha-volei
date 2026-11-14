@@ -178,3 +178,26 @@ export async function markUnlocksSeen(levelIds: string[]) {
   const { error } = await supabase.from("profiles").update({ seen_unlocks: merged }).eq("id", profile.id);
   if (error) throw new Error(error.message);
 }
+
+// ── Avisos de novidade (uma vez por pessoa; fica gravado em seen_unlocks) ──────
+const ANNOUNCEMENTS = new Set(["perfil-personalizacao"]);
+
+export async function hasSeenAnnouncement(id: string) {
+  if (!ANNOUNCEMENTS.has(id)) return true;
+  const profile = await requireMember();
+  const supabase = await createClient();
+  const extras = await getProfileExtras(supabase, profile.id);
+  return extras.seen_unlocks.includes(`aviso:${id}`);
+}
+
+export async function markAnnouncementSeen(id: string) {
+  if (!ANNOUNCEMENTS.has(id)) return;
+  const profile = await requireMember();
+  const supabase = await createClient();
+  const extras = await getProfileExtras(supabase, profile.id);
+  const key = `aviso:${id}`;
+  if (extras.seen_unlocks.includes(key)) return;
+  const merged = [...extras.seen_unlocks, key].slice(-200);
+  const { error } = await supabase.from("profiles").update({ seen_unlocks: merged }).eq("id", profile.id);
+  if (error) throw new Error(error.message);
+}

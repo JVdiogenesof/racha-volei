@@ -19,7 +19,8 @@ import { SharePlayerCard } from "@/components/SharePlayerCard";
 import { getActiveCommunity } from "@/lib/community";
 import { AnimatedMetric } from "@/components/AnimatedMetric";
 
-export default async function PerfilPage() {
+export default async function PerfilPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const { aba } = await searchParams;
   const profile = await requireProfile();
   const supabase = await createClient();
   const community = await getActiveCommunity();
@@ -148,6 +149,7 @@ export default async function PerfilPage() {
       />
 
       <ProfileTabs
+        initial={aba}
         tabs={[
           { id: "visao", label: "Visão geral", icon: <LayoutGrid className="h-3.5 w-3.5" aria-hidden />, content: overview },
           {
