@@ -229,6 +229,15 @@ a[href]:active svg,
   animation: podium-float 3.2s ease-in-out infinite;
 }
 
+/* Com anel de fogo, o conjunto todo flutua junto (foto + chamas), não só a foto. */
+.podium-avatar .fire-ring > .avatar-photo {
+  animation: none;
+}
+
+.podium-avatar .fire-ring {
+  animation: podium-float 3.2s ease-in-out infinite;
+}
+
 .podium-avatar-first .avatar-photo {
   box-shadow: 0 0 0 3px rgb(253 224 71 / 0.15), 0 0 24px rgb(251 191 36 / 0.18);
 }

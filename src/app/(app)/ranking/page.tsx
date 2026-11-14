@@ -133,6 +133,10 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             (counts.performance.get(b.profileId)?.wins ?? 0) - (counts.performance.get(a.profileId)?.wins ?? 0),
         );
 
+  // Anel de fogo: sequência de rachas seguidos (só na visão ao vivo, que cobre todos os rachas).
+  const withStreak = (list: RankingEntry[]) =>
+    isSeasonView ? list.map((entry) => ({ ...entry, streak: counts.streaks.get(entry.profileId) ?? 0 })) : list;
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -161,7 +165,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
         currentProfileId={currentProfile.id}
         eyebrow={`Quadra · ${isSeasonView ? `${ROLLING_INDEX_EVENT_COUNT} rachas` : formatMonthLabel(monthKey!)}`}
         badge={isSeasonView ? "ao vivo" : "histórico"}
-        rankings={{ performance: performanceRanking, wins: winsRanking, mvp: mvpRanking, attendance: attendanceRanking }}
+        rankings={{ performance: withStreak(performanceRanking), wins: withStreak(winsRanking), mvp: withStreak(mvpRanking), attendance: withStreak(attendanceRanking) }}
         qualifying={isSeasonView ? { slots: TOURNAMENT_QUALIFYING_SLOTS, label: TOURNAMENT_QUALIFYING_LABEL } : undefined}
       />
     </div>
