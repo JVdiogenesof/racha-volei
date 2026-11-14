@@ -208,46 +208,64 @@ function avatarRevalidate() {
   revalidatePath("/", "layout");
 }
 
+export type AvatarResult = { ok: true } | { ok: false; error: string };
+
 /**
  * Troca a foto de perfil. Cada pessoa tem um único arquivo no Storage
  * ("<id>.jpg"), sobrescrito a cada troca: a foto antiga deixa de existir.
  * O navegador já manda a imagem recortada e reduzida; aqui só se valida.
+ * Devolve o erro como resultado (em produção o texto de um erro lançado some).
  */
-export async function uploadAvatar(formData: FormData) {
-  const profile = await requireProfile();
-  const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) throw new Error("Escolha uma imagem.");
-  if (file.size > AVATAR_MAX_BYTES) throw new Error("A imagem ficou grande demais. Tente outra foto.");
-  if (file.type !== "image/jpeg") throw new Error("Não foi possível processar a foto. Tente outra.");
+export async function uploadAvatar(formData: FormData): Promise<AvatarResult> {
+  try {
+    const profile = await requireProfile();
+    const file = formData.get("photo");
+    if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Escolha uma imagem." };
+    if (file.size > AVATAR_MAX_BYTES) return { ok: false, error: "A imagem ficou grande demais. Tente outra foto." };
 
-  const supabase = await createClient();
-  const path = `${profile.id}.jpg`;
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(path, file, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
-  if (uploadError) throw new Error(uploadError.message);
-  // Limpa o arquivo da versão anterior (.webp), se existir: só fica uma foto por pessoa.
-  await supabase.storage.from("avatars").remove([`${profile.id}.webp`]);
+    // Confere pelo conteúdo (começo de todo JPEG), não pelo rótulo que o celular põe.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
+      return { ok: false, error: "Não foi possível processar a foto. Tente outra." };
+    }
 
-  // O sufixo ?v= força o navegador a buscar a foto nova em vez da guardada.
-  const url = `${supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-  const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
-  if (error) throw new Error(error.message);
-  avatarRevalidate();
+    const supabase = await createClient();
+    const path = `${profile.id}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, bytes, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
+    if (uploadError) return { ok: false, error: `Não foi possível enviar a foto (${uploadError.message}).` };
+    // Limpa o arquivo da versão anterior (.webp), se existir: só fica uma foto por pessoa.
+    await supabase.storage.from("avatars").remove([`${profile.id}.webp`]);
+
+    // O sufixo ?v= força o navegador a buscar a foto nova em vez da guardada.
+    const url = `${supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+    const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", profile.id);
+    if (error) return { ok: false, error: "Não foi possível salvar a foto no perfil." };
+    avatarRevalidate();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Não foi possível trocar a foto agora. Tente de novo." };
+  }
 }
 
 /** Volta para a foto da conta Google e apaga o arquivo enviado, se houver. */
-export async function resetAvatarToGoogle() {
-  const profile = await requireProfile();
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const googleUrl =
-    (user?.user_metadata?.avatar_url as string | undefined) ?? (user?.user_metadata?.picture as string | undefined) ?? null;
+export async function resetAvatarToGoogle(): Promise<AvatarResult> {
+  try {
+    const profile = await requireProfile();
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const googleUrl =
+      (user?.user_metadata?.avatar_url as string | undefined) ?? (user?.user_metadata?.picture as string | undefined) ?? null;
 
-  await supabase.storage.from("avatars").remove([`${profile.id}.jpg`, `${profile.id}.webp`]);
-  const { error } = await supabase.from("profiles").update({ avatar_url: googleUrl }).eq("id", profile.id);
-  if (error) throw new Error(error.message);
-  avatarRevalidate();
+    await supabase.storage.from("avatars").remove([`${profile.id}.jpg`, `${profile.id}.webp`]);
+    const { error } = await supabase.from("profiles").update({ avatar_url: googleUrl }).eq("id", profile.id);
+    if (error) return { ok: false, error: "Não foi possível voltar a foto." };
+    avatarRevalidate();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "Não foi possível voltar a foto agora. Tente de novo." };
+  }
 }

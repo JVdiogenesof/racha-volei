@@ -98,7 +98,11 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
         if (!blob) throw new Error("Não foi possível processar a imagem.");
         const data = new FormData();
         data.set("photo", new File([blob], "foto.jpg", { type: "image/jpeg" }));
-        await uploadAvatar(data);
+        const result = await uploadAvatar(data);
+        if (!result.ok) {
+          showToast(result.error);
+          return;
+        }
         setPicked(null);
         showToast("Foto atualizada! 📸");
       } catch (error) {
@@ -110,8 +114,8 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
   function reset() {
     startTransition(async () => {
       try {
-        await resetAvatarToGoogle();
-        showToast("Voltou para a foto da sua conta Google.");
+        const result = await resetAvatarToGoogle();
+        showToast(result.ok ? "Voltou para a foto da sua conta Google." : result.error);
       } catch (error) {
         showToast(error instanceof Error ? error.message : "Não foi possível voltar a foto.");
       }
