@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Gift, Lock, X } from "lucide-react";
-import { CATEGORY_LABEL, TIER_LABEL, type AchievementCategory, type AchievementTrack } from "@/lib/achievements";
+import { CATEGORY_LABEL, TIER_LABEL, type Achievement, type AchievementCategory, type AchievementTrack } from "@/lib/achievements";
 import { TIER_STYLE, rewardText } from "@/lib/achievementStyle";
 
-export function AchievementTracks({ tracks }: { tracks: AchievementTrack[] }) {
+export function AchievementTracks({ tracks, classics = [] }: { tracks: AchievementTrack[]; classics?: Achievement[] }) {
   const [category, setCategory] = useState<AchievementCategory | "all">("all");
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -88,6 +88,27 @@ export function AchievementTracks({ tracks }: { tracks: AchievementTrack[] }) {
           );
         })}
       </div>
+
+      {classics.length > 0 && (
+        <details className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <summary className="cursor-pointer text-sm font-bold text-white">
+            Conquistas clássicas <span className="font-normal text-white/50">· {classics.filter((item) => item.unlocked).length}/{classics.length}</span>
+          </summary>
+          <p className="mt-2 text-xs text-white/45">As conquistas de antes da reformulação continuam valendo.</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {classics.map((item) => (
+              <li key={item.id} className={`flex items-center gap-3 rounded-xl border p-3 ${item.unlocked ? "border-amber-300/25 bg-amber-300/8" : "border-white/8 bg-black/15 opacity-60"}`}>
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/20 text-xl ${item.unlocked ? "" : "grayscale"}`}>{item.emoji}</span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-sm text-white">{item.title}</strong>
+                  <span className="block truncate text-[11px] text-white/50">{item.unlocked ? item.description : `${Math.min(item.current, item.target)}/${item.target} · ${item.description}`}</span>
+                </span>
+                {item.unlocked && <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden />}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {detail && <TrackModal track={detail} onClose={() => setSelected(null)} />}
     </div>

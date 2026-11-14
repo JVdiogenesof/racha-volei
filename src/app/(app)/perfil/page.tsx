@@ -8,7 +8,7 @@ import { formatPointsDiff, getSeasonRanking, ROLLING_INDEX_EVENT_COUNT } from "@
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementTracks } from "@/components/AchievementTracks";
-import { getAchievementTracks, getFeaturedAchievements, getUnlockedLevelIds } from "@/lib/achievements";
+import { getAchievementTracks, getClassicAchievements, getFeaturedAchievements, getUnlockedLevelIds } from "@/lib/achievements";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ProfileCustomizer } from "@/components/ProfileCustomizer";
 import { ProfileTabs } from "@/components/ProfileTabs";
@@ -179,7 +179,7 @@ export default async function PerfilPage() {
             label: "Conquistas",
             icon: <Sparkles className="h-3.5 w-3.5" aria-hidden />,
             badge: newUnlocks.length || undefined,
-            content: <AchievementTracks tracks={tracks} />,
+            content: <AchievementTracks tracks={tracks} classics={getClassicAchievements(achievementStats)} />,
           },
         ]}
       />

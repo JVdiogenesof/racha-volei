@@ -62,7 +62,7 @@ const TRACKS: TrackDefinition[] = [
   {
     id: "sequencia", category: "frequencia", title: "Sequência", emoji: "🔥", unit: "rachas seguidos",
     description: "Rachas seguidos sem faltar.",
-    targets: [3, 5, 8, 12],
+    targets: [3, 5, 8, 10],
     rewards: {
       bronze: [{ kind: "banner", id: "noite" }],
       silver: [{ kind: "effect", id: "brasas" }, { kind: "frame", id: "grafite" }],
@@ -224,4 +224,34 @@ export function getFeaturedAchievements(stats: AchievementStats, limit = 3) {
 /** Quantos níveis (somando todas as trilhas) a pessoa já alcançou. */
 export function countUnlockedLevels(stats: AchievementStats) {
   return getUnlockedLevelIds(stats).size;
+}
+
+// ── Conquistas clássicas ───────────────────────────────────────────────────────
+// A lista original do app, mantida igualzinha: quem já tinha continua com elas.
+
+type ClassicDefinition = Omit<Achievement, "current" | "unlocked"> & { value: (stats: AchievementStats) => number };
+
+const CLASSICS: ClassicDefinition[] = [
+  { id: "estreia", title: "Estreia no VPA", description: "Participou do primeiro racha.", emoji: "🏐", target: 1, tier: "bronze", value: (s) => s.attendance },
+  { id: "presenca-5", title: "Presença garantida", description: "Participou de 5 rachas.", emoji: "📅", target: 5, tier: "silver", value: (s) => s.attendance },
+  { id: "veterano", title: "Veterano da resenha", description: "Participou de 10 rachas.", emoji: "🎖️", target: 10, tier: "gold", value: (s) => s.attendance },
+  { id: "lenda", title: "Lenda do VPA", description: "Participou de 25 rachas.", emoji: "🌟", target: 25, tier: "legend", value: (s) => s.attendance },
+  { id: "primeira-vitoria", title: "Primeira vitória", description: "Conquistou a primeira vitória.", emoji: "✌️", target: 1, tier: "bronze", value: (s) => s.wins },
+  { id: "vencedor-5", title: "Sequência vencedora", description: "Chegou a 5 vitórias.", emoji: "🔥", target: 5, tier: "silver", value: (s) => s.wins },
+  { id: "vencedor-15", title: "Máquina de vitórias", description: "Chegou a 15 vitórias.", emoji: "⚡", target: 15, tier: "gold", value: (s) => s.wins },
+  { id: "vencedor-30", title: "Dono do jogo", description: "Chegou a 30 vitórias.", emoji: "👑", target: 30, tier: "legend", value: (s) => s.wins },
+  { id: "primeiro-mvp", title: "Brilhou na noite", description: "Foi escolhido Jogador Destaque.", emoji: "🏆", target: 1, tier: "bronze", value: (s) => s.mvp },
+  { id: "mvp-3", title: "Craque da galera", description: "Foi destaque 3 vezes.", emoji: "💎", target: 3, tier: "gold", value: (s) => s.mvp },
+  { id: "mvp-10", title: "Inesquecível", description: "Foi destaque 10 vezes.", emoji: "✨", target: 10, tier: "legend", value: (s) => s.mvp },
+  { id: "streak-3", title: "Fogo aceso", description: "Participou de 3 rachas seguidos.", emoji: "🔥", target: 3, tier: "bronze", value: (s) => s.streak },
+  { id: "streak-5", title: "Sempre presente", description: "Participou de 5 rachas seguidos.", emoji: "💪", target: 5, tier: "silver", value: (s) => s.streak },
+  { id: "streak-10", title: "Maratonista", description: "Participou de 10 rachas seguidos.", emoji: "🚀", target: 10, tier: "legend", value: (s) => s.streak },
+  { id: "levantador", title: "Maestro da rede", description: "Joga como levantador do grupo.", emoji: "🪄", target: 1, tier: "legend", value: (s) => (s.isSetter ? 1 : 0) },
+];
+
+export function getClassicAchievements(stats: AchievementStats): Achievement[] {
+  return CLASSICS.map(({ value, ...definition }) => {
+    const current = Math.max(0, value(stats));
+    return { ...definition, current, unlocked: current >= definition.target };
+  });
 }
