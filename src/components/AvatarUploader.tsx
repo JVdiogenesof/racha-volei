@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { Camera, RotateCcw, X } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { useToast } from "./Toast";
@@ -38,6 +39,15 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
     if (!picked) return;
     const url = picked.url;
     return () => URL.revokeObjectURL(url);
+  }, [picked]);
+
+  useEffect(() => {
+    if (!picked) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
   }, [picked]);
 
   // Escala que faz a imagem cobrir a área toda (sem sobrar borda) no zoom 1.
@@ -125,8 +135,8 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
         <input ref={input} type="file" accept="image/*" className="hidden" onChange={(e) => void onPick(e.target.files?.[0])} />
       </div>
 
-      {picked && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Enquadrar foto">
+      {picked && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Enquadrar foto">
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#1a0f3a] p-5 shadow-2xl">
             <div className="flex items-center justify-between">
               <p className="text-base font-bold text-white">Enquadrar foto</p>
@@ -190,7 +200,8 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
