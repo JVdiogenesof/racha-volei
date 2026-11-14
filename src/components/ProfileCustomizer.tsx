@@ -5,6 +5,7 @@ import { Check, Lock, RotateCcw, Save } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { ProfileBannerArt } from "./ProfileBannerArt";
 import { ProfileHero } from "./ProfileHero";
+import { AvatarUploader } from "./AvatarUploader";
 import { useToast } from "./Toast";
 import { AVATAR_FRAMES } from "@/lib/avatarFrames";
 import { PROFILE_BANNERS, PROFILE_EFFECTS, isUnlocked, unlockLabel } from "@/lib/cosmetics";
@@ -84,6 +85,8 @@ export function ProfileCustomizer({
         />
         <p className="mt-2 text-xs text-white/45">Toque em qualquer opção pra testar. Itens com cadeado se destravam com conquistas.</p>
       </div>
+
+      <AvatarUploader fullName={fullName} avatarUrl={avatarUrl} frame={saved.frame} />
 
       <Section title="Moldura da foto" hint="Aparece no ranking, nas listas e na busca de jogadores.">
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
