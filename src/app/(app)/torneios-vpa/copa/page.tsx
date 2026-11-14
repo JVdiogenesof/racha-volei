@@ -171,6 +171,22 @@ export default async function CopaVpaPage() {
         qualifiedCount={qualified.length}
       />
 
+      {/* Dia da Copa: sorteio ao vivo e jogos */}
+      <section className="grid gap-3 sm:grid-cols-2">
+        <Link href="/torneios-vpa/copa/sorteio" className="group relative overflow-hidden rounded-2xl border border-amber-300/30 bg-gradient-to-br from-[#3a2285] to-[#160b3a] p-4">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" /> AO VIVO</span>
+          <p className="mt-2 text-lg font-black text-white">Sorteio dos times</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-white/65">Veja os times saindo em tempo real, pote a pote, com a foto de cada jogador.</p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-amber-200">Abrir <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" strokeWidth={2.25} /></span>
+        </Link>
+        <Link href="/torneios-vpa/copa/jogos" className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <Trophy className="h-5 w-5 text-pink-300" strokeWidth={2} />
+          <p className="mt-2 text-lg font-black text-white">Jogos e classificação</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-white/65">Horários, placar ao vivo, classificação e o campeão.</p>
+          <span className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-purple-300">Abrir <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" strokeWidth={2.25} /></span>
+        </Link>
+      </section>
+
       {/* Campeões da copa */}
       {finalChampions.length > 0 && cup.final_event_id && (
         <section className="rounded-2xl border border-pink-400/40 bg-gradient-to-br from-pink-400/20 to-transparent p-5 text-center">

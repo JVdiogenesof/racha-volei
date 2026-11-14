@@ -1254,3 +1254,29 @@ form[aria-busy="true"] button[type="submit"]::after {
 }
 .tab-highlight { animation: tab-glow 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tab-highlight { animation: none; } }
+
+/* Copa VPA: sorteio ao vivo */
+@keyframes copa-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes copa-beam {
+  to { transform: rotate(360deg); }
+}
+@keyframes copa-rise {
+  0% { transform: translateY(0) scale(0.8); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translateY(-260px) scale(1.4); opacity: 0; }
+}
+@keyframes copa-confetti {
+  0% { transform: translate3d(0, -20px, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--dx, 0px), 420px, 0) rotate(540deg); opacity: 0; }
+}
+.copa-pop { animation: copa-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.copa-beam { animation: copa-beam 6s linear infinite; }
+.copa-rise { animation: copa-rise 2.2s ease-out forwards; }
+.copa-confetti { animation: copa-confetti 2.6s ease-in forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .copa-pop, .copa-beam, .copa-rise, .copa-confetti { animation: none; }
+}
