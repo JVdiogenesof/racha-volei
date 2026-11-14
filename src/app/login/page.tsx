@@ -1,7 +1,7 @@
 import type { Viewport } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
+import { LoginBackdrop } from "@/components/LoginBackdrop";
 
 export const viewport: Viewport = {
   themeColor: "#351080",
@@ -10,14 +10,7 @@ export const viewport: Viewport = {
 export default function LoginPage() {
   return (
     <main className="relative isolate min-h-[100svh] overflow-hidden bg-[#21065d] text-white">
-      <Image
-        src="/login-vpa-art.jpg"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="-z-20 scale-[1.08] object-cover object-center -translate-y-[4%]"
-      />
+      <LoginBackdrop />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(32,5,92,0.02)_0%,rgba(31,5,82,0.01)_42%,rgba(16,4,55,0.45)_72%,rgba(9,3,35,0.92)_100%)]"
