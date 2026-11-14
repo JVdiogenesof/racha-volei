@@ -90,7 +90,6 @@ function PlayerDetails({
             banner={player.profile_banner}
             effect={player.profile_effect}
             nickname={player.nickname_badge}
-            streak={player.streak}
             isSetter={player.is_setter}
             badges={player.featuredBadges}
             eyebrow={showNotes ? `Perfil do jogador · #${rank}` : "Perfil do jogador"}
@@ -284,7 +283,7 @@ export function PlayerSearch({ players, showNotes = false }: { players: Player[]
             >
               <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-gradient-to-b from-purple-300 to-brand-purple opacity-50 transition group-hover:opacity-100" />
               <div className="relative shrink-0">
-                <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} frame={player.avatar_frame} />
+                <Avatar src={player.avatar_url} name={player.full_name} size="lg" frame={player.avatar_frame} />
                 {showNotes ? <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#1a1836] bg-white px-1 text-[10px] font-black text-brand-navy">{rank}</span> : null}
               </div>
               <div className="min-w-0 flex-1">

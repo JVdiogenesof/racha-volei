@@ -143,7 +143,6 @@ export default async function PerfilPage() {
         avatarFrame={profile.avatar_frame}
         banner={extras.profile_banner}
         effect={extras.profile_effect}
-        streak={streak}
         isSetter={profile.is_setter}
         featuredBadges={featuredBadges}
       />
@@ -160,8 +159,7 @@ export default async function PerfilPage() {
                 fullName={profile.full_name}
                 avatarUrl={profile.avatar_url}
                 nickname={profile.nickname_badge}
-                streak={streak}
-                isSetter={profile.is_setter}
+                        isSetter={profile.is_setter}
                 current={{ frame: profile.avatar_frame, banner: extras.profile_banner, effect: extras.profile_effect }}
                 unlockedLevelIds={[...unlockedLevelIds]}
                 featuredBadges={featuredBadges}

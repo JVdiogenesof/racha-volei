@@ -288,7 +288,6 @@ export function Leaderboard({
                         src={entry.avatarUrl}
                         name={entry.fullName}
                         size={isFirst ? "lg" : "md"}
-                        streak={entry.streak}
                         frame={entry.avatarFrame}
                         ring={podiumTier ? TIER_STYLE[podiumTier].ring : "ring-white/40"}
                       />
@@ -387,7 +386,7 @@ export function Leaderboard({
                           {rankedPosition ? `${rankedPosition}º` : "—"}
                         </span>
                         <span className="shrink-0 pt-0.5">
-                          <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" streak={entry.streak} frame={entry.avatarFrame} ring={tier ? TIER_STYLE[tier].ring : undefined} />
+                          <Avatar src={entry.avatarUrl} name={entry.fullName} size="sm" frame={entry.avatarFrame} ring={tier ? TIER_STYLE[tier].ring : undefined} />
                         </span>
                         <div className="min-w-0 flex-1 pt-0.5">
                           <p className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-medium leading-tight text-white">

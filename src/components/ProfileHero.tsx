@@ -20,7 +20,6 @@ export function ProfileHero({
   banner,
   effect,
   nickname,
-  streak,
   isSetter,
   badges,
   showEmptyBadgeSlots = false,
@@ -33,7 +32,6 @@ export function ProfileHero({
   banner?: string | null;
   effect?: string | null;
   nickname?: string | null;
-  streak?: number;
   isSetter?: boolean;
   /** Até 3 medalhas em destaque. */
   badges?: Badge[];
@@ -62,7 +60,7 @@ export function ProfileHero({
       <div className="relative px-5 pb-5">
         <div className="-mt-11 flex items-end justify-between gap-3">
           <div className="relative z-[5] rounded-full bg-[#241352] p-1 shadow-lg shadow-black/40">
-            <Avatar src={avatarUrl} name={fullName} size="xl" streak={streak} frame={avatarFrame} ring="ring-purple-200/40" />
+            <Avatar src={avatarUrl} name={fullName} size="xl" frame={avatarFrame} ring="ring-purple-200/40" />
           </div>
           {(shown.length > 0 || empty > 0) && (
             <div className="relative z-[5] flex items-center gap-1.5 pb-1">

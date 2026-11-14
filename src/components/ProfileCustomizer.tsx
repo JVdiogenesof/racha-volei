@@ -18,7 +18,6 @@ export function ProfileCustomizer({
   fullName,
   avatarUrl,
   nickname,
-  streak,
   isSetter,
   current,
   unlockedLevelIds,
@@ -27,7 +26,6 @@ export function ProfileCustomizer({
   fullName: string;
   avatarUrl: string | null;
   nickname: string | null;
-  streak: number;
   isSetter: boolean;
   current: Draft;
   unlockedLevelIds: string[];
@@ -80,7 +78,6 @@ export function ProfileCustomizer({
           banner={draft.banner}
           effect={draft.effect}
           nickname={nickname}
-          streak={streak}
           isSetter={isSetter}
           badges={featuredBadges}
           showEmptyBadgeSlots

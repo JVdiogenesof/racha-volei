@@ -8,14 +8,10 @@ const SIZES = {
   xl: "h-20 w-20 text-xl",
 };
 
-/** A partir de quantos rachas seguidos o anel de fogo aparece. */
-const STREAK_THRESHOLD = 3;
-
 export function Avatar({
   src,
   name,
   size = "md",
-  streak,
   ring,
   frame,
   still,
@@ -23,8 +19,6 @@ export function Avatar({
   src?: string | null;
   name: string;
   size?: keyof typeof SIZES;
-  /** Sequência de rachas seguidos -- a partir de STREAK_THRESHOLD a foto ganha um anel de fogo animado. */
-  streak?: number;
   /** Cor do anel ao redor do avatar (classe Tailwind). Padrão: branco translúcido. */
   ring?: string;
   /** Moldura escolhida pela pessoa (id de lib/avatarFrames). Sem valor válido, não desenha nada. */
@@ -40,9 +34,8 @@ export function Avatar({
     .map((n) => n[0]?.toUpperCase())
     .join("");
 
-  const showStreak = !!streak && streak >= STREAK_THRESHOLD;
   const frameId = isAvatarFrameId(frame) ? frame : null;
-  const plainRing = showStreak || frameId;
+  const plainRing = !!frameId;
 
   const photo = src ? (
     // eslint-disable-next-line @next/next/no-img-element
@@ -65,41 +58,5 @@ export function Avatar({
   // Em tamanho pequeno (listas longas) a moldura fica parada: dezenas de animações juntas pesam no celular.
   const art = frameId ? <AvatarFrameArt id={frameId} still={still ?? size === "sm"} /> : null;
 
-  if (!showStreak) return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
-
-  // Anel de fogo: chamas nascem na borda e sobem, com ritmos diferentes pra não piscar tudo junto.
-  // Com moldura, as chamas continuam atrás dela (sem o anel colorido, que brigaria com o desenho).
-  return (
-    <span
-      className={`fire-ring shrink-0 ${frameId ? "fire-ring--framed" : ""}`}
-      title={`${streak} rachas seguidos`}
-      aria-label={`${name}, ${streak} rachas seguidos`}
-    >
-      <span className="fire-ring__glow" aria-hidden />
-      {FLAMES.filter((_, index) => size === "lg" || size === "xl" || index % (size === "md" ? 2 : 3) === 1 || index === 5).map((flame) => (
-        <span key={flame.key} className="fire-ring__tongue" style={flame.style} aria-hidden />
-      ))}
-      <span className="fire-ring__band" aria-hidden />
-      {photo}
-      {art}
-    </span>
-  );
+  return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
 }
-
-/** Ângulo 0 = topo da foto. Calculado uma vez só (é igual pra todo avatar). */
-const FLAMES = [-125, -100, -75, -50, -25, 0, 25, 50, 75, 100, 125].map((deg, index) => {
-  const rad = (deg * Math.PI) / 180;
-  const r = 0.4; // um pouco pra dentro da borda: a base da chama fica escondida atrás da foto
-  const height = 24 + 30 * Math.max(0, Math.cos(rad / 1.25)); // mais alta no topo
-  return {
-    key: deg,
-    style: {
-      left: `${50 + 100 * r * Math.sin(rad)}%`,
-      top: `${50 - 100 * r * Math.cos(rad)}%`,
-      "--h": `${height.toFixed(1)}%`,
-      "--w": `${(22 + 8 * Math.cos(rad / 1.25)).toFixed(1)}%`,
-      "--d": `${(0.55 + ((index * 37) % 40) / 100).toFixed(2)}s`,
-      "--delay": `${(-((index * 53) % 90) / 100).toFixed(2)}s`,
-    } as React.CSSProperties,
-  };
-});

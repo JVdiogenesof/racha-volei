@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
-import { getAttendanceStreaks } from "@/lib/streak";
 import { getConfirmedHighlights } from "@/lib/highlights";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
@@ -55,7 +54,7 @@ export default async function ConfirmarPresencaPage({
   // Confere Pix recém-pagos antes de montar a lista (não depende só do webhook).
   await reconcileWithinBudget(id, profile.is_organizer ? undefined : profile.id);
 
-  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, streaks, highlights, { data: paymentRows }, { data: setterOverrideRows }, { data: lockedRows }, { data: qualificationExceptions }, { data: qualifiedPlayers }] =
+  const [{ data: event }, { data: attendanceList }, { data: myAttendance }, ratingsData, highlights, { data: paymentRows }, { data: setterOverrideRows }, { data: lockedRows }, { data: qualificationExceptions }, { data: qualifiedPlayers }] =
     await Promise.all([
       supabase
         .from("events")
@@ -71,7 +70,6 @@ export default async function ConfirmarPresencaPage({
       profile.is_organizer
         ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
         : Promise.resolve(null),
-      getAttendanceStreaks(supabase, selectedCommunity),
       getConfirmedHighlights(supabase, id),
       profile.is_organizer
         ? supabase.from("payments").select("profile_id, paid, payment_source").eq("event_id", id)
@@ -876,7 +874,7 @@ export default async function ConfirmarPresencaPage({
                 >
                   <div className="flex min-w-0 items-start gap-3">
                     <span className="w-5 shrink-0 pt-2 text-center text-xs font-semibold text-white/40">{index + 1}</span>
-                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} frame={p?.avatar_frame} />
+                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" frame={p?.avatar_frame} />
                     <div className="min-w-0 flex-1 pt-0.5">
                       <p className={`break-words text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}{a.profile_id === profile.id && <span className="ml-1.5 text-xs font-bold text-purple-200">(você)</span>}</p>
                       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">

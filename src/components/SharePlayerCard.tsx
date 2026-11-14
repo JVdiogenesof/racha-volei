@@ -30,7 +30,6 @@ type Props = {
   avatarFrame: string | null;
   banner: string | null;
   effect: string | null;
-  streak: number;
   isSetter: boolean;
   featuredBadges: Badge[];
 };
@@ -56,7 +55,6 @@ export function SharePlayerCard({
   avatarFrame,
   banner,
   effect,
-  streak,
   isSetter,
   featuredBadges,
 }: Props) {
@@ -108,7 +106,6 @@ export function SharePlayerCard({
       banner={banner}
       effect={effect}
       nickname={nickname}
-      streak={streak}
       isSetter={isSetter}
       badges={featuredBadges}
       showEmptyBadgeSlots
