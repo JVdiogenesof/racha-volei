@@ -9,8 +9,12 @@ import { AchievementDetailsModal } from "./AchievementDetailsModal";
 import { ProfileHero } from "./ProfileHero";
 import { BadgeIcon } from "./BadgeIcon";
 import { BadgeDetail } from "./BadgeShowcase";
+import { ProfileBannerArt } from "./ProfileBannerArt";
+import { isBannerId } from "@/lib/cosmetics";
 import type { Achievement } from "@/lib/achievements";
 import type { Badge, EarnedBadge } from "@/lib/badges";
+
+const MINI_BADGES = 5;
 
 type Player = {
   id: string;
@@ -279,34 +283,57 @@ export function PlayerSearch({ players, showNotes = false, initialPlayerId }: { 
               key={player.id}
               onClick={() => setSelectedPlayer(player)}
               aria-label={`Ver perfil de ${player.full_name}`}
-              className="group relative flex min-h-[5.5rem] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.075] to-white/[0.025] p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-purple-300/25 hover:bg-white/[0.09] active:translate-y-0"
+              className="group relative flex min-h-[6.5rem] min-w-0 items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.075] to-white/[0.025] p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-purple-300/25 hover:bg-white/[0.09] active:translate-y-0"
             >
-              <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-gradient-to-b from-purple-300 to-brand-purple opacity-50 transition group-hover:opacity-100" />
+              {isBannerId(player.profile_banner) ? (
+                <>
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-y-0 right-0 w-[62%]"
+                    style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, #000 60%)", maskImage: "linear-gradient(to right, transparent 0%, #000 60%)" }}
+                  >
+                    <ProfileBannerArt id={player.profile_banner} className="h-full w-full" />
+                  </div>
+                  <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to right, rgba(20,16,48,.92) 0%, rgba(20,16,48,.7) 45%, rgba(20,16,48,.38) 100%)" }} />
+                </>
+              ) : (
+                <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-gradient-to-b from-purple-300 to-brand-purple opacity-50 transition group-hover:opacity-100" />
+              )}
               <div className="relative shrink-0">
                 <Avatar src={player.avatar_url} name={player.full_name} size="lg" frame={player.avatar_frame} />
                 {showNotes ? <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#1a1836] bg-white px-1 text-[10px] font-black text-brand-navy">{rank}</span> : null}
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="relative min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-white">{player.full_name}</p>
                 <div className="mt-1 flex min-w-0 items-center gap-1.5">
                   <NicknameBadge text={player.nickname_badge} />
                   {player.is_setter ? <span className="shrink-0 rounded-full bg-sky-300/10 px-2 py-0.5 text-[9px] font-bold text-sky-200">🏐 Lev.</span> : null}
                 </div>
-                <div className="mt-2 flex items-center gap-2 text-[10px] font-semibold text-white/40">
+                <div className="mt-1.5 flex items-center gap-2 text-[10px] font-semibold text-white/60">
                   <span>{player.performance ? `${player.performance.percentage}% aproveit.` : "Sem confrontos"}</span>
                   {player.achievementCount > 0 ? (
-                    <><span className="h-1 w-1 rounded-full bg-white/20" /><span className="text-amber-200/70">🏆 {player.achievementCount}</span></>
+                    <><span className="h-1 w-1 rounded-full bg-white/30" /><span className="text-amber-200">🏆 {player.achievementCount}</span></>
                   ) : null}
                 </div>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                {showNotes && player.overall !== null ? (
-                  <div className="text-right">
-                    <strong className="block text-xl leading-none text-purple-200">{player.overall.toFixed(1)}</strong>
-                    <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/30">Geral</span>
+                {player.earnedBadges.length > 0 ? (
+                  <div className="mt-2 flex items-center gap-1">
+                    {player.earnedBadges.slice(0, MINI_BADGES).map(({ badge }) => (
+                      <BadgeIcon key={badge.id} badge={badge} size="sm" />
+                    ))}
+                    {player.earnedBadges.length > MINI_BADGES ? (
+                      <span className="ml-0.5 text-[10px] font-black text-white/60">+{player.earnedBadges.length - MINI_BADGES}</span>
+                    ) : null}
                   </div>
                 ) : null}
-                <ChevronRight className="h-4 w-4 text-white/20 transition group-hover:translate-x-0.5 group-hover:text-purple-200" />
+              </div>
+              <div className="relative flex shrink-0 items-center gap-1.5">
+                {showNotes && player.overall !== null ? (
+                  <div className="text-right">
+                    <strong className="block text-xl leading-none text-white drop-shadow">{player.overall.toFixed(1)}</strong>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-white/55">Geral</span>
+                  </div>
+                ) : null}
+                <ChevronRight className="h-4 w-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-purple-200" />
               </div>
             </button>
           );
