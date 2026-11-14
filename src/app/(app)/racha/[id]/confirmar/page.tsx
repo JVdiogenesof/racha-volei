@@ -64,7 +64,7 @@ export default async function ConfirmarPresencaPage({
         .maybeSingle(),
       supabase
         .from("attendance")
-        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, is_setter, status)")
+        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, avatar_frame, is_setter, status)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
       supabase.from("attendance").select("status, confirmed_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -855,7 +855,7 @@ export default async function ConfirmarPresencaPage({
           </div>
           <ul className="mt-2.5 grid gap-2 sm:grid-cols-2">
             {confirmadosOrdenados.map((a, index) => {
-              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean; status: string } | null;
+              const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; avatar_frame: string | null; is_setter: boolean; status: string } | null;
               const overall = overallFor(a.profile_id);
               const hasPaid = paidProfileIds.has(a.profile_id);
               const paymentSource = paymentSourceByProfile.get(a.profile_id);
@@ -876,7 +876,7 @@ export default async function ConfirmarPresencaPage({
                 >
                   <div className="flex min-w-0 items-start gap-3">
                     <span className="w-5 shrink-0 pt-2 text-center text-xs font-semibold text-white/40">{index + 1}</span>
-                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} />
+                    <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" streak={streaks.get(a.profile_id)} frame={p?.avatar_frame} />
                     <div className="min-w-0 flex-1 pt-0.5">
                       <p className={`break-words text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}{a.profile_id === profile.id && <span className="ml-1.5 text-xs font-bold text-purple-200">(você)</span>}</p>
                       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">
@@ -1062,7 +1062,7 @@ export default async function ConfirmarPresencaPage({
         </div>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {interessados.map((a, index) => {
-            const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
+            const p = a.profiles as unknown as { full_name: string; avatar_url: string | null; avatar_frame: string | null; is_setter: boolean } | null;
             const overall = overallFor(a.profile_id);
             return (
               <li

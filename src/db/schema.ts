@@ -85,6 +85,8 @@ export const profiles = pgTable("profiles", {
   phone: text("phone"),
   instagramHandle: text("instagram_handle"),
   avatarUrl: text("avatar_url"),
+  // Moldura da foto escolhida pela pessoa (id de src/lib/avatarFrames.ts); nulo = sem moldura.
+  avatarFrame: text("avatar_frame"),
   // Apelido/insígnia divertida que o próprio jogador escolhe (ou que um
   // organizador ajusta), tipo "só tenho ataque". Puramente decorativo, exibido
   // ao lado do nome -- não entra em nenhum cálculo.

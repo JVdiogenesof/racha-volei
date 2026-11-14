@@ -13,6 +13,7 @@ import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { SharePlayerCard } from "@/components/SharePlayerCard";
 import { getActiveCommunity } from "@/lib/community";
 import { AnimatedMetric } from "@/components/AnimatedMetric";
+import { AvatarFramePicker } from "@/components/AvatarFramePicker";
 
 export default async function PerfilPage() {
   const profile = await requireProfile();
@@ -89,6 +90,8 @@ export default async function PerfilPage() {
         achievements={featuredAchievements.map(({ title, emoji }) => ({ title, emoji }))}
         achievementCount={achievements.filter((achievement) => achievement.unlocked).length}
       />
+
+      <AvatarFramePicker fullName={profile.full_name} avatarUrl={profile.avatar_url} currentFrame={profile.avatar_frame} streak={streak} />
 
       <section>
         <h2 className="font-semibold text-white">Meu histórico</h2>

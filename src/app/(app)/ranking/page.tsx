@@ -20,7 +20,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const isSeasonView = !monthKey;
 
   const [{ data: profiles }, { data: monthEvents }, counts, seasonScores, { data: reservedPlayers }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, avatar_url").eq("status", "approved").contains("communities", [community]),
+    supabase.from("profiles").select("id, full_name, avatar_url, avatar_frame").eq("status", "approved").contains("communities", [community]),
     supabase.from("events").select("date").eq("community", community).order("date", { ascending: false }),
     getRankingCounts(supabase, community, monthKey),
     isSeasonView ? getSeasonRanking(supabase, community) : Promise.resolve(null),
@@ -38,7 +38,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
 
   function buildRanking(rawCounts: Map<string, number>): RankingEntry[] {
     return [...rawCounts.entries()]
-      .map(([profileId, count]) => {
+      .map(([profileId, count]): RankingEntry | null => {
         const profile = profileById.get(profileId);
         if (!profile) return null;
         return {
@@ -46,6 +46,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
           count: Math.max(0, count),
           fullName: profile.full_name,
           avatarUrl: profile.avatar_url,
+          avatarFrame: profile.avatar_frame,
         };
       })
       .filter((entry): entry is RankingEntry => entry !== null)
@@ -83,6 +84,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             count: season.averageIndex,
             fullName: profile.full_name,
             avatarUrl: profile.avatar_url,
+          avatarFrame: profile.avatar_frame,
             displayValue: season.eligible ? `${season.averageIndex.toFixed(1)} pts` : "Em classificação",
             detail: season.eligible ? undefined : `${season.eventsPlayed}/${INDEX_MIN_EVENTS} rachas para classificação`,
             stats,
@@ -119,6 +121,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             count: stats.indexScore,
             fullName: profile.full_name,
             avatarUrl: profile.avatar_url,
+          avatarFrame: profile.avatar_frame,
             displayValue: stats.eligible ? `${stats.indexScore.toFixed(1)} pts` : "Em classificação",
             detail: `${stats.percentage}% · ${stats.wins}V · ${stats.losses}D · ${stats.attendance} pres. (${formatMonthLabel(monthKey!)})`,
             ranked: stats.eligible,

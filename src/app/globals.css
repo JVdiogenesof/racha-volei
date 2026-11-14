@@ -880,3 +880,69 @@ form[aria-busy="true"] button[type="submit"]::after {
     animation: none;
   }
 }
+
+/* ── Molduras de foto de perfil (desenhos em components/AvatarFrameArt) ─────── */
+.avatar-frame-art {
+  position: absolute;
+  left: -35%;
+  top: -57.5%;
+  width: 170%;
+  height: 170%;
+  z-index: 4;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.afr-spin,
+.afr-spin-slow,
+.afr-pulse,
+.afr-twinkle {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.afr-spin { animation: afr-spin 2.6s linear infinite; }
+.afr-spin-slow { animation: afr-spin 9s linear infinite; }
+.afr-pulse { animation: afr-pulse 1.5s ease-in-out infinite; }
+.afr-twinkle { animation: afr-twinkle 1.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.afr-float { animation: afr-float 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.afr-flicker { animation: afr-flicker 1.2s steps(1) infinite; }
+
+@keyframes afr-spin { to { transform: rotate(360deg); } }
+@keyframes afr-pulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.85; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+@keyframes afr-twinkle {
+  0%, 100% { transform: scale(0.55) rotate(0deg); opacity: 0.55; }
+  50% { transform: scale(1.1) rotate(20deg); opacity: 1; }
+}
+@keyframes afr-float {
+  0%, 100% { transform: translateY(1.5px); opacity: 0.8; }
+  50% { transform: translateY(-2.5px); opacity: 1; }
+}
+@keyframes afr-flicker {
+  0%, 55% { opacity: 1; }
+  60%, 70% { opacity: 0.35; }
+  75%, 100% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .afr-spin,
+  .afr-spin-slow,
+  .afr-pulse,
+  .afr-twinkle,
+  .afr-float,
+  .afr-flicker {
+    animation: none;
+  }
+}
+
+/* Com moldura escolhida, o anel colorido do fogo sai (o desenho da moldura faz esse papel). */
+.fire-ring--framed .fire-ring__band {
+  display: none;
+}
+
+.fire-ring--framed > .avatar-photo {
+  box-shadow: none !important;
+}

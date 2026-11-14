@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
+import { isAvatarFrameId } from "@/lib/avatarFrames";
 
 export async function updateProfileData(formData: FormData) {
   const profile = await requireMember();
@@ -90,4 +91,14 @@ export async function deletePushSubscription(endpoint: string) {
 
   const { error } = await supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
   if (error) throw new Error(error.message);
+}
+
+/** Troca (ou tira, com null) a moldura da foto de perfil da própria pessoa. */
+export async function setAvatarFrame(frameId: string | null) {
+  const profile = await requireMember();
+  if (frameId !== null && !isAvatarFrameId(frameId)) throw new Error("Moldura inválida.");
+  const supabase = await createClient();
+  const { error } = await supabase.from("profiles").update({ avatar_frame: frameId }).eq("id", profile.id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }

@@ -9,6 +9,7 @@ export interface CurrentProfile {
   birthdate: string | null;
   phone: string | null;
   avatar_url: string | null;
+  avatar_frame: string | null;
   nickname_badge: string | null;
   is_setter: boolean;
   attendance_frequency: "weekly" | "biweekly" | "monthly" | null;

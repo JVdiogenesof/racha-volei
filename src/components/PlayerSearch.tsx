@@ -12,6 +12,7 @@ type Player = {
   id: string;
   full_name: string;
   avatar_url: string | null;
+  avatar_frame?: string | null;
   is_setter: boolean;
   overall: number | null;
   streak?: number;
@@ -74,7 +75,7 @@ function PlayerDetails({
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="relative">
-              <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} />
+              <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} frame={player.avatar_frame} />
               {showNotes ? (
                 <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#30215d] bg-white px-1 text-[10px] font-black text-brand-navy">
                   {rank}
@@ -263,7 +264,7 @@ export function PlayerSearch({ players, showNotes = false }: { players: Player[]
             >
               <span className="absolute inset-y-3 left-0 w-0.5 rounded-r-full bg-gradient-to-b from-purple-300 to-brand-purple opacity-50 transition group-hover:opacity-100" />
               <div className="relative shrink-0">
-                <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} />
+                <Avatar src={player.avatar_url} name={player.full_name} size="lg" streak={player.streak} frame={player.avatar_frame} />
                 {showNotes ? <span className="absolute -left-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#1a1836] bg-white px-1 text-[10px] font-black text-brand-navy">{rank}</span> : null}
               </div>
               <div className="min-w-0 flex-1">

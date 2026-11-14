@@ -18,7 +18,7 @@ export default async function JogadoresPage() {
   const [{ data: players }, { selfByProfile, organizerByProfile }, weights, rankingCounts] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, is_setter, nickname_badge")
+      .select("id, full_name, avatar_url, avatar_frame, is_setter, nickname_badge")
       .eq("status", "approved")
       .contains("communities", [community])
       .order("full_name"),

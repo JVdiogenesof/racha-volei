@@ -1,3 +1,6 @@
+import { AvatarFrameArt } from "./AvatarFrameArt";
+import { isAvatarFrameId } from "@/lib/avatarFrames";
+
 const SIZES = {
   sm: "h-8 w-8 text-xs",
   md: "h-11 w-11 text-sm",
@@ -13,6 +16,7 @@ export function Avatar({
   size = "md",
   streak,
   ring,
+  frame,
 }: {
   src?: string | null;
   name: string;
@@ -21,6 +25,8 @@ export function Avatar({
   streak?: number;
   /** Cor do anel ao redor do avatar (classe Tailwind). Padrão: branco translúcido. */
   ring?: string;
+  /** Moldura escolhida pela pessoa (id de lib/avatarFrames). Sem valor válido, não desenha nada. */
+  frame?: string | null;
 }) {
   const ringClass = ring ?? "ring-white/15";
   const initials = name
@@ -31,34 +37,44 @@ export function Avatar({
     .join("");
 
   const showStreak = !!streak && streak >= STREAK_THRESHOLD;
+  const frameId = isAvatarFrameId(frame) ? frame : null;
+  const plainRing = showStreak || frameId;
 
   const photo = src ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={src}
       alt={name}
-      className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ${showStreak ? "ring-transparent" : ringClass}`}
+      className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ${plainRing ? "ring-transparent" : ringClass}`}
       referrerPolicy="no-referrer"
     />
   ) : (
     <span
-      className={`avatar-photo flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ${showStreak ? "ring-transparent" : ringClass}`}
+      className={`avatar-photo flex ${SIZES[size]} shrink-0 items-center justify-center rounded-full bg-brand-purple/25 font-semibold text-purple-200 ring-2 ${plainRing ? "ring-transparent" : ringClass}`}
     >
       {initials || "?"}
     </span>
   );
 
-  if (!showStreak) return <span className="relative inline-flex shrink-0">{photo}</span>;
+  const art = frameId ? <AvatarFrameArt id={frameId} /> : null;
+
+  if (!showStreak) return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
 
   // Anel de fogo: chamas nascem na borda e sobem, com ritmos diferentes pra não piscar tudo junto.
+  // Com moldura, as chamas continuam atrás dela (sem o anel colorido, que brigaria com o desenho).
   return (
-    <span className="fire-ring shrink-0" title={`${streak} rachas seguidos`} aria-label={`${name}, ${streak} rachas seguidos`}>
+    <span
+      className={`fire-ring shrink-0 ${frameId ? "fire-ring--framed" : ""}`}
+      title={`${streak} rachas seguidos`}
+      aria-label={`${name}, ${streak} rachas seguidos`}
+    >
       <span className="fire-ring__glow" aria-hidden />
       {FLAMES.map((flame) => (
         <span key={flame.key} className="fire-ring__tongue" style={flame.style} aria-hidden />
       ))}
       <span className="fire-ring__band" aria-hidden />
       {photo}
+      {art}
     </span>
   );
 }
