@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { getRankingCounts } from "@/lib/rankings";
 import { getSeasonRanking } from "@/lib/seasonRanking";
@@ -104,9 +103,13 @@ export async function GET(request: Request) {
   const bannerId = isBannerId(extras.profile_banner) ? extras.profile_banner : "vpa";
   const frameId = isAvatarFrameId(profile.avatar_frame) ? profile.avatar_frame : null;
 
-  const logoUrl = new URL("/logo.png", request.url).toString();
-  const watermarkUrl = new URL("/logo-vpa-oficial.jpg", request.url).toString();
   const avatarDataUrl = await imageUrlToDataUrl(profile.avatar_url);
+  const logos = bannerId.startsWith("logo-")
+    ? {
+        white: (await imageUrlToDataUrl(new URL("/vpa-nova-logo.png", request.url).toString())) ?? "",
+        color: (await imageUrlToDataUrl(new URL("/logo-transparent-v2.png", request.url).toString())) ?? "",
+      }
+    : undefined;
 
   const stats = [
     { label: "PRESENÇAS", value: String(attendance), rank: rankings.attendance },
@@ -121,6 +124,8 @@ export async function GET(request: Request) {
 
   const PHOTO = 250;
   const FRAME = Math.round(PHOTO * 1.7);
+  const CARD_W = 960;
+  const BANNER_H = 330;
 
   return new ImageResponse(
     (
@@ -129,112 +134,114 @@ export async function GET(request: Request) {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
-          position: "relative",
-          overflow: "hidden",
+          alignItems: "center",
+          justifyContent: "center",
           color: "white",
           backgroundImage:
-            "radial-gradient(circle at 5% 5%, rgba(196,181,253,.3), transparent 27%), radial-gradient(circle at 100% 75%, rgba(124,58,237,.5), transparent 35%), linear-gradient(155deg, #5424a1 0%, #2a135a 48%, #12092c 100%)",
+            "radial-gradient(circle at 12% 8%, rgba(167,139,250,.4), transparent 34%), radial-gradient(circle at 92% 88%, rgba(217,70,239,.3), transparent 38%), linear-gradient(160deg, #3b1a86 0%, #1f0f48 52%, #0d0722 100%)",
           fontFamily: "sans-serif",
         }}
       >
-        <ArtWatermark src={watermarkUrl} />
-
-        {/* Capa do perfil */}
-        <div style={{ position: "relative", display: "flex", width: "1080px", height: "420px", overflow: "hidden" }}>
-          <div style={{ position: "absolute", left: "-90px", top: 0, width: "1260px", height: "420px", display: "flex" }}>
-            {expandElements(<ProfileBannerArt id={bannerId} />, { width: 1260, height: 420 })}
+        <div
+          style={{
+            width: `${CARD_W}px`,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            borderRadius: "56px",
+            border: "2px solid rgba(255,255,255,.2)",
+            backgroundImage: "linear-gradient(180deg, #2a1760 0%, #170c38 100%)",
+            boxShadow: "0 30px 90px rgba(0,0,0,.55)",
+          }}
+        >
+          {/* Capa */}
+          <div style={{ position: "relative", display: "flex", width: `${CARD_W}px`, height: `${BANNER_H}px`, overflow: "hidden" }}>
+            <div style={{ position: "absolute", left: "-60px", top: 0, width: "1080px", height: `${BANNER_H}px`, display: "flex" }}>
+              {expandElements(<ProfileBannerArt id={bannerId} logos={logos} />, { width: 1080, height: BANNER_H })}
+            </div>
+            <div style={{ position: "absolute", left: 0, bottom: 0, width: `${CARD_W}px`, height: "120px", display: "flex", backgroundImage: "linear-gradient(to top, rgba(42,23,96,.95), rgba(42,23,96,0))" }} />
           </div>
-          <div style={{ position: "absolute", left: 0, bottom: 0, width: "1080px", height: "150px", display: "flex", backgroundImage: "linear-gradient(to top, rgba(42,23,96,.95), rgba(42,23,96,0))" }} />
-          <div style={{ position: "absolute", left: "50px", top: "46px", display: "flex", alignItems: "center", padding: "10px 22px 10px 12px", borderRadius: "999px", background: "rgba(0,0,0,.4)" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoUrl} alt="" width={52} height={52} style={{ borderRadius: "14px", objectFit: "cover" }} />
-            <span style={{ marginLeft: "14px", fontSize: "22px", fontWeight: 800, letterSpacing: "3px" }}>MEU CARTÃO VPA</span>
-          </div>
-        </div>
 
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "0 60px 54px" }}>
-          {/* Foto + medalhas */}
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: `-${PHOTO / 2 + 14}px` }}>
-            <div style={{ position: "relative", display: "flex", width: `${PHOTO + 28}px`, height: `${PHOTO + 28}px`, padding: "14px", borderRadius: "999px", background: "#241352", boxShadow: "0 10px 40px rgba(0,0,0,.45)" }}>
-              {avatarDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarDataUrl} alt="" width={PHOTO} height={PHOTO} style={{ borderRadius: "999px", objectFit: "cover" }} />
-              ) : (
-                <span style={{ width: `${PHOTO}px`, height: `${PHOTO}px`, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "#7c3aed", fontSize: "80px", fontWeight: 900 }}>
-                  {initials(profile.full_name)}
-                </span>
-              )}
-              {frameId && (
-                <div style={{ position: "absolute", left: `${14 - PHOTO * 0.35}px`, top: `${14 - PHOTO * 0.575}px`, width: `${FRAME}px`, height: `${FRAME}px`, display: "flex" }}>
-                  {expandElements(<AvatarFrameArt id={frameId} still />, { width: FRAME, height: FRAME })}
+          <div style={{ display: "flex", flexDirection: "column", padding: "0 56px 50px" }}>
+            {/* Foto + medalhas */}
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: `-${PHOTO / 2 + 14}px` }}>
+              <div style={{ position: "relative", display: "flex", width: `${PHOTO + 28}px`, height: `${PHOTO + 28}px`, padding: "14px", borderRadius: "999px", background: "#241352", boxShadow: "0 10px 40px rgba(0,0,0,.45)" }}>
+                {avatarDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarDataUrl} alt="" width={PHOTO} height={PHOTO} style={{ borderRadius: "999px", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ width: `${PHOTO}px`, height: `${PHOTO}px`, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "999px", background: "#7c3aed", fontSize: "80px", fontWeight: 900 }}>
+                    {initials(profile.full_name)}
+                  </span>
+                )}
+                {frameId && (
+                  <div style={{ position: "absolute", left: `${14 - PHOTO * 0.35}px`, top: `${14 - PHOTO * 0.575}px`, width: `${FRAME}px`, height: `${FRAME}px`, display: "flex" }}>
+                    {expandElements(<AvatarFrameArt id={frameId} still />, { width: FRAME, height: FRAME })}
+                  </div>
+                )}
+              </div>
+
+              {shownBadges.length > 0 && (
+                <div style={{ display: "flex", gap: "12px", paddingBottom: "6px" }}>
+                  {shownBadges.map((badge) => {
+                    const [from, to, border] = BADGE_COLORS_HEX[badge.color] ?? BADGE_COLORS_HEX.amber;
+                    return (
+                      <div key={badge.id} style={{ width: "108px", height: "108px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "28px", border: `3px solid ${border}`, backgroundImage: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "0 8px 24px rgba(0,0,0,.35)" }}>
+                        <span style={{ fontSize: "56px" }}>{badge.emoji}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {shownBadges.length > 0 && (
-              <div style={{ display: "flex", gap: "14px", paddingBottom: "6px" }}>
-                {shownBadges.map((badge) => {
-                  const [from, to, border] = BADGE_COLORS_HEX[badge.color] ?? BADGE_COLORS_HEX.amber;
+            {/* Nome */}
+            <span style={{ marginTop: "26px", maxWidth: "850px", fontSize: "62px", fontWeight: 900, lineHeight: 1.05 }}>{profile.full_name}</span>
+            <div style={{ display: "flex", alignItems: "center", marginTop: "14px" }}>
+              {profile.nickname_badge && <span style={{ color: "#ddd6fe", fontSize: "26px", fontWeight: 700 }}>{profile.nickname_badge}</span>}
+              {profile.is_setter && (
+                <span style={{ marginLeft: profile.nickname_badge ? "16px" : 0, padding: "4px 16px", borderRadius: "999px", border: "1px solid rgba(125,211,252,.3)", background: "rgba(125,211,252,.12)", color: "#bae6fd", fontSize: "20px", fontWeight: 700 }}>🏐 Levantador(a)</span>
+              )}
+            </div>
+
+            {/* Números */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "14px", marginTop: "32px" }}>
+              {stats.map((stat) => (
+                <div key={stat.label} style={{ width: "48.9%", display: "flex", flexDirection: "column", padding: "22px 26px", borderRadius: "24px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "46px", fontWeight: 900 }}>{stat.value}</span>
+                    <span style={{ color: "#c4b5fd", fontSize: "16px", fontWeight: 800 }}>{rankLabel(stat.rank)}</span>
+                  </div>
+                  <span style={{ marginTop: "6px", color: "rgba(255,255,255,.58)", fontSize: "16px", fontWeight: 700, letterSpacing: "1px" }}>{stat.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Conquistas */}
+            <div style={{ display: "flex", flexDirection: "column", marginTop: "28px", padding: "24px 28px", borderRadius: "26px", background: "rgba(5,2,18,.28)", border: "1px solid rgba(255,255,255,.11)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "20px", fontWeight: 800, letterSpacing: "2px" }}>CONQUISTAS EM DESTAQUE</span>
+                <span style={{ color: "#c4b5fd", fontSize: "18px", fontWeight: 700 }}>{achievementCount}/{achievements.length} TRILHAS</span>
+              </div>
+              <div style={{ display: "flex", gap: "12px", marginTop: "18px" }}>
+                {featuredAchievements.length ? featuredAchievements.map((achievement) => {
+                  const tier = TIER_HEX[achievement.tier];
                   return (
-                    <div key={badge.id} style={{ width: "116px", height: "116px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "30px", border: `3px solid ${border}`, backgroundImage: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "0 8px 24px rgba(0,0,0,.35)" }}>
-                      <span style={{ fontSize: "60px" }}>{badge.emoji}</span>
+                    <div key={achievement.id} style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 16px", borderRadius: "18px", background: "rgba(196,181,253,.1)", border: "1px solid rgba(196,181,253,.16)" }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ fontSize: "32px" }}>{achievement.emoji}</span>
+                        <span style={{ marginLeft: "10px", padding: "2px 12px", borderRadius: "999px", background: tier.bg, color: tier.fg, fontSize: "14px", fontWeight: 900 }}>{TIER_LABEL[achievement.tier].toUpperCase()}</span>
+                      </div>
+                      <span style={{ marginTop: "10px", fontSize: "17px", fontWeight: 700, lineHeight: 1.15 }}>{achievement.title.split(" · ")[0]}</span>
                     </div>
                   );
-                })}
+                }) : <span style={{ color: "rgba(255,255,255,.55)", fontSize: "20px" }}>A primeira conquista está chegando.</span>}
               </div>
-            )}
-          </div>
-
-          {/* Nome */}
-          <span style={{ marginTop: "26px", maxWidth: "960px", fontSize: "64px", fontWeight: 900, lineHeight: 1.05 }}>{profile.full_name}</span>
-          <div style={{ display: "flex", alignItems: "center", marginTop: "14px" }}>
-            {profile.nickname_badge && <span style={{ color: "#ddd6fe", fontSize: "26px", fontWeight: 700 }}>{profile.nickname_badge}</span>}
-            {profile.is_setter && (
-              <span style={{ marginLeft: profile.nickname_badge ? "16px" : 0, padding: "4px 16px", borderRadius: "999px", border: "1px solid rgba(125,211,252,.3)", background: "rgba(125,211,252,.12)", color: "#bae6fd", fontSize: "20px", fontWeight: 700 }}>🏐 Levantador(a)</span>
-            )}
-          </div>
-          <span style={{ marginTop: "12px", color: "rgba(255,255,255,.55)", fontSize: "20px", letterSpacing: "3px" }}>MINHA HISTÓRIA NA QUADRA</span>
-
-          {/* Números */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", marginTop: "34px" }}>
-            {stats.map((stat) => (
-              <div key={stat.label} style={{ width: "49.1%", display: "flex", flexDirection: "column", padding: "24px 28px", borderRadius: "24px", background: "rgba(255,255,255,.085)", border: "1px solid rgba(255,255,255,.13)" }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "48px", fontWeight: 900 }}>{stat.value}</span>
-                  <span style={{ color: "#c4b5fd", fontSize: "17px", fontWeight: 800 }}>{rankLabel(stat.rank)}</span>
-                </div>
-                <span style={{ marginTop: "6px", color: "rgba(255,255,255,.58)", fontSize: "17px", fontWeight: 700, letterSpacing: "1px" }}>{stat.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Conquistas */}
-          <div style={{ display: "flex", flexDirection: "column", marginTop: "30px", padding: "26px 30px", borderRadius: "26px", background: "rgba(5,2,18,.25)", border: "1px solid rgba(255,255,255,.11)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "2px" }}>CONQUISTAS EM DESTAQUE</span>
-              <span style={{ color: "#c4b5fd", fontSize: "19px", fontWeight: 700 }}>{achievementCount}/{achievements.length} TRILHAS</span>
             </div>
-            <div style={{ display: "flex", gap: "13px", marginTop: "20px" }}>
-              {featuredAchievements.length ? featuredAchievements.map((achievement) => {
-                const tier = TIER_HEX[achievement.tier];
-                return (
-                  <div key={achievement.id} style={{ flex: 1, display: "flex", flexDirection: "column", padding: "16px 18px", borderRadius: "18px", background: "rgba(196,181,253,.1)", border: "1px solid rgba(196,181,253,.16)" }}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <span style={{ fontSize: "34px" }}>{achievement.emoji}</span>
-                      <span style={{ marginLeft: "10px", padding: "2px 12px", borderRadius: "999px", background: tier.bg, color: tier.fg, fontSize: "15px", fontWeight: 900 }}>{TIER_LABEL[achievement.tier].toUpperCase()}</span>
-                    </div>
-                    <span style={{ marginTop: "10px", fontSize: "18px", fontWeight: 700, lineHeight: 1.15 }}>{achievement.title.split(" · ")[0]}</span>
-                  </div>
-                );
-              }) : <span style={{ color: "rgba(255,255,255,.55)", fontSize: "21px" }}>A primeira conquista está chegando.</span>}
-            </div>
-          </div>
 
-          <div style={{ display: "flex", flex: 1 }} />
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "22px", borderTop: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.62)", fontSize: "18px", letterSpacing: "1px" }}>
-            <span>JOGAR, EVOLUIR E COMPARTILHAR 💜</span>
-            <span>{VPA_INSTAGRAM_HANDLE}</span>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "30px", color: "rgba(255,255,255,.55)", fontSize: "18px", letterSpacing: "2px" }}>
+              <span>{VPA_INSTAGRAM_HANDLE}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
 import type { BannerId } from "@/lib/cosmetics";
 
+type NewBannerId = "logo-roxo" | "logo-neon" | "logo-padrao" | "logo-quadra" | "logo-dourado" | "logo-colorida" | "ceu-azul" | "oceano" | "cidade" | "aurora" | "sakura" | "ginasio" | "doce";
+type OldBannerId = Exclude<BannerId, NewBannerId>;
+
 /**
  * Capas do cartão de perfil. Tudo em SVG (600x200, corta nas bordas), sem
  * imagem externa: leve, nítido em qualquer tela e sem custo de rede.
@@ -62,7 +65,223 @@ function Spiker({ x, y, s = 1, fill }: { x: number; y: number; s?: number; fill:
   );
 }
 
-const ART: Record<BannerId, () => ReactNode> = {
+/** Logos (a branca serve em fundo escuro; a azul/branca, em fundo claro). Na imagem do cartão, vêm como data URL. */
+export type BannerLogos = { white: string; color: string };
+export const DEFAULT_LOGOS: BannerLogos = { white: "/vpa-nova-logo.png", color: "/logo-transparent-v2.png" };
+
+function Cloud({ x, y, s = 1, opacity = 0.9 }: { x: number; y: number; s?: number; opacity?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`} fill="#fff" opacity={opacity}>
+      <ellipse cx="0" cy="0" rx="34" ry="12" /><ellipse cx="-16" cy="-8" rx="18" ry="13" /><ellipse cx="10" cy="-12" rx="20" ry="15" />
+    </g>
+  );
+}
+
+function Petal({ x, y, r, fill = "#fbcfe8" }: { x: number; y: number; r: number; fill?: string }) {
+  return <path transform={`translate(${x} ${y}) rotate(${r})`} d="M0 0C6-6 14-2 10 6C6 12-2 8 0 0Z" fill={fill} opacity=".9" />;
+}
+
+const NEW_ART: Record<NewBannerId, (logos: BannerLogos) => ReactNode> = {
+  "logo-roxo": (logos) => (
+    <>
+      <defs>
+        <linearGradient id="nlr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#6d28d9" /><stop offset=".6" stopColor="#3b1a86" /><stop offset="1" stopColor="#1a0d42" /></linearGradient>
+        <radialGradient id="nlr-l" cx=".3" cy=".5" r=".6"><stop offset="0" stopColor="#c4b5fd" stopOpacity=".45" /><stop offset="1" stopColor="#c4b5fd" stopOpacity="0" /></radialGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nlr-g)" />
+      <rect width="600" height="200" fill="url(#nlr-l)" />
+      <image href={logos.white} x="330" y="-60" width="380" height="314" opacity=".1" />
+      {[0, 1, 2, 3].map((i) => <rect key={i} x={-40 + i * 34} y="-20" width="12" height="260" fill="#fff" opacity={0.05} transform="rotate(20 300 100)" />)}
+      <image href={logos.white} x="70" y="22" width="181" height="150" />
+      <Heart x={330} y={60} s={2.2} fill="#c4b5fd" opacity={0.7} />
+      <Heart x={372} y={118} s={1.4} fill="#f0abfc" opacity={0.7} />
+      <Ball cx={470} cy={96} r={20} />
+      <Heart x={540} y={50} s={1.6} fill="#a78bfa" opacity={0.6} />
+    </>
+  ),
+  "logo-neon": (logos) => (
+    <>
+      <defs>
+        <radialGradient id="nln-g" cx=".5" cy=".5" r=".7"><stop offset="0" stopColor="#4c1d95" /><stop offset="1" stopColor="#07031a" /></radialGradient>
+        <filter id="nln-b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9" /></filter>
+      </defs>
+      <rect width="600" height="200" fill="url(#nln-g)" />
+      {[150, 112, 76].map((r, i) => <circle key={r} cx="300" cy="100" r={r} fill="none" stroke={i % 2 ? "#22d3ee" : "#e879f9"} strokeWidth={2} opacity={0.55 - i * 0.1} />)}
+      <g stroke="#a21caf" strokeWidth={1} opacity=".45">{Array.from({ length: 9 }, (_, i) => <line key={i} x1={300} y1={150} x2={-300 + i * 150} y2={200} />)}</g>
+      <line x1="0" y1="150" x2="600" y2="150" stroke="#e879f9" strokeWidth={1.5} opacity=".7" />
+      <image href={logos.white} x="205" y="10" width="190" height="157" filter="url(#nln-b)" opacity=".8" />
+      <image href={logos.white} x="205" y="10" width="190" height="157" />
+      <Stars n={30} yMax={150} seed={77} color="#f5d0fe" />
+    </>
+  ),
+  "logo-padrao": (logos) => (
+    <>
+      <defs>
+        <linearGradient id="nlp-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#7c3aed" /><stop offset="1" stopColor="#2e1065" /></linearGradient>
+        <radialGradient id="nlp-v" cx=".5" cy=".5" r=".75"><stop offset=".4" stopColor="#000" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity=".45" /></radialGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nlp-g)" />
+      {Array.from({ length: 3 }, (_, row) =>
+        Array.from({ length: 9 }, (_, col) => (
+          <image key={`${row}-${col}`} href={logos.white} x={-20 + col * 76 + (row % 2) * 38} y={-6 + row * 72} width="62" height="51" opacity={0.2} transform={`rotate(${row % 2 ? -8 : 8} ${-20 + col * 76 + 31 + (row % 2) * 38} ${-6 + row * 72 + 25})`} />
+        )),
+      )}
+      <rect width="600" height="200" fill="url(#nlp-v)" />
+    </>
+  ),
+  "logo-quadra": (logos) => (
+    <>
+      <defs>
+        <linearGradient id="nlq-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#d99a52" /><stop offset="1" stopColor="#8a531f" /></linearGradient>
+        <linearGradient id="nlq-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f0826" /><stop offset="1" stopColor="#2f1a6b" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nlq-b)" />
+      {[110, 300, 490].map((x) => <polygon key={x} points={`${x - 6},0 ${x + 6},0 ${x + 60},120 ${x - 60},120`} fill="#fff" opacity={0.06} />)}
+      <polygon points="0,120 600,120 600,200 0,200" fill="url(#nlq-w)" />
+      <polygon points="90,200 190,120 410,120 510,200" fill="none" stroke="#fff" strokeWidth={2.5} opacity=".8" />
+      <Net x={170} y={88} w={260} h={32} />
+      <rect x="168" y="86" width="4" height="40" fill="#e5e7eb" /><rect x="428" y="86" width="4" height="40" fill="#e5e7eb" />
+      <image href={logos.white} x="255" y="140" width="90" height="74" opacity=".85" />
+      <Ball cx={80} cy={50} r={14} />
+      <Ball cx={530} cy={44} r={12} />
+    </>
+  ),
+  "logo-dourado": (logos) => (
+    <>
+      <defs>
+        <linearGradient id="nld-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#0a0a0a" /><stop offset="1" stopColor="#1f1709" /></linearGradient>
+        <linearGradient id="nld-y" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fef08a" /><stop offset=".5" stopColor="#f59e0b" /><stop offset="1" stopColor="#92400e" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nld-g)" />
+      {Array.from({ length: 18 }, (_, i) => <polygon key={i} points={`300,100 ${-200 + i * 50},-60 ${-175 + i * 50},-60`} fill="#f59e0b" opacity={i % 2 ? 0.07 : 0.14} />)}
+      <circle cx="300" cy="100" r="86" fill="none" stroke="url(#nld-y)" strokeWidth={4} />
+      <circle cx="300" cy="100" r="96" fill="none" stroke="#f59e0b" strokeWidth={1} opacity=".6" />
+      <image href={logos.white} x="225" y="30" width="150" height="124" />
+      <Stars n={34} yMax={200} seed={91} color="#fde68a" />
+    </>
+  ),
+  "logo-colorida": (logos) => (
+    <>
+      <defs>
+        <linearGradient id="nlc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#eef2ff" /><stop offset="1" stopColor="#c7d2fe" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nlc-g)" />
+      {[0, 1, 2, 3, 4].map((i) => <rect key={i} x={-40 + i * 40} y="-20" width="18" height="260" fill="#1e3a8a" opacity={0.08 + i * 0.03} transform="rotate(18 300 100)" />)}
+      <circle cx="430" cy="100" r="110" fill="#fff" opacity=".7" />
+      <circle cx="430" cy="100" r="110" fill="none" stroke="#1e3a8a" strokeWidth={2} opacity=".25" />
+      <image href={logos.color} x="340" y="10" width="180" height="180" />
+      <Ball cx={120} cy={100} r={26} />
+      <Heart x={190} y={60} s={1.8} fill="#6d28d9" opacity={0.6} />
+      <Heart x={232} y={142} s={1.2} fill="#818cf8" opacity={0.7} />
+    </>
+  ),
+  "ceu-azul": () => (
+    <>
+      <defs>
+        <linearGradient id="nca-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2563eb" /><stop offset=".7" stopColor="#7dd3fc" /><stop offset="1" stopColor="#e0f2fe" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nca-g)" />
+      <circle cx="70" cy="46" r="26" fill="#fef9c3" /><circle cx="70" cy="46" r="44" fill="#fef08a" opacity=".3" />
+      <Cloud x={190} y={60} s={1.4} /><Cloud x={420} y={40} s={1.1} opacity={0.8} /><Cloud x={540} y={96} s={1.6} /><Cloud x={300} y={150} s={1.9} opacity={0.95} />
+      <Ball cx={330} cy={78} r={22} />
+      <path d="M330 100Q336 128 322 150" stroke="#fff" strokeWidth={2} fill="none" opacity=".5" strokeDasharray="3 4" />
+    </>
+  ),
+  oceano: () => (
+    <>
+      <defs>
+        <linearGradient id="noc-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#22d3ee" /><stop offset=".5" stopColor="#0e7490" /><stop offset="1" stopColor="#042f3d" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#noc-g)" />
+      {[0, 1, 2, 3, 4].map((i) => <polygon key={i} points={`${60 + i * 120},0 ${80 + i * 120},0 ${150 + i * 120},200 ${70 + i * 120},200`} fill="#fff" opacity={0.05} />)}
+      <path d="M0 24Q30 14 60 24T120 24T180 24T240 24T300 24T360 24T420 24T480 24T540 24T600 24" fill="none" stroke="#fff" strokeWidth={3} opacity=".5" />
+      {Array.from({ length: 22 }, (_, i) => <circle key={i} cx={Math.round(rand(i + 5) * 600)} cy={Math.round(40 + rand(i + 60) * 150)} r={+(2 + rand(i + 120) * 6).toFixed(1)} fill="none" stroke="#e0f2fe" strokeWidth={1.2} opacity={0.6} />)}
+      <path d="M0 200Q100 170 200 190T400 186T600 192V200Z" fill="#fde68a" opacity=".9" />
+      <path d="M440 200C438 170 452 160 450 140M450 150C436 150 432 138 436 128M450 150C466 148 470 134 464 124" stroke="#fb7185" strokeWidth={5} strokeLinecap="round" fill="none" />
+      <Ball cx={200} cy={150} r={22} />
+    </>
+  ),
+  cidade: () => (
+    <>
+      <defs>
+        <linearGradient id="nci-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0f0a2e" /><stop offset=".6" stopColor="#5b21b6" /><stop offset="1" stopColor="#db2777" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nci-g)" />
+      <Stars n={30} yMax={90} seed={13} />
+      <circle cx="500" cy="48" r="20" fill="#fde68a" />
+      {[[0, 100, 50], [48, 70, 40], [92, 110, 56], [152, 84, 44], [200, 120, 50], [254, 92, 60], [318, 112, 42], [364, 76, 52], [420, 104, 46], [470, 88, 58], [532, 116, 68]].map(([x, y, w], i) => (
+        <g key={i}>
+          <rect x={x} y={200 - y} width={w} height={y} fill="#0b0720" />
+          {Array.from({ length: Math.floor(y / 16) }, (_, r) => Array.from({ length: Math.floor((w - 8) / 12) }, (_, c) => rand(i * 50 + r * 7 + c) > 0.45 ? <rect key={`${r}-${c}`} x={x + 6 + c * 12} y={200 - y + 8 + r * 16} width={6} height={8} fill="#fde68a" opacity=".8" /> : null))}
+        </g>
+      ))}
+      <Ball cx={300} cy={52} r={16} />
+    </>
+  ),
+  aurora: () => (
+    <>
+      <defs>
+        <linearGradient id="nau-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#020617" /><stop offset="1" stopColor="#0f2a4a" /></linearGradient>
+        <linearGradient id="nau-a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#34d399" stopOpacity="0" /><stop offset=".5" stopColor="#34d399" stopOpacity=".7" /><stop offset="1" stopColor="#818cf8" stopOpacity="0" /></linearGradient>
+        <linearGradient id="nau-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e879f9" stopOpacity="0" /><stop offset=".5" stopColor="#c084fc" stopOpacity=".55" /><stop offset="1" stopColor="#38bdf8" stopOpacity="0" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nau-g)" />
+      <Stars n={70} yMax={140} seed={23} />
+      <path d="M0 40Q120 0 240 50T480 30T600 60V150Q480 100 360 140T120 120T0 150Z" fill="url(#nau-a)" />
+      <path d="M0 80Q140 40 280 90T600 70V160Q440 120 300 160T0 170Z" fill="url(#nau-b)" />
+      <path d="M0 200V168L60 150L110 172L180 140L240 170L320 130L400 168L470 142L540 170L600 150V200Z" fill="#020617" />
+      <Net x={440} y={152} w={90} h={20} color="#e2e8f0" opacity={0.6} />
+    </>
+  ),
+  sakura: () => (
+    <>
+      <defs>
+        <linearGradient id="nsa-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fbcfe8" /><stop offset="1" stopColor="#f9a8d4" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#nsa-g)" />
+      <circle cx="470" cy="70" r="46" fill="#fff" opacity=".7" />
+      <path d="M-10 200Q40 120 120 90Q180 70 250 20" stroke="#6b3b2a" strokeWidth={10} fill="none" strokeLinecap="round" />
+      <path d="M120 90Q150 60 140 30M70 130Q40 110 20 120" stroke="#6b3b2a" strokeWidth={5} fill="none" strokeLinecap="round" />
+      {Array.from({ length: 46 }, (_, i) => <Petal key={i} x={Math.round(rand(i + 3) * 600)} y={Math.round(rand(i + 80) * 200)} r={Math.round(rand(i + 150) * 360)} fill={i % 3 ? "#fff1f7" : "#f472b6"} />)}
+      {[[150, 50], [200, 28], [90, 80], [250, 18], [60, 112]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r={14} fill="#f9a8d4" stroke="#fff" strokeWidth={2} opacity=".95" />)}
+      <Ball cx={420} cy={140} r={20} />
+    </>
+  ),
+  ginasio: () => (
+    <>
+      <defs>
+        <linearGradient id="ngi-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#111827" /><stop offset="1" stopColor="#1e1b4b" /></linearGradient>
+        <linearGradient id="ngi-f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#b45309" /><stop offset="1" stopColor="#78350f" /></linearGradient>
+        <linearGradient id="ngi-r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity=".35" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#ngi-g)" />
+      {[60, 180, 300, 420, 540].map((x) => <g key={x}><rect x={x - 14} y="6" width="28" height="8" rx="3" fill="#fef9c3" /><polygon points={`${x - 12},14 ${x + 12},14 ${x + 70},150 ${x - 70},150`} fill="url(#ngi-r)" /></g>)}
+      {Array.from({ length: 5 }, (_, r) => <rect key={r} x="0" y={74 + r * 9} width="600" height="5" fill="#312e81" opacity={0.6} />)}
+      {Array.from({ length: 70 }, (_, i) => <circle key={i} cx={Math.round(rand(i + 9) * 600)} cy={Math.round(70 + rand(i + 90) * 46)} r={3} fill={["#f9a8d4", "#fde047", "#7dd3fc", "#fff"][i % 4]} opacity=".75" />)}
+      <rect y="130" width="600" height="70" fill="url(#ngi-f)" />
+      <line x1="0" y1="150" x2="600" y2="150" stroke="#fff" strokeWidth={2} opacity=".5" />
+      <Net x={200} y={110} w={200} h={30} />
+      <rect x="198" y="108" width="4" height="46" fill="#e5e7eb" /><rect x="398" y="108" width="4" height="46" fill="#e5e7eb" />
+      <Ball cx={300} cy={176} r={13} />
+    </>
+  ),
+  doce: () => (
+    <>
+      <defs>
+        <linearGradient id="ndo-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#fbcfe8" /><stop offset=".5" stopColor="#e9d5ff" /><stop offset="1" stopColor="#bae6fd" /></linearGradient>
+      </defs>
+      <rect width="600" height="200" fill="url(#ndo-g)" />
+      {Array.from({ length: 28 }, (_, i) => <circle key={i} cx={Math.round(rand(i + 11) * 600)} cy={Math.round(rand(i + 77) * 200)} r={+(2 + rand(i + 140) * 5).toFixed(1)} fill="#fff" opacity={0.7} />)}
+      <Cloud x={120} y={110} s={1.6} /><Cloud x={470} y={70} s={1.3} />
+      <Heart x={260} y={60} s={3} fill="#f472b6" opacity={0.85} /><Heart x={330} y={120} s={2} fill="#a78bfa" opacity={0.85} /><Heart x={400} y={44} s={1.6} fill="#60a5fa" opacity={0.85} />
+      <path transform="translate(520 120) scale(2.2)" d="M0-7C.7-2.6 2.6-.7 7 0 2.6.7.7 2.6 0 7-.7 2.6-2.6.7-7 0-2.6-.7-.7-2.6 0-7Z" fill="#fde047" />
+      <path transform="translate(70 50) scale(1.6)" d="M0-7C.7-2.6 2.6-.7 7 0 2.6.7.7 2.6 0 7-.7 2.6-2.6.7-7 0-2.6-.7-.7-2.6 0-7Z" fill="#fff" />
+      <Ball cx={190} cy={64} r={20} />
+    </>
+  ),
+};
+
+const ART: Record<OldBannerId, () => ReactNode> = {
   quadra: () => (
     <>
       <defs>
@@ -297,11 +516,11 @@ const ART: Record<BannerId, () => ReactNode> = {
   ),
 };
 
-export function ProfileBannerArt({ id, className = "" }: { id: BannerId; className?: string }) {
-  const draw = ART[id];
+export function ProfileBannerArt({ id, className = "", logos = DEFAULT_LOGOS }: { id: BannerId; className?: string; logos?: BannerLogos }) {
+  const draw = id in NEW_ART ? () => NEW_ART[id as NewBannerId](logos) : ART[id as OldBannerId];
   if (!draw) return null;
   return (
-    <svg className={`block h-full w-full ${className}`} viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
+    <svg xmlns="http://www.w3.org/2000/svg" className={`block h-full w-full ${className}`} viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
       {draw()}
     </svg>
   );

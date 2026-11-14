@@ -12,6 +12,14 @@ export const PROFILE_BANNERS = [
   { id: "praia", name: "Praia do Futuro", tagline: "Sol, mar e areia fofa" },
   { id: "por-do-sol", name: "Pôr do Sol", tagline: "Cortada contra o céu laranja" },
   { id: "vpa", name: "Vôlei por Amor", tagline: "Roxo VPA com corações", },
+  { id: "logo-roxo", name: "Logo VPA Roxo", tagline: "A nossa logo de verdade, em destaque" },
+  { id: "logo-padrao", name: "Estampa VPA", tagline: "Logo em padrão, tipo papel de parede" },
+  { id: "logo-colorida", name: "Logo VPA Original", tagline: "A logo azul e branca, como no escudo" },
+  { id: "logo-quadra", name: "Logo na Quadra", tagline: "Logo pintada no piso, rede armada" },
+  { id: "ceu-azul", name: "Céu de Domingo", tagline: "Nuvens e bola no ar" },
+  { id: "oceano", name: "Fundo do Mar", tagline: "Bolhas, coral e luz da superfície" },
+  { id: "sakura", name: "Sakura", tagline: "Cerejeira em flor", },
+  { id: "doce", name: "Pastel Fofo", tagline: "Corações e estrelinhas" },
   { id: "neon", name: "Neon Grid", tagline: "Quadra synthwave", unlock: "presenca-silver" },
   { id: "noite", name: "Noite de Estrelas", tagline: "Racha sob a lua", unlock: "sequencia-bronze" },
   { id: "tropical", name: "Rede Tropical", tagline: "Folhagem e luz do verão", unlock: "presenca-gold" },
@@ -21,6 +29,11 @@ export const PROFILE_BANNERS = [
   { id: "podio", name: "Pódio Dourado", tagline: "1º, 2º e 3º lugares", unlock: "torneios-bronze" },
   { id: "galaxia", name: "Galáxia", tagline: "Um craque de outro mundo", unlock: "destaque-gold" },
   { id: "lendario", name: "Lenda do VPA", tagline: "Preto e ouro, só pra poucos", unlock: "destaque-legend" },
+  { id: "cidade", name: "Cidade à Noite", tagline: "Prédios acesos e bola no céu", unlock: "presenca-bronze" },
+  { id: "ginasio", name: "Ginásio Lotado", tagline: "Refletores e quadra de madeira", unlock: "vitorias-bronze" },
+  { id: "aurora", name: "Aurora Boreal", tagline: "Luzes verdes sobre a montanha", unlock: "destaque-silver" },
+  { id: "logo-neon", name: "Logo Neon", tagline: "Logo VPA brilhando no escuro", unlock: "colecao-silver" },
+  { id: "logo-dourado", name: "Logo Dourada", tagline: "Logo VPA com raios de ouro", unlock: "torneios-gold" },
 ] as const satisfies readonly { id: string; name: string; tagline: string; unlock?: string }[];
 
 export const PROFILE_EFFECTS = [
@@ -34,6 +47,14 @@ export const PROFILE_EFFECTS = [
   { id: "ondas", name: "Ondas de Energia", tagline: "Pulsos de energia", emoji: "🌀", unlock: "destaque-silver" },
   { id: "dourado", name: "Partículas Douradas", tagline: "Brilho de campeão", emoji: "✨", unlock: "vitorias-gold" },
   { id: "confete", name: "Festa de Campeão", tagline: "Confete caindo", emoji: "🎉", unlock: "torneios-silver" },
+  { id: "logo", name: "Chuva de Logos", tagline: "A logo do VPA flutuando", emoji: "💜" },
+  { id: "bolas", name: "Chuva de Bolas", tagline: "Bolas de vôlei caindo", emoji: "🏐" },
+  { id: "neve", name: "Neve", tagline: "Flocos caindo devagar", emoji: "❄️" },
+  { id: "vagalumes", name: "Vagalumes", tagline: "Luzinhas piscando na noite", emoji: "✨" },
+  { id: "petalas", name: "Pétalas ao Vento", tagline: "Cerejeira soltando flores", emoji: "🌸" },
+  { id: "chuva", name: "Chuva de Verão", tagline: "Gotas rápidas e frescas", emoji: "🌧️", unlock: "presenca-bronze" },
+  { id: "fogos", name: "Fogos de Artifício", tagline: "Explosões coloridas", emoji: "🎆", unlock: "colecao-bronze" },
+  { id: "coroas", name: "Chuva de Coroas", tagline: "Majestade em movimento", emoji: "👑", unlock: "colecao-gold" },
 ] as const satisfies readonly { id: string; name: string; tagline: string; emoji: string; unlock?: string }[];
 
 export type BannerId = (typeof PROFILE_BANNERS)[number]["id"];

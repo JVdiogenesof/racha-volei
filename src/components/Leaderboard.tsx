@@ -266,7 +266,7 @@ export function Leaderboard({
           </div>
 
           {podium.length > 0 && (
-            <div className="relative z-10 mt-4 grid grid-cols-[repeat(3,minmax(0,1fr))] items-end gap-1.5 sm:gap-3">
+            <div className={`relative z-10 grid grid-cols-[repeat(3,minmax(0,1fr))] items-end gap-1.5 sm:gap-3 ${podium.some((entry) => entry?.avatarFrame) ? "mt-4 pt-10" : "mt-4"}`}>
               {podiumOrder.map((entry, slot) => {
                 if (!entry) return <div key={slot} />;
                 const place = podium.indexOf(entry);
@@ -293,7 +293,7 @@ export function Leaderboard({
                   >
                     <div className="relative">
                       {isFirst && (
-                        <span className="copa-float absolute -top-6 left-1/2 -translate-x-1/2">
+                        <span className={`copa-float absolute left-1/2 -translate-x-1/2 ${entry.avatarFrame ? "-top-14" : "-top-6"}`}>
                           <Crown className="h-6 w-6 text-yellow-200 drop-shadow-[0_0_10px_rgba(253,224,71,0.9)]" strokeWidth={2} fill="currentColor" fillOpacity={0.25} />
                         </span>
                       )}
@@ -391,7 +391,7 @@ export function Leaderboard({
                       </li>
                     )}
                     <li
-                      className={`relative my-0.5 min-w-0 overflow-hidden rounded-xl px-2 py-1.5 ${
+                      className={`relative my-0.5 min-w-0 rounded-xl px-2 py-1.5 ${entry.avatarFrame ? "pt-3.5 " : ""}
                         isMe ? "bg-purple-400/12 ring-1 ring-purple-300/25" : tier ? TIER_STYLE[tier].bg : "hover:bg-white/[0.03]"
                       }`}
                     >

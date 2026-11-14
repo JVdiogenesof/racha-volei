@@ -53,6 +53,7 @@ const TRACKS: TrackDefinition[] = [
     description: "Quantos rachas você já jogou no VPA.",
     targets: [1, 5, 10, 20],
     rewards: {
+      bronze: [{ kind: "banner", id: "cidade" }, { kind: "effect", id: "chuva" }],
       silver: [{ kind: "banner", id: "neon" }, { kind: "effect", id: "estrelas" }],
       gold: [{ kind: "banner", id: "tropical" }, { kind: "effect", id: "neon" }],
       legend: [{ kind: "frame", id: "aura" }],
@@ -76,7 +77,7 @@ const TRACKS: TrackDefinition[] = [
     description: "Partidas vencidas nos rachas.",
     targets: [1, 5, 15, 30],
     rewards: {
-      bronze: [{ kind: "effect", id: "raios" }, { kind: "frame", id: "trovao" }],
+      bronze: [{ kind: "effect", id: "raios" }, { kind: "frame", id: "trovao" }, { kind: "banner", id: "ginasio" }],
       silver: [{ kind: "banner", id: "trovoada" }, { kind: "frame", id: "cortada" }],
       gold: [{ kind: "effect", id: "dourado" }],
       legend: [{ kind: "frame", id: "coroa" }],
@@ -89,7 +90,7 @@ const TRACKS: TrackDefinition[] = [
     targets: [1, 3, 5, 10],
     rewards: {
       bronze: [{ kind: "banner", id: "arena" }],
-      silver: [{ kind: "effect", id: "ondas" }, { kind: "frame", id: "magica" }],
+      silver: [{ kind: "effect", id: "ondas" }, { kind: "frame", id: "magica" }, { kind: "banner", id: "aurora" }],
       gold: [{ kind: "banner", id: "galaxia" }],
       legend: [{ kind: "banner", id: "lendario" }],
     },
@@ -102,6 +103,7 @@ const TRACKS: TrackDefinition[] = [
     rewards: {
       bronze: [{ kind: "banner", id: "podio" }],
       silver: [{ kind: "effect", id: "confete" }],
+      gold: [{ kind: "banner", id: "logo-dourado" }],
     },
     value: (s) => s.tournamentBadges ?? 0,
   },
@@ -109,7 +111,11 @@ const TRACKS: TrackDefinition[] = [
     id: "colecao", category: "especiais", title: "Colecionador", emoji: "🎖️", unit: "medalhas",
     description: "Medalhas de eventos e momentos especiais.",
     targets: [1, 3, 6, 10],
-    rewards: {},
+    rewards: {
+      bronze: [{ kind: "effect", id: "fogos" }],
+      silver: [{ kind: "banner", id: "logo-neon" }],
+      gold: [{ kind: "effect", id: "coroas" }],
+    },
     value: (s) => s.badgeCount ?? 0,
   },
   {

@@ -13,9 +13,10 @@ const rand = (seed: number) => {
 
 const COUNT: Record<EffectId, number> = {
   areia: 18, bolhas: 12, coracoes: 10, estrelas: 6, neon: 0, brasas: 16, raios: 0, ondas: 4, dourado: 16, confete: 22,
+  logo: 9, bolas: 8, neve: 24, vagalumes: 14, petalas: 16, chuva: 26, fogos: 5, coroas: 8,
 };
 
-const CHARS: Partial<Record<EffectId, string>> = { coracoes: "♥" };
+const CHARS: Partial<Record<EffectId, string>> = { coracoes: "♥", bolas: "🏐", coroas: "👑", petalas: "🌸" };
 
 export function ProfileEffect({ id }: { id: EffectId }) {
   const count = COUNT[id] ?? 0;

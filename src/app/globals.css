@@ -1005,6 +1005,71 @@ form[aria-busy="true"] button[type="submit"]::after {
   100% { transform: translate3d(var(--dx), 320px, 0) rotate(540deg); opacity: .9; }
 }
 
+/* Logo do VPA flutuando */
+.pfx-logo i {
+  left: var(--x); bottom: -30px;
+  width: calc(var(--s) * 26px); height: calc(var(--s) * 22px);
+  background: url("/vpa-nova-logo.png") center / contain no-repeat;
+  opacity: 0;
+  animation: pfx-bubble var(--d) ease-in infinite; animation-delay: var(--delay);
+}
+/* Bolas, coroas e pétalas (emoji) */
+.pfx-bolas i, .pfx-coroas i, .pfx-petalas i {
+  left: var(--x); top: -24px;
+  font-size: calc(var(--s) * 18px); line-height: 1;
+  animation: pfx-fall var(--d) linear infinite; animation-delay: var(--delay);
+}
+.pfx-coroas i { top: auto; bottom: -24px; animation-name: pfx-bubble; }
+.pfx-petalas i { font-size: calc(var(--s) * 13px); opacity: .9; }
+/* Neve */
+.pfx-neve i {
+  left: var(--x); top: -10px;
+  width: calc(var(--s) * 6px); height: calc(var(--s) * 6px);
+  border-radius: 9999px; background: #fff; box-shadow: 0 0 6px rgb(255 255 255 / .8);
+  animation: pfx-fall var(--d) linear infinite; animation-delay: var(--delay);
+}
+/* Vagalumes: piscam e vagam */
+.pfx-vagalumes i {
+  left: var(--x); top: var(--y);
+  width: calc(var(--s) * 6px); height: calc(var(--s) * 6px);
+  border-radius: 9999px; background: #fef08a; box-shadow: 0 0 10px 3px rgb(250 204 21 / .8);
+  animation: pfx-firefly var(--d) ease-in-out infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-firefly {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(.4); opacity: 0; }
+  25% { opacity: 1; }
+  50% { transform: translate3d(var(--dx), -22px, 0) scale(1); opacity: .3; }
+  75% { transform: translate3d(calc(var(--dx) * -.6), -8px, 0) scale(.8); opacity: 1; }
+}
+/* Chuva */
+.pfx-chuva i {
+  left: var(--x); top: -20px;
+  width: 1.5px; height: calc(var(--s) * 16px);
+  background: linear-gradient(rgb(186 230 253 / 0), rgb(186 230 253 / .9));
+  animation: pfx-rain calc(var(--d) * .25) linear infinite; animation-delay: var(--delay);
+}
+@keyframes pfx-rain {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate3d(-18px, 340px, 0); opacity: 0; }
+}
+/* Fogos: explosões de pontos */
+.pfx-fogos i {
+  left: var(--x); top: var(--y);
+  width: 4px; height: 4px; border-radius: 9999px; color: #f472b6;
+  background: currentColor;
+  box-shadow: 0 -22px currentColor, 16px -16px currentColor, 22px 0 currentColor, 16px 16px currentColor, 0 22px currentColor, -16px 16px currentColor, -22px 0 currentColor, -16px -16px currentColor;
+  animation: pfx-burst var(--d) ease-out infinite; animation-delay: var(--delay);
+}
+.pfx-fogos i:nth-child(2n) { color: #fde047; }
+.pfx-fogos i:nth-child(3n) { color: #38bdf8; }
+@keyframes pfx-burst {
+  0% { transform: scale(.1); opacity: 0; }
+  12% { opacity: 1; }
+  45% { transform: scale(1.2); opacity: .9; }
+  70%, 100% { transform: scale(1.5); opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pfx { display: none; }
 }
