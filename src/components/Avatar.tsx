@@ -55,8 +55,7 @@ export function Avatar({
     </span>
   );
 
-  // Em tamanho pequeno (listas longas) a moldura fica parada: dezenas de animações juntas pesam no celular.
-  const art = frameId ? <AvatarFrameArt id={frameId} still={still ?? size === "sm"} /> : null;
+  const art = frameId ? <AvatarFrameArt id={frameId} still={still} /> : null;
 
   return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
 }
