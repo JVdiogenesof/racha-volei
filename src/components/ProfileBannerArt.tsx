@@ -86,17 +86,17 @@ const NEW_ART: Record<NewBannerId, (logos: BannerLogos) => ReactNode> = {
     <>
       <defs>
         <linearGradient id="nlr-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#6d28d9" /><stop offset=".6" stopColor="#3b1a86" /><stop offset="1" stopColor="#1a0d42" /></linearGradient>
-        <radialGradient id="nlr-l" cx=".3" cy=".5" r=".6"><stop offset="0" stopColor="#c4b5fd" stopOpacity=".45" /><stop offset="1" stopColor="#c4b5fd" stopOpacity="0" /></radialGradient>
+        <radialGradient id="nlr-l" cx=".62" cy=".45" r=".5"><stop offset="0" stopColor="#c4b5fd" stopOpacity=".5" /><stop offset="1" stopColor="#c4b5fd" stopOpacity="0" /></radialGradient>
       </defs>
       <rect width="600" height="200" fill="url(#nlr-g)" />
       <rect width="600" height="200" fill="url(#nlr-l)" />
-      <image href={logos.white} x="330" y="-60" width="380" height="314" opacity=".1" />
+      <image href={logos.white} x="-70" y="-50" width="340" height="281" opacity=".08" />
       {[0, 1, 2, 3].map((i) => <rect key={i} x={-40 + i * 34} y="-20" width="12" height="260" fill="#fff" opacity={0.05} transform="rotate(20 300 100)" />)}
-      <image href={logos.white} x="70" y="22" width="181" height="150" />
-      <Heart x={330} y={60} s={2.2} fill="#c4b5fd" opacity={0.7} />
-      <Heart x={372} y={118} s={1.4} fill="#f0abfc" opacity={0.7} />
-      <Ball cx={470} cy={96} r={20} />
-      <Heart x={540} y={50} s={1.6} fill="#a78bfa" opacity={0.6} />
+      <image href={logos.white} x="282" y="16" width="194" height="160" />
+      <Heart x={250} y={52} s={1.6} fill="#c4b5fd" opacity={0.7} />
+      <Heart x={520} y={128} s={1.8} fill="#f0abfc" opacity={0.7} />
+      <Ball cx={540} cy={60} r={18} />
+      <Heart x={230} y={150} s={1.2} fill="#a78bfa" opacity={0.6} />
     </>
   ),
   "logo-neon": (logos) => (

@@ -48,6 +48,26 @@ const TIER_HEX: Record<AchievementTier, { bg: string; fg: string }> = {
   legend: { bg: "#e879f9", fg: "#3b0764" },
 };
 
+/** Inter (OFL) em public/fonts: sem ela o gerador usa uma fonte fina e os títulos perdem o peso. */
+async function loadCardFonts(base: string) {
+  const files = [
+    { file: "Inter-Regular.otf", weight: 400 as const },
+    { file: "Inter-Bold.otf", weight: 700 as const },
+    { file: "Inter-Black.otf", weight: 900 as const },
+  ];
+  try {
+    return await Promise.all(
+      files.map(async ({ file, weight }) => {
+        const response = await fetch(new URL(`/fonts/${file}`, base), { cache: "force-cache" });
+        if (!response.ok || response.headers.get("content-type")?.includes("text/html")) throw new Error(file);
+        return { name: "Inter", data: await response.arrayBuffer(), weight, style: "normal" as const };
+      }),
+    );
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
@@ -103,7 +123,7 @@ export async function GET(request: Request) {
   const bannerId = isBannerId(extras.profile_banner) ? extras.profile_banner : "vpa";
   const frameId = isAvatarFrameId(profile.avatar_frame) ? profile.avatar_frame : null;
 
-  const avatarDataUrl = await imageUrlToDataUrl(profile.avatar_url);
+  const [avatarDataUrl, fonts] = await Promise.all([imageUrlToDataUrl(profile.avatar_url), loadCardFonts(request.url)]);
   const logos = bannerId.startsWith("logo-")
     ? {
         white: (await imageUrlToDataUrl(new URL("/vpa-nova-logo.png", request.url).toString())) ?? "",
@@ -139,7 +159,7 @@ export async function GET(request: Request) {
           color: "white",
           backgroundImage:
             "radial-gradient(circle at 12% 8%, rgba(167,139,250,.4), transparent 34%), radial-gradient(circle at 92% 88%, rgba(217,70,239,.3), transparent 38%), linear-gradient(160deg, #3b1a86 0%, #1f0f48 52%, #0d0722 100%)",
-          fontFamily: "sans-serif",
+          fontFamily: fonts.length ? "Inter" : "sans-serif",
         }}
       >
         <div
@@ -249,6 +269,7 @@ export async function GET(request: Request) {
     {
       width: 1080,
       height: 1920,
+      fonts,
       headers: {
         "Cache-Control": "private, no-store",
         "Content-Disposition": 'inline; filename="meu-cartao-volei-por-amor.png"',
