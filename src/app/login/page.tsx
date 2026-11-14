@@ -9,7 +9,7 @@ export const viewport: Viewport = {
 
 export default function LoginPage() {
   return (
-    <main className="relative isolate min-h-[100svh] overflow-hidden bg-[#21065d] text-white">
+    <main className="relative isolate min-h-[100svh] overflow-hidden bg-[#4a1aa8] text-white">
       <LoginBackdrop />
       <div
         aria-hidden="true"

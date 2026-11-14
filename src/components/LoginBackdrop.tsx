@@ -94,16 +94,22 @@ export function LoginBackdrop() {
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
-      <div ref={layerRef} className="absolute -inset-6 will-change-transform">
-        <Image
-          src="/login-vpa-art.jpg"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="scale-[1.08] object-cover object-center -translate-y-[4%]"
-        />
-        <div className="login-sheen absolute inset-0" />
+      {/* Em telas largas a arte não estica: fica centralizada, na proporção do celular, e some nas bordas. */}
+      <div
+        className="absolute inset-y-0 left-1/2 w-[min(100%,60svh)] -translate-x-1/2"
+        style={{ WebkitMaskImage: "linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)", maskImage: "linear-gradient(to right, transparent 0%, #000 14%, #000 86%, transparent 100%)" }}
+      >
+        <div ref={layerRef} className="absolute -inset-6 will-change-transform">
+          <Image
+            src="/login-vpa-art.jpg"
+            alt=""
+            fill
+            priority
+            sizes="(min-aspect-ratio: 9/16) 60svh, 100vw"
+            className="scale-[1.08] object-cover object-center -translate-y-[4%]"
+          />
+          <div className="login-sheen absolute inset-0" />
+        </div>
       </div>
       <div
         ref={glowRef}
