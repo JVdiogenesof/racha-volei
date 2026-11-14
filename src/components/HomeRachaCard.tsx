@@ -78,6 +78,8 @@ export function HomeRachaCard({
     ? { label: "Rolando agora", className: "bg-red-400/25 text-red-100", dot: "bg-red-300" }
     : secondBatchLabel
       ? { label: "Lote 1 encerrado · próximo: Lote 2", className: "bg-amber-400/25 text-amber-100", dot: "bg-amber-300" }
+    : registrationOpen && event.max_players != null && confirmedCount >= event.max_players
+      ? { label: "Lista fechada", className: "bg-rose-400/25 text-rose-100", dot: "bg-rose-300" }
     : registrationOpen
       ? { label: "Inscrições abertas", className: "bg-emerald-400/25 text-emerald-100", dot: "bg-emerald-300" }
       : event.registration_opens_at

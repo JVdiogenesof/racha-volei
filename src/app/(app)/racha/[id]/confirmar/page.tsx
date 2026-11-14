@@ -35,6 +35,7 @@ import { batchBlockReason, formatBatchOpening, isRegistrationOpen, lote1SetterHo
 import { BatchStatus } from "@/components/BatchStatus";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { reconcileWithinBudget } from "@/lib/mercadoPagoSettle";
+import { PaymentReceiptCard } from "@/components/PaymentReceiptCard";
 import { PixReservationButton } from "@/components/PixReservationButton";
 import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
 import { ForfeitPixSpotButton } from "@/components/ForfeitPixSpotButton";
@@ -58,7 +59,7 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio, first_batch_spots, second_batch_opens_at")
+        .select("id, date, time, location, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio, first_batch_spots, second_batch_opens_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -66,7 +67,7 @@ export default async function ConfirmarPresencaPage({
         .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, is_setter, status)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
-      supabase.from("attendance").select("status").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+      supabase.from("attendance").select("status, confirmed_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
       profile.is_organizer
         ? Promise.all([getAllRatings(supabase), getRatingWeights(supabase)])
         : Promise.resolve(null),
@@ -117,8 +118,8 @@ export default async function ConfirmarPresencaPage({
   if (!event) notFound();
   if (event.community !== selectedCommunity) notFound();
 
-  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }, { data: myExemption }, { data: myOpenReservation }] = await Promise.all([
-    supabase.from("payments").select("paid, payment_source, paid_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
+  const [{ data: myPayment }, { data: refundRequests }, { data: expiredPixAttempts }, { data: myExemption }, { data: myOpenReservation }, { data: myPaidIntent }] = await Promise.all([
+    supabase.from("payments").select("paid, payment_source, paid_at, amount").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
     profile.is_organizer
       ? supabase.from("event_payment_intents").select("id, amount, profile_id, profiles(full_name)").eq("event_id", id).eq("status", "refund_requested").order("cancelled_at", { ascending: true })
       : Promise.resolve({ data: null }),
@@ -144,6 +145,16 @@ export default async function ConfirmarPresencaPage({
       .eq("profile_id", profile.id)
       .eq("status", "pending")
       .gt("reservation_expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle(),
+    // Código do Pix pago, para o comprovante "Minha vaga".
+    supabase
+      .from("event_payment_intents")
+      .select("provider_order_id, provider_payment_id")
+      .eq("event_id", id)
+      .eq("profile_id", profile.id)
+      .eq("status", "paid")
+      .order("paid_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
   ]);
@@ -595,6 +606,24 @@ export default async function ConfirmarPresencaPage({
         </div>
         </div>
       )}
+
+      {myStatus === "confirmed" && !eventCancelled && (() => {
+        const confirmedOrder = (attendanceList ?? []).filter((a) => a.status === "confirmed").map((a) => a.profile_id);
+        const position = confirmedOrder.indexOf(profile.id);
+        return (
+          <PaymentReceiptCard
+            playerName={profile.full_name}
+            eventDate={event.date}
+            eventTime={event.time}
+            location={event.location}
+            position={position >= 0 ? position + 1 : null}
+            total={event.max_players ?? confirmedOrder.length}
+            confirmedAt={myAttendance?.confirmed_at ?? null}
+            payment={myPayment ? { ...myPayment, amount: myPayment.amount != null ? Number(myPayment.amount) : null } : null}
+            orderId={myPaidIntent?.provider_payment_id ?? myPaidIntent?.provider_order_id ?? null}
+          />
+        );
+      })()}
 
       {canRespond && registrationOpen && !eventFinished && !eventCancelled && event.price_per_player && !event.pix_payment_enabled && myStatus !== "confirmed" && !isFull && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">

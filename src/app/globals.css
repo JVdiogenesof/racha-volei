@@ -773,3 +773,101 @@ form[aria-busy="true"] button[type="submit"]::after {
   }
 
 }
+
+/* ── Anel de fogo: quem está numa sequência de rachas seguidos ──────────────
+   Tudo em CSS e em porcentagem do avatar, então funciona em qualquer tamanho.
+   Camadas (de trás pra frente): brilho -> chamas subindo -> anel girando -> foto. */
+.fire-ring {
+  position: relative;
+  display: inline-flex;
+  isolation: isolate;
+}
+
+.fire-ring > .avatar-photo {
+  position: relative;
+  z-index: 3;
+  box-shadow: 0 0 0 2px rgb(255 120 20 / 0.95) !important;
+}
+
+.fire-ring__glow {
+  position: absolute;
+  inset: -22%;
+  z-index: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(255 140 0 / 0.55) 35%, rgb(255 60 0 / 0.22) 55%, transparent 72%);
+  animation: fire-glow 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.fire-ring__band {
+  position: absolute;
+  inset: -7%;
+  z-index: 2;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, #ff2d00, #ff8a00, #ffd400, #ff6a00, #ff1f3d, #ff9a00, #ffe066, #ff4d00, #ff2d00);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  filter: blur(0.4px) saturate(1.2);
+  animation: fire-spin 2.2s linear infinite;
+  pointer-events: none;
+}
+
+/* Cada língua nasce na borda da foto (posição calculada no componente) e sobe,
+   como fogo de verdade: mais alta em cima, baixinha nas laterais. */
+.fire-ring__tongue {
+  position: absolute;
+  z-index: 1;
+  width: var(--w, 26%);
+  height: var(--h, 40%);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.fire-ring__tongue::before,
+.fire-ring__tongue::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50% 50% 40% 40% / 75% 75% 25% 25%;
+  transform-origin: 50% 100%;
+  animation: fire-flicker var(--d, 0.8s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Chama externa (laranja/vermelha) */
+.fire-ring__tongue::before {
+  background: radial-gradient(ellipse 60% 85% at 50% 100%, #ffb000 0%, #ff6a00 45%, rgb(255 40 0 / 0.75) 70%, transparent 100%);
+  filter: blur(0.5px);
+}
+
+/* Miolo amarelo, menor */
+.fire-ring__tongue::after {
+  inset: 30% 25% 0 25%;
+  background: radial-gradient(ellipse 60% 90% at 50% 100%, #fffbe0 0%, #ffe14d 40%, rgb(255 190 0 / 0.6) 75%, transparent 100%);
+  animation-duration: calc(var(--d, 0.8s) * 0.8);
+}
+
+@keyframes fire-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fire-glow {
+  0%, 100% { opacity: 0.75; transform: scale(0.97); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes fire-flicker {
+  0% { transform: scaleY(0.7) scaleX(1.08) skewX(-6deg); opacity: 0.85; }
+  40% { transform: scaleY(1.1) scaleX(0.9) skewX(4deg); opacity: 1; }
+  70% { transform: scaleY(0.85) scaleX(1) skewX(-3deg); opacity: 0.9; }
+  100% { transform: scaleY(1.02) scaleX(0.95) skewX(5deg); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fire-ring__glow,
+  .fire-ring__band,
+  .fire-ring__tongue::before,
+  .fire-ring__tongue::after {
+    animation: none;
+  }
+}

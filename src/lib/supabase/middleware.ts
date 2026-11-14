@@ -7,6 +7,8 @@ const PUBLIC_PATHS = [
   "/links",
   "/auth/callback",
   "/api/payments/mercado-pago/webhook",
+  // Rotas de cron se protegem sozinhas com segredo (Authorization: Bearer).
+  "/api/cron/",
   "/privacidade",
   "/regulamento",
   "/manifest.json",

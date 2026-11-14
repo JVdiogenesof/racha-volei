@@ -2,6 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getMercadoPagoOrder, isApprovedMercadoPagoOrder } from "@/lib/mercadoPago";
+import { notifyPixSettled } from "@/lib/listNotifications";
 
 /**
  * Confere o pedido no Mercado Pago e, se já foi pago, conclui a reserva
@@ -39,6 +40,7 @@ export async function settleMercadoPagoOrder(orderId: string): Promise<"paid" | 
   } else if (error) {
     throw new Error(error.message);
   }
+  await notifyPixSettled(supabase, intent.id);
   return "paid";
 }
 
