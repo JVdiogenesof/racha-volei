@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Gauge, CheckCircle2, Target } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Gauge } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
@@ -14,13 +14,12 @@ import { getRachaLevel } from "@/lib/rachaLevel";
 import { setAttendance } from "./racha/[id]/confirmar/actions";
 import { isBlockedByBatch } from "@/lib/registrationSchedule";
 import { isListFullFor } from "@/lib/rachaSpots";
-import { HomeTeamsVideo } from "@/components/HomeTeamsVideo";
+import { HomeStatsCard } from "@/components/HomeStatsCard";
+import { getHomeStats } from "@/lib/homeInsights";
 import { HomeCommunityTabs } from "@/components/HomeCommunityTabs";
 import { birthdaysThisMonth } from "@/lib/birthdays";
 import { getActiveCommunity } from "@/lib/community";
-import { getSeasonRanking, INDEX_MIN_EVENTS } from "@/lib/seasonRanking";
-import { TOURNAMENT_QUALIFYING_SLOTS } from "@/lib/rankings";
-import { getTournamentZone } from "@/lib/tournamentQualification";
+import { getSeasonRanking } from "@/lib/seasonRanking";
 import { todayStringInFortaleza } from "@/lib/today";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { AbsenceWarningBanner } from "@/components/AbsenceWarningBanner";
@@ -90,10 +89,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: reservedRows }, { data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
-    profile.status === "approved"
-      ? supabase.from("tournament_reserved_players").select("profile_id").eq("community", community)
-      : Promise.resolve({ data: null }),
+  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
     supabase
       .from("spot_offers")
       .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
@@ -105,8 +101,6 @@ export default async function HomePage() {
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
   ]);
   const isPaymentExempt = Boolean(myExemption);
-  const reservedIds = new Set((reservedRows ?? []).map((row) => row.profile_id));
-  const amGuaranteed = reservedIds.has(profile.id);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
     | null;
@@ -276,16 +270,13 @@ export default async function HomePage() {
         .filter((item) => item.eligible && approvedIds.has(item.profileId))
         .sort((a, b) => b.averageIndex - a.averageIndex || b.totalWins - a.totalWins)
     : [];
-  const mySeason = seasonScores?.get(profile.id) ?? null;
   const myRankIndex = rankedSeason.findIndex((item) => item.profileId === profile.id);
   const myPosition = myRankIndex >= 0 ? myRankIndex + 1 : null;
-  // Quem já garantiu vaga no pré-torneio não ocupa vaga do ranking: a zona desce.
-  const qualificationZone = getTournamentZone(rankedSeason.map((item) => item.profileId), reservedIds, TOURNAMENT_QUALIFYING_SLOTS);
-  const cutoffScore = qualificationZone.cutoffPosition !== null ? rankedSeason[qualificationZone.cutoffPosition - 1].averageIndex : null;
-  const myQualified = amGuaranteed || (myPosition !== null && myPosition <= qualificationZone.zoneEnd);
-  const myGap = myPosition !== null && !myQualified && cutoffScore !== null && mySeason
-    ? Math.max(0, Math.round((cutoffScore - mySeason.averageIndex) * 10) / 10)
-    : null;
+
+  const homeStats =
+    profile.status === "approved"
+      ? await getHomeStats(supabase, community, birthdayProfiles ?? [], seasonScores, profile.id, todayStringInFortaleza()).catch(() => null)
+      : null;
 
   const firstName = profile.full_name.split(" ")[0];
 
@@ -296,7 +287,17 @@ export default async function HomePage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">VPA · Racha de Quadra</p>
           <h1 className="mt-0.5 truncate text-[22px] font-extrabold leading-tight text-white sm:text-3xl">Fala, {firstName}!</h1>
         </div>
-        <div className="flex shrink-0 gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
+          {profile.status === "approved" && (
+            <Link
+              href="/ranking"
+              aria-label={myPosition !== null ? `Sua posição no Índice VPA: ${myPosition}º` : "Ver Índice VPA"}
+              className="flex h-10 items-center gap-1.5 rounded-xl border border-purple-300/30 bg-purple-500/20 px-2.5 text-white transition hover:bg-purple-500/30"
+            >
+              <Gauge className="h-4 w-4 text-purple-200" strokeWidth={2.25} />
+              <span className="text-[15px] font-black leading-none">{myPosition !== null ? `${myPosition}º` : "—"}</span>
+            </Link>
+          )}
           <Link href="/ranking" aria-label="Ver ranking" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-purple-200 transition hover:bg-white/10">
             <Trophy className="h-[18px] w-[18px]" strokeWidth={2.25} />
           </Link>
@@ -332,45 +333,6 @@ export default async function HomePage() {
           qualifiedCount={copaSummary.qualifiedCount}
           iAmQualified={copaSummary.iAmQualified}
         />
-      )}
-
-      {profile.status === "approved" && (
-        <Link
-          href="/ranking"
-          className="flex min-w-0 items-center gap-3 rounded-2xl border border-purple-300/20 bg-gradient-to-r from-purple-500/15 to-transparent px-2.5 py-1.5 transition hover:border-purple-300/35"
-        >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-400/20 text-purple-100">
-            <Gauge className="h-4 w-4" strokeWidth={2.25} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-white/40">Sua posição · Índice VPA</p>
-            {myPosition !== null && mySeason ? (
-              <p className="flex items-baseline gap-2 text-white">
-                <span className="text-lg font-black leading-tight">{myPosition}º</span>
-                <span className="truncate text-xs font-medium text-white/55">{mySeason.averageIndex.toFixed(1)} pts</span>
-              </p>
-            ) : (
-              <p className="truncate text-sm font-semibold leading-snug text-white/75">
-                {mySeason
-                  ? `Em classificação · ${mySeason.eventsPlayed}/${INDEX_MIN_EVENTS} rachas jogados`
-                  : "Jogue um racha pra entrar no ranking"}
-              </p>
-            )}
-          </div>
-          {myQualified ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
-              <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.5} />
-              Classificado
-            </span>
-          ) : myGap !== null && myGap > 0 ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-400/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-300">
-              <Target className="h-3.5 w-3.5" strokeWidth={2.5} />
-              −{myGap.toFixed(1)} p/ vaga
-            </span>
-          ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
-          )}
-        </Link>
       )}
 
       {proximoRacha ? (
@@ -417,7 +379,7 @@ export default async function HomePage() {
         />
       )}
 
-      <HomeTeamsVideo />
+      {homeStats && <HomeStatsCard stats={homeStats} />}
 
       {recentChampion && (
         <RecentTournamentChampionCard
