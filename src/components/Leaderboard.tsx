@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Fragment, useState, type ReactNode } from "react";
 import { BarChart3, ChevronDown, ChevronUp, CheckCircle2, Crown, Minus, TrendingDown, TrendingUp, Trophy, Volleyball } from "lucide-react";
 import { Avatar } from "./Avatar";
@@ -129,8 +130,20 @@ function tierFor(rankedPosition: number | null, zoneEnd: number | null, guarante
   return rankedPosition <= 10 ? "green" : "blue";
 }
 
+/** Todo mundo abre: no mínimo tem o atalho pro cartão VPA da pessoa. */
 function hasMoreDetails(entry: RankingEntry) {
-  return Boolean(entry.stats?.length || entry.breakdown || (entry.ranked !== false && entry.detail));
+  return Boolean(entry.profileId);
+}
+
+function ProfileCardLink({ profileId, className = "" }: { profileId: string; className?: string }) {
+  return (
+    <Link
+      href={`/jogadores?perfil=${profileId}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-purple-300/30 bg-purple-400/15 px-3 py-1.5 text-[11px] font-bold text-purple-100 transition hover:bg-purple-400/25 ${className}`}
+    >
+      🏐 Ver cartão VPA
+    </Link>
+  );
 }
 
 // Pedestais do pódio: altura, cor da barra e cor do número de cada colocação.
@@ -330,6 +343,7 @@ export function Leaderboard({
                 <p className="mt-1 break-words text-[11px] leading-tight text-white/70">{podiumExpanded.detail}</p>
               ) : null}
               {podiumExpanded.breakdown && <BreakdownPanel breakdown={podiumExpanded.breakdown} trendText={trendSentence(podiumExpanded)} />}
+              <ProfileCardLink profileId={podiumExpanded.profileId} className="mt-2" />
             </div>
           )}
 
@@ -439,6 +453,7 @@ export function Leaderboard({
                             <p className="break-words text-[11px] leading-tight text-white/60">{entry.detail}</p>
                           ) : null}
                           {entry.breakdown && <BreakdownPanel breakdown={entry.breakdown} trendText={trendSentence(entry)} />}
+                          <ProfileCardLink profileId={entry.profileId} />
                         </div>
                       )}
                     </li>

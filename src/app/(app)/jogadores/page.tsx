@@ -11,7 +11,8 @@ import { badgeStatsFrom, getBadgeCatalog } from "@/lib/profileCosmetics";
 import type { EarnedBadge } from "@/lib/badges";
 import { getActiveCommunity } from "@/lib/community";
 
-export default async function JogadoresPage() {
+export default async function JogadoresPage({ searchParams }: { searchParams: Promise<{ perfil?: string }> }) {
+  const { perfil } = await searchParams;
   const profile = await requireProfile();
   const canSeeNotes = canSeePlayerNotes(profile);
   const supabase = await createClient();
@@ -90,7 +91,7 @@ export default async function JogadoresPage() {
         </div>
       </div>
 
-      <PlayerSearch players={rows} showNotes={canSeeNotes} />
+      <PlayerSearch players={rows} showNotes={canSeeNotes} initialPlayerId={perfil} />
     </div>
   );
 }

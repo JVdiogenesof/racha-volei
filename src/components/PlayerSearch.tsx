@@ -220,10 +220,10 @@ function PlayerDetails({
   );
 }
 
-export function PlayerSearch({ players, showNotes = false }: { players: Player[]; showNotes?: boolean }) {
+export function PlayerSearch({ players, showNotes = false, initialPlayerId }: { players: Player[]; showNotes?: boolean; initialPlayerId?: string }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(() => players.find((player) => player.id === initialPlayerId) ?? null);
   const [selectedAchievement, setSelectedAchievement] = useState<{ achievement: Achievement; ownerName: string } | null>(null);
   const [selectedBadge, setSelectedBadge] = useState<{ badge: Badge; earned: EarnedBadge } | null>(null);
 
