@@ -181,7 +181,7 @@ export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
           </div>
         </div>
       )}
-      <nav aria-label="Navegação principal" className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[46] mx-auto max-w-md rounded-full border border-white/15 bg-[#0c0722]/45 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-2xl backdrop-saturate-150">
+      <nav aria-label="Navegação principal" className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[46] mx-auto max-w-md rounded-full border border-white/15 bg-[#0c0722]/45 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-lg">
         <div className="relative grid grid-cols-5">
           {/* Destaque que desliza até a aba tocada */}
           <span

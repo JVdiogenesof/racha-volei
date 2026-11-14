@@ -47,6 +47,8 @@ export function Avatar({
       alt={name}
       className={`avatar-photo ${SIZES[size]} shrink-0 rounded-full object-cover ring-2 ${plainRing ? "ring-transparent" : ringClass}`}
       referrerPolicy="no-referrer"
+      loading="lazy"
+      decoding="async"
     />
   ) : (
     <span
@@ -56,7 +58,8 @@ export function Avatar({
     </span>
   );
 
-  const art = frameId ? <AvatarFrameArt id={frameId} /> : null;
+  // Em tamanho pequeno (listas longas) a moldura fica parada: dezenas de animações juntas pesam no celular.
+  const art = frameId ? <AvatarFrameArt id={frameId} still={size === "sm"} /> : null;
 
   if (!showStreak) return <span className="relative inline-flex shrink-0">{photo}{art}</span>;
 
@@ -69,7 +72,7 @@ export function Avatar({
       aria-label={`${name}, ${streak} rachas seguidos`}
     >
       <span className="fire-ring__glow" aria-hidden />
-      {FLAMES.map((flame) => (
+      {FLAMES.filter((_, index) => size === "lg" || index % (size === "md" ? 2 : 3) === 1 || index === 5).map((flame) => (
         <span key={flame.key} className="fire-ring__tongue" style={flame.style} aria-hidden />
       ))}
       <span className="fire-ring__band" aria-hidden />

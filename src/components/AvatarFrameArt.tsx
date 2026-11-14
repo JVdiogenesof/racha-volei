@@ -559,11 +559,11 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
   ),
 };
 
-export function AvatarFrameArt({ id }: { id: AvatarFrameId }) {
+export function AvatarFrameArt({ id, still }: { id: AvatarFrameId; still?: boolean }) {
   const draw = FRAMES[id];
   if (!draw) return null;
   return (
-    <svg className="avatar-frame-art" viewBox="-8 -26 136 136" aria-hidden focusable="false">
+    <svg className={`avatar-frame-art${still ? " avatar-frame-art--still" : ""}`} viewBox="-8 -26 136 136" aria-hidden focusable="false">
       <defs>
         {/* Recorte: a moldura nunca cobre a foto (círculo de raio 40). */}
         <clipPath id="afr-hole">

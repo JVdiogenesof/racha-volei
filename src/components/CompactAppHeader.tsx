@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 const CompactHeaderContext = createContext(false);
 
@@ -19,7 +19,7 @@ export function CompactAppHeader({
   topBar: ReactNode;
 }) {
   const [compact, setCompact] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const barRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let frame = 0;
@@ -27,7 +27,11 @@ export function CompactAppHeader({
     const update = () => {
       frame = 0;
       const pageHeight = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(pageHeight > 0 ? Math.min(100, (Math.max(0, window.scrollY) / pageHeight) * 100) : 0);
+      // Barra de progresso direto no elemento: sem re-render do React a cada quadro da rolagem.
+      if (barRef.current) {
+        const ratio = pageHeight > 0 ? Math.min(1, Math.max(0, window.scrollY) / pageHeight) : 0;
+        barRef.current.style.transform = `scaleX(${ratio})`;
+      }
       setCompact((current) => {
         const scrollY = Math.max(0, window.scrollY);
         const next = current
@@ -51,9 +55,9 @@ export function CompactAppHeader({
 
   return (
     <CompactHeaderContext.Provider value={compact}>
-      <header className={`app-header-background sticky top-0 z-20 border-b text-white shadow-xl shadow-black/10 backdrop-blur-xl [overflow-anchor:none] transition-colors duration-300 ${compact ? "border-white/15" : "border-white/10"}`}>
+      <header className={`app-header-background sticky top-0 z-20 border-b text-white shadow-xl shadow-black/10 [overflow-anchor:none] transition-colors duration-300 ${compact ? "border-white/15" : "border-white/10"}`}>
         {topBar}
-        <span aria-hidden="true" className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-300 transition-[width] duration-150" style={{ width: `${progress}%` }} />
+        <span ref={barRef} aria-hidden="true" className="absolute bottom-0 left-0 h-[2px] w-full origin-left bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-300" style={{ transform: "scaleX(0)" }} />
       </header>
     </CompactHeaderContext.Provider>
   );

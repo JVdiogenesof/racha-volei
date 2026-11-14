@@ -491,12 +491,10 @@ form[aria-busy="true"] button[type="submit"]::after {
   from {
     opacity: 0;
     transform: translateY(10px) scale(0.994);
-    filter: blur(2px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 
@@ -816,7 +814,6 @@ form[aria-busy="true"] button[type="submit"]::after {
   background: conic-gradient(from 0deg, #ff2d00, #ff8a00, #ffd400, #ff6a00, #ff1f3d, #ff9a00, #ffe066, #ff4d00, #ff2d00);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
-  filter: blur(0.4px) saturate(1.2);
   animation: fire-spin 2.2s linear infinite;
   pointer-events: none;
 }
@@ -846,7 +843,6 @@ form[aria-busy="true"] button[type="submit"]::after {
 /* Chama externa (laranja/vermelha) */
 .fire-ring__tongue::before {
   background: radial-gradient(ellipse 60% 85% at 50% 100%, #ffb000 0%, #ff6a00 45%, rgb(255 40 0 / 0.75) 70%, transparent 100%);
-  filter: blur(0.5px);
 }
 
 /* Miolo amarelo, menor */
@@ -882,6 +878,11 @@ form[aria-busy="true"] button[type="submit"]::after {
 }
 
 /* ── Molduras de foto de perfil (desenhos em components/AvatarFrameArt) ─────── */
+.avatar-frame-art--still,
+.avatar-frame-art--still * {
+  animation: none !important;
+}
+
 .avatar-frame-art {
   position: absolute;
   left: -35%;
