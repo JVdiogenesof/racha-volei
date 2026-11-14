@@ -210,7 +210,7 @@ function avatarRevalidate() {
 
 /**
  * Troca a foto de perfil. Cada pessoa tem um único arquivo no Storage
- * ("<id>.webp"), sobrescrito a cada troca: a foto antiga deixa de existir.
+ * ("<id>.jpg"), sobrescrito a cada troca: a foto antiga deixa de existir.
  * O navegador já manda a imagem recortada e reduzida; aqui só se valida.
  */
 export async function uploadAvatar(formData: FormData) {
@@ -218,14 +218,16 @@ export async function uploadAvatar(formData: FormData) {
   const file = formData.get("photo");
   if (!(file instanceof File) || file.size === 0) throw new Error("Escolha uma imagem.");
   if (file.size > AVATAR_MAX_BYTES) throw new Error("A imagem ficou grande demais. Tente outra foto.");
-  if (!["image/webp", "image/jpeg", "image/png"].includes(file.type)) throw new Error("Use uma foto JPG, PNG ou WebP.");
+  if (file.type !== "image/jpeg") throw new Error("Não foi possível processar a foto. Tente outra.");
 
   const supabase = await createClient();
-  const path = `${profile.id}.webp`;
+  const path = `${profile.id}.jpg`;
   const { error: uploadError } = await supabase.storage
     .from("avatars")
-    .upload(path, file, { upsert: true, contentType: "image/webp", cacheControl: "3600" });
+    .upload(path, file, { upsert: true, contentType: "image/jpeg", cacheControl: "3600" });
   if (uploadError) throw new Error(uploadError.message);
+  // Limpa o arquivo da versão anterior (.webp), se existir: só fica uma foto por pessoa.
+  await supabase.storage.from("avatars").remove([`${profile.id}.webp`]);
 
   // O sufixo ?v= força o navegador a buscar a foto nova em vez da guardada.
   const url = `${supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
@@ -244,7 +246,7 @@ export async function resetAvatarToGoogle() {
   const googleUrl =
     (user?.user_metadata?.avatar_url as string | undefined) ?? (user?.user_metadata?.picture as string | undefined) ?? null;
 
-  await supabase.storage.from("avatars").remove([`${profile.id}.webp`]);
+  await supabase.storage.from("avatars").remove([`${profile.id}.jpg`, `${profile.id}.webp`]);
   const { error } = await supabase.from("profiles").update({ avatar_url: googleUrl }).eq("id", profile.id);
   if (error) throw new Error(error.message);
   avatarRevalidate();

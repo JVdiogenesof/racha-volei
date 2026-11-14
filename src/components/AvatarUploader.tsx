@@ -84,10 +84,10 @@ export function AvatarUploader({ fullName, avatarUrl, frame }: { fullName: strin
         const left = BOX / 2 - (current.width * scale) / 2 + offset.x;
         const top = BOX / 2 - (current.height * scale) / 2 + offset.y;
         ctx.drawImage(current.image, -left / scale, -top / scale, BOX / scale, BOX / scale, 0, 0, SIZE, SIZE);
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.85));
+        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
         if (!blob) throw new Error("Não foi possível processar a imagem.");
         const data = new FormData();
-        data.set("photo", new File([blob], "foto.webp", { type: "image/webp" }));
+        data.set("photo", new File([blob], "foto.jpg", { type: "image/jpeg" }));
         await uploadAvatar(data);
         setPicked(null);
         showToast("Foto atualizada! 📸");
