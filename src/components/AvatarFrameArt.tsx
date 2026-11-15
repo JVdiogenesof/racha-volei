@@ -113,6 +113,36 @@ function Bolt({ x, y, rot, s = 1 }: { x: number; y: number; rot: number; s?: num
   );
 }
 
+/** Brilho de esmalte no aro: reflexo em cima à esquerda, sombra embaixo à direita. */
+function Shine({ r = 43 }: { r?: number }) {
+  return (
+    <>
+      <path d={arcPath(r - 0.6, -100, -18)} fill="none" stroke="#fff" strokeOpacity=".6" strokeWidth="1.3" strokeLinecap="round" />
+      <path d={arcPath(r + 0.3, 80, 170)} fill="none" stroke="#1a0b3d" strokeOpacity=".25" strokeWidth="2" strokeLinecap="round" />
+    </>
+  );
+}
+
+/** Estrela de 5 pontas centrada na origem. */
+function star5(outer: number, inner: number) {
+  return Array.from({ length: 10 }, (_, i) => {
+    const a = (i * Math.PI) / 5 - Math.PI / 2;
+    const rad = i % 2 ? inner : outer;
+    return `${r2(Math.cos(a) * rad)},${r2(Math.sin(a) * rad)}`;
+  }).join(" ");
+}
+
+/** Shuriken de 4 pontas com furo no meio. */
+function Shuriken({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <path d="M0-7 1.6-1.6 7 0 1.6 1.6 0 7-1.6 1.6-7 0-1.6-1.6Z" fill="#cbd5e1" stroke="#334155" strokeWidth=".7" strokeLinejoin="round" />
+      <path d="M0-7 1.6-1.6 0 0ZM7 0 1.6 1.6 0 0ZM0 7-1.6 1.6 0 0ZM-7 0-1.6-1.6 0 0Z" fill="#f8fafc" opacity=".7" />
+      <circle r="1.3" fill="#0f172a" />
+    </g>
+  );
+}
+
 /** Círculo invisível: dá ao grupo que gira o mesmo centro da foto. */
 function Anchor() {
   return <circle cx={C} cy={C} r="52" fill="none" />;
@@ -180,6 +210,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         <path d="M68-17Q74-26 80-17Q74-20 68-17Z" fill="#f4a9c6" opacity=".55" />
       </g></g>
       <Ring stroke="#fffafc" />
+      <Shine />
       <Ring r={46} w={1.3} stroke="#f4a9c6" />
       <Ring r={40.6} w={1} stroke="#ffc4da" />
       <Heart x={14} y={92} s={.8} fill="#ffb3cf" className="afr-float" style={{ "--d": ".2s" } as React.CSSProperties} />
@@ -203,6 +234,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         <path d="M90.5 30 89.6 11 75.5 19.5Z" fill="#ffd2ab" />
       </g>
       <Ring stroke="#f2a04a" />
+      <Shine />
       <Ring stroke="#b85f17" w={5} dash="2.4 13.2" />
       <Ring r={46} w={1} stroke="#b85f17" />
       <Ring r={40.5} w={1} stroke="#b85f17" />
@@ -234,6 +266,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         <circle cx="95" cy="24" r="5.8" fill="#e8b98e" />
       </g>
       <Ring stroke="#bf7e49" />
+      <Shine />
       <Ring r={43} w={1.4} stroke="#e6b183" dash="1 5" />
       <Ring r={46.2} w={1.2} stroke="#6f3f1d" />
       <Ring r={40.4} w={1} stroke="#6f3f1d" />
@@ -242,8 +275,12 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         <path d="M60 104 50 98.5V109.5ZM60 104 70 98.5V109.5Z" fill="#e5484d" stroke="#a3262b" strokeWidth="1" strokeLinejoin="round" />
         <circle cx="60" cy="104" r="2.6" fill="#ff7378" stroke="#a3262b" strokeWidth="1" />
       </g>
-      {([[100, 14, 6, 0], [108, 4, 4.6, .9], [114, -4, 3.4, 1.8]] as const).map(([x, y, fs, d]) => (
-        <text key={x} className="afr-float" style={{ "--d": `${d}s` } as React.CSSProperties} x={x} y={y} fontSize={fs} fontWeight="900" fill="#fff" stroke="#6f3f1d" strokeWidth=".5" fontFamily="system-ui, sans-serif">z</text>
+      {/* "z z z" desenhados (o cartão em imagem não aceita texto dentro do SVG) */}
+      {([[102, 12, 1, 0], [109, 3, .78, .9], [114.5, -4.5, .58, 1.8]] as const).map(([x, y, s, d]) => (
+        <g key={x} className="afr-float" style={{ "--d": `${d}s` } as React.CSSProperties}>
+          <path transform={`translate(${x} ${y}) scale(${s})`} d="M-2.2-2.4H2.2L-2.2 2.4H2.2" fill="none" stroke="#6f3f1d" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          <path transform={`translate(${x} ${y}) scale(${s})`} d="M-2.2-2.4H2.2L-2.2 2.4H2.2" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        </g>
       ))}
     </>
   ),
@@ -292,13 +329,33 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
           <stop offset="1" stopColor="#6fd3ff" />
         </linearGradient>
       </defs>
+      <defs>
+        <linearGradient id="afr-moon-gold" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff6c4" />
+          <stop offset="1" stopColor="#f5b52e" />
+        </linearGradient>
+        <mask id="afr-crescent">
+          <rect x="40" y="-16" width="40" height="40" fill="#fff" />
+          <circle cx="64.2" cy="-1.6" r="9.4" fill="#000" />
+        </mask>
+      </defs>
       <Ring r={43} w={4.4} stroke="url(#afr-magic)" />
+      <Shine />
       <Ring r={45.8} w={.8} stroke="#fff" opacity={.8} />
       {Array.from({ length: 12 }, (_, i) => {
         const [x, y] = polar(43, i * 30 + 15);
         return <circle key={i} cx={x} cy={y} r="1.15" fill="#fff" />;
       })}
-      {([[-38, 54, 1.5, "#fff3a6", 0], [34, 52, 1.05, "#ffb3e6", .4], [96, 50, .85, "#9fe3ff", .9], [-102, 51, .8, "#d6b8ff", .2], [-160, 49, .95, "#fff3a6", .7]] as const).map(([deg, rad, s, fill, d]) => {
+      {/* broche: laços, lua crescente e estrela */}
+      <g className="afr-sway"><g transform="translate(60 8) scale(1.25) translate(-60 -8)">
+        <path d="M58 12C50 14 44 22 40 30L46 29 47 35C51 27 55 20 60 15Z" fill="#ff8ad8" stroke="#d14fa8" strokeWidth=".8" strokeLinejoin="round" />
+        <path d="M62 12C70 14 76 22 80 30L74 29 73 35C69 27 65 20 60 15Z" fill="#ff8ad8" stroke="#d14fa8" strokeWidth=".8" strokeLinejoin="round" />
+        <circle cx="60" cy="2" r="11.4" fill="#fff" opacity=".35" />
+        <circle cx="60" cy="2" r="10.4" fill="url(#afr-moon-gold)" stroke="#d99a1a" strokeWidth=".8" mask="url(#afr-crescent)" />
+        <polygon transform="translate(64.6 -0.8) rotate(12)" points={star5(6.4, 2.7)} fill="#fff3a6" stroke="#f5a524" strokeWidth=".8" strokeLinejoin="round" />
+        <circle cx="66" cy="-3" r="1" fill="#fff" />
+      </g></g>
+      {([[34, 52, 1.05, "#ffb3e6", .4], [96, 50, .85, "#9fe3ff", .9], [-102, 51, .8, "#d6b8ff", .2], [-160, 49, .95, "#fff3a6", .7], [-58, 56, 1.1, "#fff3a6", 0]] as const).map(([deg, rad, s, fill, d]) => {
         const [x, y] = polar(rad, deg);
         return <Sparkle key={deg} x={x} y={y} s={s} fill={fill} delay={d} />;
       })}
@@ -336,6 +393,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
   trovao: () => (
     <>
       <Ring r={43} w={4.6} stroke="#ffd426" />
+      <Shine />
       <g className="afr-spin-slow"><circle cx={C} cy={C} r="48" fill="none" /><Ring r={43} w={1.4} stroke="#fff6bf" dash="6 4" /></g>
       <Ring r={46} w={1} stroke="#d99700" />
       <Ring r={40.5} w={1} stroke="#d99700" />
@@ -360,6 +418,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </linearGradient>
       </defs>
       <Ring stroke="url(#afr-gold)" />
+      <Shine />
       <Ring r={46} w={1} stroke="#a86a08" />
       <Ring r={40.5} w={1} stroke="#a86a08" />
       <path d="M42 21 38-2 49.5 8.5 60-9 70.5 8.5 82-2 78 21Z" fill="url(#afr-gold)" stroke="#a86a08" strokeWidth="1.4" strokeLinejoin="round" />
@@ -384,6 +443,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </linearGradient>
       </defs>
       <Ring r={43} w={3.6} stroke="url(#afr-hit)" />
+      <Shine />
       <Ring r={45.6} w={.9} stroke="#ff4d3d" opacity={.7} />
       <g className="afr-spin">
         <circle cx={C} cy={C} r="48" fill="none" />
@@ -440,6 +500,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
           </linearGradient>
         </defs>
         <Ring stroke="url(#afr-sand)" />
+        <Shine />
         <Ring r={46} w={1} stroke="#c98f4a" />
         <Ring r={40.5} w={1} stroke="#c98f4a" />
         {grains.map(([x, y], i) => (
@@ -483,6 +544,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </linearGradient>
       </defs>
       <Ring r={43.2} w={5.4} stroke="url(#afr-sea)" />
+      <Shine />
       {Array.from({ length: 30 }, (_, i) => {
         const [x, y] = polar(45.4 + (i % 2 ? 0.5 : -0.3), i * 12);
         return <circle key={i} cx={x} cy={y} r={i % 3 === 0 ? 3 : 2.3} fill="#effcff" stroke="#9bdcf5" strokeWidth=".5" />;
@@ -537,6 +599,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </linearGradient>
       </defs>
       <Ring stroke="url(#afr-love)" />
+      <Shine />
       <Ring r={40.7} w={.8} stroke="#fff" opacity={.55} />
       <Ring r={46} w={.9} stroke="#c4a8ff" />
       <Heart x={60} y={14.5} s={2.3} fill="#b99cff" stroke="#fff" />
@@ -548,7 +611,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
   ),
 
   noite: () => {
-    const [mx, my] = polar(52, -40);
+    const [mx, my] = polar(50, -42);
     return (
       <>
         <defs>
@@ -556,27 +619,35 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
             <stop offset="0" stopColor="#4f46e5" />
             <stop offset="1" stopColor="#15123f" />
           </linearGradient>
+          <radialGradient id="afr-moonglow">
+            <stop offset="0" stopColor="#ffe9a8" stopOpacity=".45" />
+            <stop offset="1" stopColor="#ffe9a8" stopOpacity="0" />
+          </radialGradient>
           <mask id="afr-moon">
-            <rect x="-12" y="-12" width="24" height="24" fill="#fff" />
-            <circle cx="3.6" cy="-2.6" r="7.2" fill="#000" />
+            <rect x="-20" y="-20" width="40" height="40" fill="#fff" />
+            <circle cx="5.6" cy="-4" r="11" fill="#000" />
           </mask>
         </defs>
         <Ring stroke="url(#afr-night)" />
+        <Shine />
         <Ring r={46} w={.9} stroke="#8f86ff" />
         <Ring r={40.5} w={.9} stroke="#8f86ff" opacity={.7} />
         {Array.from({ length: 16 }, (_, i) => {
           const [x, y] = polar(43 + ((i * 3) % 3) - 1, i * 22.5 + 6);
           return <circle key={i} cx={x} cy={y} r={i % 4 === 0 ? 1.1 : .65} fill="#fff3b8" />;
         })}
-        <g transform={`translate(${mx} ${my}) rotate(-20)`}>
-          <circle r="9.5" fill="#ffe9a8" opacity=".18" />
-          <circle r="8.2" fill="#ffe9a8" stroke="#f3c64b" strokeWidth=".8" mask="url(#afr-moon)" />
+        <g className="afr-float" style={{ "--d": ".3s" } as React.CSSProperties}><g transform={`translate(${mx} ${my}) rotate(-24)`}>
+          <circle r="20" fill="url(#afr-moonglow)" />
+          <circle r="13" fill="#ffe9a8" stroke="#f3c64b" strokeWidth=".9" mask="url(#afr-moon)" />
+          <circle cx="-6" cy="3" r="1.6" fill="#f3d27a" mask="url(#afr-moon)" />
+          <circle cx="-3" cy="8" r="1.1" fill="#f3d27a" mask="url(#afr-moon)" />
+        </g></g>
+        <g className="afr-float" style={{ "--d": "1s" } as React.CSSProperties}>
+          <path d="M84 104c-4 0-5-5-1-6 0-4 6-5 8-2 2-2 7-1 7 3 3 0 4 5 0 5Z" fill="#e0e7ff" opacity=".92" />
         </g>
         <Sparkle x={88} y={16} s={.9} fill="#fff3b8" delay={.1} />
         <Sparkle x={104} y={62} s={.7} fill="#c7c2ff" delay={.9} />
         <Sparkle x={30} y={100} s={.75} fill="#fff3b8" delay={.5} />
-        <path d="M100 96l-12 6" stroke="#fff3b8" strokeWidth="1.2" strokeLinecap="round" opacity=".7" />
-        <Sparkle x={101} y={95} s={.7} fill="#fff" delay={1.2} />
       </>
     );
   },
@@ -643,31 +714,38 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
           <stop offset="0" stopColor="#38bdf8" />
           <stop offset="1" stopColor="#1d4ed8" />
         </linearGradient>
+        <linearGradient id="afr-ninja-plate" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f1f5f9" />
+          <stop offset="1" stopColor="#94a3b8" />
+        </linearGradient>
       </defs>
       <Ring r={43} w={4} stroke="url(#afr-ninja)" />
+      <Shine />
       <Ring r={46} w={.9} stroke="#93c5fd" opacity={.8} />
       <g className="afr-spin-rev" style={{ animationDuration: "9s" }}>
         <Anchor />
         <Ring r={49.5} w={1.2} stroke="#60a5fa" dash="2 5" />
       </g>
-      <g className="afr-spin" style={{ animationDuration: "5.5s" }}>
+      <g className="afr-spin" style={{ animationDuration: "4s" }}>
         <Anchor />
-        {[0, 120, 240].map((deg) => {
-          const [x, y] = polar(43, deg);
-          return (
-            <g key={deg} transform={`translate(${x} ${y}) rotate(${deg + 90})`}>
-              <circle r="4" fill="#f97316" stroke="#fff" strokeWidth=".9" />
-              <path d="M0-4C5.4-4 8.4-.6 6.4 4 7.6-1.4 4-3.6 0-2.4Z" fill="#f97316" stroke="#fff" strokeWidth=".7" />
-              <circle r="1.1" fill="#7c2d12" />
-            </g>
-          );
+        {[60, 180, 300].map((deg) => {
+          const [x, y] = polar(49.5, deg);
+          return <Shuriken key={deg} x={x} y={y} s={0.85} />;
         })}
       </g>
-      <g className="afr-sway">
-        <path d="M60-12C72-4 73 9 60 17 47 9 48-4 60-12Z" fill="#22c55e" stroke="#14532d" strokeWidth="1.2" strokeLinejoin="round" />
-        <path d="M60-6C53-1 54 7 60 11 66 7 67-1 60-6Z" fill="none" stroke="#bbf7d0" strokeWidth="1.1" />
-        <path d="M60-12V17" stroke="#14532d" strokeWidth="1" />
+      {/* bandana: faixa de pano, placa de metal com espiral gravada e pontas soltas */}
+      <path d="M30 18C40 10 80 10 90 18L88 25C78 18 42 18 32 25Z" fill="#1e3a8a" stroke="#0f1d4a" strokeWidth=".9" strokeLinejoin="round" />
+      <g className="afr-sway" style={{ "--d": ".4s" } as React.CSSProperties}>
+        <path d="M89 20C96 18 102 22 106 30 100 28 96 27 92 26ZM88 24C94 26 98 32 99 40 95 35 91 32 87 29Z" fill="#1e40af" stroke="#0f1d4a" strokeWidth=".8" strokeLinejoin="round" />
       </g>
+      <rect x="45" y="6" width="30" height="15" rx="2.6" fill="url(#afr-ninja-plate)" stroke="#475569" strokeWidth=".9" />
+      {[[48, 9], [72, 9], [48, 18], [72, 18]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r=".8" fill="#64748b" />)}
+      <path d={Array.from({ length: 26 }, (_, i) => {
+        const a = i * 0.62;
+        const rad = 0.4 + i * 0.22;
+        return `${i ? "L" : "M"}${r2(60 + Math.cos(a) * rad)} ${r2(13.5 + Math.sin(a) * rad * 0.85)}`;
+      }).join("")} fill="none" stroke="#334155" strokeWidth="1.1" strokeLinecap="round" />
+      <path d="M47 8H73" stroke="#fff" strokeOpacity=".7" strokeWidth=".9" strokeLinecap="round" />
     </>
   ),
 
@@ -675,6 +753,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
     <>
       <Flames id="afr-furia" inner="#fff9c4" mid="#ffd23f" outer="#ff9800" from={-118} to={118} count={11} minH={14} maxH={25} />
       <Ring r={43} w={3.6} stroke="#fff7c2" />
+      <Shine />
       <Ring r={45.4} w={1} stroke="#ffb300" />
       {([[-62, 56], [70, 58], [-128, 54], [128, 54]] as const).map(([deg, rad], i) => {
         const [x, y] = polar(rad, deg);
@@ -694,6 +773,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </filter>
       </defs>
       <Ring r={43} w={3.4} stroke="#94a3b8" />
+      <Shine />
       <Ring r={43} w={1} stroke="#e2e8f0" dash="3 3" />
       <Ring r={46} w={.8} stroke="#475569" />
       <g filter="url(#afr-sabre-glow)">
@@ -726,14 +806,21 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         <Ring r={43} w={2.4} stroke="#22c55e" />
         <Ring r={46} w={.8} stroke="#86efac" opacity={.7} />
       </g>
-      {Array.from({ length: 22 }, (_, i) => {
-        const [x, y] = polar(49.5 + (i % 3) * 3.2, i * 16.4 + 4);
+      {/* colunas de código caindo: a cabeça da coluna é clara, o rastro vai apagando */}
+      {([[-64, 4], [-40, 5], [-14, 4], [12, 5], [38, 4], [62, 5], [-104, 3], [100, 3]] as const).map(([deg, len], c) => {
+        const [x, y] = polar(52, deg);
+        // Binário desenhado em traço: "0" é uma cápsula, "1" é uma haste com bandeirinha.
+        const ZERO = "M0-2.2C1.5-2.2 1.5 2.2 0 2.2-1.5 2.2-1.5-2.2 0-2.2Z";
+        const ONE = "M-1-1.4 0-2.2V2.2M-1.2 2.2H1.2";
         return (
-          <text key={i} className="afr-rain" style={{ "--d": `${(i % 7) * 0.3}s` } as React.CSSProperties} x={x} y={y} fontSize={7 + (i % 3)} fontWeight="700" fill={i % 5 === 0 ? "#d1fae5" : "#4ade80"} textAnchor="middle" fontFamily="ui-monospace, Menlo, monospace">
-            {["0", "1", "7", "A", "0", "1", "9"][i % 7]}
-          </text>
+          <g key={deg} className="afr-rain" style={{ "--d": `${(c % 4) * 0.45}s` } as React.CSSProperties}>
+            {Array.from({ length: len }, (_, k) => (
+              <path key={k} transform={`translate(${x} ${r2(y - k * 6)})`} d={(c + k) % 3 === 0 ? ZERO : ONE} fill="none" stroke={k === 0 ? "#f0fdf4" : "#4ade80"} strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity={r2(1 - k * 0.19)} />
+            ))}
+          </g>
         );
       })}
+      <rect x="56.5" y="102" width="7" height="4.4" fill="#4ade80" className="afr-blink" />
     </>
   ),
 
@@ -741,6 +828,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
     <>
       <Ring r={43} w={6} stroke="#b9895a" />
       <Ring r={43} w={6} stroke="#e8c79a" dash="2.2 5.6" />
+      <Shine />
       <Ring r={46.2} w={.9} stroke="#6b4423" />
       <Ring r={40} w={.9} stroke="#6b4423" />
       <g className="afr-orbit" style={{ animationDuration: "18s" }}>
@@ -755,13 +843,22 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
           );
         })}
       </g>
+      {/* chapéu de capitão (tricórnio) com caveira e ossos cruzados */}
       <g className="afr-sway">
-        <path d="M27 24C30 4 90 4 93 24 82 16 38 16 27 24Z" fill="#1f2937" stroke="#fbbf24" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M27 24C42 21 78 21 93 24" fill="none" stroke="#fbbf24" strokeWidth="1.4" />
-        <circle cx="60" cy="11.5" r="4.4" fill="#f8fafc" />
-        <rect x="57" y="14.5" width="6" height="2.6" rx="1" fill="#f8fafc" />
-        <circle cx="58.2" cy="11" r="1" fill="#1f2937" />
-        <circle cx="61.8" cy="11" r="1" fill="#1f2937" />
+        <path d="M16 22C18 10 28 6 36 12C42-2 78-2 84 12C92 6 102 10 104 22C90 30 30 30 16 22Z" fill="#1f2937" stroke="#0b0f17" strokeWidth="1" strokeLinejoin="round" />
+        <path d="M16 22C18 10 28 6 36 12C42-2 78-2 84 12C92 6 102 10 104 22" fill="none" stroke="#fbbf24" strokeWidth="1.6" strokeLinejoin="round" />
+        <path d="M36 12C48 6 72 6 84 12" fill="none" stroke="#374151" strokeWidth="1" />
+        <g stroke="#f8fafc" strokeWidth="2" strokeLinecap="round">
+          <line x1="52" y1="8" x2="68" y2="20" />
+          <line x1="68" y1="8" x2="52" y2="20" />
+        </g>
+        {[[52, 8], [68, 20], [68, 8], [52, 20]].map(([x, y]) => <circle key={`${x}${y}`} cx={x} cy={y} r="1.6" fill="#f8fafc" />)}
+        <circle cx="60" cy="12" r="5" fill="#f8fafc" />
+        <rect x="56.8" y="15.2" width="6.4" height="3" rx="1" fill="#f8fafc" />
+        <circle cx="58.1" cy="11.6" r="1.2" fill="#1f2937" />
+        <circle cx="61.9" cy="11.6" r="1.2" fill="#1f2937" />
+        <path d="M60 13.6l-.7 1.2h1.4Z" fill="#1f2937" />
+        <path d="M24 14C28 10 34 10 36 12" fill="none" stroke="#fff" strokeOpacity=".25" strokeWidth="1.2" strokeLinecap="round" />
       </g>
       <Sparkle x={100} y={96} s={.8} fill="#fde68a" delay={.4} />
       <Sparkle x={18} y={98} s={.6} fill="#fde68a" delay={1} />
@@ -776,6 +873,13 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
+      <g className="afr-spin-slow" style={{ animationDuration: "20s" }}>
+        <Anchor />
+        <g fill="none" stroke="#fdba74" strokeWidth=".6" opacity=".45">
+          <rect x="22" y="22" width="76" height="76" />
+          <rect x="22" y="22" width="76" height="76" transform="rotate(45 60 60)" />
+        </g>
+      </g>
       <g filter="url(#afr-portal-glow)">
         <g className="afr-spin" style={{ animationDuration: "6s" }}>
           <Anchor />
@@ -809,6 +913,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
         </linearGradient>
       </defs>
       <Ring r={43} w={4} stroke="#bae6fd" />
+      <Shine />
       <Ring r={43} w={1.2} stroke="#fff" dash="4 5" />
       <Ring r={46} w={.9} stroke="#7dd3fc" />
       {([[-54, 14], [-34, 22], [-14, 29], [14, 29], [34, 22], [54, 14]] as const).map(([deg, h], i) => {
@@ -856,6 +961,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
   floresta: () => (
     <>
       <Ring r={43} w={3.6} stroke="#3f8f4a" />
+      <Shine />
       <Ring r={43} w={1.2} stroke="#86d38f" dash="3 4" />
       <Ring r={46} w={.8} stroke="#25612d" />
       {Array.from({ length: 12 }, (_, i) => {
@@ -889,6 +995,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
       <circle cx="55" cy="-1" r="2" fill="#f5deb3" />
       <circle cx="65" cy="5" r="1.5" fill="#f5deb3" />
       <Ring r={43} w={5} stroke="#111827" />
+      <Shine />
       <Ring r={43} w={1.2} stroke="#a78bfa" dash="1 5" />
       <Ring r={46} w={1} stroke="#6b7280" />
       <Ring r={40.5} w={1} stroke="#6b7280" />
@@ -953,6 +1060,7 @@ const FRAMES: Record<AvatarFrameId, () => ReactNode> = {
     <>
       <Flames id="afr-chama" inner="#e0f2fe" mid="#3b82f6" outer="#7c3aed" from={-140} to={140} count={15} minH={10} maxH={22} />
       <Ring r={43} w={3.4} stroke="#dbeafe" />
+      <Shine />
       <Ring r={45.4} w={1} stroke="#6366f1" />
       {Array.from({ length: 8 }, (_, i) => {
         const [x, y] = polar(56 + (i % 3) * 3, i * 45 + 20);
