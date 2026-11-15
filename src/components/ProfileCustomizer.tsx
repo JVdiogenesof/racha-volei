@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Check, Lock, RotateCcw, Save } from "lucide-react";
+import { Check, Frame, ImageIcon, Lock, RotateCcw, Save, Sparkles } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { ProfileBannerArt } from "./ProfileBannerArt";
 import { ProfileHero } from "./ProfileHero";
-import { AvatarUploader } from "./AvatarUploader";
 import { useToast } from "./Toast";
 import { AVATAR_FRAMES } from "@/lib/avatarFrames";
 import { PROFILE_BANNERS, PROFILE_EFFECTS, isUnlocked, unlockLabel } from "@/lib/cosmetics";
@@ -35,6 +34,7 @@ export function ProfileCustomizer({
   const unlocked = useMemo(() => new Set(unlockedLevelIds), [unlockedLevelIds]);
   const [saved, setSaved] = useState<Draft>(current);
   const [draft, setDraft] = useState<Draft>(current);
+  const [section, setSection] = useState<"frame" | "banner" | "effect">("frame");
   const [pending, startTransition] = useTransition();
   const { showToast } = useToast();
 
@@ -86,18 +86,38 @@ export function ProfileCustomizer({
         <p className="mt-2 text-xs text-white/45">Toque em qualquer opção pra testar. Itens com cadeado se destravam com conquistas.</p>
       </div>
 
-      <AvatarUploader fullName={fullName} avatarUrl={avatarUrl} frame={saved.frame} />
+      <div role="tablist" aria-label="O que personalizar" className="sticky top-2 z-20 grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-[#140c33]/95 p-1 shadow-lg shadow-black/30">
+        {(
+          [
+            ["frame", "Molduras", Frame, AVATAR_FRAMES.length],
+            ["banner", "Banners", ImageIcon, PROFILE_BANNERS.length],
+            ["effect", "Efeitos", Sparkles, PROFILE_EFFECTS.length],
+          ] as const
+        ).map(([id, label, Icon, total]) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={section === id}
+            onClick={() => setSection(id)}
+            className={`flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition ${section === id ? "bg-brand-purple text-white shadow-md shadow-purple-950/40" : "text-white/60 hover:bg-white/5"}`}
+          >
+            <Icon className="h-3.5 w-3.5" aria-hidden /> {label}
+            <span className="rounded-full bg-black/25 px-1.5 py-0.5 text-[9px] font-black">{total}</span>
+          </button>
+        ))}
+      </div>
 
-      <Section title="Moldura da foto" hint="Aparece no ranking, nas listas e na busca de jogadores.">
+      {section === "frame" && <Section title="Moldura da foto" hint="Aparece no ranking, nas listas e na busca de jogadores.">
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
           <FrameTile id={null} name="Sem moldura" active={draft.frame === null} equipped={saved.frame === null} locked={false} lockText="" onPick={() => setDraft((p) => ({ ...p, frame: null }))} avatarUrl={avatarUrl} fullName={fullName} />
           {AVATAR_FRAMES.map((item: Item) => (
             <FrameTile key={item.id} id={item.id} name={item.name} active={draft.frame === item.id} equipped={saved.frame === item.id} locked={!isUnlocked(item, unlocked)} lockText={item.unlock ? unlockLabel(item.unlock) : ""} onPick={() => pick("frame", item.id)} avatarUrl={avatarUrl} fullName={fullName} />
           ))}
         </div>
-      </Section>
+      </Section>}
 
-      <Section title="Banner" hint="A capa do seu cartão de perfil.">
+      {section === "banner" && <Section title="Banner" hint="A capa do seu cartão de perfil.">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {PROFILE_BANNERS.map((item: Item) => {
             const locked = !isUnlocked(item, unlocked);
@@ -116,9 +136,9 @@ export function ProfileCustomizer({
             );
           })}
         </div>
-      </Section>
+      </Section>}
 
-      <Section title="Efeito do cartão" hint="Animação que roda por cima do seu cartão quando alguém abre seu perfil.">
+      {section === "effect" && <Section title="Efeito do cartão" hint="Animação que roda por cima do seu cartão quando alguém abre seu perfil.">
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
           {PROFILE_EFFECTS.map((item) => {
             const locked = !isUnlocked(item, unlocked);
@@ -138,7 +158,7 @@ export function ProfileCustomizer({
             <p className="mt-0.5 text-[10px] text-white/45">Cartão limpinho</p>
           </button>
         </div>
-      </Section>
+      </Section>}
 
       {(dirty || pending) && (
         <div className="sticky bottom-[calc(6rem+env(safe-area-inset-bottom))] z-20 flex items-center justify-between gap-3 rounded-2xl border border-purple-300/30 bg-[#1b1040]/95 p-3 shadow-2xl shadow-black/50">
@@ -193,7 +213,7 @@ function FrameTile({
     <button type="button" onClick={onPick} aria-pressed={active} className={`relative flex flex-col items-center rounded-2xl border px-1.5 pb-2 pt-8 text-center transition ${active ? "border-purple-300 bg-purple-400/15 ring-2 ring-purple-300/50" : "border-white/10 bg-white/[0.04] hover:border-white/30"}`}>
       {equipped && <span className="absolute right-1.5 top-1.5"><Equipped /></span>}
       <div className={locked ? "opacity-55" : ""}>
-        <Avatar src={avatarUrl} name={fullName} size="md" frame={id} still />
+        <Avatar src={avatarUrl} name={fullName} size="md" frame={id} />
       </div>
       <span className="mt-4 text-[11px] font-bold leading-tight text-white">{name}</span>
       {locked && (

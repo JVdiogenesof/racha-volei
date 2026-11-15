@@ -803,7 +803,53 @@ form[aria-busy="true"] button[type="submit"]::after {
 .afr-pulse { animation: afr-pulse 1.5s ease-in-out infinite; }
 .afr-twinkle { animation: afr-twinkle 1.9s ease-in-out infinite; animation-delay: var(--d, 0s); }
 .afr-float { animation: afr-float 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
-.afr-flicker { animation: afr-flicker 1.2s steps(1) infinite; }
+.afr-flicker { animation: afr-flicker 1.2s steps(1) infinite; animation-delay: var(--d, 0s); }
+.afr-spin-rev { animation: afr-spin 7s linear infinite reverse; }
+.afr-orbit { animation: afr-spin 26s linear infinite; }
+.afr-ear,
+.afr-sway,
+.afr-flame,
+.afr-flap,
+.afr-breathe,
+.afr-drip,
+.afr-rain,
+.afr-blink,
+.afr-hue,
+.afr-spin-rev,
+.afr-orbit {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.afr-ear { transform-origin: 50% 100%; animation: afr-ear 2.4s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.afr-sway { transform-origin: 50% 100%; animation: afr-sway 3s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.afr-flame { animation: afr-flame 0.8s ease-in-out infinite alternate; animation-delay: var(--d, 0s); }
+.afr-flap { animation: afr-flap .55s ease-in-out infinite alternate; animation-delay: var(--d, 0s); }
+.afr-breathe { animation: afr-breathe 3.2s ease-in-out infinite; }
+.afr-drip { animation: afr-drip 2.2s ease-in infinite; animation-delay: var(--d, 0s); }
+.afr-rain { animation: afr-rain 2.1s linear infinite; animation-delay: var(--d, 0s); }
+.afr-blink { animation: afr-blink 1.6s steps(1) infinite; animation-delay: var(--d, 0s); }
+.afr-hue { animation: afr-hue 5s linear infinite; }
+
+@keyframes afr-ear { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+@keyframes afr-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes afr-flame {
+  from { opacity: 0.72; }
+  to { opacity: 1; }
+}
+@keyframes afr-flap { from { transform: scale(1, 1); } to { transform: scale(1, 0.5); } }
+@keyframes afr-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes afr-drip {
+  0% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(6px); opacity: 0.5; }
+  100% { transform: translateY(7px); opacity: 0; }
+}
+@keyframes afr-rain {
+  0% { transform: translateY(-5px); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateY(6px); opacity: 0; }
+}
+@keyframes afr-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
+@keyframes afr-hue { to { filter: hue-rotate(360deg); } }
 
 @keyframes afr-spin { to { transform: rotate(360deg); } }
 @keyframes afr-pulse {
@@ -830,7 +876,18 @@ form[aria-busy="true"] button[type="submit"]::after {
   .afr-pulse,
   .afr-twinkle,
   .afr-float,
-  .afr-flicker {
+  .afr-flicker,
+  .afr-spin-rev,
+  .afr-orbit,
+  .afr-ear,
+  .afr-sway,
+  .afr-flame,
+  .afr-flap,
+  .afr-breathe,
+  .afr-drip,
+  .afr-rain,
+  .afr-blink,
+  .afr-hue {
     animation: none;
   }
 }

@@ -8,9 +8,9 @@ import { formatPointsDiff, getSeasonRanking, ROLLING_INDEX_EVENT_COUNT } from "@
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementTracks } from "@/components/AchievementTracks";
-import { getAchievementTracks, getClassicAchievements, getFeaturedAchievements, getUnlockedLevelIds } from "@/lib/achievements";
+import { getAchievementTracks, getClassicAchievements, getFeaturedAchievements } from "@/lib/achievements";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
-import { ProfileCustomizer } from "@/components/ProfileCustomizer";
+import { PersonalizarHub } from "@/components/PersonalizarHub";
 import { ProfileTabs } from "@/components/ProfileTabs";
 import { UnlockCelebration, type NewUnlock } from "@/components/UnlockCelebration";
 import { badgeStatsFrom, getBadgeCatalog, getEarnedBadges, getProfileExtras } from "@/lib/profileCosmetics";
@@ -70,7 +70,6 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
     ...badgeStatsFrom(earnedBadges, badgeCatalog),
   };
   const tracks = getAchievementTracks(achievementStats);
-  const unlockedLevelIds = getUnlockedLevelIds(achievementStats);
   const seen = new Set(extras.seen_unlocks);
   const newUnlocks: NewUnlock[] = tracks.flatMap((track) =>
     track.levels
@@ -158,13 +157,14 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
             highlight: true,
             icon: <Palette className="h-3.5 w-3.5" aria-hidden />,
             content: (
-              <ProfileCustomizer
+              <PersonalizarHub
                 fullName={profile.full_name}
                 avatarUrl={profile.avatar_url}
                 nickname={profile.nickname_badge}
-                        isSetter={profile.is_setter}
-                current={{ frame: profile.avatar_frame, banner: extras.profile_banner, effect: extras.profile_effect }}
-                unlockedLevelIds={[...unlockedLevelIds]}
+                isSetter={profile.is_setter}
+                frame={profile.avatar_frame}
+                banner={extras.profile_banner}
+                effect={extras.profile_effect}
                 featuredBadges={featuredBadges}
               />
             ),

@@ -3,13 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireMember, requireProfile } from "@/lib/auth";
+import { loadUnlockedLevelIds } from "@/lib/profileUnlocks";
 import { SKILL_CATEGORIES } from "@/lib/scoring";
 import { AVATAR_FRAMES, isAvatarFrameId } from "@/lib/avatarFrames";
 import { PROFILE_BANNERS, PROFILE_EFFECTS, isBannerId, isEffectId, isUnlocked } from "@/lib/cosmetics";
-import { getAchievementTracks, getUnlockedLevelIds, type AchievementStats } from "@/lib/achievements";
-import { getBadgeCatalog, getEarnedBadges, getProfileExtras, badgeStatsFrom } from "@/lib/profileCosmetics";
-import { getRankingCounts } from "@/lib/rankings";
-import { getActiveCommunity } from "@/lib/community";
+import { getAchievementTracks } from "@/lib/achievements";
+import { getProfileExtras } from "@/lib/profileCosmetics";
 
 export async function updateProfileData(formData: FormData) {
   const profile = await requireMember();
@@ -98,25 +97,6 @@ export async function deletePushSubscription(endpoint: string) {
   if (error) throw new Error(error.message);
 }
 
-/** Estatísticas que alimentam as conquistas (as mesmas da tela de perfil). */
-async function loadAchievementStats(profile: Awaited<ReturnType<typeof requireMember>>): Promise<AchievementStats> {
-  const supabase = await createClient();
-  const community = await getActiveCommunity();
-  const [counts, earned, catalog] = await Promise.all([
-    getRankingCounts(supabase, community),
-    getEarnedBadges(supabase, profile.id),
-    getBadgeCatalog(supabase),
-  ]);
-  return {
-    attendance: counts.attendance.get(profile.id) ?? 0,
-    wins: counts.wins.get(profile.id) ?? 0,
-    mvp: counts.mvp.get(profile.id) ?? 0,
-    streak: counts.streaks.get(profile.id) ?? 0,
-    isSetter: profile.is_setter,
-    ...badgeStatsFrom(earned, catalog),
-  };
-}
-
 /**
  * Equipa moldura, banner e efeito de uma vez. Cada item precisa estar liberado
  * (livre ou desbloqueado por conquista) -- ou já estar equipado, pra quem
@@ -130,7 +110,7 @@ export async function saveCosmetics(input: { frame: string | null; banner: strin
 
   const supabase = await createClient();
   const current = { frame: profile.avatar_frame, ...(await getProfileExtras(supabase, profile.id)) };
-  const unlocked = getUnlockedLevelIds(await loadAchievementStats(profile));
+  const unlocked = new Set(await loadUnlockedLevelIds(profile));
 
   const checks: [string | null, string | null, readonly { id: string; unlock?: string }[], string][] = [
     [input.frame, current.frame, AVATAR_FRAMES, "Essa moldura"],
