@@ -6,6 +6,7 @@ import { ChevronRight, Flame, Gauge, Search, Trophy, UsersRound, X } from "lucid
 import { Avatar } from "./Avatar";
 import { NicknameBadge } from "./NicknameBadge";
 import { AchievementDetailsModal } from "./AchievementDetailsModal";
+import { AchievementEmblem } from "./AchievementEmblem";
 import { ProfileHero } from "./ProfileHero";
 import { BadgeIcon } from "./BadgeIcon";
 import { BadgeDetail } from "./BadgeShowcase";
@@ -198,7 +199,7 @@ function PlayerDetails({
                   onClick={() => onAchievementClick(achievement)}
                   className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-amber-300/10 bg-amber-300/6 px-3 py-2 text-left transition hover:border-amber-300/25 hover:bg-amber-300/10"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-300/10 text-lg">{achievement.emoji}</span>
+                  <AchievementEmblem glyph={achievement.glyph} tone={achievement.tier} size={34} />
                   <span className="min-w-0 flex-1">
                     <strong className="block truncate text-xs text-white">{achievement.title}</strong>
                     <span className="block truncate text-[10px] text-white/40">Toque para ver os detalhes</span>

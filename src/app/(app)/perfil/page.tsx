@@ -8,7 +8,7 @@ import { formatPointsDiff, getSeasonRanking, ROLLING_INDEX_EVENT_COUNT } from "@
 import { SKILL_CATEGORIES, SKILL_LABELS, finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { ScoreBar } from "@/components/ScoreBar";
 import { AchievementTracks } from "@/components/AchievementTracks";
-import { getAchievementTracks, getClassicAchievements, getFeaturedAchievements } from "@/lib/achievements";
+import { getAchievementTracks, getClassicAchievements, getFeaturedAchievements, playStatsFor } from "@/lib/achievements";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { PersonalizarHub } from "@/components/PersonalizarHub";
 import { ProfileTabs } from "@/components/ProfileTabs";
@@ -68,13 +68,14 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
     streak,
     isSetter: profile.is_setter,
     ...badgeStatsFrom(earnedBadges, badgeCatalog),
+    ...playStatsFor(rankingCounts, profile.id),
   };
   const tracks = getAchievementTracks(achievementStats);
   const seen = new Set(extras.seen_unlocks);
   const newUnlocks: NewUnlock[] = tracks.flatMap((track) =>
     track.levels
       .filter((level) => level.unlocked && !seen.has(level.id))
-      .map((level) => ({ levelId: level.id, trackTitle: track.title, emoji: track.emoji, tier: level.tier, rewards: level.rewards })),
+      .map((level) => ({ levelId: level.id, trackTitle: track.title, glyph: track.glyph, tier: level.tier, rewards: level.rewards })),
   );
   const earnedIds = new Set(earnedBadges.map((item) => item.badge_id));
   const featuredBadges = extras.featured_badges
@@ -138,7 +139,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
           performance: seasonPercentage,
         }}
         rankings={rankingPositions}
-        achievements={featuredAchievements.map(({ title, emoji }) => ({ title, emoji }))}
+        achievements={featuredAchievements.map(({ title, glyph, tier }) => ({ title, glyph, tier }))}
         achievementCount={unlockedLevelCount}
         avatarFrame={profile.avatar_frame}
         banner={extras.profile_banner}

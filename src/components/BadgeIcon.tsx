@@ -1,21 +1,13 @@
-import { BADGE_TILE, type Badge } from "@/lib/badges";
+import type { Badge } from "@/lib/badges";
+import { AchievementEmblem, badgeGlyph, badgeTone } from "./AchievementEmblem";
 
-const SIZE = {
-  sm: "h-9 w-9 text-lg rounded-xl",
-  md: "h-12 w-12 text-2xl rounded-2xl",
-  lg: "h-16 w-16 text-4xl rounded-2xl",
-};
+const SIZE = { sm: 36, md: 48, lg: 64 };
 
-/** Azulejo da medalha: emoji sobre fundo colorido. `locked` deixa cinza (ainda não ganhou). */
+/** Medalha desenhada (disco serrilhado com fita). `locked` deixa apagada (ainda não ganhou). */
 export function BadgeIcon({ badge, size = "md", locked = false }: { badge: Pick<Badge, "emoji" | "color" | "title">; size?: keyof typeof SIZE; locked?: boolean }) {
   return (
-    <span
-      title={badge.title}
-      className={`inline-flex shrink-0 items-center justify-center border shadow-md ${SIZE[size]} ${
-        locked ? "border-white/10 bg-white/5 opacity-50 grayscale" : BADGE_TILE[badge.color]
-      }`}
-    >
-      <span aria-hidden>{badge.emoji}</span>
+    <span title={badge.title} className={`inline-flex shrink-0 drop-shadow-[0_4px_8px_rgba(0,0,0,.35)] ${locked ? "opacity-60" : ""}`}>
+      <AchievementEmblem glyph={badgeGlyph(badge.emoji)} tone={locked ? "locked" : badgeTone(badge.color)} shape="medal" size={SIZE[size]} />
       <span className="sr-only">{badge.title}</span>
     </span>
   );

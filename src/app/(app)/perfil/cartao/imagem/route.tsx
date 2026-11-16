@@ -2,14 +2,14 @@ import { ImageResponse } from "next/og";
 import { createClient } from "@/lib/supabase/server";
 import { getRankingCounts } from "@/lib/rankings";
 import { getSeasonRanking } from "@/lib/seasonRanking";
-import { getFeaturedAchievements, getPlayerAchievements, TIER_LABEL, type AchievementTier } from "@/lib/achievements";
+import { getFeaturedAchievements, getPlayerAchievements, playStatsFor, TIER_LABEL, type AchievementTier } from "@/lib/achievements";
+import { AchievementEmblem, badgeGlyph, badgeTone } from "@/components/AchievementEmblem";
 import { AvatarFrameArt } from "@/components/AvatarFrameArt";
 import { ProfileBannerArt } from "@/components/ProfileBannerArt";
 import { expandElements } from "@/lib/expandElements";
 import { isBannerId } from "@/lib/cosmetics";
 import { isAvatarFrameId } from "@/lib/avatarFrames";
 import { badgeStatsFrom, getBadgeCatalog, getEarnedBadges, getProfileExtras } from "@/lib/profileCosmetics";
-import type { BadgeColor } from "@/lib/badges";
 import { getPlayerRankingPositions } from "@/lib/playerCard";
 import { imageUrlToDataUrl } from "@/lib/serverImageData";
 import { getActiveCommunity } from "@/lib/community";
@@ -30,16 +30,6 @@ function rankLabel(position: number | null) {
   return position ? `#${position} NO RANKING` : "SEM POSIÇÃO";
 }
 
-const BADGE_COLORS_HEX: Record<BadgeColor, [string, string, string]> = {
-  amber: ["#fcd34d", "#d97706", "#fde68a"],
-  purple: ["#c084fc", "#7e22ce", "#e9d5ff"],
-  sky: ["#7dd3fc", "#0369a1", "#bae6fd"],
-  emerald: ["#6ee7b7", "#047857", "#a7f3d0"],
-  rose: ["#fda4af", "#be123c", "#fecdd3"],
-  fuchsia: ["#f0abfc", "#a21caf", "#f5d0fe"],
-  orange: ["#fdba74", "#c2410c", "#fed7aa"],
-  slate: ["#e2e8f0", "#475569", "#f1f5f9"],
-};
 
 const TIER_HEX: Record<AchievementTier, { bg: string; fg: string }> = {
   bronze: { bg: "#fb923c", fg: "#431407" },
@@ -102,7 +92,7 @@ export async function GET(request: Request) {
   const seasonMatches = season ? season.totalWins + season.totalLosses : 0;
   const seasonPercentage = season && seasonMatches > 0 ? Math.round((season.totalWins / seasonMatches) * 100) : null;
   const streak = rankingCounts.streaks.get(profile.id) ?? 0;
-  const achievementStats = { attendance, wins, mvp, streak, isSetter: profile.is_setter, ...badgeStatsFrom(earnedBadges, badgeCatalog) };
+  const achievementStats = { attendance, wins, mvp, streak, isSetter: profile.is_setter, ...badgeStatsFrom(earnedBadges, badgeCatalog), ...playStatsFor(rankingCounts, profile.id) };
   const achievements = getPlayerAchievements(achievementStats);
   const featuredAchievements = getFeaturedAchievements(achievementStats);
   const achievementCount = achievements.filter((achievement) => achievement.unlocked).length;
@@ -204,10 +194,9 @@ export async function GET(request: Request) {
               {shownBadges.length > 0 && (
                 <div style={{ display: "flex", gap: "12px", paddingBottom: "6px" }}>
                   {shownBadges.map((badge) => {
-                    const [from, to, border] = BADGE_COLORS_HEX[badge.color] ?? BADGE_COLORS_HEX.amber;
                     return (
-                      <div key={badge.id} style={{ width: "108px", height: "108px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "28px", border: `3px solid ${border}`, backgroundImage: `linear-gradient(135deg, ${from}, ${to})`, boxShadow: "0 8px 24px rgba(0,0,0,.35)" }}>
-                        <span style={{ fontSize: "56px" }}>{badge.emoji}</span>
+                      <div key={badge.id} style={{ width: "112px", height: "112px", display: "flex" }}>
+                        {expandElements(<AchievementEmblem glyph={badgeGlyph(badge.emoji)} tone={badgeTone(badge.color)} shape="medal" size={112} />)}
                       </div>
                     );
                   })}
@@ -249,7 +238,7 @@ export async function GET(request: Request) {
                   return (
                     <div key={achievement.id} style={{ flex: 1, display: "flex", flexDirection: "column", padding: "14px 16px", borderRadius: "18px", background: "rgba(196,181,253,.1)", border: "1px solid rgba(196,181,253,.16)" }}>
                       <div style={{ display: "flex", alignItems: "center" }}>
-                        <span style={{ fontSize: "32px" }}>{achievement.emoji}</span>
+                        <div style={{ width: "48px", height: "48px", display: "flex" }}>{expandElements(<AchievementEmblem glyph={achievement.glyph} tone={achievement.tier} size={48} />)}</div>
                         <span style={{ marginLeft: "10px", padding: "2px 12px", borderRadius: "999px", background: tier.bg, color: tier.fg, fontSize: "14px", fontWeight: 900 }}>{TIER_LABEL[achievement.tier].toUpperCase()}</span>
                       </div>
                       <span style={{ marginTop: "10px", fontSize: "17px", fontWeight: 700, lineHeight: 1.15 }}>{achievement.title.split(" · ")[0]}</span>

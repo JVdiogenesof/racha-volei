@@ -89,13 +89,13 @@ export async function getRankingCounts(
   const communityEventIds = (communityEvents ?? []).map((event) => event.id);
   const impossibleEventId = "00000000-0000-0000-0000-000000000000";
 
-  const [presentByEvent, { data: mvpEvents }, { data: winRows }, { data: memberRows }, { data: adjustmentRows }] =
+  const [presentByEvent, { data: mvpEvents }, { data: winRows }, { data: memberRows }, { data: adjustmentRows }, { data: tournamentRows }] =
     await Promise.all([
       getPresentProfileIdsByEvent(supabase, finishedEventIds),
       Promise.resolve({ data: communityEvents ?? [] }),
       supabase
         .from("match_wins")
-        .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids")
+        .select("event_id, team_id, loser_team_id, winning_profile_ids, losing_profile_ids, winner_score, loser_score")
         .in("event_id", communityEventIds.length ? communityEventIds : [impossibleEventId]),
       supabase.from("team_members").select("team_id, profile_id"),
       // Os ajustes ligados a um racha entram pelo próprio racha (já filtrado pelo
@@ -105,6 +105,11 @@ export async function getRankingCounts(
         .from("ranking_adjustments")
         .select("profile_id, metric, delta, event_id, created_at")
         .eq("community", community),
+      // Placar dos jogos de mini torneio (só entra nos pontos das conquistas).
+      supabase
+        .from("tournament_matches")
+        .select("event_id, team_a_id, team_b_id, score_a, score_b")
+        .in("event_id", finishedEventIds.length ? finishedEventIds : [impossibleEventId]),
     ]);
 
   // Só conta presença de racha já encerrado, e só quem de fato ficou
@@ -241,5 +246,78 @@ export async function getRankingCounts(
     stats.eligible = stats.attendance >= PERFORMANCE_MIN_ATTENDANCE;
   }
 
-  return { attendance, mvp, wins, performance, streaks };
+  return { attendance, mvp, wins, performance, streaks, ...getPlayStats(finishedEvents, presentByEvent, winRows ?? [], tournamentRows ?? [], profileIdsByTeam) };
+}
+
+/**
+ * Números extras das conquistas, tirados dos mesmos dados do ranking:
+ * partidas jogadas, pontos marcados pelo seu time, rachas em que venceu todas,
+ * companheiros de time diferentes e fins de semana com sábado e domingo.
+ */
+function getPlayStats(
+  finishedEvents: { id: string; date: string }[],
+  presentByEvent: Map<string, Set<string>>,
+  winRows: { event_id: string; team_id: string; loser_team_id: string | null; winning_profile_ids: string[] | null; losing_profile_ids: string[] | null; winner_score: number | null; loser_score: number | null }[],
+  tournamentRows: { event_id: string; team_a_id: string | null; team_b_id: string | null; score_a: number | null; score_b: number | null }[],
+  profileIdsByTeam: Map<string, string[]>,
+) {
+  // Conta todo racha encerrado (inclusive os de 3 times, que ficam fora do ranking de partidas).
+  const finishedIds = new Set(finishedEvents.map((event) => event.id));
+  const matches = new Map<string, number>();
+  const points = new Map<string, number>();
+  const mates = new Map<string, Set<string>>();
+  const day = new Map<string, { played: number; lost: number }>();
+  const bump = (map: Map<string, number>, id: string, by = 1) => map.set(id, (map.get(id) ?? 0) + by);
+
+  for (const match of winRows) {
+    if (!finishedIds.has(match.event_id)) continue;
+    const winners = match.winning_profile_ids?.length ? match.winning_profile_ids : profileIdsByTeam.get(match.team_id) ?? [];
+    const losers = match.loser_team_id ? (match.losing_profile_ids?.length ? match.losing_profile_ids : profileIdsByTeam.get(match.loser_team_id) ?? []) : [];
+    for (const [side, won, score] of [[winners, true, match.winner_score], [losers, false, match.loser_score]] as const) {
+      for (const id of side) {
+        bump(matches, id);
+        if (score) bump(points, id, score);
+        if (!mates.has(id)) mates.set(id, new Set());
+        for (const other of side) if (other !== id) mates.get(id)!.add(other);
+        // Dia invicto só vale onde o racha registra o perdedor (dá pra saber se perdeu).
+        if (match.loser_team_id) {
+          const key = `${match.event_id}:${id}`;
+          const current = day.get(key) ?? { played: 0, lost: 0 };
+          current.played += 1;
+          if (!won) current.lost += 1;
+          day.set(key, current);
+        }
+      }
+    }
+  }
+
+  // No mini torneio o placar fica em tournament_matches (o match_wins vem sem placar).
+  for (const game of tournamentRows) {
+    if (!finishedIds.has(game.event_id)) continue;
+    for (const [team, score] of [[game.team_a_id, game.score_a], [game.team_b_id, game.score_b]] as const) {
+      if (!team || !score) continue;
+      for (const id of profileIdsByTeam.get(team) ?? []) bump(points, id, score);
+    }
+  }
+
+  const perfectDays = new Map<string, number>();
+  for (const [key, { played, lost }] of day) if (played >= 2 && lost === 0) bump(perfectDays, key.split(":")[1]);
+
+  const teammates = new Map<string, number>();
+  for (const [id, set] of mates) teammates.set(id, set.size);
+
+  // Sábado + domingo do mesmo fim de semana.
+  const fullWeekends = new Map<string, number>();
+  const byDate = new Map(finishedEvents.map((event) => [event.date, event.id]));
+  for (const event of finishedEvents) {
+    const date = new Date(`${event.date}T12:00:00Z`);
+    if (date.getUTCDay() !== 6) continue;
+    const sunday = new Date(date.getTime() + 86_400_000).toISOString().slice(0, 10);
+    const sundayId = byDate.get(sunday);
+    if (!sundayId) continue;
+    const both = presentByEvent.get(sundayId);
+    for (const id of presentByEvent.get(event.id) ?? []) if (both?.has(id)) bump(fullWeekends, id);
+  }
+
+  return { matches, points, perfectDays, teammates, fullWeekends };
 }

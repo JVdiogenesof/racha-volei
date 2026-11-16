@@ -1,5 +1,6 @@
 "use client";
 
+import { AchievementEmblem, GLYPH_IDS, badgeGlyph, badgeTone } from "./AchievementEmblem";
 import { useMemo, useState, useTransition } from "react";
 import { Check, Plus, Search, Trash2, X } from "lucide-react";
 import { BadgeIcon } from "./BadgeIcon";
@@ -102,7 +103,7 @@ export function BadgeAdmin({ catalog, players, recent }: { catalog: Badge[]; pla
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <h2 className="font-semibold text-white">2. Quem ganha{selectedBadge ? ` · ${selectedBadge.emoji} ${selectedBadge.title}` : ""}</h2>
+        <h2 className="font-semibold text-white">2. Quem ganha{selectedBadge ? ` · ${selectedBadge.title}` : ""}</h2>
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" aria-hidden />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar jogador" className="min-h-11 w-full rounded-xl border border-white/10 bg-black/20 pl-9 pr-3 text-sm text-white placeholder:text-white/35 focus:border-purple-300/60 focus:outline-none" />
@@ -171,7 +172,7 @@ function NewBadgeForm({ onCreated }: { onCreated: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [emoji, setEmoji] = useState("🏅");
+  const [emoji, setEmoji] = useState("icon:medal");
   const [kind, setKind] = useState<BadgeKind>("event");
   const [color, setColor] = useState<BadgeColor>("amber");
   const [pending, startTransition] = useTransition();
@@ -201,11 +202,18 @@ function NewBadgeForm({ onCreated }: { onCreated: (id: string) => void }) {
   }
   return (
     <div className="mt-3 space-y-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
-      <div className="flex gap-2">
-        <input value={emoji} onChange={(event) => setEmoji(event.target.value)} aria-label="Emoji" maxLength={8} className="min-h-11 w-16 rounded-xl border border-white/10 bg-black/20 text-center text-2xl" />
+      <div className="flex items-center gap-2">
+        <AchievementEmblem glyph={badgeGlyph(emoji)} tone={badgeTone(color)} shape="medal" size={48} />
         <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Nome (ex.: Campeão do Torneio de Dezembro)" maxLength={60} className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/20 px-3 text-sm text-white placeholder:text-white/35" />
       </div>
       <input value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Descrição curta" maxLength={240} className="min-h-11 w-full rounded-xl border border-white/10 bg-black/20 px-3 text-sm text-white placeholder:text-white/35" />
+      <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Ícone">
+        {GLYPH_IDS.map((glyph) => (
+          <button key={glyph} type="button" role="radio" aria-checked={emoji === `icon:${glyph}`} aria-label={glyph} onClick={() => setEmoji(`icon:${glyph}`)} className={`rounded-xl p-0.5 ${emoji === `icon:${glyph}` ? "bg-white/15 ring-2 ring-purple-300" : "opacity-70 hover:opacity-100"}`}>
+            <AchievementEmblem glyph={glyph} tone={badgeTone(color)} shape="medal" size={34} />
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <select value={kind} onChange={(event) => setKind(event.target.value as BadgeKind)} className="min-h-10 rounded-xl border border-white/10 bg-[#1b1040] px-3 text-sm text-white">
           {(Object.keys(BADGE_KIND_LABEL) as BadgeKind[]).map((item) => <option key={item} value={item}>{BADGE_KIND_LABEL[item]}</option>)}

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, Lock, X } from "lucide-react";
 import type { Achievement } from "@/lib/achievements";
+import { AchievementEmblem } from "./AchievementEmblem";
 
 const TIER_LABELS: Record<Achievement["tier"], string> = {
   bronze: "Bronze",
@@ -46,9 +47,7 @@ export function AchievementDetailsModal({
         className="animate-toast-in w-full max-w-sm rounded-3xl border border-white/15 bg-gradient-to-br from-[#322064] to-[#11132e] p-5 shadow-2xl"
       >
         <div className="flex items-start justify-between gap-3">
-          <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-4xl">
-            {achievement.unlocked ? achievement.emoji : <Lock className="h-6 w-6 text-white/35" />}
-          </span>
+          <AchievementEmblem glyph={achievement.glyph} tone={achievement.unlocked ? achievement.tier : "locked"} size={68} />
           <button
             type="button"
             onClick={onClose}

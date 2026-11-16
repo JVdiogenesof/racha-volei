@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { getAllRatings, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { getRankingCounts } from "@/lib/rankings";
-import { countUnlockedLevels, getFeaturedAchievements } from "@/lib/achievements";
+import { countUnlockedLevels, getFeaturedAchievements, playStatsFor } from "@/lib/achievements";
 import { PlayerSearch } from "@/components/PlayerSearch";
 import { badgeStatsFrom, getBadgeCatalog } from "@/lib/profileCosmetics";
 import type { EarnedBadge } from "@/lib/badges";
@@ -55,6 +55,7 @@ export default async function JogadoresPage({ searchParams }: { searchParams: Pr
         streak: rankingCounts.streaks.get(p.id) ?? 0,
         isSetter: p.is_setter,
         ...badgeStatsFrom(earnedByProfile.get(p.id) ?? [], badgeCatalog),
+        ...playStatsFor(rankingCounts, p.id),
       };
       const earnedBadges = (earnedByProfile.get(p.id) ?? []).flatMap((earned) => {
         const badge = badgeById.get(earned.badge_id);

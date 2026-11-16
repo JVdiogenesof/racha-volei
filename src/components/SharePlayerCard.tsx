@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Download, Loader2, Share2 } from "lucide-react";
 import { ProfileHero } from "./ProfileHero";
+import { AchievementEmblem, type GlyphId } from "./AchievementEmblem";
+import type { AchievementTier } from "@/lib/achievements";
 import type { Badge } from "@/lib/badges";
 import { useToast } from "./Toast";
 import { saveImageBlob, shareImageOrSave } from "@/lib/clientImageShare";
 
-type FeaturedAchievement = { title: string; emoji: string };
+type FeaturedAchievement = { title: string; glyph: GlyphId; tier: AchievementTier };
 
 type Props = {
   fullName: string;
@@ -123,8 +125,8 @@ export function SharePlayerCard({
 
       <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/15 px-3 py-2">
         <p className="text-xs font-semibold text-white/60">{achievementCount} níveis de conquista</p>
-        <div className="flex gap-1 text-base" aria-label="Conquistas em destaque">
-          {achievements.map((achievement) => <span key={achievement.title} title={achievement.title}>{achievement.emoji}</span>)}
+        <div className="flex gap-1" aria-label="Conquistas em destaque">
+          {achievements.map((achievement) => <span key={achievement.title} title={achievement.title}><AchievementEmblem glyph={achievement.glyph} tone={achievement.tier} size={26} /></span>)}
         </div>
       </div>
 

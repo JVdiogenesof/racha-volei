@@ -4,14 +4,15 @@ import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { Gift, Sparkles } from "lucide-react";
 import { PROFILE_TAB_EVENT } from "./ProfileTabs";
-import { TIER_LABEL, type AchievementTier, type Reward } from "@/lib/achievements";
+import { TIER_LABEL, TIER_XP, type AchievementTier, type Reward } from "@/lib/achievements";
+import { AchievementEmblem, type GlyphId } from "./AchievementEmblem";
 import { TIER_STYLE, rewardText } from "@/lib/achievementStyle";
 import { markUnlocksSeen } from "@/app/(app)/perfil/actions";
 
 export type NewUnlock = {
   levelId: string;
   trackTitle: string;
-  emoji: string;
+  glyph: GlyphId;
   tier: AchievementTier;
   rewards: Reward[];
 };
@@ -65,10 +66,11 @@ export function UnlockCelebration({ unlocks }: { unlocks: NewUnlock[] }) {
         </p>
         <div className="relative mx-auto mt-5 flex h-28 w-28 items-center justify-center">
           <span aria-hidden className="unlock-ring absolute inset-0 rounded-full" />
-          <span className="relative flex h-24 w-24 items-center justify-center rounded-full border-2 border-white/30 bg-black/30 text-6xl shadow-xl">{current.emoji}</span>
+          <span className="relative drop-shadow-[0_8px_18px_rgba(0,0,0,.45)]"><AchievementEmblem glyph={current.glyph} tone={current.tier} size={104} /></span>
         </div>
         <h2 className="relative mt-4 text-2xl font-black text-white">{current.trackTitle}</h2>
         <span className={`relative mt-2 inline-block rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider ${style.pip}`}>{TIER_LABEL[current.tier]}</span>
+        <p className="relative mt-2 text-sm font-black text-amber-200">+{TIER_XP[current.tier]} XP no seu Nível VPA</p>
 
         {current.rewards.length > 0 && (
           <div className="relative mt-5 rounded-2xl border border-amber-300/25 bg-amber-300/10 p-3 text-left">

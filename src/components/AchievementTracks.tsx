@@ -2,34 +2,102 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, Gift, Lock, X } from "lucide-react";
-import { CATEGORY_LABEL, TIER_LABEL, type Achievement, type AchievementCategory, type AchievementTrack } from "@/lib/achievements";
+import { CheckCircle2, Gift, Lock, TrendingUp, X } from "lucide-react";
+import {
+  CATEGORY_LABEL,
+  TIER_LABEL,
+  TIER_XP,
+  getNearestGoals,
+  getVpaLevel,
+  type Achievement,
+  type AchievementCategory,
+  type AchievementTrack,
+} from "@/lib/achievements";
 import { TIER_STYLE, rewardText } from "@/lib/achievementStyle";
+import { AchievementEmblem } from "./AchievementEmblem";
+
+function missingText(track: AchievementTrack) {
+  if (!track.next) return "";
+  return `${track.current} de ${track.next.target} ${track.unit}`.trim();
+}
 
 export function AchievementTracks({ tracks, classics = [] }: { tracks: AchievementTrack[]; classics?: Achievement[] }) {
   const [category, setCategory] = useState<AchievementCategory | "all">("all");
   const [selected, setSelected] = useState<string | null>(null);
 
+  const level = useMemo(() => getVpaLevel(tracks), [tracks]);
+  const nearest = useMemo(() => getNearestGoals(tracks, 3), [tracks]);
   const totalLevels = tracks.reduce((sum, track) => sum + track.levels.length, 0);
-  const reachedLevels = tracks.reduce((sum, track) => sum + track.levels.filter((level) => level.unlocked).length, 0);
+  const reachedLevels = tracks.reduce((sum, track) => sum + track.levels.filter((item) => item.unlocked).length, 0);
   const categories = useMemo(() => [...new Set(tracks.map((track) => track.category))], [tracks]);
   const visible = tracks.filter((track) => category === "all" || track.category === category);
   const detail = tracks.find((track) => track.id === selected) ?? null;
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-purple-300/20 bg-gradient-to-br from-purple-500/15 to-fuchsia-500/5 p-4">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-200">Nível de conquistas</p>
-            <p className="mt-0.5 text-3xl font-black text-white">{reachedLevels}<span className="text-lg text-white/40"> / {totalLevels}</span></p>
+      {/* Nível VPA */}
+      <div className="relative overflow-hidden rounded-3xl border border-purple-300/25 bg-gradient-to-br from-[#4c1d95]/60 via-[#2a1760]/70 to-[#120a2e] p-4 shadow-lg shadow-purple-950/40">
+        <span aria-hidden className="achievement-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="relative flex items-center gap-4">
+          <div className="relative flex h-[76px] w-[76px] shrink-0 items-center justify-center">
+            <svg viewBox="0 0 64 64" className="absolute inset-0 h-full w-full" aria-hidden>
+              <path d="M32 3 57 17.5v29L32 61 7 46.5v-29Z" fill="#2e1065" stroke="#c4b5fd" strokeWidth="2" />
+              <path d="M32 9.5 51.4 20.7v22.6L32 54.5 12.6 43.3V20.7Z" fill="none" stroke="#fde68a" strokeOpacity=".55" strokeWidth="1" />
+            </svg>
+            <span className="relative flex flex-col items-center leading-none">
+              <span className="text-[9px] font-black uppercase tracking-widest text-purple-200">Nível</span>
+              <span className="mt-0.5 text-3xl font-black text-white">{level.level}</span>
+            </span>
           </div>
-          <p className="max-w-[12rem] text-right text-xs text-white/55">Cada nível alcançado pode liberar moldura, banner ou efeito.</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-purple-200">Nível VPA</p>
+            <p className="truncate text-2xl font-black leading-tight text-white">{level.title}</p>
+            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-black/30">
+              <div className="h-full rounded-full bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-200 transition-all" style={{ width: `${level.percent}%` }} />
+            </div>
+            <p className="mt-1.5 text-[11px] font-semibold text-white/60">
+              {level.nextAt !== null ? (
+                <>
+                  <strong className="text-white">{level.xp}</strong>/{level.nextAt} XP · faltam {level.nextAt - level.xp} pra <strong className="text-amber-200">{level.nextTitle}</strong>
+                </>
+              ) : (
+                <>
+                  <strong className="text-white">{level.xp} XP</strong> · nível máximo!
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/25">
-          <div className="h-full rounded-full bg-gradient-to-r from-purple-400 via-fuchsia-300 to-amber-200" style={{ width: `${(reachedLevels / totalLevels) * 100}%` }} />
+        <div className="relative mt-3 flex flex-wrap gap-x-3 gap-y-1 border-t border-white/10 pt-2.5 text-[10px] font-bold uppercase tracking-wide text-white/45">
+          <span>{reachedLevels}/{totalLevels} níveis</span>
+          {(["bronze", "silver", "gold", "legend"] as const).map((tier) => (
+            <span key={tier} className={TIER_STYLE[tier].text}>{TIER_LABEL[tier]} +{TIER_XP[tier]} XP</span>
+          ))}
         </div>
       </div>
+
+      {/* Quase lá */}
+      {nearest.length > 0 && (
+        <section>
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.16em] text-amber-200">
+            <TrendingUp className="h-3.5 w-3.5" aria-hidden /> Quase lá
+          </h3>
+          <div className="no-scrollbar -mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1">
+            {nearest.map(({ track }) => (
+              <button key={track.id} type="button" onClick={() => setSelected(track.id)} className="flex min-w-[15rem] snap-start items-center gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-3 text-left transition hover:border-amber-300/40">
+                <AchievementEmblem glyph={track.glyph} tone={track.next!.tier} size={44} />
+                <span className="min-w-0 flex-1">
+                  <strong className="block truncate text-sm text-white">{track.title} · {TIER_LABEL[track.next!.tier]}</strong>
+                  <span className="block truncate text-[11px] text-amber-100/70">{missingText(track)}</span>
+                  <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-black/30">
+                    <span className={`block h-full rounded-full bg-gradient-to-r ${TIER_STYLE[track.next!.tier].bar}`} style={{ width: `${track.percentToNext}%` }} />
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
         {(["all", ...categories] as const).map((item) => (
@@ -48,7 +116,7 @@ export function AchievementTracks({ tracks, classics = [] }: { tracks: Achieveme
             <button key={track.id} type="button" onClick={() => setSelected(track.id)} aria-label={`Ver conquista ${track.title}`} className={`achievement-card relative overflow-hidden rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:border-white/30 ${style ? `${style.card} shadow-lg ${style.glow}` : "border-white/8 bg-white/[0.025]"}`}>
               {track.tier === "legend" && <span className="achievement-shine pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 bg-gradient-to-r from-transparent via-white/15 to-transparent" />}
               <div className="relative flex items-start gap-3">
-                <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-2xl ${track.tier ? "bg-black/20" : "bg-white/5 grayscale"}`}>{track.emoji}</span>
+                <AchievementEmblem glyph={track.glyph} tone={track.tier ?? "locked"} size={52} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-bold text-white">{track.title}</p>
@@ -60,9 +128,9 @@ export function AchievementTracks({ tracks, classics = [] }: { tracks: Achieveme
 
               {!single && (
                 <div className="relative mt-3 flex items-center gap-1.5">
-                  {track.levels.map((level) => (
-                    <span key={level.id} title={TIER_LABEL[level.tier]} className={`flex h-5 flex-1 items-center justify-center rounded-full text-[9px] font-black uppercase ${level.unlocked ? TIER_STYLE[level.tier].pip : "bg-white/8 text-white/25"}`}>
-                      {TIER_LABEL[level.tier].slice(0, 3)}
+                  {track.levels.map((item) => (
+                    <span key={item.id} title={TIER_LABEL[item.tier]} className={`flex h-5 flex-1 items-center justify-center rounded-full text-[9px] font-black uppercase ${item.unlocked ? TIER_STYLE[item.tier].pip : "bg-white/8 text-white/25"}`}>
+                      {TIER_LABEL[item.tier].slice(0, 3)}
                     </span>
                   ))}
                 </div>
@@ -70,7 +138,7 @@ export function AchievementTracks({ tracks, classics = [] }: { tracks: Achieveme
 
               <div className="relative mt-3">
                 <div className="flex items-center justify-between text-[10px] font-medium uppercase tracking-wide text-white/45">
-                  <span>{next ? `Rumo a ${single ? "conquistar" : TIER_LABEL[next.tier]}` : "Nível máximo"}</span>
+                  <span>{next ? `Rumo a ${single ? "conquistar" : TIER_LABEL[next.tier]} · +${TIER_XP[next.tier]} XP` : "Nível máximo"}</span>
                   <span>{next ? `${Math.min(track.current, next.target)}/${next.target}` : single ? "✔" : `${track.current}`}</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/25">
@@ -97,8 +165,8 @@ export function AchievementTracks({ tracks, classics = [] }: { tracks: Achieveme
           <p className="mt-2 text-xs text-white/45">As conquistas de antes da reformulação continuam valendo.</p>
           <ul className="mt-3 grid gap-2 sm:grid-cols-2">
             {classics.map((item) => (
-              <li key={item.id} className={`flex items-center gap-3 rounded-xl border p-3 ${item.unlocked ? "border-amber-300/25 bg-amber-300/8" : "border-white/8 bg-black/15 opacity-60"}`}>
-                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-black/20 text-xl ${item.unlocked ? "" : "grayscale"}`}>{item.emoji}</span>
+              <li key={item.id} className={`flex items-center gap-3 rounded-xl border p-3 ${item.unlocked ? "border-amber-300/25 bg-amber-300/8" : "border-white/8 bg-black/15 opacity-70"}`}>
+                <AchievementEmblem glyph={item.glyph} tone={item.unlocked ? item.tier : "locked"} size={40} />
                 <span className="min-w-0 flex-1">
                   <strong className="block truncate text-sm text-white">{item.title}</strong>
                   <span className="block truncate text-[11px] text-white/50">{item.unlocked ? item.description : `${Math.min(item.current, item.target)}/${item.target} · ${item.description}`}</span>
@@ -126,7 +194,7 @@ function TrackModal({ track, onClose }: { track: AchievementTrack; onClose: () =
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-3 backdrop-blur-sm sm:items-center" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section role="dialog" aria-modal="true" aria-label={track.title} className="animate-toast-in max-h-[88dvh] w-full max-w-sm overflow-y-auto rounded-3xl border border-white/15 bg-gradient-to-br from-[#322064] to-[#11132e] p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
-          <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/10 text-4xl">{track.emoji}</span>
+          <AchievementEmblem glyph={track.glyph} tone={track.tier ?? "locked"} size={72} />
           <button type="button" onClick={onClose} aria-label="Fechar" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-white/55 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
         </div>
         <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-purple-300">{CATEGORY_LABEL[track.category]}</p>
@@ -135,24 +203,29 @@ function TrackModal({ track, onClose }: { track: AchievementTrack; onClose: () =
         {track.unit && <p className="mt-2 text-xs text-white/45">Você tem <strong className="text-white">{track.current}</strong> {track.unit}.</p>}
 
         <ol className="mt-4 space-y-2">
-          {track.levels.map((level) => (
-            <li key={level.id} className={`rounded-2xl border p-3 ${level.unlocked ? TIER_STYLE[level.tier].card : "border-white/8 bg-black/15"}`}>
-              <div className="flex items-center justify-between gap-2">
-                <span className={`inline-flex items-center gap-1.5 text-sm font-black ${level.unlocked ? TIER_STYLE[level.tier].text : "text-white/45"}`}>
-                  {level.unlocked ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Lock className="h-3.5 w-3.5" aria-hidden />}
-                  {TIER_LABEL[level.tier]}
-                </span>
-                {track.levels.length > 1 && <span className="text-xs font-semibold text-white/55">{Math.min(track.current, level.target)}/{level.target}</span>}
+          {track.levels.map((item) => (
+            <li key={item.id} className={`flex gap-3 rounded-2xl border p-3 ${item.unlocked ? TIER_STYLE[item.tier].card : "border-white/8 bg-black/15"}`}>
+              <AchievementEmblem glyph={track.glyph} tone={item.unlocked ? item.tier : "locked"} size={40} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 text-sm font-black ${item.unlocked ? TIER_STYLE[item.tier].text : "text-white/45"}`}>
+                    {item.unlocked ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <Lock className="h-3.5 w-3.5" aria-hidden />}
+                    {TIER_LABEL[item.tier]}
+                  </span>
+                  <span className="text-xs font-semibold text-white/55">
+                    {track.levels.length > 1 && `${Math.min(track.current, item.target)}/${item.target} · `}+{TIER_XP[item.tier]} XP
+                  </span>
+                </div>
+                {item.rewards.length > 0 ? (
+                  <ul className="mt-1.5 space-y-0.5 text-[11px] text-white/60">
+                    {item.rewards.map((reward) => (
+                      <li key={`${reward.kind}-${reward.id}`} className="flex items-center gap-1.5"><Gift className="h-3 w-3 text-amber-300/80" aria-hidden /> {rewardText(reward)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1.5 text-[11px] text-white/35">Vale XP pro seu Nível VPA.</p>
+                )}
               </div>
-              {level.rewards.length > 0 ? (
-                <ul className="mt-1.5 space-y-0.5 text-[11px] text-white/60">
-                  {level.rewards.map((reward) => (
-                    <li key={`${reward.kind}-${reward.id}`} className="flex items-center gap-1.5"><Gift className="h-3 w-3 text-amber-300/80" aria-hidden /> {rewardText(reward)}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-1.5 text-[11px] text-white/35">Sem cosmético neste nível.</p>
-              )}
             </li>
           ))}
         </ol>

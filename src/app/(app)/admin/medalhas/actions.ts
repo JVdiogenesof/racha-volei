@@ -38,7 +38,7 @@ export async function awardBadge(input: { badgeId: string; profileIds: string[];
     if (error) throw new Error(error.message);
     if (input.notify) {
       await sendPushToProfiles(supabase, fresh, {
-        title: `Você ganhou uma medalha! ${badge.emoji}`,
+        title: badge.emoji?.startsWith("icon:") ? "Você ganhou uma medalha!" : `Você ganhou uma medalha! ${badge.emoji}`,
         body: badge.title,
         url: "/perfil",
       });
