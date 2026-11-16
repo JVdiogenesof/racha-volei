@@ -700,6 +700,21 @@ form[aria-busy="true"] button[type="submit"]::after {
   background-size: 320% 320%;
 }
 
+/* Medalhas do cartão de perfil da tela de início: balançam de leve, defasadas. */
+.home-medal {
+  animation: home-medal-bob 3.4s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes home-medal-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-medal { animation: none; }
+}
+
 .neon-solid {
   position: relative;
   background: linear-gradient(135deg, #2a1666, #150b36);

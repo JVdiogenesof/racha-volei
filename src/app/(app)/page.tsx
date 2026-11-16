@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
 import { HomeProfileHeader } from "@/components/HomeProfileHeader";
-import { getProfileExtras } from "@/lib/profileCosmetics";
+import { getBadgeCatalog, getEarnedBadges, getProfileExtras } from "@/lib/profileCosmetics";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
@@ -91,7 +91,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary, myExtras] = await Promise.all([
+  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary, myExtras, badgeCatalog, myBadges] = await Promise.all([
     supabase
       .from("spot_offers")
       .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
@@ -102,7 +102,17 @@ export default async function HomePage() {
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
     getProfileExtras(supabase, profile.id),
+    getBadgeCatalog(supabase),
+    getEarnedBadges(supabase, profile.id),
   ]);
+  // Até 3 medalhas em destaque (só as que a pessoa de fato ganhou) pro cartão do topo.
+  const earnedBadgeIds = new Set(myBadges.map((item) => item.badge_id));
+  const headerMedals = myExtras.featured_badges
+    .filter((id) => earnedBadgeIds.has(id))
+    .map((id) => badgeCatalog.find((badge) => badge.id === id))
+    .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge))
+    .slice(0, 3)
+    .map(({ id, emoji, color, title }) => ({ id, emoji, color, title }));
   const isPaymentExempt = Boolean(myExemption);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
@@ -292,6 +302,7 @@ export default async function HomePage() {
         avatarFrame={profile.avatar_frame}
         banner={myExtras.profile_banner}
         nickname={profile.nickname_badge}
+        medals={headerMedals}
         position={myPosition}
         showPosition={profile.status === "approved"}
       />

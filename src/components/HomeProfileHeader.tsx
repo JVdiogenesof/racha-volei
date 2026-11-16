@@ -3,6 +3,7 @@ import { ChevronRight, Gauge } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { NeonCard } from "./NeonCard";
 import { ProfileBannerArt } from "./ProfileBannerArt";
+import { AchievementEmblem, badgeGlyph, badgeTone } from "./AchievementEmblem";
 import { isBannerId } from "@/lib/cosmetics";
 
 /**
@@ -18,6 +19,7 @@ export function HomeProfileHeader({
   avatarFrame,
   banner,
   nickname,
+  medals = [],
   position,
   showPosition,
 }: {
@@ -27,6 +29,8 @@ export function HomeProfileHeader({
   avatarFrame: string | null;
   banner: string | null;
   nickname: string | null;
+  /** Até 3 medalhas em destaque. */
+  medals?: { id: string; emoji: string; color: string; title: string }[];
   position: number | null;
   showPosition: boolean;
 }) {
@@ -44,10 +48,18 @@ export function HomeProfileHeader({
         <div className="pointer-events-none relative z-10 flex min-h-[4.5rem] items-center gap-3 py-2.5 pl-[5.25rem] pr-3">
           <div className="min-w-0 flex-1 leading-tight">
             <h1 className="truncate text-xl font-extrabold text-white sm:text-2xl">Fala, {firstName}!</h1>
-            <p className="mt-0.5 flex items-center gap-0.5 truncate text-[11px] font-semibold text-purple-100/80">
-              {nickname ? <span className="truncate">{nickname}</span> : <>Meu perfil</>}
-              <ChevronRight className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />
-            </p>
+            <div className="mt-1 flex min-w-0 items-center gap-1.5">
+              {nickname ? (
+                <span className="min-w-0 truncate rounded-full border border-white/20 bg-black/25 px-2 py-px text-[11px] font-semibold text-purple-50">{nickname}</span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[11px] font-semibold text-purple-100/80">Meu perfil<ChevronRight className="h-3 w-3" strokeWidth={2.5} aria-hidden /></span>
+              )}
+              {medals.map((medal, i) => (
+                <span key={medal.id} title={medal.title} className="home-medal shrink-0 drop-shadow-[0_2px_4px_rgba(0,0,0,.4)]" style={{ "--d": `${i * 0.5}s` } as React.CSSProperties}>
+                  <AchievementEmblem glyph={badgeGlyph(medal.emoji)} tone={badgeTone(medal.color)} shape="medal" size={26} />
+                </span>
+              ))}
+            </div>
           </div>
           {showPosition && (
             <Link
