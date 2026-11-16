@@ -23,6 +23,7 @@ import { FormSelect } from "@/components/FormSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { TorneiosVpaTabs } from "@/components/TorneiosVpaTabs";
 import { CopaHero } from "@/components/CopaHero";
+import { CopaConfirmCard } from "@/components/CopaConfirmCard";
 import {
   addCupPlayer,
   addCupQualifier,
@@ -35,6 +36,7 @@ import {
   setCupFinalEvent,
   syncCupFinal,
 } from "./actions";
+import { clearCupPresence, markCupPresencePaid, markCupRefunded, setCupConfirmation } from "./confirmar-organizador-actions";
 
 type EventInfo = { id: string; date: string; time: string | null; status: string };
 type QualifiedRow = {
@@ -83,7 +85,7 @@ export default async function CopaVpaPage() {
   }
 
   const capacity = cupCapacity(cup);
-  const [{ data: qualifierRows }, { data: qualifiedRows }, { data: finalEvent }] = await Promise.all([
+  const [{ data: qualifierRows }, { data: qualifiedRows }, { data: finalEvent }, { data: confirmationRows }, { data: myPending }] = await Promise.all([
     supabase.from("cup_qualifiers").select("event_id, events(id, date, time, status)").eq("cup_id", cup.id),
     supabase
       .from("cup_qualified_players")
@@ -95,7 +97,21 @@ export default async function CopaVpaPage() {
     cup.final_event_id
       ? supabase.from("events").select("id, date, time, status").eq("id", cup.final_event_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase.from("cup_confirmations").select("profile_id, status, payment_source").eq("cup_id", cup.id),
+    supabase
+      .from("cup_payment_intents")
+      .select("id")
+      .eq("cup_id", cup.id)
+      .eq("profile_id", profile.id)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .limit(1)
+      .maybeSingle(),
   ]);
+  const confirmations = new Map(
+    (confirmationRows ?? []).map((row) => [row.profile_id as string, row as { profile_id: string; status: "confirmed" | "declined"; payment_source: "pix" | "free" | "manual" | null }]),
+  );
+  const myConfirmation = confirmations.get(profile.id) ?? null;
 
   const qualifierEvents = (qualifierRows ?? [])
     .map((row) => row.events as unknown as EventInfo | null)
@@ -214,6 +230,18 @@ export default async function CopaVpaPage() {
         eventDateById={eventDateById}
         finalDate={cup.final_date}
       />
+
+      {myRow && (
+        <CopaConfirmCard
+          cupId={cup.id}
+          cupName={cup.name}
+          amount={cup.confirm_amount == null ? null : Number(cup.confirm_amount)}
+          deadline={cup.confirm_deadline}
+          status={myConfirmation?.status ?? null}
+          source={myConfirmation?.payment_source ?? null}
+          activePix={Boolean(myPending)}
+        />
+      )}
 
       {/* Classificatórias */}
       <section className="space-y-3">
@@ -426,7 +454,14 @@ export default async function CopaVpaPage() {
       </section>
 
       {profile.is_organizer && (
-        <OrganizerPanel cup={cup} qualifiedIds={qualifiedIds} capacity={capacity} missingFromFinal={missingFromFinal} />
+        <OrganizerPanel
+          cup={cup}
+          qualifiedIds={qualifiedIds}
+          capacity={capacity}
+          missingFromFinal={missingFromFinal}
+          qualified={sortedQualified}
+          confirmations={confirmations}
+        />
       )}
     </div>
   );
@@ -524,13 +559,28 @@ async function OrganizerPanel({
   qualifiedIds,
   capacity,
   missingFromFinal,
+  qualified,
+  confirmations,
 }: {
   cup: Cup;
   qualifiedIds: Set<string>;
   capacity: number;
   missingFromFinal: number;
+  qualified: QualifiedRow[];
+  confirmations: Map<string, { status: "confirmed" | "declined"; payment_source: "pix" | "free" | "manual" | null }>;
 }) {
   const supabase = await createClient();
+  const { data: refundRows } = await supabase
+    .from("cup_payment_intents")
+    .select("id, amount, paid_at, player:profiles!cup_payment_intents_profile_id_fkey(full_name)")
+    .eq("cup_id", cup.id)
+    .eq("status", "refund_needed")
+    .order("paid_at", { ascending: true });
+  const refunds = (refundRows ?? []) as unknown as { id: string; amount: number; paid_at: string | null; player: { full_name: string } | null }[];
+  const confirmedCount = qualified.filter((row) => confirmations.get(row.profile_id)?.status === "confirmed").length;
+  const deadlineLocal = cup.confirm_deadline
+    ? new Date(cup.confirm_deadline).toLocaleString("sv-SE", { timeZone: "America/Fortaleza" }).slice(0, 16).replace(" ", "T")
+    : "";
   const windowStart = new Date();
   windowStart.setUTCDate(windowStart.getUTCDate() - 60);
   const [{ data: events }, { data: linked }, { data: players }] = await Promise.all([
@@ -605,6 +655,95 @@ async function OrganizerPanel({
           </ConfirmActionButton>
         </div>
       )}
+
+      <div className="space-y-3 rounded-xl border border-pink-300/20 bg-pink-400/5 p-3">
+        <div>
+          <p className="text-sm font-bold text-white">Confirmação de presença</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-white/55">
+            Os classificados confirmam até o prazo. Com valor, a confirmação é por Pix automático; sem valor, é só um toque. Sem prazo = confirmação fechada.
+          </p>
+        </div>
+        <ActionForm action={setCupConfirmation} successMessage="Confirmação configurada." className="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <input type="hidden" name="cupId" value={cup.id} />
+          <label className="block min-w-0 flex-1 text-xs font-medium text-white/60">
+            Valor (R$) <span className="text-white/30">(em branco = gratuita)</span>
+            <input type="text" inputMode="decimal" name="amount" defaultValue={cup.confirm_amount == null ? "" : String(cup.confirm_amount).replace(".", ",")} placeholder="Ex.: 20,00" className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white" />
+          </label>
+          <label className="block min-w-0 flex-1 text-xs font-medium text-white/60">
+            Prazo <span className="text-white/30">(horário de Brasília)</span>
+            <input type="datetime-local" name="deadline" defaultValue={deadlineLocal} className="mt-1.5 min-h-10 w-full rounded-xl border border-white/15 bg-white/[0.03] px-3 text-sm text-white" />
+          </label>
+          <button type="submit" className={buttonClass}>Salvar</button>
+        </ActionForm>
+
+        {qualified.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-white/70">Confirmados: {confirmedCount}/{qualified.length}</p>
+            <ul className="mt-2 divide-y divide-white/5">
+              {qualified.map((row) => {
+                const confirmation = confirmations.get(row.profile_id);
+                const label = confirmation?.status === "confirmed"
+                  ? { text: confirmation.payment_source === "pix" ? "Confirmado · Pix" : confirmation.payment_source === "manual" ? "Confirmado · manual" : "Confirmado", tone: "text-emerald-200 bg-emerald-500/15" }
+                  : confirmation?.status === "declined"
+                    ? { text: "Desistiu", tone: "text-red-200 bg-red-500/15" }
+                    : { text: "Pendente", tone: "text-amber-200 bg-amber-500/15" };
+                return (
+                  <li key={row.profile_id} className="flex flex-wrap items-center gap-2 py-2">
+                    <span className="min-w-0 flex-1 truncate text-sm text-white">{row.player?.full_name ?? "Jogador"}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${label.tone}`}>{label.text}</span>
+                    {confirmation?.status === "confirmed" ? (
+                      <ConfirmActionButton
+                        action={clearCupPresence}
+                        fields={{ cupId: cup.id, profileId: row.profile_id }}
+                        confirmMessage="Remover a confirmação? Se foi paga por Pix, lembre de devolver o valor."
+                        successMessage="Confirmação removida."
+                        className="inline-flex min-h-8 items-center rounded-lg border border-white/15 px-2.5 text-xs font-semibold text-white/80 hover:bg-white/5"
+                      >
+                        Remover
+                      </ConfirmActionButton>
+                    ) : (
+                      <ConfirmActionButton
+                        action={markCupPresencePaid}
+                        fields={{ cupId: cup.id, profileId: row.profile_id }}
+                        confirmMessage="Marcar como confirmado (pago fora do app)?"
+                        successMessage="Presença confirmada manualmente."
+                        className="inline-flex min-h-8 items-center rounded-lg bg-emerald-500/80 px-2.5 text-xs font-bold text-white hover:bg-emerald-500"
+                      >
+                        Marcar pago
+                      </ConfirmActionButton>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {refunds.length > 0 && (
+          <div className="rounded-lg border border-amber-300/30 bg-amber-400/10 p-3">
+            <p className="text-xs font-bold text-amber-100">Devoluções pendentes</p>
+            <p className="mt-0.5 text-xs text-amber-50/70">Pix recebido depois do prazo ou sem vaga. Devolva pelo app do banco e marque aqui.</p>
+            <ul className="mt-2 space-y-1.5">
+              {refunds.map((refund) => (
+                <li key={refund.id} className="flex flex-wrap items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-sm text-white">
+                    {refund.player?.full_name ?? "Jogador"} · {Number(refund.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                  </span>
+                  <ConfirmActionButton
+                    action={markCupRefunded}
+                    fields={{ intentId: refund.id }}
+                    confirmMessage="Confirmar que o valor já foi devolvido?"
+                    successMessage="Devolução registrada."
+                    className="inline-flex min-h-8 items-center rounded-lg border border-amber-200/40 px-2.5 text-xs font-semibold text-amber-50 hover:bg-white/5"
+                  >
+                    Já devolvi
+                  </ConfirmActionButton>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       <ActionForm action={addCupQualifier} successMessage="Classificatória adicionada!" className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <input type="hidden" name="cupId" value={cup.id} />

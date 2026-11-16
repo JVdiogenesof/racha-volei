@@ -557,8 +557,37 @@ export const cups = pgTable("cups", {
   numTeams: integer("num_teams").notNull().default(4),
   teamSize: integer("team_size").notNull().default(6),
   finalEventId: uuid("final_event_id").references(() => events.id, { onDelete: "set null" }),
+  confirmAmount: numeric("confirm_amount", { precision: 10, scale: 2 }),
+  confirmDeadline: timestamp("confirm_deadline", { withTimezone: true }),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Confirmação de presença na Copa (prazo + Pix). Checks, RLS e funções ficam
+// na migração 20261116190000_copa_confirmacao_pix.sql.
+export const cupConfirmations = pgTable("cup_confirmations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cupId: uuid("cup_id").notNull().references(() => cups.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  status: text("status").notNull(),
+  paymentSource: text("payment_source"),
+  amount: numeric("amount", { precision: 10, scale: 2 }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("cup_confirmations_cup_id_profile_id_key").on(t.cupId, t.profileId)]);
+
+export const cupPaymentIntents = pgTable("cup_payment_intents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cupId: uuid("cup_id").notNull().references(() => cups.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("pending"),
+  provider: text("provider").notNull().default("mercado_pago"),
+  providerOrderId: text("provider_order_id"),
+  providerReference: text("provider_reference"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const cupQualifiers = pgTable("cup_qualifiers", {

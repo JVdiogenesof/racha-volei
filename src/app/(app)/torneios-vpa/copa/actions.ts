@@ -46,7 +46,7 @@ function revalidateCup(eventIds: (string | null | undefined)[] = []) {
 async function loadCup(supabase: Awaited<ReturnType<typeof createClient>>, cupId: string) {
   const { data, error } = await supabase
     .from("cups")
-    .select("id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id")
+    .select("id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id, confirm_amount, confirm_deadline")
     .eq("id", cupId)
     .maybeSingle();
   if (error) throw new Error(error.message);

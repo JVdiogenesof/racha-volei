@@ -78,7 +78,9 @@ function PayingContent({
   onCheckNow,
   onRetry,
   onClose,
+  copa,
 }: {
+  copa?: boolean;
   phase: Extract<PixPhase, { kind: "paying" }>;
   secondsLeft: number;
   eventLabel?: string;
@@ -135,7 +137,7 @@ function PayingContent({
       <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">{guaranteedSpot ? "Vaga garantida · falta o pagamento" : "Falta só o pagamento"}</p>
       <div className="mt-1 flex items-end justify-between gap-3">
         <h2 id="pix-sheet-title" className="text-3xl font-black tabular-nums text-white">{money.format(pix.amount)}</h2>
-        {eventLabel && <p className="pb-1 text-right text-xs font-medium text-white/60">Racha de {eventLabel}</p>}
+        {eventLabel && <p className="pb-1 text-right text-xs font-medium text-white/60">{copa ? eventLabel : `Racha de ${eventLabel}`}</p>}
       </div>
 
       <div className={`mt-3 rounded-2xl border p-3 ${urgent ? "border-red-300/30 bg-red-500/10" : warning ? "border-amber-300/25 bg-amber-400/10" : "border-white/10 bg-white/5"}`}>
@@ -177,7 +179,7 @@ function PayingContent({
           <p className="mt-0.5 text-xs leading-relaxed text-white/65">Entre em Pix, escolha <strong className="text-white/90">Pix Copia e Cola</strong>, cole o código e confirme.</p>
         </Step>
         <Step number={3} title="Volte aqui">
-          <p className="mt-0.5 text-xs leading-relaxed text-white/65">Seu nome entra na lista sozinho, em poucos segundos. Não precisa mandar comprovante.</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-white/65">{copa ? "Sua presença na Copa é confirmada sozinha, em poucos segundos. Não precisa mandar comprovante." : "Seu nome entra na lista sozinho, em poucos segundos. Não precisa mandar comprovante."}</p>
         </Step>
       </ol>
 
@@ -198,7 +200,7 @@ function PayingContent({
 
       <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-amber-200/85">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Pague só por este código. Pix para uma chave salva não é reconhecido e não garante a vaga.
+        Pague só por este código. Pix para uma chave salva não é reconhecido e não garante {copa ? "sua presença" : "a vaga"}.
       </p>
 
       <details className="group mt-3 rounded-2xl border border-white/10 bg-white/[0.03]">
@@ -272,7 +274,10 @@ export function PixCheckoutSheet({
   onClose,
   onCheckNow,
   onRetry,
+  copa = false,
 }: {
+  /** Cobrança da Copa VPA: ajusta os textos (não é uma vaga de racha). */
+  copa?: boolean;
   phase: Exclude<PixPhase, { kind: "idle" }>;
   secondsLeft: number;
   eventLabel?: string;
@@ -331,6 +336,7 @@ export function PixCheckoutSheet({
         onCheckNow={onCheckNow}
         onRetry={onRetry}
         onClose={onClose}
+        copa={copa}
       />
     );
   } else if (phase.kind === "paid") {
@@ -339,8 +345,8 @@ export function PixCheckoutSheet({
         icon={<PartyPopper className="h-7 w-7" />}
         tone="emerald"
         title="Pagamento confirmado!"
-        text="Você está na lista do racha."
-        primaryLabel="Ver a lista"
+        text={copa ? "Sua presença na Copa VPA está confirmada." : "Você está na lista do racha."}
+        primaryLabel={copa ? "Fechar" : "Ver a lista"}
         onPrimary={onClose}
       />
     );
@@ -349,8 +355,8 @@ export function PixCheckoutSheet({
       <MessageContent
         icon={<Wallet className="h-7 w-7" />}
         tone="amber"
-        title="Seu Pix virou saldo"
-        text="O pagamento chegou depois do prazo e a vaga já tinha sido preenchida. O valor ficou como saldo para usar em outro racha."
+        title={copa ? "Pagamento fora do prazo" : "Seu Pix virou saldo"}
+        text={copa ? "O pagamento chegou depois do prazo (ou sem vaga na Copa). A organização vai devolver o valor para você." : "O pagamento chegou depois do prazo e a vaga já tinha sido preenchida. O valor ficou como saldo para usar em outro racha."}
         primaryLabel="Entendi"
         onPrimary={onClose}
       />

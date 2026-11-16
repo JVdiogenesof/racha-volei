@@ -16,6 +16,10 @@ export type Cup = {
   num_teams: number;
   team_size: number;
   final_event_id: string | null;
+  /** Valor da confirmação de presença (Pix); nulo = confirmação gratuita. */
+  confirm_amount: number | null;
+  /** Fim do prazo de confirmação; nulo = confirmação ainda não aberta. */
+  confirm_deadline: string | null;
 };
 
 export type CupQualifiedSource = "champion" | "ranking" | "manual";
@@ -31,7 +35,7 @@ export type RankingCandidate = {
   eligible: boolean;
 };
 
-const CUP_COLUMNS = "id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id";
+const CUP_COLUMNS = "id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id, confirm_amount, confirm_deadline";
 
 /** Dias corridos até a data, contando pelo calendário de Brasília. */
 export function daysUntilInBrazil(date: string) {
