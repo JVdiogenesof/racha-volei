@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Trophy, Gauge } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
+import { HomeProfileHeader } from "@/components/HomeProfileHeader";
+import { getProfileExtras } from "@/lib/profileCosmetics";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
@@ -89,7 +91,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
+  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary, myExtras] = await Promise.all([
     supabase
       .from("spot_offers")
       .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
@@ -99,6 +101,7 @@ export default async function HomePage() {
       .maybeSingle(),
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
+    getProfileExtras(supabase, profile.id),
   ]);
   const isPaymentExempt = Boolean(myExemption);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
@@ -282,30 +285,16 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-purple-300">VPA · Racha de Quadra</p>
-          <h1 className="mt-0.5 truncate text-[22px] font-extrabold leading-tight text-white sm:text-3xl">Fala, {firstName}!</h1>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {profile.status === "approved" && (
-            <Link
-              href="/ranking"
-              aria-label={myPosition !== null ? `Sua posição no Índice VPA: ${myPosition}º` : "Ver Índice VPA"}
-              className="flex h-10 items-center gap-1.5 rounded-xl border border-purple-300/30 bg-purple-500/20 px-2.5 text-white transition hover:bg-purple-500/30"
-            >
-              <Gauge className="h-4 w-4 text-purple-200" strokeWidth={2.25} />
-              <span className="text-[15px] font-black leading-none">{myPosition !== null ? `${myPosition}º` : "—"}</span>
-            </Link>
-          )}
-          <Link href="/ranking" aria-label="Ver ranking" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-purple-200 transition hover:bg-white/10">
-            <Trophy className="h-[18px] w-[18px]" strokeWidth={2.25} />
-          </Link>
-          <Link href="/racha" aria-label="Ver rachas" className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-purple-200 transition hover:bg-white/10">
-            <CalendarDays className="h-[18px] w-[18px]" strokeWidth={2.25} />
-          </Link>
-        </div>
-      </div>
+      <HomeProfileHeader
+        firstName={firstName}
+        fullName={profile.full_name}
+        avatarUrl={profile.avatar_url}
+        avatarFrame={profile.avatar_frame}
+        banner={myExtras.profile_banner}
+        nickname={profile.nickname_badge}
+        position={myPosition}
+        showPosition={profile.status === "approved"}
+      />
 
       {myPendingOffer && (
         <SpotOfferBanner
