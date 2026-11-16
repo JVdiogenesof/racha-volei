@@ -145,6 +145,35 @@ export async function getCupRankingQueue(
   return available.sort((a, b) => tier(a) - tier(b));
 }
 
+/** Levantadores que ainda faltam para ter um por time (as vagas de ranking vão primeiro para eles). */
+export function missingSetterSlots(cup: Pick<Cup, "num_teams">, qualifiedSetters: number) {
+  return Math.max(0, cup.num_teams - qualifiedSetters);
+}
+
+/** Quantos classificados são levantadores. */
+export async function countQualifiedSetters(supabase: SupabaseClient, cupId: string) {
+  const { data, error } = await supabase
+    .from("cup_qualified_players")
+    .select("profile_id, player:profiles!cup_qualified_players_profile_id_fkey(is_setter)")
+    .eq("cup_id", cupId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).filter((row) => Boolean((row.player as unknown as { is_setter: boolean } | null)?.is_setter)).length;
+}
+
+/**
+ * Escolhe quem ocupa `count` vagas do ranking: primeiro os levantadores que
+ * faltam (um por time), depois os jogadores de linha; só se não houver
+ * jogadores sobra vaga para mais levantadores.
+ */
+export function pickFromRankingQueue(queue: RankingCandidate[], count: number, setterSlots: number) {
+  const setters = queue.filter((candidate) => candidate.isSetter);
+  const others = queue.filter((candidate) => !candidate.isSetter);
+  const firstSetters = setters.slice(0, Math.min(count, setterSlots));
+  const players = others.slice(0, count - firstSetters.length);
+  const extraSetters = setters.slice(firstSetters.length, firstSetters.length + (count - firstSetters.length - players.length));
+  return [...firstSetters, ...players, ...extraSetters];
+}
+
 async function lockIntoFinal(supabase: SupabaseClient, cup: Cup, profileIds: string[]) {
   const failed: string[] = [];
   if (!cup.final_event_id || !profileIds.length) return failed;
@@ -370,8 +399,10 @@ export async function settleCupRankingSpots(
     }
     if (repeats.length) {
       const queue = await getCupRankingQueue(supabase, cup.community, new Set([...qualified, ...seen]));
+      const setterSlots = missingSetterSlots(cup, await countQualifiedSetters(supabase, cup.id));
+      const picks = pickFromRankingQueue(queue, repeats.length, setterSlots);
       repeats.forEach((repeat, index) => {
-        const next = queue[index];
+        const next = picks[index];
         if (!next) return;
         rows.push({
           cup_id: cup.id,

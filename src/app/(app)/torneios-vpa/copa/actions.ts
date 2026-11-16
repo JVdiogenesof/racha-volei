@@ -7,6 +7,9 @@ import { getActiveCommunity } from "@/lib/community";
 import {
   COPA_PATH,
   clearCupQualificationsFromEvent,
+  countQualifiedSetters,
+  missingSetterSlots,
+  pickFromRankingQueue,
   getCupRankingQueue,
   linkEventToCup,
   lockCupPlayersIntoFinal,
@@ -269,7 +272,8 @@ export async function fillCupSpotFromRanking(formData: FormData) {
   if ((qualified?.length ?? 0) >= cup.num_teams * cup.team_size) throw new Error("Todas as vagas da copa já estão preenchidas.");
 
   const queue = await getCupRankingQueue(supabase, cup.community, new Set((qualified ?? []).map((row) => row.profile_id)));
-  const next = queue[0];
+  const setterSlots = missingSetterSlots(cup, await countQualifiedSetters(supabase, cup.id));
+  const next = pickFromRankingQueue(queue, 1, setterSlots)[0];
   if (!next) throw new Error("Não há mais ninguém na fila do ranking.");
 
   const { error } = await supabase.from("cup_qualified_players").insert({

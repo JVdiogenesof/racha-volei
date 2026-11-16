@@ -15,7 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCommunity, COMMUNITY_INFO } from "@/lib/community";
-import { cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
+import { cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, missingSetterSlots, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
@@ -156,7 +156,15 @@ export default async function CopaVpaPage() {
   const eventDateById = new Map(qualifierEvents.map((event) => [event.id, event.date]));
 
   const myRow = qualified.find((row) => row.profile_id === profile.id) ?? null;
-  const myQueueIndex = rankingQueue.findIndex((candidate) => candidate.profileId === profile.id);
+  const rankingSetters = rankingQueue.filter((candidate) => candidate.isSetter);
+  const rankingPlayers = rankingQueue.filter((candidate) => !candidate.isSetter);
+  const myQueueIndex = (rankingQueue.find((candidate) => candidate.profileId === profile.id)?.isSetter ? rankingSetters : rankingPlayers).findIndex(
+    (candidate) => candidate.profileId === profile.id,
+  );
+  const settersQualified = qualified.filter((row) => row.player?.is_setter).length;
+  const setterSlots = missingSetterSlots(cup, settersQualified);
+  const lastQualifierDate = [...cup.qualifier_dates, ...qualifierEvents.map((event) => event.date)].sort().at(-1) ?? null;
+  const lastQualifierLabel = lastQualifierDate ? shortDate(lastQualifierDate) : null;
   const remaining = cup.final_date ? daysUntilInBrazil(cup.final_date) : null;
   const monthReference = cup.final_date ?? cup.qualifier_dates[0] ?? qualifierEvents[0]?.date ?? null;
   const finalLabel = cupFinalDateLabel(cup);
@@ -385,33 +393,34 @@ export default async function CopaVpaPage() {
       </section>
 
       {/* Fila do ranking */}
-      <section className="space-y-3">
+      <section className="space-y-4">
         <SectionTitle
           icon={Medal}
-          title="Fila do ranking"
-          subtitle="Se um campeão já classificado vencer de novo, a vaga vai para o próximo daqui. Levantadores têm prioridade."
+          title="Vagas pelo ranking"
+          subtitle="Quando um campeão já classificado vence de novo, a vaga dele vai para o ranking."
         />
-        {rankingQueue.length ? (
-          <ol className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10">
-            {rankingQueue.slice(0, QUEUE_PREVIEW).map((candidate, index) => (
-              <li key={candidate.profileId} className={`flex items-center gap-3 px-3 py-2.5 ${candidate.profileId === profile.id ? "bg-pink-400/10" : index === 0 ? "bg-cyan-400/5" : ""}`}>
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${index === 0 ? "bg-cyan-400 text-cyan-950" : "bg-white/10 text-white/70"}`}>
-                  {index + 1}
-                </span>
-                <Avatar src={candidate.avatarUrl} name={candidate.fullName} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-semibold text-white">{candidate.fullName}</p>
-                  <p className="text-[11px] text-white/45">
-                    {candidate.position ? `Nº ${candidate.position} no Índice VPA · ${candidate.averageIndex.toFixed(1)} pts` : "Em classificação no Índice VPA"}
-                  </p>
-                </div>
-                {candidate.isSetter && <SetterBadge />}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="text-sm text-white/50">Ninguém na fila do ranking agora.</p>
-        )}
+        <div className="rounded-2xl border border-amber-300/25 bg-amber-400/10 p-3.5 text-sm leading-relaxed text-amber-50/85">
+          <p className="font-bold text-amber-50">Lista provisória: muda a cada racha</p>
+          <p className="mt-0.5">
+            O Índice VPA segue mudando até o último racha classificatório{lastQualifierLabel ? ` (${lastQualifierLabel})` : ""}. Só depois dele saberemos quantas vagas vêm pelo ranking e quem fica com elas.
+          </p>
+        </div>
+        <QueueList
+          title={`Levantadores · ${setterSlots === 0 ? "nenhuma vaga prevista" : `até ${setterSlots} ${setterSlots === 1 ? "vaga" : "vagas"}`}`}
+          note={`A copa tem ${cup.num_teams} times e precisa de 1 levantador por time. Já ${settersQualified === 1 ? "há 1 classificado" : `há ${settersQualified} classificados`}: ${setterSlots === 0 ? "o ranking não traz levantador." : `as vagas de levantador do ranking são só ${setterSlots}.`}`}
+          candidates={rankingSetters}
+          meId={profile.id}
+          highlight={setterSlots}
+          preview={QUEUE_PREVIEW}
+        />
+        <QueueList
+          title="Jogadores"
+          note="As demais vagas do ranking vão para os jogadores de linha, na ordem do Índice VPA."
+          candidates={rankingPlayers}
+          meId={profile.id}
+          highlight={0}
+          preview={QUEUE_PREVIEW}
+        />
         <Link href="/ranking" className="inline-flex items-center gap-1 text-xs font-semibold text-purple-300 hover:underline">
           Ver Índice VPA completo <ArrowRight className="h-3 w-3" strokeWidth={2} />
         </Link>
@@ -445,7 +454,7 @@ export default async function CopaVpaPage() {
           </Rule>
           <Rule n={2}>Quem já se classificou pode continuar jogando as classificatórias seguintes normalmente.</Rule>
           <Rule n={3}>Se um classificado vencer de novo, a vaga dele vai para o ranking (Índice VPA): entra o próximo melhor colocado que ainda não está na copa. Essas vagas só são definidas depois da última classificatória, com o ranking final.</Rule>
-          <Rule n={4}>Nas vagas do ranking, levantadores têm prioridade.</Rule>
+          <Rule n={4}>As vagas do ranking completam primeiro os levantadores (1 por time); as demais vão para os jogadores de linha.</Rule>
           <Rule n={5}>
             Os {capacity} classificados entram automaticamente na lista da final{cup.final_date ? ` (${finalLabel})` : ", com data ainda a definir,"} e disputam a copa em {cup.num_teams} times.
           </Rule>
@@ -507,6 +516,51 @@ function SourceChip({ row, eventDateById }: { row: QualifiedRow; eventDateById: 
   return <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-white/70">Organização</span>;
 }
 
+function QueueList({
+  title,
+  note,
+  candidates,
+  meId,
+  highlight,
+  preview,
+}: {
+  title: string;
+  note: string;
+  candidates: Awaited<ReturnType<typeof getCupRankingQueue>>;
+  meId: string;
+  /** Quantos do topo estão "na zona de vaga" se a lista fechasse hoje. */
+  highlight: number;
+  preview: number;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold text-white">{title}</p>
+      <p className="mb-2 mt-0.5 text-xs leading-relaxed text-white/50">{note}</p>
+      {candidates.length ? (
+        <ol className="divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10">
+          {candidates.slice(0, preview).map((candidate, index) => (
+            <li key={candidate.profileId} className={`flex items-center gap-3 px-3 py-2.5 ${candidate.profileId === meId ? "bg-pink-400/10" : index < highlight ? "bg-cyan-400/5" : ""}`}>
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${index < highlight ? "bg-cyan-400 text-cyan-950" : "bg-white/10 text-white/70"}`}>
+                {index + 1}
+              </span>
+              <Avatar src={candidate.avatarUrl} name={candidate.fullName} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="break-words text-sm font-semibold text-white">{candidate.fullName}</p>
+                <p className="text-[11px] text-white/45">
+                  {candidate.position ? `Nº ${candidate.position} no Índice VPA · ${candidate.averageIndex.toFixed(1)} pts` : "Em classificação no Índice VPA"}
+                </p>
+              </div>
+              {candidate.isSetter && <SetterBadge />}
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-sm text-white/50">Ninguém nesta lista agora.</p>
+      )}
+    </div>
+  );
+}
+
 function MyStatus({
   row,
   queueIndex,
@@ -547,7 +601,7 @@ function MyStatus({
         <p className="font-bold text-white">Ainda não classificado(a)</p>
         <p className="mt-0.5 text-sm leading-relaxed text-white/65">
           Vença uma classificatória pra garantir sua vaga.
-          {queueIndex >= 0 && ` Pelo ranking, você é o Nº ${queueIndex + 1} da fila${isSetter ? " (com prioridade de levantador)" : ""}.`}
+          {queueIndex >= 0 && ` Hoje, pelo ranking, você é o Nº ${queueIndex + 1} entre ${isSetter ? "os levantadores" : "os jogadores"} (provisório: muda até o último racha).`}
         </p>
       </div>
     </section>
