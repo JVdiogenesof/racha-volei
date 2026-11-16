@@ -1,6 +1,7 @@
 import { Avatar } from "./Avatar";
 import { GoldIcon, RankBadge } from "./VpaStatIcons";
 import type { HomeStats, Insight } from "@/lib/homeInsights";
+import { NeonCard } from "./NeonCard";
 
 function InsightCard({ insight }: { insight: Insight }) {
   return (
@@ -52,7 +53,7 @@ export function HomeStatsCard({ stats }: { stats: HomeStats }) {
   ];
 
   return (
-    <section className="rounded-[22px] border border-white/10 bg-gradient-to-br from-[#2a1666] to-[#150b36] p-3 shadow-xl shadow-purple-950/30">
+    <NeonCard solid innerClassName="p-3">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[14px] font-extrabold text-white">VPA em números</h2>
         <div className="flex items-center gap-2.5">
@@ -84,6 +85,6 @@ export function HomeStatsCard({ stats }: { stats: HomeStats }) {
           </span>
         </p>
       )}
-    </section>
+    </NeonCard>
   );
 }

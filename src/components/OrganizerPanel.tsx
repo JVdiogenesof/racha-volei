@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck, UserPlus, Phone, AlertTriangle } from "lucide-react";
+import { NeonCard } from "./NeonCard";
 
 export function OrganizerPanel({
   proximoRachaId,
@@ -15,7 +16,7 @@ export function OrganizerPanel({
   recentDeclines: { fullName: string }[];
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <NeonCard solid innerClassName="p-5">
       <h2 className="flex items-center gap-2 font-semibold text-white">
         <ShieldCheck className="h-4.5 w-4.5 text-purple-300" strokeWidth={2} />
         Painel do organizador
@@ -71,6 +72,6 @@ export function OrganizerPanel({
           </span>
         </p>
       )}
-    </section>
+    </NeonCard>
   );
 }

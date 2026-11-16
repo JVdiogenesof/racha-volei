@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlarmClock, Check, X } from "lucide-react";
 import { ActionForm } from "./ActionForm";
 import { PixReservationButton } from "./PixReservationButton";
+import { NeonCard } from "./NeonCard";
 
 function remainingLabel(expiresAt: string): string | null {
   const diff = new Date(expiresAt).getTime() - Date.now();
@@ -58,7 +59,7 @@ export function SpotOfferBanner({
   if (label === null) return null;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-amber-300/30 bg-gradient-to-br from-amber-400/15 via-amber-400/5 to-transparent p-4">
+    <NeonCard theme="gold" innerClassName="p-4">
       <div className="flex items-center gap-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-300">
           <AlarmClock className="h-4.5 w-4.5" strokeWidth={2.25} />
@@ -111,6 +112,6 @@ export function SpotOfferBanner({
       {needsPixPayment && price != null && (
         <p className="mt-2 text-[11px] text-white/45">Valor: R$ {price.toFixed(2)}</p>
       )}
-    </section>
+    </NeonCard>
   );
 }

@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState } from "react";
 import { Cake, Megaphone } from "lucide-react";
+import { NeonCard } from "./NeonCard";
 
 export function HomeCommunityTabs({
   announcementContent,
@@ -15,7 +16,7 @@ export function HomeCommunityTabs({
   const [active, setActive] = useState<"announcement" | "birthdays">("announcement");
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]">
+    <NeonCard solid>
       <div className="grid grid-cols-2 gap-1 border-b border-white/10 p-1">
         <button
           type="button"
@@ -36,6 +37,6 @@ export function HomeCommunityTabs({
         </button>
       </div>
       <div>{active === "announcement" ? announcementContent : birthdaysContent}</div>
-    </section>
+    </NeonCard>
   );
 }

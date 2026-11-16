@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import { ATTENDANCE_REMOVE_THRESHOLD } from "@/lib/attendancePolicy";
+import { NeonCard } from "./NeonCard";
 
 /**
  * Aviso fixo no topo da tela de início pra quem está perto de ser removido
@@ -17,7 +18,7 @@ export function AbsenceWarningBanner({ streak }: { streak: number }) {
     : { border: "border-amber-300/35", bg: "from-amber-400/18 via-amber-400/6", icon: "bg-amber-400/25 text-amber-200", chip: "bg-amber-400/25 text-amber-100" };
 
   return (
-    <section className={`overflow-hidden rounded-2xl border ${tone.border} bg-gradient-to-br ${tone.bg} to-transparent p-4`}>
+    <NeonCard theme={critical ? "red" : "gold"} innerClassName="p-4">
       <div className="flex items-start gap-2.5">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone.icon}`}>
           <AlertTriangle className="h-[18px] w-[18px]" strokeWidth={2.25} />
@@ -50,6 +51,6 @@ export function AbsenceWarningBanner({ streak }: { streak: number }) {
           Ver regra
         </Link>
       </div>
-    </section>
+    </NeonCard>
   );
 }
