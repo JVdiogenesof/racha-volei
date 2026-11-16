@@ -57,6 +57,7 @@ export function CompactAppHeader({
     <CompactHeaderContext.Provider value={compact}>
       <header className={`app-header-background sticky top-0 z-20 border-b text-white shadow-xl shadow-black/10 [overflow-anchor:none] transition-colors duration-300 ${compact ? "border-white/15" : "border-white/10"}`}>
         {topBar}
+        <span aria-hidden="true" className="header-neon pointer-events-none absolute bottom-0 left-0 h-px w-full" />
         <span ref={barRef} aria-hidden="true" className="absolute bottom-0 left-0 h-[2px] w-full origin-left bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-300" style={{ transform: "scaleX(0)" }} />
       </header>
     </CompactHeaderContext.Provider>

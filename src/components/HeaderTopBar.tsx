@@ -16,6 +16,10 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { LogoMark } from "@/components/Logo";
+import { AchievementEmblem, badgeGlyph, badgeTone } from "@/components/AchievementEmblem";
+import { ProfileBannerArt } from "@/components/ProfileBannerArt";
+import { isBannerId } from "@/lib/cosmetics";
+import type { HeaderMedal } from "@/lib/profileCosmetics";
 import { useCompactHeader } from "@/components/CompactAppHeader";
 import { OPEN_PWA_INSTALL_EVENT } from "@/components/PwaInstallPrompt";
 
@@ -49,6 +53,10 @@ const STATUS_STYLE = {
 export function HeaderTopBar({
   fullName,
   avatarUrl,
+  avatarFrame,
+  nickname,
+  medals = [],
+  banner,
   isOrganizer,
   isVisitor = false,
   attendanceStatus,
@@ -58,6 +66,12 @@ export function HeaderTopBar({
 }: {
   fullName: string;
   avatarUrl: string | null;
+  avatarFrame?: string | null;
+  nickname?: string | null;
+  /** Até 3 medalhas em destaque. */
+  medals?: HeaderMedal[];
+  /** Banner do perfil, em miniatura no fundo do cabeçalho. */
+  banner?: string | null;
   isOrganizer: boolean;
   isVisitor?: boolean;
   attendanceStatus: string | null;
@@ -90,40 +104,57 @@ export function HeaderTopBar({
     };
   }, []);
 
+  const hasBadges = Boolean(nickname) || medals.length > 0;
+  const bannerId = isBannerId(banner) ? banner : null;
+  const role = isOrganizer ? "Organizador" : isVisitor ? "Visitante VPA" : "Atleta VPA";
+
   return (
-    <div className={`mx-auto flex max-w-5xl items-center gap-2 px-3 transition-[height] duration-300 sm:px-4 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem] ${compact ? "h-14" : "h-[3.75rem] lg:h-[4.75rem]"}`}>
-      <Link href="/" aria-label="Ir para o início" className="group shrink-0">
-        <LogoMark className={`object-contain transition-all duration-300 group-hover:scale-105 ${compact ? "h-11 w-11" : "h-[3.25rem] w-[3.25rem] lg:h-[4.1rem] lg:w-[4.1rem]"}`} />
-      </Link>
-
-      <div className="min-w-0 flex-1 leading-tight lg:hidden">
-        <p className="truncate text-[17px] font-black text-white">{isHome ? `Fala, ${firstName}!` : heading.title}</p>
-        <p className={`truncate text-[10px] font-bold uppercase tracking-[0.14em] text-purple-200/70 transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "max-h-4 opacity-100"}`}>{heading.eyebrow}</p>
-      </div>
-
-      {navigation}
-      <span className="hidden flex-1 lg:block" />
-
-      {bell}
-
-      <div ref={menuRef} className="relative shrink-0">
+    <div className={`relative mx-auto flex max-w-5xl items-center gap-2 px-3 transition-[height] duration-300 sm:px-4 xl:max-w-7xl xl:px-6 2xl:max-w-[90rem] ${compact ? "h-[3.9rem]" : "h-16 lg:h-[4.75rem]"}`}>
+      {bannerId && (
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 -z-10 w-[78%] opacity-70 lg:w-1/2" style={{ WebkitMaskImage: "linear-gradient(to right, #000 0%, #000 30%, transparent 100%)", maskImage: "linear-gradient(to right, #000 0%, #000 30%, transparent 100%)" }}>
+          <ProfileBannerArt id={bannerId} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(26,16,73,.62), rgba(26,16,73,.3))" }} />
+        </div>
+      )}
+      {/* O perfil fica no canto esquerdo (a foto com a moldura que a pessoa escolheu) e abre o menu. */}
+      <div ref={menuRef} className="relative min-w-0 flex-1 lg:flex-none">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
           aria-expanded={open}
           aria-haspopup="menu"
-          className={`flex items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] text-left leading-none shadow-lg shadow-black/10 transition hover:border-white/20 hover:bg-white/[0.13] max-sm:h-11 max-sm:w-11 max-sm:p-0 ${compact ? "gap-1 sm:p-1" : "gap-2 sm:p-1 sm:pr-2.5"}`}
+          aria-label="Abrir menu do perfil"
+          className="flex max-w-full items-center gap-2.5 rounded-2xl py-1 pl-1 pr-2 text-left leading-none transition hover:bg-white/[0.06] active:scale-[0.98]"
         >
-          <span className={`flex items-center justify-center rounded-full ring-2 ${eventStatus?.ring ?? "ring-purple-300/25"}`}><Avatar src={avatarUrl} name={fullName} size="sm" /></span>
-          <span className="hidden min-w-0 leading-tight sm:block">
-            <span className="block max-w-24 truncate text-xs font-semibold">{firstName}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-[9px] font-medium text-white/50">{isOrganizer ? <><ShieldCheck className="h-2.5 w-2.5 text-amber-300" /> Organizador</> : isVisitor ? "Visitante VPA" : "Atleta VPA"}</span>
+          <span className={`mt-3 flex shrink-0 items-center justify-center rounded-full ring-2 ${eventStatus?.ring ?? "ring-purple-300/25"}`}>
+            <Avatar src={avatarUrl} name={fullName} size="hd" frame={avatarFrame} ring="ring-transparent" />
           </span>
-          <ChevronDown className={`hidden h-3.5 w-3.5 text-white/45 transition-transform sm:block ${open ? "rotate-180" : ""}`} />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-[17px] font-black text-white lg:hidden">{isHome ? `Fala, ${firstName}!` : heading.title}</span>
+            <span className="hidden max-w-32 truncate text-sm font-semibold lg:block">{firstName}</span>
+            <span className={`flex items-center gap-1.5 overflow-hidden transition-all duration-300 ${compact ? "max-h-0 opacity-0" : "mt-0.5 max-h-6 opacity-100"}`}>
+              {hasBadges ? (
+                <>
+                  {nickname && <span className="min-w-0 truncate rounded-full border border-white/20 bg-black/25 px-2 py-px text-[10px] font-semibold text-purple-50">{nickname}</span>}
+                  {medals.map((medal, i) => (
+                    <span key={medal.id} title={medal.title} className="home-medal shrink-0" style={{ "--d": `${i * 0.5}s` } as React.CSSProperties}>
+                      <AchievementEmblem glyph={badgeGlyph(medal.emoji)} tone={badgeTone(medal.color)} shape="medal" size={20} />
+                    </span>
+                  ))}
+                </>
+              ) : (
+                <span className="flex items-center gap-1 truncate text-[10px] font-bold uppercase tracking-[0.14em] text-purple-200/70">
+                  <span className="lg:hidden">{heading.eyebrow}</span>
+                  <span className="hidden items-center gap-1 normal-case tracking-normal lg:flex">{isOrganizer && <ShieldCheck className="h-2.5 w-2.5 text-amber-300" />}{role}</span>
+                </span>
+              )}
+            </span>
+          </span>
+          <ChevronDown className={`hidden h-3.5 w-3.5 shrink-0 text-white/45 transition-transform lg:block ${open ? "rotate-180" : ""}`} />
         </button>
 
         {open && (
-          <div role="menu" className="absolute right-0 top-[calc(100%+0.6rem)] z-50 w-64 overflow-hidden rounded-2xl border border-white/15 bg-[#171039]/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl animate-toast-in">
+          <div role="menu" className="absolute left-0 top-[calc(100%+0.6rem)] z-50 w-64 overflow-hidden rounded-2xl border border-white/15 bg-[#171039]/95 p-2 shadow-2xl shadow-black/40 backdrop-blur-xl animate-toast-in">
             <div className="mb-1 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/10 p-3">
               <p className="truncate text-sm font-semibold text-white">{fullName}</p>
               <p className="mt-1 flex items-center gap-1.5 text-[10px] text-purple-100/60"><Sparkles className="h-3 w-3 text-amber-300" /> Sua central pessoal VPA</p>
@@ -153,6 +184,16 @@ export function HeaderTopBar({
           </div>
         )}
       </div>
+
+      {navigation}
+      <span className="hidden flex-1 lg:block" />
+
+      {bell}
+
+      {/* A logo vai pro canto direito, onde ficava o perfil. */}
+      <Link href="/" aria-label="Ir para o início" className="group shrink-0">
+        <LogoMark className={`object-contain transition-all duration-300 group-hover:scale-105 ${compact ? "h-11 w-11" : "h-[3.25rem] w-[3.25rem] lg:h-[4.1rem] lg:w-[4.1rem]"}`} />
+      </Link>
     </div>
   );
 }

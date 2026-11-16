@@ -4,10 +4,15 @@ import { CompactAppHeader } from "@/components/CompactAppHeader";
 import { HeaderTopBar } from "@/components/HeaderTopBar";
 import { NotificationBell } from "@/components/NotificationBell";
 import type { AppChromeData } from "@/lib/appChromeData";
+import { createClient } from "@/lib/supabase/server";
+import { getHeaderLook } from "@/lib/profileCosmetics";
 
 type NavProfile = {
+  id: string;
   full_name: string;
   avatar_url: string | null;
+  avatar_frame: string | null;
+  nickname_badge: string | null;
   is_organizer: boolean;
   status: string;
   guest_for_event_id: string | null;
@@ -21,7 +26,11 @@ export async function NavBar({
   profile: NavProfile;
   chromeData: Promise<AppChromeData>;
 }) {
-  const { newAvisosCount, upcomingEvents, attendanceByEvent, notifications } = await chromeData;
+  const supabase = await createClient();
+  const [{ newAvisosCount, upcomingEvents, attendanceByEvent, notifications }, look] = await Promise.all([
+    chromeData,
+    profile.status === "approved" ? getHeaderLook(supabase, profile.id).catch(() => ({ banner: null, medals: [] })) : Promise.resolve({ banner: null, medals: [] }),
+  ]);
 
   const respondedIds = new Set(attendanceByEvent.keys());
   const pendingConfirmCount = profile.status === "approved" ? (upcomingEvents ?? []).filter((event) => !respondedIds.has(event.id)).length : 0;
@@ -40,6 +49,10 @@ export async function NavBar({
           <HeaderTopBar
             fullName={profile.full_name}
             avatarUrl={profile.avatar_url}
+            avatarFrame={profile.avatar_frame}
+            nickname={profile.nickname_badge}
+            medals={look.medals}
+            banner={look.banner}
             isOrganizer={profile.is_organizer}
             isVisitor={profile.status !== "approved"}
             attendanceStatus={attendanceStatus}

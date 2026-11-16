@@ -36,6 +36,27 @@ export async function getProfileExtras(supabase: SupabaseClient, profileId: stri
   return data ? { ...EMPTY_EXTRAS, ...(data as Partial<ProfileExtras>) } : EMPTY_EXTRAS;
 }
 
+export type HeaderMedal = { id: string; title: string; emoji: string; color: string };
+
+/**
+ * O visual do cabeçalho: banner e até 3 medalhas em destaque (só as que a
+ * pessoa de fato ganhou). Uma consulta, mais duas só quando há destaque escolhido.
+ */
+export async function getHeaderLook(supabase: SupabaseClient, profileId: string): Promise<{ banner: string | null; medals: HeaderMedal[] }> {
+  const { data: profile } = await supabase.from("profiles").select("featured_badges, profile_banner").eq("id", profileId).maybeSingle();
+  const banner = (profile?.profile_banner ?? null) as string | null;
+  const featured = ((profile?.featured_badges ?? []) as string[]).slice(0, 6);
+  if (!featured.length) return { banner, medals: [] };
+  const [{ data: earned }, { data: badges }] = await Promise.all([
+    supabase.from("profile_badges").select("badge_id").eq("profile_id", profileId).in("badge_id", featured),
+    supabase.from("badges").select("id, title, emoji, color").in("id", featured),
+  ]);
+  const have = new Set((earned ?? []).map((row) => row.badge_id as string));
+  const byId = new Map((badges ?? []).map((badge) => [badge.id as string, badge as HeaderMedal]));
+  const medals = featured.filter((id) => have.has(id)).map((id) => byId.get(id)).filter((badge): badge is HeaderMedal => Boolean(badge)).slice(0, 3);
+  return { banner, medals };
+}
+
 /** Contagens de medalha que entram nas conquistas. */
 export function badgeStatsFrom(earned: { badge_id: string }[], catalog: Pick<Badge, "id" | "kind">[]) {
   const kindById = new Map(catalog.map((badge) => [badge.id, badge.kind]));

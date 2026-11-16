@@ -3,6 +3,8 @@ import { isAvatarFrameId } from "@/lib/avatarFrames";
 
 const SIZES = {
   sm: "h-8 w-8 text-xs",
+  /** Cabeçalho: a menor foto em que a moldura inteira cabe na altura da barra. */
+  hd: "h-9 w-9 text-xs",
   md: "h-11 w-11 text-sm",
   lg: "h-14 w-14 text-base",
   xl: "h-20 w-20 text-xl",

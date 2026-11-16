@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Gauge } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
-import { HomeProfileHeader } from "@/components/HomeProfileHeader";
-import { getBadgeCatalog, getEarnedBadges, getProfileExtras } from "@/lib/profileCosmetics";
+import { NeonCard } from "@/components/NeonCard";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
@@ -91,7 +90,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary, myExtras, badgeCatalog, myBadges] = await Promise.all([
+  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
     supabase
       .from("spot_offers")
       .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
@@ -101,18 +100,7 @@ export default async function HomePage() {
       .maybeSingle(),
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
-    getProfileExtras(supabase, profile.id),
-    getBadgeCatalog(supabase),
-    getEarnedBadges(supabase, profile.id),
   ]);
-  // Até 3 medalhas em destaque (só as que a pessoa de fato ganhou) pro cartão do topo.
-  const earnedBadgeIds = new Set(myBadges.map((item) => item.badge_id));
-  const headerMedals = myExtras.featured_badges
-    .filter((id) => earnedBadgeIds.has(id))
-    .map((id) => badgeCatalog.find((badge) => badge.id === id))
-    .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge))
-    .slice(0, 3)
-    .map(({ id, emoji, color, title }) => ({ id, emoji, color, title }));
   const isPaymentExempt = Boolean(myExemption);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
@@ -291,21 +279,18 @@ export default async function HomePage() {
       ? await getHomeStats(supabase, community, birthdayProfiles ?? [], seasonScores, profile.id, todayStringInFortaleza()).catch(() => null)
       : null;
 
-  const firstName = profile.full_name.split(" ")[0];
-
   return (
     <div className="space-y-3">
-      <HomeProfileHeader
-        firstName={firstName}
-        fullName={profile.full_name}
-        avatarUrl={profile.avatar_url}
-        avatarFrame={profile.avatar_frame}
-        banner={myExtras.profile_banner}
-        nickname={profile.nickname_badge}
-        medals={headerMedals}
-        position={myPosition}
-        showPosition={profile.status === "approved"}
-      />
+      {profile.status === "approved" && (
+        <NeonCard href="/ranking" solid label={myPosition !== null ? `Sua posição no Índice VPA: ${myPosition}º` : "Ver Índice VPA"} innerClassName="flex items-center gap-3 px-3.5 py-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/25 bg-white/15 text-white">
+            <Gauge className="h-[18px] w-[18px]" strokeWidth={2.25} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1 text-sm font-bold text-white">Seu Índice VPA</span>
+          <strong className="text-xl font-black leading-none text-white">{myPosition !== null ? `${myPosition}º` : "—"}</strong>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/50" aria-hidden />
+        </NeonCard>
+      )}
 
       {myPendingOffer && (
         <SpotOfferBanner
