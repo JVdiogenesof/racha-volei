@@ -437,7 +437,7 @@ export default async function CopaVpaPage() {
 
       {/* Final */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-        <SectionTitle icon={Trophy} title={`A final · ${cup.final_date ? longDate(cup.final_date) : "data a definir"}`} subtitle={`${cup.num_teams} times de ${cup.team_size}, montados com os ${capacity} classificados.`} />
+        <SectionTitle icon={Trophy} title={`A final · ${cup.final_date ? longDate(cup.final_date) : "data a definir"}`} subtitle={`${cup.num_teams} times com ${cup.team_size} jogadores cada, montados com os ${capacity} classificados.`} />
         {finalEvent ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Link href={`/racha/${finalEvent.id}/confirmar`} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-brand-purple px-4 text-sm font-bold text-white hover:bg-brand-purple-dark">

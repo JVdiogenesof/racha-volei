@@ -386,7 +386,7 @@ export function CopaSorteioAoVivo({
         <div className="text-center">
           <p className="text-2xl font-black">O sorteio começa em instantes</p>
           <p className="mt-1 text-sm text-white/70">
-            {numTeams} times de {teamSize} · deixe esta tela aberta, os nomes aparecem sozinhos.
+            {numTeams} times com {teamSize} jogadores cada · deixe esta tela aberta, os nomes aparecem sozinhos.
           </p>
           {pool.length > 0 && (
             <div className="mx-auto mt-4 flex max-w-md flex-wrap justify-center gap-1.5">
