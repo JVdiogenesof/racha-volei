@@ -42,19 +42,60 @@ export async function loadCupDay(supabase: SupabaseClient, cupId: string) {
   };
 }
 
-/** Monta o sorteio com os classificados e grava tudo escondido (nada é revelado ainda). */
-export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
-  const { data: qualified, error } = await supabase
-    .from("cup_qualified_players")
-    .select("profile_id, profiles!cup_qualified_players_profile_id_fkey(is_setter)")
-    .eq("cup_id", cup.id);
-  if (error) throw new Error(error.message);
+export type DrawReadiness = {
+  /** Jogadores que o sorteio precisa (times × jogadores por time). */
+  needed: number;
+  /** Quantos já podem entrar no sorteio agora. */
+  ready: number;
+  qualified: number;
+  /** Com prazo de confirmação aberto, só entra quem confirmou (e pagou, se houver valor). */
+  usesConfirmation: boolean;
+  /** Levantadores entre os que entram. */
+  setters: number;
+};
 
-  const season = await getSeasonRanking(supabase, cup.community);
-  const players = (qualified ?? []).map((row) => ({
+/**
+ * Quem entra no sorteio: com confirmação configurada, só os classificados que
+ * confirmaram presença (quem desistiu ou não pagou fica de fora); sem
+ * confirmação, todos os classificados.
+ */
+export async function getDrawPool(supabase: SupabaseClient, cup: Pick<Cup, "id" | "num_teams" | "team_size" | "confirm_deadline">) {
+  const [{ data: qualified, error }, { data: confirmations, error: confirmError }] = await Promise.all([
+    supabase.from("cup_qualified_players").select("profile_id, profiles!cup_qualified_players_profile_id_fkey(is_setter)").eq("cup_id", cup.id),
+    supabase.from("cup_confirmations").select("profile_id").eq("cup_id", cup.id).eq("status", "confirmed"),
+  ]);
+  if (error) throw new Error(error.message);
+  if (confirmError) throw new Error(confirmError.message);
+  const confirmed = new Set((confirmations ?? []).map((row) => row.profile_id as string));
+  const usesConfirmation = Boolean(cup.confirm_deadline);
+  const rows = (qualified ?? []).map((row) => ({
     profileId: row.profile_id as string,
     isSetter: Boolean((row.profiles as unknown as { is_setter: boolean } | null)?.is_setter),
-    strength: season.get(row.profile_id as string)?.averageIndex ?? 0,
+  }));
+  const pool = usesConfirmation ? rows.filter((row) => confirmed.has(row.profileId)) : rows;
+  const readiness: DrawReadiness = {
+    needed: cup.num_teams * cup.team_size,
+    ready: pool.length,
+    qualified: rows.length,
+    usesConfirmation,
+    setters: pool.filter((row) => row.isSetter).length,
+  };
+  return { pool, readiness };
+}
+
+/** Monta o sorteio com quem pode jogar e grava tudo escondido (nada é revelado ainda). */
+export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
+  const { pool, readiness } = await getDrawPool(supabase, cup);
+  if (readiness.ready !== readiness.needed) {
+    const who = readiness.usesConfirmation ? `${readiness.ready} confirmados (de ${readiness.qualified} classificados)` : `${readiness.ready} classificados`;
+    throw new Error(`Para sortear são necessários ${readiness.needed} jogadores e hoje há ${who}.`);
+  }
+
+  const season = await getSeasonRanking(supabase, cup.community);
+  const players = pool.map((row) => ({
+    profileId: row.profileId,
+    isSetter: row.isSetter,
+    strength: season.get(row.profileId)?.averageIndex ?? 0,
   }));
   const picks = planDraw(players, cup.num_teams, cup.team_size);
 

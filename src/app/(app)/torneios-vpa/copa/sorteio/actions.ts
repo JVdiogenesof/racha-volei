@@ -6,13 +6,21 @@ import { requireOrganizer } from "@/lib/auth";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
 import { prepareCupDraw, revealNextPick, saveCupScore } from "@/lib/copaDay";
 
+/**
+ * Em produção o Next esconde o texto do erro lançado numa server action
+ * ("An error occurred..."), então o sorteio devolve o resultado como objeto:
+ * o organizador vê a mensagem certa (ex.: quantos confirmados faltam).
+ */
+export type DrawActionResult =
+  | { ok: true; message: string; remaining?: number; finished?: boolean }
+  | { ok: false; error: string };
+
+const CUP_SELECT =
+  "id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id, confirm_amount, confirm_deadline";
+
 async function loadCup(cupId: string) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("cups")
-    .select("id, community, name, final_date, qualifier_dates, num_teams, team_size, final_event_id")
-    .eq("id", cupId)
-    .maybeSingle();
+  const { data, error } = await supabase.from("cups").select(CUP_SELECT).eq("id", cupId).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Copa não encontrada.");
   return { supabase, cup: data as Cup };
@@ -30,30 +38,44 @@ function refresh() {
   revalidatePath(`${COPA_PATH}/jogos`);
 }
 
+async function guarded(run: () => Promise<DrawActionResult>): Promise<DrawActionResult> {
+  try {
+    await requireOrganizer();
+    return await run();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível concluir a ação.";
+    console.error("[copa-sorteio]", message);
+    return { ok: false, error: message };
+  }
+}
+
 /** Calcula o sorteio e deixa tudo escondido, pronto para a transmissão ao vivo. */
-export async function prepareDraw(formData: FormData) {
-  await requireOrganizer();
-  const { supabase, cup } = await loadCup(cupIdOf(formData));
-  const total = await prepareCupDraw(supabase, cup);
-  refresh();
-  return `Sorteio pronto com ${total} jogadores. Aperte Iniciar quando a galera estiver olhando.`;
+export async function prepareDraw(formData: FormData): Promise<DrawActionResult> {
+  return guarded(async () => {
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    const total = await prepareCupDraw(supabase, cup);
+    refresh();
+    return { ok: true, message: `Sorteio pronto com ${total} jogadores. Aperte Iniciar quando a galera estiver olhando.` };
+  });
 }
 
-export async function revealNext(formData: FormData) {
-  await requireOrganizer();
-  const { supabase, cup } = await loadCup(cupIdOf(formData));
-  const result = await revealNextPick(supabase, cup);
-  if (result.finished) refresh();
-  return JSON.stringify(result);
+export async function revealNext(formData: FormData): Promise<DrawActionResult> {
+  return guarded(async () => {
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    const result = await revealNextPick(supabase, cup);
+    if (result.finished) refresh();
+    return { ok: true, message: "", remaining: result.remaining, finished: result.finished };
+  });
 }
 
-export async function resetDraw(formData: FormData) {
-  await requireOrganizer();
-  const { supabase, cup } = await loadCup(cupIdOf(formData));
-  const { error } = await supabase.from("cup_teams").delete().eq("cup_id", cup.id);
-  if (error) throw new Error(error.message);
-  refresh();
-  return "Sorteio e jogos apagados.";
+export async function resetDraw(formData: FormData): Promise<DrawActionResult> {
+  return guarded(async () => {
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    const { error } = await supabase.from("cup_teams").delete().eq("cup_id", cup.id);
+    if (error) throw new Error(error.message);
+    refresh();
+    return { ok: true, message: "Sorteio e jogos apagados." };
+  });
 }
 
 export async function saveScore(formData: FormData) {

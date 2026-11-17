@@ -177,6 +177,7 @@ export default async function CopaVpaPage() {
     return dateA.localeCompare(dateB) || sourceOrder[a.source] - sourceOrder[b.source] || a.added_at.localeCompare(b.added_at);
   });
   const emptySlots = Math.max(0, capacity - sortedQualified.length);
+  const publicConfirmed = qualified.filter((row) => confirmations.get(row.profile_id)?.status === "confirmed").length;
 
   return (
     <div className="space-y-6">
@@ -350,7 +351,7 @@ export default async function CopaVpaPage() {
       <section className="space-y-3">
         <SectionTitle
           icon={BadgeCheck}
-          title={`Classificados · ${qualified.length}/${capacity}`}
+          title={`Classificados · ${qualified.length}/${capacity}${cup.confirm_deadline ? ` · ${publicConfirmed} confirmados` : ""}`}
           subtitle={cup.final_date ? `Entram automaticamente na lista da final de ${finalLabel}.` : "Entram automaticamente na lista da final (data a definir)."}
         />
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -362,6 +363,14 @@ export default async function CopaVpaPage() {
                 <div className="mt-1 flex flex-wrap items-center gap-1">
                   <SourceChip row={row} eventDateById={eventDateById} />
                   {row.player?.is_setter && <SetterBadge />}
+                  {cup.confirm_deadline && confirmations.get(row.profile_id)?.status === "confirmed" && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
+                      <BadgeCheck className="h-3 w-3" strokeWidth={2.25} /> Confirmado
+                    </span>
+                  )}
+                  {cup.confirm_deadline && confirmations.get(row.profile_id)?.status === "declined" && (
+                    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold text-red-200">Desistiu</span>
+                  )}
                   {cup.final_event_id && !finalLockedIds.has(row.profile_id) && profile.is_organizer && (
                     <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-semibold text-orange-200">Fora da lista</span>
                   )}
@@ -632,6 +641,12 @@ async function OrganizerPanel({
     .order("paid_at", { ascending: true });
   const refunds = (refundRows ?? []) as unknown as { id: string; amount: number; paid_at: string | null; player: { full_name: string } | null }[];
   const confirmedCount = qualified.filter((row) => confirmations.get(row.profile_id)?.status === "confirmed").length;
+  // O prazo precisa passar do fim do dia da última classificatória (o ranking só fecha depois dela).
+  const lastQualifierDay = [...cup.qualifier_dates].sort().at(-1) ?? null;
+  const deadlineBeforeLastQualifier =
+    cup.confirm_deadline && lastQualifierDay && new Date(cup.confirm_deadline).getTime() < new Date(`${lastQualifierDay}T23:59:00-03:00`).getTime()
+      ? new Date(`${lastQualifierDay}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+      : null;
   const deadlineLocal = cup.confirm_deadline
     ? new Date(cup.confirm_deadline).toLocaleString("sv-SE", { timeZone: "America/Fortaleza" }).slice(0, 16).replace(" ", "T")
     : "";
@@ -715,8 +730,15 @@ async function OrganizerPanel({
           <p className="text-sm font-bold text-white">Confirmação de presença</p>
           <p className="mt-0.5 text-xs leading-relaxed text-white/55">
             Os classificados confirmam até o prazo. Com valor, a confirmação é por Pix automático; sem valor, é só um toque. Sem prazo = confirmação fechada.
+            No sorteio dos times entra só quem confirmou.
           </p>
         </div>
+        {deadlineBeforeLastQualifier && (
+          <p className="rounded-lg border border-amber-300/40 bg-amber-400/15 p-2.5 text-xs font-semibold leading-relaxed text-amber-50">
+            Atenção: o prazo termina antes da última classificatória ({deadlineBeforeLastQualifier}). Quem se classificar nela e quem herdar vaga pelo ranking não vai conseguir confirmar.
+            Coloque o prazo depois dessa data.
+          </p>
+        )}
         <ActionForm action={setCupConfirmation} successMessage="Confirmação configurada." className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <input type="hidden" name="cupId" value={cup.id} />
           <label className="block min-w-0 flex-1 text-xs font-medium text-white/60">

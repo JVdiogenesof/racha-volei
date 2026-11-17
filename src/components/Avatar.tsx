@@ -8,6 +8,8 @@ const SIZES = {
   md: "h-11 w-11 text-sm",
   lg: "h-14 w-14 text-base",
   xl: "h-20 w-20 text-xl",
+  /** Destaque da live do sorteio da Copa. */
+  "2xl": "h-32 w-32 text-4xl",
 };
 
 export function Avatar({
