@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Users, Volleyball } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useLiveSpots } from "@/lib/useLiveSpots";
 import { setterSpotsFor } from "@/lib/rachaSpots";
 
 export function ConfirmedCounter({
@@ -26,59 +26,33 @@ export function ConfirmedCounter({
   /** Organizadores acompanham a ocupação completa; participantes só veem as últimas vagas. */
   showFullCapacity?: boolean;
 }) {
-  const [count, setCount] = useState(initialConfirmedCount);
-  const [setterCount, setSetterCount] = useState(initialSetterCount);
-  const [maxPlayers, setMaxPlayers] = useState(initialMaxPlayers);
-  const [firstBatchSpots, setFirstBatchSpots] = useState(initialFirstBatchSpots);
-  const [secondBatchOpensAt, setSecondBatchOpensAt] = useState(initialSecondBatchOpensAt);
-  const [now, setNow] = useState(() => Date.now());
+  const live = useLiveSpots(eventId);
+  const [tick, setTick] = useState(() => Date.now());
 
-  const refresh = useCallback(async () => {
-    const supabase = createClient();
-    const [{ count: fresh }, { count: freshSetters }, { data: eventRow }] = await Promise.all([
-      supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", eventId)
-        .eq("status", "confirmed"),
-      supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", eventId)
-        .eq("status", "confirmed")
-        .eq("uses_setter_spot", true),
-      supabase.from("events").select("max_players, first_batch_spots, second_batch_opens_at").eq("id", eventId).maybeSingle(),
-    ]);
-    if (fresh != null) setCount(fresh);
-    if (freshSetters != null) setSetterCount(freshSetters);
-    if (eventRow) {
-      setMaxPlayers(eventRow.max_players);
-      setFirstBatchSpots(eventRow.first_batch_spots);
-      setSecondBatchOpensAt(eventRow.second_batch_opens_at);
-    }
-  }, [eventId]);
-
+  // Relógio do servidor: celular com a hora errada não pode antecipar nem atrasar o Lote 2.
   useEffect(() => {
-    // Realtime (postgres_changes) exige que o token do usuário chegue até o
-    // websocket pra passar pela RLS — em teste ao vivo isso não disparou de
-    // forma confiável. Poll simples é mais robusto pra esse caso de uso (o
-    // número não precisa mudar no milissegundo exato em que alguém confirma).
-    const interval = setInterval(() => {
-      setNow(Date.now());
-      refresh();
-    }, 10000);
+    const interval = setInterval(() => setTick(Date.now()), 5000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, []);
+  const now = tick + (live?.clockOffset ?? 0);
+
+  const count = live?.confirmed ?? initialConfirmedCount;
+  const setterCount = live?.confirmedSetters ?? initialSetterCount;
+  // Pix em andamento já segura a vaga: para quem chega agora ela não está livre.
+  const reserved = live?.reserved ?? 0;
+  const maxPlayers = live?.capacity ?? initialMaxPlayers;
+  const firstBatchSpots = live ? live.firstBatchSpots : initialFirstBatchSpots;
+  const secondBatchOpensAt = live ? live.secondBatchOpensAt : initialSecondBatchOpensAt;
 
   // Enquanto o Lote 2 não abre, o público enxerga só as vagas do Lote 1.
   const batchActive = firstBatchSpots != null && maxPlayers != null && secondBatchOpensAt != null && new Date(secondBatchOpensAt).getTime() > now;
   const visibleMax = batchActive && !showFullCapacity ? Math.min(firstBatchSpots, maxPlayers) : maxPlayers;
-  const totalSlotsRemaining = visibleMax != null ? Math.max(0, visibleMax - count) : null;
+  const totalSlotsRemaining = visibleMax != null ? Math.max(0, visibleMax - count - reserved) : null;
   const setterCapacity = maxPlayers != null ? setterSpotsFor(maxPlayers) : null;
   const isFull = totalSlotsRemaining === 0;
   const shouldShowAvailability =
     totalSlotsRemaining !== null && (showFullCapacity || totalSlotsRemaining <= 10);
-  const pct = visibleMax ? Math.min(100, Math.round((count / visibleMax) * 100)) : null;
+  const pct = visibleMax ? Math.min(100, Math.round(((count + reserved) / visibleMax) * 100)) : null;
 
   if (compact) {
     return (
@@ -124,6 +98,11 @@ export function ConfirmedCounter({
           </span>
         )}
       </div>
+      {reserved > 0 && (
+        <p className="mt-1 text-xs text-amber-200/80">
+          {reserved} {reserved === 1 ? "vaga está sendo paga" : "vagas estão sendo pagas"} agora. Se o Pix não sair em 5 minutos, ela volta para a lista.
+        </p>
+      )}
       {setterCapacity !== null && (
         <p className="mt-2 flex items-center gap-1.5 text-xs text-cyan-200/85">
           <Volleyball className="h-3.5 w-3.5" strokeWidth={2.25} />

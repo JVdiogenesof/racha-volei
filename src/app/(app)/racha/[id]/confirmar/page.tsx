@@ -349,6 +349,7 @@ export default async function ConfirmarPresencaPage({
       {!eventFinished && !eventCancelled && (
         <div className="space-y-2">
           <BatchStatus
+            eventId={id}
             maxPlayers={eventCapacity}
             firstBatchSpots={event.first_batch_spots}
             secondBatchOpensAt={event.second_batch_opens_at}

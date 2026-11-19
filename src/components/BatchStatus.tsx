@@ -1,5 +1,8 @@
+"use client";
+
 import { Layers } from "lucide-react";
 import { RefreshAt } from "./RefreshAt";
+import { useLiveSpots } from "@/lib/useLiveSpots";
 import {
   batchPhase,
   formatBatchOpening,
@@ -8,6 +11,8 @@ import {
 } from "@/lib/registrationSchedule";
 
 type Props = {
+  /** Com o id, os números passam a acompanhar o banco ao vivo (os props valem só até a 1ª leitura). */
+  eventId?: string;
   maxPlayers: number | null;
   firstBatchSpots: number | null;
   secondBatchOpensAt: string | null;
@@ -24,14 +29,22 @@ type Props = {
  * Lote 2 aberto. Não renderiza nada em rachas sem lotes.
  */
 export function BatchStatus({
-  maxPlayers,
-  firstBatchSpots,
-  secondBatchOpensAt,
+  eventId,
+  maxPlayers: initialMaxPlayers,
+  firstBatchSpots: initialFirstBatchSpots,
+  secondBatchOpensAt: initialSecondBatchOpensAt,
   registrationOpensAt = null,
-  confirmedCount,
-  setterCount = 0,
+  confirmedCount: initialConfirmedCount,
+  setterCount: initialSetterCount = 0,
   compact = false,
 }: Props) {
+  const live = useLiveSpots(eventId ?? null);
+  const maxPlayers = live?.capacity ?? initialMaxPlayers;
+  const firstBatchSpots = live ? live.firstBatchSpots : initialFirstBatchSpots;
+  const secondBatchOpensAt = live ? live.secondBatchOpensAt : initialSecondBatchOpensAt;
+  // Vaga com Pix em andamento já está segura: conta como ocupada para o lote.
+  const confirmedCount = live ? live.confirmed + live.reserved : initialConfirmedCount;
+  const setterCount = live ? live.confirmedSetters + live.reservedSetters : initialSetterCount;
   if (maxPlayers == null || firstBatchSpots == null || !secondBatchOpensAt)
     return null;
 

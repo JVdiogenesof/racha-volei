@@ -161,7 +161,7 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           {rachaLevel !== null && <RachaLevelBadge level={rachaLevel} />}
         </div>
         {!isFinished && !isCancelled && registrationOpen && (
-          <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount ?? 0} setterCount={setterConfirmedCount ?? 0} />
+          <BatchStatus eventId={event.id} maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount ?? 0} setterCount={setterConfirmedCount ?? 0} />
         )}
         {!isFinished && !isCancelled && registrationOpen && (
           <ConfirmedCounter

@@ -159,7 +159,7 @@ export function HomeRachaCard({
             </>
           ) : (
             <>
-              <BatchStatus maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount} setterCount={setterConfirmedCount} compact />
+              <BatchStatus eventId={event.id} maxPlayers={event.max_players} firstBatchSpots={event.first_batch_spots} secondBatchOpensAt={event.second_batch_opens_at} registrationOpensAt={event.registration_opens_at} confirmedCount={confirmedCount} setterCount={setterConfirmedCount} compact />
               <div className="rounded-xl border border-white/15 bg-black/25 p-2.5">
                 <ConfirmedCounter
                   eventId={event.id}
