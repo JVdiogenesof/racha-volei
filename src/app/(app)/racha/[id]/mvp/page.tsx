@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Trophy, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -13,6 +13,8 @@ type Candidato = { profileId: string; fullName: string; avatarUrl: string | null
 export default async function MvpPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const profile = await requireProfile();
+  // Só os organizadores escolhem o destaque; o resto da galera vê na tela "Como foi o racha".
+  if (!profile.is_organizer) redirect(`/racha/${id}/resumo`);
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

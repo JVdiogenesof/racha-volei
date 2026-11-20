@@ -225,7 +225,7 @@ export default async function CopaVpaPage() {
               </li>
             ))}
           </ul>
-          <Link href={`/racha/${cup.final_event_id}/resultado`} className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-pink-200 hover:underline">
+          <Link href={`/racha/${cup.final_event_id}/resumo`} className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-pink-200 hover:underline">
             Ver resultado completo <ArrowRight className="h-3 w-3" strokeWidth={2} />
           </Link>
         </section>

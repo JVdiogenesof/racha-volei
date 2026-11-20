@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Share2, Medal, MapPin, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarCheck, Users2, Trophy, PlayCircle, Award, Crown, Medal, MapPin, type LucideIcon } from "lucide-react";
 import { COPA_PATH } from "@/lib/copaVpa";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -17,6 +17,7 @@ import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { getEventSummary } from "@/lib/eventSummary";
 import { FinishEventCelebration } from "@/components/FinishEventCelebration";
+import { NeonCard } from "@/components/NeonCard";
 import { RegistrationCountdown } from "@/components/RegistrationCountdown";
 import { BatchStatus } from "@/components/BatchStatus";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
@@ -236,29 +237,32 @@ export default async function RachaHubPage({ params }: { params: Promise<{ id: s
           title="Times"
           description={listOpen ? "Veja ou gere os times." : "Libera com a lista publicada."}
         />
-        {isTournament && finalMatch && (
-          <HubCard
-            href={`/racha/${id}/resultado`}
-            icon={Crown}
-            title="Resultado final"
-            description={event.is_mini_torneio ? "Classificação do mini torneio." : "Campeão, vice, 3º e 4º lugar."}
-          />
-        )}
-        {isFinished && (
+        {isInProgress && (
           <HubCard
             href={`/racha/${id}/resumo`}
-            icon={Share2}
-            title="Resumo do racha"
-            description="Quem mais venceu e arte do evento."
+            icon={Trophy}
+            title="Jogos do dia"
+            description="Placares lançados até agora."
           />
         )}
-        <HubCard
-          href={`/racha/${id}/mvp`}
-          icon={Trophy}
-          title="Jogador Destaque"
-          description={isFinished ? "Escolhido pelos organizadores." : "Libera quando o racha terminar."}
-        />
       </div>
+
+      {isFinished && (
+        <NeonCard theme="gold" href={`/racha/${id}/resumo`} label="Como foi o racha" innerClassName="p-4">
+          <span className="relative z-10 flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-300/20 text-amber-200">
+              <Crown className="h-5 w-5" strokeWidth={2.25} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <strong className="block text-base font-black text-white">Como foi o racha</strong>
+              <span className="mt-0.5 block text-xs leading-snug text-white/75">
+                {isTournament ? "Campeão, pódio" : "Time que mais venceu"}, Jogador Destaque, placares, quem subiu no Índice e as artes.
+              </span>
+            </span>
+            <ArrowRight className="h-5 w-5 shrink-0 text-amber-200" strokeWidth={2.25} />
+          </span>
+        </NeonCard>
+      )}
     </div>
   );
 }

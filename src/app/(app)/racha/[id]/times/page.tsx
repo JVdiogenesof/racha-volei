@@ -306,7 +306,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
             </>
           )}
           {finalMatch?.scoreA != null && finalMatch.scoreB != null && (
-            <Link href={`/racha/${id}/resultado`} aria-label="Ver resultado final" title="Ver resultado final" className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20">
+            <Link href={`/racha/${id}/resumo`} aria-label="Como foi o racha" title="Como foi o racha" className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/30 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20">
               <Trophy className="h-5 w-5" />
             </Link>
           )}

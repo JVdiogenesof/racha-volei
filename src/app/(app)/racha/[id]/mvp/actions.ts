@@ -55,6 +55,7 @@ export async function setMvp(formData: FormData) {
   );
 
   revalidatePath(`/racha/${eventId}/mvp`);
+  revalidatePath(`/racha/${eventId}/resumo`);
   revalidatePath("/ranking");
   revalidatePath("/historico");
 }
@@ -69,6 +70,7 @@ export async function clearMvp(formData: FormData) {
   const { error } = await supabase.from("events").update({ [column]: null }).eq("id", eventId);
   if (error) throw new Error(error.message);
   revalidatePath(`/racha/${eventId}/mvp`);
+  revalidatePath(`/racha/${eventId}/resumo`);
   revalidatePath("/ranking");
   revalidatePath("/historico");
 }
