@@ -68,10 +68,16 @@ export function formatMonthLabel(monthKey: string) {
   });
 }
 
+/** "2026-11-15" cai num domingo? (a data do racha não tem fuso, então lê em UTC) */
+export function isSundayDate(date: string) {
+  return new Date(`${date.slice(0, 10)}T12:00:00Z`).getUTCDay() === 0;
+}
+
 export async function getMonthlyReport(
   supabase: SupabaseClient,
   community: Community,
   requestedMonth: string,
+  options: { onlySundays?: boolean } = {},
 ): Promise<MonthlyReport> {
   const monthKey = normalizeMonthKey(requestedMonth);
   const { start, nextStart } = monthRange(monthKey);
@@ -84,7 +90,9 @@ export async function getMonthlyReport(
     .order("date", { ascending: true });
   if (eventError) throw new Error(eventError.message);
 
-  const finishedEvents = (eventRows ?? []).filter((event) => event.status === "finished");
+  const finishedEvents = (eventRows ?? []).filter(
+    (event) => event.status === "finished" && (!options.onlySundays || isSundayDate(event.date)),
+  );
   const finishedEventIds = finishedEvents.map((event) => event.id);
   const unlocked = finishedEvents.length >= MONTHLY_REPORT_REQUIRED_EVENTS;
   const emptyReport: MonthlyReport = {

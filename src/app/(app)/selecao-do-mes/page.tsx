@@ -2,7 +2,7 @@ import { CalendarDays, Crown, LockKeyhole, Sparkles, Trophy, UsersRound } from "
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
-import { currentMonthKey, formatMonthLabel, getMonthlyReport, normalizeMonthKey } from "@/lib/monthlyReport";
+import { currentMonthKey, formatMonthLabel, getMonthlyReport, isSundayDate, normalizeMonthKey } from "@/lib/monthlyReport";
 import { getMonthlySelection } from "@/lib/monthlySelection";
 import { MonthlySelectionCourt } from "@/components/MonthlySelectionCourt";
 
@@ -20,7 +20,8 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
 
   const finishedCountByMonth = new Map<string, number>();
   for (const event of eventRows ?? []) {
-    if (event.status !== "finished") continue;
+    // A seleção só conta rachas de domingo: sábado e outros dias ficam de fora.
+    if (event.status !== "finished" || !isSundayDate(event.date)) continue;
     const key = event.date.slice(0, 7);
     finishedCountByMonth.set(key, (finishedCountByMonth.get(key) ?? 0) + 1);
   }
@@ -33,7 +34,7 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
   const requested = (await searchParams).month;
   const defaultMonth = completedMonths[0] ?? currentMonthKey();
   const monthKey = normalizeMonthKey(requested, defaultMonth);
-  const report = await getMonthlyReport(supabase, community, monthKey);
+  const report = await getMonthlyReport(supabase, community, monthKey, { onlySundays: true });
   const isInauguralEdition = community === "court" && monthKey === INAUGURAL_SELECTION_MONTH && report.finishedEvents.length >= 3;
   const selectionUnlocked = report.unlocked || isInauguralEdition;
   const selection = getMonthlySelection({ ...report, unlocked: selectionUnlocked });
@@ -62,12 +63,12 @@ export default async function MonthlySelectionPage({ searchParams }: { searchPar
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-300/10 text-amber-200"><LockKeyhole className="h-6 w-6" /></span>
           <h2 className="mt-4 text-lg font-black text-white">A seleção ainda está em formação</h2>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/55">
-            {remaining === 1 ? "Falta encerrar mais 1 racha deste mês." : `Faltam encerrar mais ${remaining} rachas deste mês.`} A quadra será liberada automaticamente ao completar quatro.
+            {remaining === 1 ? "Falta encerrar mais 1 racha de domingo deste mês." : `Faltam encerrar mais ${remaining} rachas de domingo deste mês.`} A quadra será liberada automaticamente ao completar quatro.
           </p>
           <div className="mx-auto mt-5 flex max-w-xs items-center gap-2">
             {[0, 1, 2, 3].map((index) => <span key={index} className={`h-2 flex-1 rounded-full ${index < report.finishedEvents.length ? "bg-amber-300" : "bg-white/10"}`} />)}
           </div>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-white/35">{report.finishedEvents.length}/4 rachas encerrados</p>
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-white/35">{report.finishedEvents.length}/4 rachas de domingo encerrados</p>
         </section>
       ) : selection.complete ? (
         <div className="mt-6 space-y-4">
