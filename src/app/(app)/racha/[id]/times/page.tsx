@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
 import { Medal, RefreshCw, Trophy } from "lucide-react";
@@ -77,7 +78,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
   const canManage = profile.is_organizer && event.status !== "cancelled";
   const canRegenerate = canManage && event.status !== "finished";
   const isTournament = event.is_pre_torneio || event.is_mini_torneio;
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, id, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
 
   let teams: {
     id: string;

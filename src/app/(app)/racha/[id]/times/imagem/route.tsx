@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
@@ -136,7 +137,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (memberError || confirmedError || setterOverrideError) return new Response("Não foi possível carregar os jogadores", { status: 500 });
 
   const confirmedIds = new Set((confirmedRows ?? []).map((row) => row.profile_id));
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, id, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
   const players = await embedAvatarUrls((memberRows ?? []).filter((row) => confirmedIds.has(row.profile_id)).map((row) => {
     const profile = row.profiles as unknown as { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
     return { id: row.profile_id, teamId: row.team_id, fullName: profile?.full_name ?? "Jogador", avatarUrl: profile?.avatar_url ?? null, isSetter: setterOverrides.get(row.profile_id) ?? profile?.is_setter ?? false };

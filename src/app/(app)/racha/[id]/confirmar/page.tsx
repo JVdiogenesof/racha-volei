@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { canSeePlayerNotes } from "@/lib/noteVisibility";
 import { notFound } from "next/navigation";
 import { Check, X, Rocket, Undo2, ArrowLeftRight, Star, Phone, CircleDollarSign, ChevronDown, Settings2, Volleyball, AlarmClock } from "lucide-react";
@@ -39,6 +40,26 @@ import { PixReservationButton } from "@/components/PixReservationButton";
 import { PaymentConfirmedBanner } from "@/components/PaymentConfirmedBanner";
 import { ForfeitPixSpotButton } from "@/components/ForfeitPixSpotButton";
 
+/** "qui 19/11 às 20:00:51": quando a pessoa entrou na lista e confirmou (horário de Fortaleza). */
+function confirmedAtLabel(iso: string) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Fortaleza",
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(iso))
+      .map((part) => [part.type, part.value]),
+  );
+  return `${String(parts.weekday).replace(".", "")} ${parts.day}/${parts.month} às ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+
 export default async function ConfirmarPresencaPage({
   params,
   searchParams,
@@ -63,7 +84,7 @@ export default async function ConfirmarPresencaPage({
         .maybeSingle(),
       supabase
         .from("attendance")
-        .select("profile_id, status, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, avatar_frame, is_setter, status)")
+        .select("profile_id, status, confirmed_at, uses_newcomer_spot, uses_setter_spot, profiles(full_name, avatar_url, avatar_frame, is_setter, status)")
         .eq("event_id", id)
         .order("confirmed_at", { ascending: true }),
       supabase.from("attendance").select("status, confirmed_at").eq("event_id", id).eq("profile_id", profile.id).maybeSingle(),
@@ -243,7 +264,7 @@ export default async function ConfirmarPresencaPage({
   const paidProfileIds = new Set((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => payment.profile_id));
   const paymentSourceByProfile = new Map((paymentRows ?? []).filter((payment) => payment.paid).map((payment) => [payment.profile_id, payment.payment_source]));
   const paidConfirmedCount = confirmados.filter((attendance) => paidProfileIds.has(attendance.profile_id)).length;
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, id, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
   const lockedProfileIds = new Set((lockedRows ?? []).map((row) => row.profile_id));
   const qualificationExceptionIds = new Set((qualificationExceptions ?? []).map((row) => row.profile_id));
   const guaranteedOptions = (approvedProfiles ?? [])
@@ -878,6 +899,9 @@ export default async function ConfirmarPresencaPage({
                     <Avatar src={p?.avatar_url} name={p?.full_name ?? "?"} size="sm" frame={p?.avatar_frame} />
                     <div className="min-w-0 flex-1 pt-0.5">
                       <p className={`break-words text-[15px] text-white ${isGuest ? "font-bold" : "font-semibold"}`}>{p?.full_name}{a.profile_id === profile.id && <span className="ml-1.5 text-xs font-bold text-purple-200">(você)</span>}</p>
+                      {a.confirmed_at && (
+                        <p className="mt-0.5 text-[11px] tabular-nums text-white/45">Confirmou {confirmedAtLabel(a.confirmed_at)}</p>
+                      )}
                       <div className="mt-1.5 flex min-h-5 flex-wrap items-center gap-1.5">
                         {isGuest && (
                           <span className="inline-flex rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-black tracking-wide text-cyan-200">

@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
 import { embedAvatarUrls } from "@/lib/serverImageData";
@@ -44,7 +45,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!event.official_list_open) return new Response("A lista ainda não foi publicada", { status: 409 });
   if (event.status === "cancelled") return new Response("O racha foi cancelado", { status: 409 });
 
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, id, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
   const players = (attendanceRows ?? []).map((row) => {
     const profile = row.profiles as unknown as {
       full_name: string;

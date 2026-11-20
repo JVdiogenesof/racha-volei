@@ -1,5 +1,6 @@
 "use server";
 
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -107,7 +108,7 @@ export async function generateTeams(formData: FormData) {
     .from("event_setter_overrides")
     .select("profile_id, is_setter")
     .eq("event_id", eventId);
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, eventId, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
   const teamCapacity = event.num_teams * event.team_size;
   if (confirmed.length > teamCapacity) {
     throw new Error(
@@ -271,7 +272,7 @@ export async function simulateTeams(eventId: string, previousSignature?: string,
     .from("event_setter_overrides")
     .select("profile_id, is_setter")
     .eq("event_id", eventId);
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, eventId, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
   const teamCapacity = event.num_teams * event.team_size;
   if (confirmed.length > teamCapacity) {
     throw new Error(`Esse formato comporta no máximo ${teamCapacity} jogadores.`);

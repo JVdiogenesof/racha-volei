@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { withConfirmedSetterSpots } from "@/lib/eventSetters";
 import { getRatingsFor, getRatingWeights } from "@/lib/ratings";
 import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 
@@ -33,7 +34,7 @@ export async function getConfirmedHighlights(
     getRatingsFor(supabase, confirmedIds),
     getRatingWeights(supabase),
   ]);
-  const setterOverrides = new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter]));
+  const setterOverrides = await withConfirmedSetterSpots(supabase, eventId, new Map((setterOverrideRows ?? []).map((row) => [row.profile_id, row.is_setter])));
 
   const ranked = (profiles ?? [])
     .map((p) => {
