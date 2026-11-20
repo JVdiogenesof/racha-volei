@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { BackButton } from "@/components/BackButton";
@@ -13,6 +13,7 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { PaymentNotices } from "@/components/PaymentNotices";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { ProfileNewsPrompt } from "@/components/ProfileNewsPrompt";
+import { BadgeCelebrationGate } from "@/components/BadgeCelebrationGate";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const profile = await requireProfile();
@@ -26,6 +27,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <NavigationFeedback />
       <PwaInstallPrompt />
       {(profile.status === "approved" || profile.is_organizer) && <PushPermissionPrompt />}
+      {profile.status === "approved" && <Suspense fallback={null}><BadgeCelebrationGate profileId={profile.id} /></Suspense>}
       {profile.status === "approved" && <ProfileNewsPrompt name={profile.full_name} avatarUrl={profile.avatar_url} />}
       <NavBar profile={profile} chromeData={chromeData} />
       {isVisitor && <VisitorModeBanner invited={profile.status === "guest"} />}

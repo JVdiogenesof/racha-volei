@@ -249,3 +249,13 @@ export async function resetAvatarToGoogle(): Promise<AvatarResult> {
     return { ok: false, error: "Não foi possível voltar a foto agora. Tente de novo." };
   }
 }
+
+/** Marca medalhas do organizador como já comemoradas (a animação não repete). */
+export async function markBadgesSeen(awardIds: string[]) {
+  await requireMember();
+  const ids = [...new Set(awardIds)].filter((id) => /^[0-9a-f-]{36}$/i.test(id)).slice(0, 50);
+  if (!ids.length) return;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_badges_seen", { p_award_ids: ids });
+  if (error) throw new Error(error.message);
+}
