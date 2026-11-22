@@ -609,6 +609,15 @@ export const cupQualifiedPlayers = pgTable("cup_qualified_players", {
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("cup_qualified_players_cup_id_profile_id_key").on(t.cupId, t.profileId)]);
 
+export const cupExcludedPlayers = pgTable("cup_excluded_players", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  cupId: uuid("cup_id").notNull().references(() => cups.id, { onDelete: "cascade" }),
+  profileId: uuid("profile_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  reason: text("reason"),
+  addedBy: uuid("added_by").notNull().references(() => profiles.id),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("cup_excluded_players_cup_id_profile_id_key").on(t.cupId, t.profileId)]);
+
 export const mvpVotes = pgTable(
   "mvp_votes",
   {

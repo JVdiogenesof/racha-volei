@@ -6,6 +6,7 @@ import { requireOrganizer } from "@/lib/auth";
 import { sendPushToProfiles } from "@/lib/push";
 import { applyAttendancePolicy } from "@/lib/attendancePolicy";
 import type { Community } from "@/lib/community";
+import { COPA_PATH, settleCupAfterEventFinished } from "@/lib/copaVpa";
 
 export async function startEvent(formData: FormData) {
   await requireOrganizer();
@@ -53,6 +54,13 @@ export async function finishEvent(formData: FormData) {
 
   await applyAttendancePolicy(supabase, finishedEvent.community as Community);
 
+  // Última classificatória da copa: com o racha encerrado o Índice está final e as vagas do ranking saem.
+  try {
+    await settleCupAfterEventFinished(supabase, eventId, organizer.id);
+  } catch (error) {
+    console.error("[copa] Não foi possível distribuir as vagas do ranking ao encerrar o racha", error);
+  }
+
   const { data: organizers } = await supabase
     .from("profiles")
     .select("id")
@@ -69,5 +77,6 @@ export async function finishEvent(formData: FormData) {
   revalidatePath("/racha");
   revalidatePath("/admin/jogadores");
   revalidatePath("/admin/atividade");
+  revalidatePath(COPA_PATH);
 }
 

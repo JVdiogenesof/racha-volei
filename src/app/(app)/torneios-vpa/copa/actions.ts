@@ -10,6 +10,7 @@ import {
   countQualifiedSetters,
   missingSetterSlots,
   pickFromRankingQueue,
+  getCupExcludedIds,
   getCupRankingQueue,
   linkEventToCup,
   lockCupPlayersIntoFinal,
@@ -243,6 +244,9 @@ export async function addCupPlayer(formData: FormData) {
   const cup = await loadCup(supabase, requiredId(formData, "cupId", "a copa"));
   const profileId = requiredId(formData, "profileId", "o jogador");
 
+  // Colocar de volta na copa desfaz a desistência.
+  await supabase.from("cup_excluded_players").delete().eq("cup_id", cup.id).eq("profile_id", profileId);
+
   const { error } = await supabase.from("cup_qualified_players").insert({
     cup_id: cup.id,
     profile_id: profileId,
@@ -271,7 +275,8 @@ export async function fillCupSpotFromRanking(formData: FormData) {
   if (qualifiedError) throw new Error(qualifiedError.message);
   if ((qualified?.length ?? 0) >= cup.num_teams * cup.team_size) throw new Error("Todas as vagas da copa já estão preenchidas.");
 
-  const queue = await getCupRankingQueue(supabase, cup.community, new Set((qualified ?? []).map((row) => row.profile_id)));
+  const excluded = await getCupExcludedIds(supabase, cup.id);
+  const queue = await getCupRankingQueue(supabase, cup.community, new Set([...(qualified ?? []).map((row) => row.profile_id), ...excluded]));
   const setterSlots = missingSetterSlots(cup, await countQualifiedSetters(supabase, cup.id));
   const next = pickFromRankingQueue(queue, 1, setterSlots)[0];
   if (!next) throw new Error("Não há mais ninguém na fila do ranking.");
@@ -291,13 +296,21 @@ export async function fillCupSpotFromRanking(formData: FormData) {
 }
 
 export async function removeCupPlayer(formData: FormData) {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
   const supabase = await createClient();
   const cup = await loadCup(supabase, requiredId(formData, "cupId", "a copa"));
   const profileId = requiredId(formData, "profileId", "o jogador");
 
   const { error } = await supabase.from("cup_qualified_players").delete().eq("cup_id", cup.id).eq("profile_id", profileId);
   if (error) throw new Error(error.message);
+  // Quem sai da copa não volta sozinho por campeão nem pela fila do ranking.
+  const { error: excludeError } = await supabase
+    .from("cup_excluded_players")
+    .upsert(
+      { cup_id: cup.id, profile_id: profileId, reason: "Retirado da copa pela organização", added_by: organizer.id },
+      { onConflict: "cup_id,profile_id", ignoreDuplicates: true },
+    );
+  if (excludeError) throw new Error(excludeError.message);
   await releaseCupPlayerFromFinal(supabase, cup.id, profileId);
 
   revalidateCup([cup.final_event_id]);

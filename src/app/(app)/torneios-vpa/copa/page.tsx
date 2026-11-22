@@ -15,7 +15,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getActiveCommunity, COMMUNITY_INFO } from "@/lib/community";
-import { cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCupRankingQueue, getEventChampionIds, getFeaturedCup, missingSetterSlots, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
+import { cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCupExcludedIds, getCupRankingQueue, getEventChampionIds, getFeaturedCup, missingSetterSlots, type Cup, type CupQualifiedSource } from "@/lib/copaVpa";
 import { Avatar } from "@/components/Avatar";
 import { ActionForm } from "@/components/ActionForm";
 import { ConfirmActionButton } from "@/components/ConfirmActionButton";
@@ -129,7 +129,7 @@ export default async function CopaVpaPage() {
           .in("event_id", qualifierEventIds)
           .eq("stage", "final")
       : Promise.resolve({ data: [] as { event_id: string; score_a: number | null; score_b: number | null }[] }),
-    getCupRankingQueue(supabase, community, qualifiedIds),
+    getCupExcludedIds(supabase, cup.id).then((excluded) => getCupRankingQueue(supabase, community, new Set([...qualifiedIds, ...excluded]))),
     cup.final_event_id
       ? supabase.from("event_locked_players").select("profile_id").eq("event_id", cup.final_event_id)
       : Promise.resolve({ data: [] as { profile_id: string }[] }),
