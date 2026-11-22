@@ -23,7 +23,7 @@ export default async function CopaSorteioPage() {
     supabase.from("cup_team_members").select("id", { count: "exact", head: true }).eq("cup_id", cup.id),
     supabase
       .from("cup_qualified_players")
-      .select("profile_id, player:profiles!cup_qualified_players_profile_id_fkey(full_name, avatar_url, avatar_frame, is_setter)")
+      .select("profile_id, plays_as_setter, player:profiles!cup_qualified_players_profile_id_fkey(full_name, avatar_url, avatar_frame, is_setter)")
       .eq("cup_id", cup.id),
     profile.is_organizer ? getDrawPool(supabase, cup).catch(() => null) : Promise.resolve(null),
   ]);
@@ -38,9 +38,9 @@ export default async function CopaSorteioPage() {
 
   // Rostos da roleta: quem entra no sorteio (com confirmação, só os confirmados; a lista de classificados já é pública).
   const inDraw = drawPool ? new Set(drawPool.pool.map((row) => row.profileId)) : null;
-  const pool: PoolPlayer[] = ((qualifiedRows ?? []) as unknown as { profile_id: string; player: { full_name: string; avatar_url: string | null; avatar_frame: string | null; is_setter: boolean } | null }[])
+  const pool: PoolPlayer[] = ((qualifiedRows ?? []) as unknown as { profile_id: string; plays_as_setter: boolean; player: { full_name: string; avatar_url: string | null; avatar_frame: string | null; is_setter: boolean } | null }[])
     .filter((row) => row.player && (!inDraw || inDraw.has(row.profile_id)))
-    .map((row) => ({ id: row.profile_id, name: row.player!.full_name, avatar: row.player!.avatar_url, frame: row.player!.avatar_frame, isSetter: row.player!.is_setter }));
+    .map((row) => ({ id: row.profile_id, name: row.player!.full_name, avatar: row.player!.avatar_url, frame: row.player!.avatar_frame, isSetter: row.plays_as_setter }));
 
   // Antes do sorteio ser preparado, a tela já mostra os times (só a identidade) para a galera esperar ali.
   const shownTeams: CupTeam[] = (teams ?? []).length

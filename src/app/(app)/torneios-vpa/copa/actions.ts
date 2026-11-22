@@ -12,6 +12,7 @@ import {
   pickFromRankingQueue,
   getCupExcludedIds,
   getCupRankingQueue,
+  refreshCupSetters,
   linkEventToCup,
   lockCupPlayersIntoFinal,
   releaseCupPlayerFromFinal,
@@ -257,6 +258,7 @@ export async function addCupPlayer(formData: FormData) {
     if (error.code === "23505") throw new Error("Essa pessoa já está classificada.");
     throw new Error(error.message);
   }
+  await refreshCupSetters(supabase, cup.id);
   const failed = await lockCupPlayersIntoFinal(supabase, cup.id, [profileId]);
 
   revalidateCup([cup.final_event_id]);
@@ -289,6 +291,7 @@ export async function fillCupSpotFromRanking(formData: FormData) {
     added_by: organizer.id,
   });
   if (error) throw new Error(error.message);
+  await refreshCupSetters(supabase, cup.id);
   await lockCupPlayersIntoFinal(supabase, cup.id, [next.profileId]);
 
   revalidateCup([cup.final_event_id]);
@@ -311,6 +314,7 @@ export async function removeCupPlayer(formData: FormData) {
       { onConflict: "cup_id,profile_id", ignoreDuplicates: true },
     );
   if (excludeError) throw new Error(excludeError.message);
+  await refreshCupSetters(supabase, cup.id);
   await releaseCupPlayerFromFinal(supabase, cup.id, profileId);
 
   revalidateCup([cup.final_event_id]);

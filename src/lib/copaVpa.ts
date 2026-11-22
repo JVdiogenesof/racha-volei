@@ -150,14 +150,78 @@ export function missingSetterSlots(cup: Pick<Cup, "num_teams">, qualifiedSetters
   return Math.max(0, cup.num_teams - qualifiedSetters);
 }
 
-/** Quantos classificados são levantadores. */
+/** Quantos classificados jogam de levantador na copa (um por time, no máximo). */
 export async function countQualifiedSetters(supabase: SupabaseClient, cupId: string) {
+  const { count, error } = await supabase
+    .from("cup_qualified_players")
+    .select("profile_id", { count: "exact", head: true })
+    .eq("cup_id", cupId)
+    .eq("plays_as_setter", true);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/**
+ * Só jogam de levantador os primeiros levantadores classificados (um por time):
+ * quem entrou no racha numa vaga de levantador vem primeiro, depois a ordem de
+ * classificação. Os demais levantadores do cadastro jogam como jogadores normais.
+ */
+export async function refreshCupSetters(supabase: SupabaseClient, cupId: string) {
+  const cup = await getCup(supabase, cupId);
   const { data, error } = await supabase
     .from("cup_qualified_players")
-    .select("profile_id, player:profiles!cup_qualified_players_profile_id_fkey(is_setter)")
+    .select("id, profile_id, source_event_id, added_at, plays_as_setter, player:profiles!cup_qualified_players_profile_id_fkey(is_setter)")
     .eq("cup_id", cupId);
   if (error) throw new Error(error.message);
-  return (data ?? []).filter((row) => Boolean((row.player as unknown as { is_setter: boolean } | null)?.is_setter)).length;
+  const rows = (data ?? []) as unknown as {
+    id: string;
+    profile_id: string;
+    source_event_id: string | null;
+    added_at: string;
+    plays_as_setter: boolean;
+    player: { is_setter: boolean } | null;
+  }[];
+  const candidates = rows.filter((row) => row.player?.is_setter);
+
+  const eventIds = [...new Set(candidates.map((row) => row.source_event_id).filter((id): id is string => Boolean(id)))];
+  const [{ data: events }, { data: attendance }] = eventIds.length
+    ? await Promise.all([
+        supabase.from("events").select("id, date").in("id", eventIds),
+        supabase
+          .from("attendance")
+          .select("event_id, profile_id, uses_setter_spot")
+          .in("event_id", eventIds)
+          .in("profile_id", candidates.map((row) => row.profile_id)),
+      ])
+    : [{ data: [] as { id: string; date: string }[] }, { data: [] as { event_id: string; profile_id: string; uses_setter_spot: boolean }[] }];
+  const dateByEvent = new Map((events ?? []).map((event) => [event.id as string, event.date as string]));
+  const usedSetterSpot = new Set(
+    (attendance ?? []).filter((row) => row.uses_setter_spot).map((row) => `${row.event_id}:${row.profile_id}`),
+  );
+
+  const chosen = new Set(
+    [...candidates]
+      .sort((a, b) => {
+        const spotA = a.source_event_id && usedSetterSpot.has(`${a.source_event_id}:${a.profile_id}`) ? 0 : 1;
+        const spotB = b.source_event_id && usedSetterSpot.has(`${b.source_event_id}:${b.profile_id}`) ? 0 : 1;
+        const dateA = a.source_event_id ? (dateByEvent.get(a.source_event_id) ?? "9999") : "9999";
+        const dateB = b.source_event_id ? (dateByEvent.get(b.source_event_id) ?? "9999") : "9999";
+        return spotA - spotB || dateA.localeCompare(dateB) || a.added_at.localeCompare(b.added_at);
+      })
+      .slice(0, cup.num_teams)
+      .map((row) => row.id),
+  );
+
+  const turnOn = rows.filter((row) => chosen.has(row.id) && !row.plays_as_setter).map((row) => row.id);
+  const turnOff = rows.filter((row) => !chosen.has(row.id) && row.plays_as_setter).map((row) => row.id);
+  if (turnOn.length) {
+    const { error: onError } = await supabase.from("cup_qualified_players").update({ plays_as_setter: true }).in("id", turnOn);
+    if (onError) throw new Error(onError.message);
+  }
+  if (turnOff.length) {
+    const { error: offError } = await supabase.from("cup_qualified_players").update({ plays_as_setter: false }).in("id", turnOff);
+    if (offError) throw new Error(offError.message);
+  }
 }
 
 /**
@@ -434,6 +498,7 @@ export async function settleCupRankingSpots(
     if (insertError) throw new Error(insertError.message);
   }
 
+  await refreshCupSetters(supabase, cup.id);
   const currentIds = rows.map((row) => row.profile_id);
   await releaseFromFinal(supabase, cup, previousAuto.filter((id) => !currentIds.includes(id)));
   await lockIntoFinal(supabase, cup, currentIds);

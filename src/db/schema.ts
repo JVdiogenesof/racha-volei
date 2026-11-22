@@ -605,6 +605,7 @@ export const cupQualifiedPlayers = pgTable("cup_qualified_players", {
   sourceEventId: uuid("source_event_id").references(() => events.id, { onDelete: "set null" }),
   replacesProfileId: uuid("replaces_profile_id").references(() => profiles.id, { onDelete: "set null" }),
   rankingPosition: integer("ranking_position"),
+  playsAsSetter: boolean("plays_as_setter").notNull().default(false),
   addedBy: uuid("added_by").notNull().references(() => profiles.id),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("cup_qualified_players_cup_id_profile_id_key").on(t.cupId, t.profileId)]);

@@ -61,7 +61,7 @@ export type DrawReadiness = {
  */
 export async function getDrawPool(supabase: SupabaseClient, cup: Pick<Cup, "id" | "num_teams" | "team_size" | "confirm_deadline">) {
   const [{ data: qualified, error }, { data: confirmations, error: confirmError }] = await Promise.all([
-    supabase.from("cup_qualified_players").select("profile_id, profiles!cup_qualified_players_profile_id_fkey(is_setter)").eq("cup_id", cup.id),
+    supabase.from("cup_qualified_players").select("profile_id, plays_as_setter").eq("cup_id", cup.id),
     supabase.from("cup_confirmations").select("profile_id").eq("cup_id", cup.id).eq("status", "confirmed"),
   ]);
   if (error) throw new Error(error.message);
@@ -70,7 +70,7 @@ export async function getDrawPool(supabase: SupabaseClient, cup: Pick<Cup, "id" 
   const usesConfirmation = Boolean(cup.confirm_deadline);
   const rows = (qualified ?? []).map((row) => ({
     profileId: row.profile_id as string,
-    isSetter: Boolean((row.profiles as unknown as { is_setter: boolean } | null)?.is_setter),
+    isSetter: Boolean(row.plays_as_setter),
   }));
   const pool = usesConfirmation ? rows.filter((row) => confirmed.has(row.profileId)) : rows;
   const readiness: DrawReadiness = {

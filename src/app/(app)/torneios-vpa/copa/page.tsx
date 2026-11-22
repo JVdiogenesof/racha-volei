@@ -46,6 +46,7 @@ type QualifiedRow = {
   replaces_profile_id: string | null;
   ranking_position: number | null;
   added_at: string;
+  plays_as_setter: boolean;
   player: { full_name: string; avatar_url: string | null; is_setter: boolean } | null;
   replaced: { full_name: string } | null;
 };
@@ -90,7 +91,7 @@ export default async function CopaVpaPage() {
     supabase
       .from("cup_qualified_players")
       .select(
-        "profile_id, source, source_event_id, replaces_profile_id, ranking_position, added_at, player:profiles!cup_qualified_players_profile_id_fkey(full_name, avatar_url, is_setter), replaced:profiles!cup_qualified_players_replaces_profile_id_fkey(full_name)",
+        "profile_id, source, source_event_id, replaces_profile_id, ranking_position, added_at, plays_as_setter, player:profiles!cup_qualified_players_profile_id_fkey(full_name, avatar_url, is_setter), replaced:profiles!cup_qualified_players_replaces_profile_id_fkey(full_name)",
       )
       .eq("cup_id", cup.id)
       .order("added_at", { ascending: true }),
@@ -161,7 +162,7 @@ export default async function CopaVpaPage() {
   const myQueueIndex = (rankingQueue.find((candidate) => candidate.profileId === profile.id)?.isSetter ? rankingSetters : rankingPlayers).findIndex(
     (candidate) => candidate.profileId === profile.id,
   );
-  const settersQualified = qualified.filter((row) => row.player?.is_setter).length;
+  const settersQualified = qualified.filter((row) => row.plays_as_setter).length;
   const setterSlots = missingSetterSlots(cup, settersQualified);
   const lastQualifierDate = [...cup.qualifier_dates, ...qualifierEvents.map((event) => event.date)].sort().at(-1) ?? null;
   const lastQualifierLabel = lastQualifierDate ? shortDate(lastQualifierDate) : null;
@@ -362,7 +363,7 @@ export default async function CopaVpaPage() {
                 <p className="break-words text-sm font-semibold text-white">{row.player?.full_name}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-1">
                   <SourceChip row={row} eventDateById={eventDateById} />
-                  {row.player?.is_setter && <SetterBadge />}
+                  {row.plays_as_setter && <SetterBadge />}
                   {cup.confirm_deadline && confirmations.get(row.profile_id)?.status === "confirmed" && (
                     <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-200">
                       <BadgeCheck className="h-3 w-3" strokeWidth={2.25} /> Confirmado
