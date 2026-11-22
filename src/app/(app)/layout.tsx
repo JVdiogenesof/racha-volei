@@ -14,6 +14,7 @@ import { PaymentNotices } from "@/components/PaymentNotices";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { ProfileNewsPrompt } from "@/components/ProfileNewsPrompt";
 import { BadgeCelebrationGate } from "@/components/BadgeCelebrationGate";
+import { ViewportRecovery } from "@/components/ViewportRecovery";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const profile = await requireProfile();
@@ -25,6 +26,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <div className={`community-shell flex min-h-screen flex-1 flex-col pb-[calc(5.25rem+env(safe-area-inset-bottom))] lg:pb-0 community-court`}>
       <div key={community} aria-hidden="true" className={`community-aura community-aura-${community}`} />
       <NavigationFeedback />
+      <ViewportRecovery />
       <PwaInstallPrompt />
       {(profile.status === "approved" || profile.is_organizer) && <PushPermissionPrompt />}
       {profile.status === "approved" && <Suspense fallback={null}><BadgeCelebrationGate profileId={profile.id} /></Suspense>}
