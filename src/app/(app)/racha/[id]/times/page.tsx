@@ -27,6 +27,7 @@ import { TeamsWorkspaceTabs } from "@/components/TeamsWorkspaceTabs";
 import { teamFormatLabel } from "@/lib/rachaFormat";
 import { getActiveCommunity } from "@/lib/community";
 import { teamDisplayName } from "@/lib/teamNames";
+import { FloatingDock } from "@/components/FloatingDock";
 import { teamBrandFor } from "@/lib/teamLogos";
 import { TeamBadge } from "@/components/TeamBadge";
 import { ShareTeamArtButton } from "@/components/ShareTeamArtButton";
@@ -285,7 +286,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
       </header>
 
       {showActionDock && (
-        <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        <FloatingDock>
           {canRegenerate && (
             <TeamsGenerationDock
               eventId={id}
@@ -310,7 +311,7 @@ export default async function TimesPage({ params }: { params: Promise<{ id: stri
               <Trophy className="h-5 w-5" />
             </Link>
           )}
-        </div>
+        </FloatingDock>
       )}
 
       {generation && canManage && orphanedMembers.length > 0 && (

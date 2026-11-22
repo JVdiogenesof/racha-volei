@@ -1,7 +1,9 @@
 "use client";
 
 import { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { UserRoundPlus, X } from "lucide-react";
+import { FloatingDock, useBodyPortalReady } from "@/components/FloatingDock";
 
 export function OrganizerListDock({
   summary,
@@ -15,6 +17,7 @@ export function OrganizerListDock({
   children: ReactNode;
 }) {
   const [managerOpen, setManagerOpen] = useState(false);
+  const portalReady = useBodyPortalReady();
 
   useEffect(() => {
     if (!managerOpen) return;
@@ -35,7 +38,7 @@ export function OrganizerListDock({
 
   return (
     <>
-      <div className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+      <FloatingDock>
         <span className="hidden max-w-52 truncate pl-2 pr-1 text-[11px] font-medium text-white/55 sm:block">
           {summary}
         </span>
@@ -54,9 +57,9 @@ export function OrganizerListDock({
             </span>
           )}
         </button>
-      </div>
+      </FloatingDock>
 
-      {managerOpen && (
+      {managerOpen && portalReady && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-5"
           onMouseDown={(event) => {
@@ -85,7 +88,8 @@ export function OrganizerListDock({
             </div>
             <div className="space-y-3">{children}</div>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
