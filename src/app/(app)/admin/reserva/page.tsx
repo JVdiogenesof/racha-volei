@@ -58,6 +58,10 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
   const level = single(filters.level);
   const neighborhood = single(filters.neighborhood);
   const role = single(filters.role);
+  const member = single(filters.member);
+  const tournaments = single(filters.tournaments);
+  const shirt = single(filters.shirt);
+  const heard = single(filters.heard);
   // Por padrão só aparece quem ainda não foi chamado; quem já foi chamado fica oculto na aba própria.
   const view = single(filters.view) === "called" ? "called" : single(filters.view) === "all" ? "all" : "pending";
   const neighborhoods = [...new Set((rows ?? []).map((row) => row.neighborhood?.trim()).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -73,6 +77,20 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
     if (neighborhood && row.neighborhood !== neighborhood) return false;
     if (role === "setter" && !profile?.is_setter) return false;
     if (role === "attacker" && profile?.is_setter) return false;
+    if (member === "yes" && row.wants_official_membership !== true) return false;
+    if (member === "no" && row.wants_official_membership !== false) return false;
+    if (tournaments === "yes" && profile?.wants_tournaments !== true) return false;
+    if (tournaments === "no" && profile?.wants_tournaments !== false) return false;
+    if (shirt === "yes" && profile?.has_vpa_shirt !== true) return false;
+    if (shirt === "no" && profile?.has_vpa_shirt === true) return false;
+    if (heard) {
+      const text = (row.how_heard ?? "").toLocaleLowerCase("pt-BR");
+      const fromInstagram = /insta/.test(text);
+      const fromFriends = /amig|conhecid|colega|indica/.test(text);
+      if (heard === "instagram" && !fromInstagram) return false;
+      if (heard === "friends" && !fromFriends) return false;
+      if (heard === "other" && (fromInstagram || fromFriends)) return false;
+    }
     return true;
   };
 
@@ -90,10 +108,11 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
       return calledA - calledB || a.created_at.localeCompare(b.created_at);
     });
 
-  const hasFilter = Boolean(query || level || neighborhood || role);
+  const hasFilter = Boolean(query || level || neighborhood || role || member || tournaments || shirt || heard);
+  const moreFiltersCount = [neighborhood, member, tournaments, shirt, heard].filter(Boolean).length;
   const hrefWith = (overrides: Record<string, string>) => {
     const params = new URLSearchParams();
-    const next: Record<string, string> = { q: single(filters.q), level, neighborhood, role, view: view === "pending" ? "" : view, ...overrides };
+    const next: Record<string, string> = { q: single(filters.q), level, neighborhood, role, member, tournaments, shirt, heard, view: view === "pending" ? "" : view, ...overrides };
     for (const [key, value] of Object.entries(next)) if (value) params.set(key, value);
     const text = params.toString();
     return text ? `/admin/reserva?${text}` : "/admin/reserva";
@@ -119,8 +138,6 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
 
       <form action="/admin/reserva" method="get" className="space-y-2">
         {view !== "pending" && <input type="hidden" name="view" value={view} />}
-        {level && <input type="hidden" name="level" value={level} />}
-        {role && <input type="hidden" name="role" value={role} />}
         <div className="flex gap-2">
           <label className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -131,20 +148,32 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
 
         <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
           <QuickChip href={hrefWith({ role: role === "setter" ? "" : "setter" })} active={role === "setter"} label="Levantadores" />
+          <QuickChip href={hrefWith({ role: role === "attacker" ? "" : "attacker" })} active={role === "attacker"} label="Não levantadores" />
+          <QuickChip href={hrefWith({ member: member === "yes" ? "" : "yes" })} active={member === "yes"} label="Quer ser membro" />
+          <QuickChip href={hrefWith({ tournaments: tournaments === "yes" ? "" : "yes" })} active={tournaments === "yes"} label="Quer torneios" />
           <QuickChip href={hrefWith({ level: level === "beginner" ? "" : "beginner" })} active={level === "beginner"} label="Iniciantes" />
           <QuickChip href={hrefWith({ level: level === "intermediate" ? "" : "intermediate" })} active={level === "intermediate"} label="Intermediários" />
           <QuickChip href={hrefWith({ level: level === "advanced" ? "" : "advanced" })} active={level === "advanced"} label="Avançados" />
-          {hasFilter && <QuickChip href={hrefWith({ q: "", level: "", neighborhood: "", role: "" })} active={false} label="Limpar filtros" />}
+          {hasFilter && <QuickChip href={hrefWith({ q: "", level: "", neighborhood: "", role: "", member: "", tournaments: "", shirt: "", heard: "" })} active={false} label="Limpar filtros" />}
         </div>
 
-        <details className="rounded-xl border border-white/10 bg-white/[0.02]" open={Boolean(neighborhood)}>
+        <details className="rounded-xl border border-white/10 bg-white/[0.02]" open={moreFiltersCount > 0}>
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-white/55">
-            <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-300" />Filtrar por bairro</span>
+            <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-300" />Mais filtros{moreFiltersCount > 0 ? ` · ${moreFiltersCount}` : ""}</span>
             <span className="text-white/35">{filteredRows.length} pessoa{filteredRows.length === 1 ? "" : "s"}</span>
           </summary>
-          <div className="grid gap-2 border-t border-white/10 p-3 sm:grid-cols-[1fr_auto]">
-            <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Todos os bairros" options={neighborhoods.map((item) => [item, item])} />
-            <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
+          <div className="grid gap-2 border-t border-white/10 p-3 sm:grid-cols-2 lg:grid-cols-4">
+            <FilterSelect name="role" defaultValue={role} label="Qualquer função" options={[["setter", "Levantadores"], ["attacker", "Não levantadores"]]} />
+            <FilterSelect name="level" defaultValue={level} label="Qualquer nível" options={[["beginner", "Iniciante"], ["intermediate", "Intermediário"], ["advanced", "Avançado"]]} />
+            <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Qualquer bairro" options={neighborhoods.map((item) => [item, item])} />
+            <FilterSelect name="member" defaultValue={member} label="Membro: tanto faz" options={[["yes", "Quer ser membro"], ["no", "Não quer ser membro"]]} />
+            <FilterSelect name="tournaments" defaultValue={tournaments} label="Torneios: tanto faz" options={[["yes", "Quer jogar torneios"], ["no", "Não quer torneios"]]} />
+            <FilterSelect name="shirt" defaultValue={shirt} label="Camisa VPA: tanto faz" options={[["yes", "Tem camisa VPA"], ["no", "Não tem camisa VPA"]]} />
+            <FilterSelect name="heard" defaultValue={heard} label="Conheceu por: qualquer" options={[["instagram", "Instagram"], ["friends", "Amigos e conhecidos"], ["other", "Outros"]]} />
+            <div className="flex items-center justify-end gap-2">
+              <Link href={hrefWith({ q: "", level: "", neighborhood: "", role: "", member: "", tournaments: "", shirt: "", heard: "" })} className="rounded-lg px-3 py-2 text-xs font-semibold text-white/55 hover:bg-white/5 hover:text-white">Limpar</Link>
+              <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
+            </div>
           </div>
         </details>
       </form>
