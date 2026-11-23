@@ -41,7 +41,7 @@ export default async function AdminPainelPage() {
   const opensLater = next?.registration_opens_at && new Date(next.registration_opens_at) > new Date();
 
   const pending: { href: string; icon: LucideIcon; title: string; detail: string; tone: string }[] = [];
-  if ((neverContacted.count ?? 0) > 0) pending.push({ href: "/admin/reserva?invitations=never", icon: Phone, title: `${neverContacted.count} ${neverContacted.count === 1 ? "cadastro nunca chamado" : "cadastros nunca chamados"}`, detail: "Chame antes do próximo racha", tone: "text-emerald-300" });
+  if ((neverContacted.count ?? 0) > 0) pending.push({ href: "/admin/reserva", icon: Phone, title: `${neverContacted.count} ${neverContacted.count === 1 ? "cadastro nunca chamado" : "cadastros nunca chamados"}`, detail: "Chame antes do próximo racha", tone: "text-emerald-300" });
   if ((shirts.count ?? 0) > 0) pending.push({ href: "/admin/camisas", icon: Shirt, title: `${shirts.count} ${shirts.count === 1 ? "pedido de camisa" : "pedidos de camisa"} sem pagamento completo`, detail: "Veja pendentes e parciais", tone: "text-amber-300" });
   for (const reminder of reminders.data ?? []) {
     pending.push({ href: "/admin/financas", icon: Bell, title: reminder.title, detail: reminder.due_date ? `Prazo ${formatDay(reminder.due_date)}` : "Agenda financeira", tone: "text-amber-300" });
@@ -95,7 +95,7 @@ export default async function AdminPainelPage() {
 
       <section className="grid grid-cols-3 gap-1.5">
         <Tile label="Na reserva" value={reserve.count ?? 0} href="/admin/reserva" />
-        <Tile label="Nunca chamados" value={neverContacted.count ?? 0} href="/admin/reserva?invitations=never" warn />
+        <Tile label="Nunca chamados" value={neverContacted.count ?? 0} href="/admin/reserva" warn />
         <Tile label="Camisas a receber" value={shirts.count ?? 0} href="/admin/camisas" warn />
       </section>
 

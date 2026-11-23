@@ -58,32 +58,46 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
   const level = single(filters.level);
   const neighborhood = single(filters.neighborhood);
   const role = single(filters.role);
-  const invitations = single(filters.invitations);
-  const sort = single(filters.sort) || "recent";
+  // Por padrão só aparece quem ainda não foi chamado; quem já foi chamado fica oculto na aba própria.
+  const view = single(filters.view) === "called" ? "called" : single(filters.view) === "all" ? "all" : "pending";
   const neighborhoods = [...new Set((rows ?? []).map((row) => row.neighborhood?.trim()).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-  const filteredRows = (rows ?? []).filter((row) => {
+  const pendingCount = (rows ?? []).filter((row) => invitationCountFor(row) === 0).length;
+  const calledCount = (rows ?? []).length - pendingCount;
+
+  const matchesFilters = (row: NonNullable<typeof rows>[number]) => {
     const profile = profileById.get(row.auth_user_id);
-    const invitationCount = invitationCountFor(row);
     const searchable = `${row.full_name} ${row.instagram_handle ?? ""} ${row.phone} ${row.neighborhood ?? ""}`.toLocaleLowerCase("pt-BR");
     if (query && !searchable.includes(query)) return false;
     if (level && row.player_level !== level) return false;
     if (neighborhood && row.neighborhood !== neighborhood) return false;
     if (role === "setter" && !profile?.is_setter) return false;
     if (role === "attacker" && profile?.is_setter) return false;
-    if (invitations === "never" && invitationCount !== 0) return false;
-    if (invitations === "once" && invitationCount !== 1) return false;
-    if (invitations === "multiple" && invitationCount < 2) return false;
     return true;
-  }).sort((a, b) => {
-    if (sort === "oldest") return a.created_at.localeCompare(b.created_at);
-    if (sort === "name") return a.full_name.localeCompare(b.full_name, "pt-BR");
-    if (sort === "most_invited") return invitationCountFor(b) - invitationCountFor(a) || b.created_at.localeCompare(a.created_at);
-    return b.created_at.localeCompare(a.created_at);
-  });
+  };
 
-  const neverInvitedCount = (rows ?? []).filter((row) => invitationCountFor(row) === 0).length;
-  const totalInvitations = (rows ?? []).reduce((total, row) => total + invitationCountFor(row), 0);
+  // Sempre do cadastro mais antigo pro mais novo, com quem ainda não foi chamado na frente.
+  const filteredRows = (rows ?? [])
+    .filter((row) => {
+      const called = invitationCountFor(row) > 0;
+      if (view === "pending" && called) return false;
+      if (view === "called" && !called) return false;
+      return matchesFilters(row);
+    })
+    .sort((a, b) => {
+      const calledA = invitationCountFor(a) > 0 ? 1 : 0;
+      const calledB = invitationCountFor(b) > 0 ? 1 : 0;
+      return calledA - calledB || a.created_at.localeCompare(b.created_at);
+    });
+
+  const hasFilter = Boolean(query || level || neighborhood || role);
+  const hrefWith = (overrides: Record<string, string>) => {
+    const params = new URLSearchParams();
+    const next: Record<string, string> = { q: single(filters.q), level, neighborhood, role, view: view === "pending" ? "" : view, ...overrides };
+    for (const [key, value] of Object.entries(next)) if (value) params.set(key, value);
+    const text = params.toString();
+    return text ? `/admin/reserva?${text}` : "/admin/reserva";
+  };
 
   return (
     <div className="space-y-4">
@@ -92,13 +106,21 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
         <h1 className="mt-0.5 text-2xl font-black text-white">Cadastros</h1>
       </header>
 
-      <section className="grid grid-cols-3 gap-1.5">
-        <SummaryStat label="Na reserva" value={rows?.length ?? 0} />
-        <SummaryStat label="Nunca chamados" value={neverInvitedCount} warn />
-        <SummaryStat label="Convites feitos" value={totalInvitations} />
-      </section>
+      <nav aria-label="Quem mostrar" className="grid grid-cols-3 gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1">
+        <ViewTab href={hrefWith({ view: "" })} active={view === "pending"} label="Para chamar" count={pendingCount} />
+        <ViewTab href={hrefWith({ view: "called" })} active={view === "called"} label="Já chamados" count={calledCount} />
+        <ViewTab href={hrefWith({ view: "all" })} active={view === "all"} label="Todos" count={rows?.length ?? 0} />
+      </nav>
+      <p className="-mt-1 px-1 text-[11px] text-white/45">
+        {view === "pending" && "Do cadastro mais antigo para o mais novo. Quem já foi chamado fica escondido."}
+        {view === "called" && "Quem já foi chamado ou marcado como contatado, do mais antigo para o mais novo."}
+        {view === "all" && "Todos do mais antigo para o mais novo, com quem ainda não foi chamado na frente."}
+      </p>
 
       <form action="/admin/reserva" method="get" className="space-y-2">
+        {view !== "pending" && <input type="hidden" name="view" value={view} />}
+        {level && <input type="hidden" name="level" value={level} />}
+        {role && <input type="hidden" name="role" value={role} />}
         <div className="flex gap-2">
           <label className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
@@ -108,27 +130,21 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
         </div>
 
         <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1">
-          <QuickChip href="/admin/reserva" active={!query && !level && !neighborhood && !role && !invitations} label={`Todos · ${rows?.length ?? 0}`} />
-          <QuickChip href="/admin/reserva?invitations=never" active={invitations === "never" && !query && !level && !neighborhood && !role} label={`Nunca chamados · ${neverInvitedCount}`} />
-          <QuickChip href="/admin/reserva?role=setter" active={role === "setter" && !query && !level && !neighborhood && !invitations} label="Levantadores" />
-          <QuickChip href="/admin/reserva?level=beginner" active={level === "beginner" && !query && !neighborhood && !role && !invitations} label="Iniciantes" />
+          <QuickChip href={hrefWith({ role: role === "setter" ? "" : "setter" })} active={role === "setter"} label="Levantadores" />
+          <QuickChip href={hrefWith({ level: level === "beginner" ? "" : "beginner" })} active={level === "beginner"} label="Iniciantes" />
+          <QuickChip href={hrefWith({ level: level === "intermediate" ? "" : "intermediate" })} active={level === "intermediate"} label="Intermediários" />
+          <QuickChip href={hrefWith({ level: level === "advanced" ? "" : "advanced" })} active={level === "advanced"} label="Avançados" />
+          {hasFilter && <QuickChip href={hrefWith({ q: "", level: "", neighborhood: "", role: "" })} active={false} label="Limpar filtros" />}
         </div>
 
-        <details className="rounded-xl border border-white/10 bg-white/[0.02]" open={Boolean(level || neighborhood || role || (invitations && sort !== "recent"))}>
+        <details className="rounded-xl border border-white/10 bg-white/[0.02]" open={Boolean(neighborhood)}>
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-semibold text-white/55">
-            <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-300" />Mais filtros</span>
-            <span className="text-white/35">{filteredRows.length} resultado{filteredRows.length === 1 ? "" : "s"}</span>
+            <span className="inline-flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5 text-purple-300" />Filtrar por bairro</span>
+            <span className="text-white/35">{filteredRows.length} pessoa{filteredRows.length === 1 ? "" : "s"}</span>
           </summary>
-          <div className="grid gap-2 border-t border-white/10 p-3 sm:grid-cols-2 lg:grid-cols-5">
-            <FilterSelect name="level" defaultValue={level} label="Todos os níveis" options={[["beginner", "Iniciante"], ["intermediate", "Intermediário"], ["advanced", "Avançado"]]} />
+          <div className="grid gap-2 border-t border-white/10 p-3 sm:grid-cols-[1fr_auto]">
             <FilterSelect name="neighborhood" defaultValue={neighborhood} label="Todos os bairros" options={neighborhoods.map((item) => [item, item])} />
-            <FilterSelect name="role" defaultValue={role} label="Todas as funções" options={[["setter", "Levantadores"], ["attacker", "Não levantadores"]]} />
-            <FilterSelect name="invitations" defaultValue={invitations} label="Todos os convites" options={[["never", "Nunca chamado"], ["once", "Chamado 1 vez"], ["multiple", "Chamado 2+ vezes"]]} />
-            <FilterSelect name="sort" defaultValue={sort} label="Mais recentes" options={[["oldest", "Mais antigos"], ["name", "Ordem alfabética"], ["most_invited", "Mais chamados"]]} />
-            <div className="flex items-center justify-end gap-2 sm:col-span-2 lg:col-span-5">
-              <Link href="/admin/reserva" className="rounded-lg px-3 py-2 text-xs font-semibold text-white/55 hover:bg-white/5 hover:text-white">Limpar</Link>
-              <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
-            </div>
+            <button type="submit" className="min-h-10 rounded-lg bg-brand-purple px-4 py-2 text-sm font-semibold text-white hover:bg-brand-purple-dark">Filtrar</button>
           </div>
         </details>
       </form>
@@ -184,24 +200,29 @@ export default async function AdminReservaPage({ searchParams }: { searchParams:
                     <PromoteReserveButton reserveEntryId={row.id} fullName={row.full_name} action={promoteReserveToMember} />
                   </>
                 )}
-                <ActionForm action={toggleContacted} successMessage={row.contacted ? "Desmarcado." : "Marcado como contatado!"}>
+                <ActionForm action={toggleContacted} successMessage={row.contacted ? "Voltou para a lista de quem falta chamar." : "Marcado como chamado: saiu da lista de quem falta chamar."}>
                   <input type="hidden" name="id" value={row.id} />
                   <input type="hidden" name="contacted" value={(!row.contacted).toString()} />
-                  <button type="submit" title={row.contacted ? "Já foi contatado" : "Marcar como contatado"} aria-label={row.contacted ? "Já foi contatado" : "Marcar como contatado"} className={`flex h-9 w-9 items-center justify-center rounded-full border ${row.contacted ? "border-green-500/30 bg-green-500/20 text-green-300" : "border-white/15 bg-white/5 text-white/50 hover:bg-white/10"}`}>{row.contacted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}</button>
+                  <button type="submit" title={row.contacted ? "Já foi chamado (toque para desmarcar)" : "Marcar como chamado"} aria-label={row.contacted ? "Já foi chamado (toque para desmarcar)" : "Marcar como chamado"} className={`flex h-9 w-9 items-center justify-center rounded-full border ${row.contacted ? "border-green-500/30 bg-green-500/20 text-green-300" : "border-white/15 bg-white/5 text-white/50 hover:bg-white/10"}`}>{row.contacted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}</button>
                 </ActionForm>
                 <DeleteReserveEntryButton id={row.id} fullName={row.full_name} action={removeFromReserveList} />
               </div>
             </li>
           );
         })}
-        {!filteredRows.length && <li className="rounded-xl border border-white/10 px-4 py-8 text-center text-sm text-white/55 md:col-span-2">Nenhuma pessoa corresponde aos filtros escolhidos.</li>}
+        {!filteredRows.length && <li className="rounded-xl border border-white/10 px-4 py-8 text-center text-sm text-white/55 md:col-span-2">{view === "pending" && !hasFilter ? "Todo mundo da reserva já foi chamado. 🎉" : "Nenhuma pessoa corresponde ao que você escolheu."}</li>}
       </ul>
     </div>
   );
 }
 
-function SummaryStat({ label, value, warn = false }: { label: string; value: number; warn?: boolean }) {
-  return <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-2 py-2 text-center"><strong className={`block text-lg font-black leading-tight tabular-nums ${warn && value > 0 ? "text-amber-300" : "text-white"}`}>{value}</strong><span className="text-[9px] font-bold uppercase tracking-wide text-white/40">{label}</span></div>;
+function ViewTab({ href, label, count, active }: { href: string; label: string; count: number; active: boolean }) {
+  return (
+    <Link href={href} aria-current={active ? "page" : undefined} className={`flex min-h-11 flex-col items-center justify-center rounded-xl px-1 text-center transition ${active ? "bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-md shadow-purple-950/30" : "text-white/55 hover:bg-white/5 hover:text-white"}`}>
+      <strong className="text-base font-black leading-none tabular-nums">{count}</strong>
+      <span className="mt-0.5 text-[10px] font-bold uppercase tracking-wide">{label}</span>
+    </Link>
+  );
 }
 
 function QuickChip({ href, label, active }: { href: string; label: string; active: boolean }) {
