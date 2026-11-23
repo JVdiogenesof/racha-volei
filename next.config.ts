@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
     const cache = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
     return [
       { source: "/times/:path*", headers: cache },
+      // Logos, ícones, fontes e fotos da pasta public: sem isso a Vercel manda
+      // "max-age=0" e o celular pergunta ao servidor por cada imagem a cada tela.
+      { source: "/fonts/:path*", headers: cache },
+      { source: "/camisas/:path*", headers: cache },
+      { source: "/logo:rest*", headers: cache },
+      { source: "/vpa-:rest*", headers: cache },
+      { source: "/pwa-icon:rest*", headers: cache },
+      { source: "/apple-touch-icon:rest*", headers: cache },
+      { source: "/login-vpa-art.jpg", headers: cache },
+      { source: "/nr-sport-training-logo.jpg", headers: cache },
     ];
   },
   experimental: {

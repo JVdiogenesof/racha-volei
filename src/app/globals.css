@@ -524,7 +524,9 @@ form[aria-busy="true"] button[type="submit"]::after {
   to { opacity: 1; transform: none; }
 }
 
-.page-stagger > * > * {
+/* Só os primeiros blocos animam: animar a tela inteira (listas longas) pesa no
+   celular e não aparece na primeira dobra. */
+.page-stagger > * > *:nth-child(-n + 6) {
   animation: card-stagger-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
   animation-delay: 0.12s;
 }
