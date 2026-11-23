@@ -14,10 +14,10 @@ const nextConfig: NextConfig = {
       // "max-age=0" e o celular pergunta ao servidor por cada imagem a cada tela.
       { source: "/fonts/:path*", headers: cache },
       { source: "/camisas/:path*", headers: cache },
-      { source: "/logo:rest*", headers: cache },
-      { source: "/vpa-:rest*", headers: cache },
-      { source: "/pwa-icon:rest*", headers: cache },
-      { source: "/apple-touch-icon:rest*", headers: cache },
+      { source: "/:file(logo[^/]*\\.(?:png|jpg|webp))", headers: cache },
+      { source: "/:file(vpa-[^/]*\\.(?:png|jpg|webp))", headers: cache },
+      { source: "/:file(pwa-icon[^/]*\\.png)", headers: cache },
+      { source: "/:file(apple-touch-icon[^/]*\\.png)", headers: cache },
       { source: "/login-vpa-art.jpg", headers: cache },
       { source: "/nr-sport-training-logo.jpg", headers: cache },
     ];
