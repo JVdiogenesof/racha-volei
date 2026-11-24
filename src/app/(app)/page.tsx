@@ -216,10 +216,11 @@ export default async function HomePage() {
     profile.is_organizer
       ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community])
       : Promise.resolve({ count: 0 }),
-    profile.is_organizer
+    // Sem racha marcado não há o que contar (e um id vazio faz o banco recusar a consulta).
+    profile.is_organizer && eventIdForPanel
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", eventIdForPanel).eq("status", "interested")
       : Promise.resolve({ count: 0 }),
-    profile.is_organizer
+    profile.is_organizer && eventIdForPanel
       ? supabase
           .from("attendance")
           .select("profile_id, profiles(full_name)")

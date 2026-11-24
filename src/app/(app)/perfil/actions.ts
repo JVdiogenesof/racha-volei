@@ -76,15 +76,29 @@ export async function savePushSubscription(subscription: { endpoint: string; key
   const profile = await requireMember();
   const supabase = await createClient();
 
-  const { error } = await supabase.from("push_subscriptions").upsert(
-    {
-      profile_id: profile.id,
-      endpoint: subscription.endpoint,
-      p256dh: subscription.keys.p256dh,
-      auth: subscription.keys.auth,
-    },
-    { onConflict: "endpoint" },
-  );
+  // As regras do banco deixam criar e apagar a própria inscrição, mas não atualizar.
+  // Um "upsert" num aparelho já cadastrado vira atualização e era recusado; então
+  // aparelho igual e chaves iguais não precisa de nada, e chaves novas trocam a linha.
+  const { data: existing } = await supabase
+    .from("push_subscriptions")
+    .select("profile_id, p256dh, auth")
+    .eq("endpoint", subscription.endpoint)
+    .maybeSingle();
+  if (existing?.profile_id === profile.id && existing.p256dh === subscription.keys.p256dh && existing.auth === subscription.keys.auth) return;
+  if (existing) {
+    // Só apaga se a inscrição for da própria pessoa (ou se ela for organizadora); de outra conta no mesmo aparelho, fica como está.
+    const { error: deleteError } = await supabase.from("push_subscriptions").delete().eq("endpoint", subscription.endpoint);
+    if (deleteError) throw new Error(deleteError.message);
+    const { data: stillThere } = await supabase.from("push_subscriptions").select("id").eq("endpoint", subscription.endpoint).maybeSingle();
+    if (stillThere) return;
+  }
+
+  const { error } = await supabase.from("push_subscriptions").insert({
+    profile_id: profile.id,
+    endpoint: subscription.endpoint,
+    p256dh: subscription.keys.p256dh,
+    auth: subscription.keys.auth,
+  });
 
   if (error) throw new Error(error.message);
 }
