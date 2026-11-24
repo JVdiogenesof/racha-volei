@@ -28,7 +28,7 @@ function levelLabel(level: string | null) {
 }
 
 export default async function AdminReservaPage({ searchParams }: { searchParams: PageSearchParams }) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const filters = await searchParams;

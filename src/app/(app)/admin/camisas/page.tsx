@@ -49,7 +49,7 @@ export default async function AdminCamisasPage({ searchParams }: { searchParams:
   const requested = params.view ?? legacy;
   const view: View = Object.hasOwn(LIST_VIEWS, requested) || Object.hasOwn(TOOLS, requested) ? requested as View : "home";
   const listView = Object.hasOwn(LIST_VIEWS, view) ? view as ShirtListView : null;
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const supabase = await createClient();
   const [ordersResult, financeResult] = await Promise.all([

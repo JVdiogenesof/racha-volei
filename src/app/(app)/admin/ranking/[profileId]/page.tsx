@@ -30,7 +30,7 @@ function Tile({ value, label }: { value: string | number; label: string }) {
 
 export default async function AdminRankingPlayerPage({ params }: { params: Promise<{ profileId: string }> }) {
   const { profileId } = await params;
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

@@ -31,6 +31,18 @@ as $$
   select coalesce((select is_organizer from profiles where id = auth.uid()), false);
 $$;
 
+-- Organizador "completo": acessa notas, ranking, reserva e finanças.
+-- Níveis menores (lists / lists_arts) só mexem em listas, times e artes.
+create or replace function public.is_full_organizer()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select coalesce((select is_organizer and organizer_scope = 'full' from profiles where id = auth.uid()), false);
+$$;
+
 -- Trigger: impede que alguém sem ser organizador altere os próprios campos
 -- privilegiados (status de aprovação, flag de organizador, quem aprovou).
 create or replace function public.guard_profile_privileged_columns()
@@ -40,6 +52,11 @@ security definer
 set search_path = public
 as $$
 begin
+  if (new.organizer_scope is distinct from old.organizer_scope)
+     and auth.uid() is not null
+     and not public.is_full_organizer() then
+    raise exception 'Somente organizadores completos podem alterar o nível de acesso.';
+  end if;
   -- auth.uid() is null fora do contexto de uma requisição autenticada via API
   -- (ex: SQL Editor, script administrativo) — esses acessos já exigem
   -- credenciais de banco e são confiáveis por definição. Só bloqueamos quando
@@ -206,22 +223,22 @@ create policy "self_ratings_delete" on self_ratings for delete to authenticated
 -- organizer_ratings: transparência total pra leitura; só organizador escreve.
 create policy "organizer_ratings_select" on organizer_ratings for select to authenticated using (true);
 create policy "organizer_ratings_insert" on organizer_ratings for insert to authenticated
-  with check (public.is_organizer() and rated_by = (select auth.uid()));
+  with check (public.is_full_organizer() and rated_by = (select auth.uid()));
 create policy "organizer_ratings_update" on organizer_ratings for update to authenticated
-  using (public.is_organizer())
-  with check (public.is_organizer() and rated_by = (select auth.uid()));
+  using (public.is_full_organizer())
+  with check (public.is_full_organizer() and rated_by = (select auth.uid()));
 create policy "organizer_ratings_delete" on organizer_ratings for delete to authenticated
-  using (public.is_organizer());
+  using (public.is_full_organizer());
 
 -- rating_weights: todo mundo lê, só organizador ajusta.
 create policy "rating_weights_select" on rating_weights for select to authenticated using (true);
 create policy "rating_weights_insert" on rating_weights for insert to authenticated
-  with check (public.is_organizer());
+  with check (public.is_full_organizer());
 create policy "rating_weights_update" on rating_weights for update to authenticated
-  using (public.is_organizer())
-  with check (public.is_organizer());
+  using (public.is_full_organizer())
+  with check (public.is_full_organizer());
 create policy "rating_weights_delete" on rating_weights for delete to authenticated
-  using (public.is_organizer());
+  using (public.is_full_organizer());
 
 -- events: todo mundo lê, só organizador cria/edita/apaga.
 -- Separado em 3 políticas (em vez de "for all") porque o WITH CHECK de uma
@@ -296,16 +313,16 @@ create policy "player_balance_entries_update_organizer" on player_balance_entrie
   with check ((select public.is_organizer()));
 
 create policy "finance_transactions_select_organizer" on finance_transactions for select to authenticated
-  using ((select public.is_organizer()));
+  using ((select public.is_full_organizer()));
 create policy "finance_transactions_insert_organizer" on finance_transactions for insert to authenticated
-  with check ((select public.is_organizer()) and created_by = (select auth.uid()));
+  with check ((select public.is_full_organizer()) and created_by = (select auth.uid()));
 create policy "finance_transactions_update_organizer" on finance_transactions for update to authenticated
-  using ((select public.is_organizer()))
-  with check ((select public.is_organizer()));
+  using ((select public.is_full_organizer()))
+  with check ((select public.is_full_organizer()));
 
 create policy "finance_reminders_organizer_all" on finance_reminders for all to authenticated
-  using ((select public.is_organizer()))
-  with check ((select public.is_organizer()));
+  using ((select public.is_full_organizer()))
+  with check ((select public.is_full_organizer()));
 
 create policy "shirt_finance_transactions_select_organizer" on shirt_finance_transactions for select to authenticated
   using ((select public.is_organizer()));
@@ -371,9 +388,9 @@ create policy "match_wins_delete" on match_wins for delete to authenticated
 -- só organizador cria/apaga ajuste manual.
 create policy "ranking_adjustments_select" on ranking_adjustments for select to authenticated using (true);
 create policy "ranking_adjustments_insert" on ranking_adjustments for insert to authenticated
-  with check (public.is_organizer() and created_by = (select auth.uid()));
+  with check (public.is_full_organizer() and created_by = (select auth.uid()));
 create policy "ranking_adjustments_delete" on ranking_adjustments for delete to authenticated
-  using (public.is_organizer());
+  using (public.is_full_organizer());
 
 -- reserve_list: cada um só vê/edita a própria linha; organizador vê e mexe em todas
 -- (precisa ver o telefone de todo mundo pra poder chamar quando sobrar vaga).
@@ -382,10 +399,10 @@ create policy "reserve_list_select" on reserve_list for select to authenticated
 create policy "reserve_list_insert" on reserve_list for insert to authenticated
   with check (auth_user_id = (select auth.uid()));
 create policy "reserve_list_update" on reserve_list for update to authenticated
-  using (auth_user_id = (select auth.uid()) or public.is_organizer())
-  with check (auth_user_id = (select auth.uid()) or public.is_organizer());
+  using (auth_user_id = (select auth.uid()) or public.is_full_organizer())
+  with check (auth_user_id = (select auth.uid()) or public.is_full_organizer());
 create policy "reserve_list_delete" on reserve_list for delete to authenticated
-  using (public.is_organizer());
+  using (public.is_full_organizer());
 
 -- push_subscriptions: leitura aberta (mesmo padrão de attendance/events/etc) --
 -- é o que permite, por exemplo, uma pessoa recém-cadastrada (ainda não

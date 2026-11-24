@@ -1,3 +1,4 @@
+import { organizerCan, type OrganizerScope } from "@/lib/auth";
 import { ImageResponse } from "next/og";
 import { ArtWatermark } from "@/components/ArtWatermark";
 import { createClient } from "@/lib/supabase/server";
@@ -27,8 +28,8 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Não autorizado", { status: 401 });
-  const { data: profile } = await supabase.from("profiles").select("is_organizer, communities").eq("id", user.id).maybeSingle();
-  if (!profile?.is_organizer) return new Response("Acesso restrito aos organizadores", { status: 403 });
+  const { data: profile } = await supabase.from("profiles").select("is_organizer, organizer_scope, communities").eq("id", user.id).maybeSingle();
+  if (!profile || !organizerCan(profile as { is_organizer: boolean; organizer_scope: OrganizerScope }, "arts")) return new Response("Acesso restrito aos organizadores", { status: 403 });
   const community = await getActiveCommunity();
 
 

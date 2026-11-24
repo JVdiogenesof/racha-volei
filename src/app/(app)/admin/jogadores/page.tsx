@@ -13,7 +13,7 @@ import { getActiveCommunity } from "@/lib/community";
 import { ATTENDANCE_REMOVE_THRESHOLD } from "@/lib/attendancePolicy";
 
 export default async function AdminJogadoresPage() {
-  const viewer = await requireOrganizer();
+  const viewer = await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

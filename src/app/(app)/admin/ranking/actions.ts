@@ -9,7 +9,7 @@ import { getProfileRankingSheet } from "@/lib/rankingAdjust";
 const VALID_METRICS = ["attendance", "mvp", "wins"];
 
 export async function adjustRanking(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
@@ -37,7 +37,7 @@ export async function adjustRanking(formData: FormData) {
 }
 
 export async function deleteRankingAdjustment(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const id = String(formData.get("id"));
 
@@ -89,7 +89,7 @@ async function saveEventAdjustment(params: {
 
 // Vitórias e derrotas de um racha (+1 / -1): mudam o Índice VPA na hora.
 export async function adjustEventResult(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));
@@ -112,7 +112,7 @@ export async function adjustEventResult(formData: FormData) {
 
 // Presença e Jogador Destaque de um racha (liga/desliga).
 export async function setEventFlag(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId"));

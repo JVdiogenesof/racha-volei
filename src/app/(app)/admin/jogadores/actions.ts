@@ -7,7 +7,7 @@ import { SKILL_CATEGORIES } from "@/lib/scoring";
 import { RATING_WEIGHTS_ID } from "@/lib/ratings";
 
 export async function setOrganizerRatings(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
   const eventId = String(formData.get("eventId") ?? "");
@@ -40,7 +40,7 @@ export async function setOrganizerRatings(formData: FormData) {
 }
 
 export async function updatePlayerProfile(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
   const fullName = String(formData.get("fullName") ?? "").trim();
@@ -67,7 +67,7 @@ export async function updatePlayerProfile(formData: FormData) {
 }
 
 export async function removeMember(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
@@ -92,7 +92,7 @@ export async function removeMember(formData: FormData) {
 }
 
 export async function restoreMember(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
@@ -121,7 +121,7 @@ export async function restoreMember(formData: FormData) {
 }
 
 export async function setRatingWeights(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
 
   const selfWeight = Number(formData.get("selfWeight") ?? 0.4);

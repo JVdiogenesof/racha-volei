@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, CircleAlert, Eye, ShieldCheck, Shirt, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { organizerCan, requireProfile } from "@/lib/auth";
 import { shirtOrderStatusLabel, type ShirtOrderStatus, SHIRT_FITS, SHIRT_ORDERS_OPEN, SHIRT_PRICES, shirtOrderTotal, type ShirtFit, formatShirtNumber, getShirtCollectionImage, getShirtModels, type ShirtModel } from "@/lib/shirts";
 import { ShirtProgressBadges } from "@/components/ShirtProgressBadges";
 import { getActiveCommunity } from "@/lib/community";
@@ -49,7 +49,7 @@ export default async function CamisasPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div><h2 className="text-lg font-bold">Meu pedido</h2>
               <p className="text-sm text-white/50">{orders.reduce((n, o) => n + o.quantity, 0)} peças · {orders.reduce((sum, order) => sum + shirtOrderTotal(order), 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · Quadra</p></div>
-            {profile.is_organizer && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-purple-500/10 px-3 text-sm text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}
+            {organizerCan(profile, "admin") && <Link href="/admin/camisas" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-purple-500/10 px-3 text-sm text-purple-200"><ShieldCheck className="h-4 w-4" />Gerenciar todos</Link>}
           </div>
           <ul className="mt-3 divide-y divide-white/10">
             {orders.map((order) => <li key={order.id} className="py-4">

@@ -171,7 +171,7 @@ function renderMonthlyArt(
 }
 
 export async function GET(request: Request) {
-  await requireOrganizer();
+  await requireOrganizer("arts");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const url = new URL(request.url);

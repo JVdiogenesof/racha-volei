@@ -1,6 +1,6 @@
 import { Megaphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { organizerCan, requireProfile } from "@/lib/auth";
 import { FileInput } from "@/components/FileInput";
 import { ActionForm } from "@/components/ActionForm";
 import { DeleteAnnouncementButton } from "@/components/DeleteAnnouncementButton";
@@ -33,7 +33,7 @@ export default async function AvisosPage() {
 
       <BirthdaysCard profiles={birthdayProfiles ?? []} />
 
-      {profile.is_organizer && (
+      {organizerCan(profile, "admin") && (
         <ActionForm
           action={createAnnouncement}
           successMessage="Aviso publicado!"
@@ -82,7 +82,7 @@ export default async function AvisosPage() {
               key={a.id}
               announcement={{ ...a, author }}
               actions={
-                profile.is_organizer && (
+                organizerCan(profile, "admin") && (
                   <div className="absolute right-3 top-3">
                     <DeleteAnnouncementButton announcementId={a.id} action={deleteAnnouncement} />
                   </div>

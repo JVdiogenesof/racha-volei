@@ -14,7 +14,7 @@ const RANKING_CONFIG = [
 ];
 
 export default async function AdminResumoPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  await requireOrganizer();
+  await requireOrganizer("arts");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const monthKey = normalizeMonthKey((await searchParams).month);

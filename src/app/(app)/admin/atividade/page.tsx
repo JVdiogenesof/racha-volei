@@ -20,7 +20,7 @@ function dateLabel(date: string | null) {
 
 export default async function AdminAtividadePage({ searchParams }: { searchParams: PageSearchParams }) {
   const { view = "all", q = "" } = await searchParams;
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

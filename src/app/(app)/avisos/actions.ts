@@ -7,7 +7,7 @@ import { sendPushToProfiles } from "@/lib/push";
 import { getActiveCommunity } from "@/lib/community";
 
 export async function createAnnouncement(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 
@@ -51,7 +51,7 @@ export async function createAnnouncement(formData: FormData) {
 }
 
 export async function deleteAnnouncement(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const announcementId = String(formData.get("announcementId"));
 

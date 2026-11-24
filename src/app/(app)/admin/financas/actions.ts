@@ -41,7 +41,7 @@ function revalidateFinance(eventId?: string) {
 }
 
 export async function addPlayerBalance(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const profileId = requiredText(formData, "profileId", "Pessoa", 50);
   const amount = positiveAmount(formData);
@@ -62,7 +62,7 @@ export async function addPlayerBalance(formData: FormData) {
 }
 
 export async function applyPlayerBalance(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const profileId = requiredText(formData, "profileId", "Pessoa", 50);
   const eventId = requiredText(formData, "eventId", "Racha", 50);
   const supabase = await createClient();
@@ -72,7 +72,7 @@ export async function applyPlayerBalance(formData: FormData) {
 }
 
 export async function reversePlayerBalance(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const entryId = requiredText(formData, "entryId", "Lançamento", 50);
   const supabase = await createClient();
   const { error } = await supabase.rpc("reverse_player_balance_entry", { p_entry_id: entryId });
@@ -81,7 +81,7 @@ export async function reversePlayerBalance(formData: FormData) {
 }
 
 export async function deletePlayerBalance(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const profileId = requiredText(formData, "profileId", "Pessoa", 50);
   const community = requiredText(formData, "community", "Comunidade", 50);
   const supabase = await createClient();
@@ -91,7 +91,7 @@ export async function deletePlayerBalance(formData: FormData) {
 }
 
 export async function addFinanceTransaction(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const transactionType = requiredText(formData, "transactionType", "Tipo", 20);
   const category = requiredText(formData, "category", "Categoria", 30);
@@ -119,7 +119,7 @@ export async function addFinanceTransaction(formData: FormData) {
 }
 
 export async function voidFinanceTransaction(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const transactionId = requiredText(formData, "transactionId", "Movimentação", 50);
   const supabase = await createClient();
@@ -133,7 +133,7 @@ export async function voidFinanceTransaction(formData: FormData) {
 }
 
 export async function addFinanceReminder(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const title = requiredText(formData, "title", "Lembrete", 140);
   const notes = optionalText(formData, "notes", 500);
@@ -146,7 +146,7 @@ export async function addFinanceReminder(formData: FormData) {
 }
 
 export async function toggleFinanceReminder(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const reminderId = requiredText(formData, "reminderId", "Lembrete", 50);
   const completed = String(formData.get("completed")) === "true";

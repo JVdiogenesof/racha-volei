@@ -18,7 +18,7 @@ function slugify(text: string) {
 
 /** Entrega uma medalha a vários jogadores de uma vez (quem já tem é ignorado). */
 export async function awardBadge(input: { badgeId: string; profileIds: string[]; note: string; notify: boolean }) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const supabase = await createClient();
   const profileIds = [...new Set(input.profileIds)].slice(0, 200);
   if (!input.badgeId || !profileIds.length) throw new Error("Escolha a medalha e pelo menos um jogador.");
@@ -50,7 +50,7 @@ export async function awardBadge(input: { badgeId: string; profileIds: string[];
 }
 
 export async function revokeBadge(awardId: string) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const { data: row } = await supabase.from("profile_badges").select("profile_id, badge_id").eq("id", awardId).maybeSingle();
   const { error } = await supabase.from("profile_badges").delete().eq("id", awardId);
@@ -65,7 +65,7 @@ export async function revokeBadge(awardId: string) {
 }
 
 export async function createBadge(input: { title: string; description: string; emoji: string; kind: BadgeKind; color: BadgeColor }) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const title = input.title.trim().slice(0, 60);
   const id = slugify(title);
@@ -90,7 +90,7 @@ export async function createBadge(input: { title: string; description: string; e
 }
 
 export async function deleteBadge(badgeId: string) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const { error } = await supabase.from("badges").delete().eq("id", badgeId);
   if (error) throw new Error(error.message);

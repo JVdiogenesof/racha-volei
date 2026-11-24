@@ -23,7 +23,7 @@ function formatDay(date: string) {
 export default async function AdminRankingPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const term = (q ?? "").trim().toLocaleLowerCase("pt-BR");
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

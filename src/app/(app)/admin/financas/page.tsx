@@ -31,7 +31,7 @@ function formatMonth(value: string) { const [year, month] = value.split("-"); re
 function eventLabel(event: EventRow) { return `${formatDate(event.date)}${event.location ? ` · ${event.location}` : ""}${event.price_per_player ? ` · ${money.format(amount(event.price_per_player))}` : ""}`; }
 
 export default async function AdminFinancasPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const supabase = await createClient();
   const requestedMonth = (await searchParams).month;

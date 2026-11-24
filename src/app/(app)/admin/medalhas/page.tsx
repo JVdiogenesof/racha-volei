@@ -5,7 +5,7 @@ import { getBadgeCatalog } from "@/lib/profileCosmetics";
 import { BadgeAdmin } from "@/components/BadgeAdmin";
 
 export default async function AdminMedalhasPage() {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const community = await getActiveCommunity();
 

@@ -8,12 +8,15 @@ export function OrganizerPanel({
   vagasRestantes,
   reserveCount,
   recentDeclines,
+  canManageReserve = true,
 }: {
   proximoRachaId: string | null;
   interessadosCount: number;
   vagasRestantes: number | null;
   reserveCount: number;
   recentDeclines: { fullName: string }[];
+  /** Só organizador completo acessa a lista de cadastros reserva. */
+  canManageReserve?: boolean;
 }) {
   return (
     <NeonCard solid innerClassName="p-5">
@@ -43,16 +46,18 @@ export function OrganizerPanel({
           <p className="mt-0.5 text-xs text-white/60">Interessados</p>
         </Link>
 
-        <Link
-          href="/admin/reserva"
-          className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center hover:bg-white/10"
-        >
-          <div className="flex items-center justify-center gap-1">
-            <Phone className="h-3.5 w-3.5 text-purple-300" strokeWidth={2} />
-            <p className="text-xl font-bold text-white">{reserveCount}</p>
-          </div>
-          <p className="mt-0.5 text-xs text-white/60">Cadastros na reserva</p>
-        </Link>
+        {canManageReserve ? (
+          <Link
+            href="/admin/reserva"
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-center hover:bg-white/10"
+          >
+            <div className="flex items-center justify-center gap-1">
+              <Phone className="h-3.5 w-3.5 text-purple-300" strokeWidth={2} />
+              <p className="text-xl font-bold text-white">{reserveCount}</p>
+            </div>
+            <p className="mt-0.5 text-xs text-white/60">Cadastros na reserva</p>
+          </Link>
+        ) : null}
       </div>
 
       {recentDeclines.length > 0 && (
@@ -61,7 +66,7 @@ export function OrganizerPanel({
           <span>
             {recentDeclines.map((d) => d.fullName).join(", ")} cancelou{recentDeclines.length > 1 ? "aram" : ""} a
             presença nas últimas 48h.
-            {reserveCount > 0 && (
+            {canManageReserve && reserveCount > 0 && (
               <>
                 {" "}
                 <Link href="/admin/reserva" className="underline hover:text-red-200">

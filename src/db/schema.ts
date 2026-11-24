@@ -98,6 +98,7 @@ export const profiles = pgTable("profiles", {
   playerLevel: playerLevelEnum("player_level"),
   communities: text("communities").array().notNull().default(["court"]),
   isOrganizer: boolean("is_organizer").notNull().default(false),
+  organizerScope: text("organizer_scope").notNull().default("full"),
   status: profileStatusEnum("status").notNull().default("pending"),
   approvedBy: uuid("approved_by"),
   // Só preenchido quando status = "guest": acesso temporário de gente de fora

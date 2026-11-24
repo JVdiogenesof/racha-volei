@@ -3,6 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { readProfileFromHeaders } from "@/lib/supabase/profile-header";
 import { PROFILE_COLUMNS } from "@/lib/supabase/session-headers";
 
+export type OrganizerScope = "full" | "lists" | "lists_arts";
+/** lists = listas/times/confrontos; arts = geração de artes; admin = notas, ranking, reserva, finanças etc. */
+export type OrganizerArea = "lists" | "arts" | "admin";
+
+export function organizerCan(profile: { is_organizer: boolean; organizer_scope?: OrganizerScope | null }, area: OrganizerArea) {
+  if (!profile.is_organizer) return false;
+  const scope = profile.organizer_scope ?? "full";
+  if (scope === "full") return true;
+  if (area === "lists") return true;
+  if (area === "arts") return scope === "lists_arts";
+  return false;
+}
+
 export interface CurrentProfile {
   id: string;
   full_name: string;
@@ -18,6 +31,7 @@ export interface CurrentProfile {
   player_level: "beginner" | "intermediate" | "advanced" | null;
   communities: string[];
   is_organizer: boolean;
+  organizer_scope: OrganizerScope;
   status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor" | "suspended";
   guest_for_event_id: string | null;
 }
@@ -67,8 +81,8 @@ export async function requireProfile(): Promise<CurrentProfile> {
   return profile as CurrentProfile;
 }
 
-export async function requireOrganizer(): Promise<CurrentProfile> {
+export async function requireOrganizer(area: OrganizerArea = "lists"): Promise<CurrentProfile> {
   const profile = await requireProfile();
-  if (!profile.is_organizer) redirect("/");
+  if (!organizerCan(profile, area)) redirect("/");
   return profile;
 }

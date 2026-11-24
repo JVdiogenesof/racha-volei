@@ -174,6 +174,12 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
+    if (pathname.startsWith("/admin") && profile?.is_organizer && !adminPathAllowed(pathname, profile.organizer_scope)) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+
     if (pathname.startsWith("/admin") && !profile?.is_organizer) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
@@ -188,4 +194,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   return response;
+}
+
+
+// Nível de acesso dos organizadores: "full" vê tudo; os demais só entram nas
+// rotas /admin liberadas (as páginas e ações também checam no servidor).
+function adminPathAllowed(pathname: string, scope: string | null | undefined) {
+  if (!scope || scope === "full") return true;
+  if (pathname === "/admin" || pathname === "/admin/" || pathname.startsWith("/admin/rachas")) return true;
+  if (scope === "lists_arts" && (pathname.startsWith("/admin/resumo") || pathname.startsWith("/admin/camisas/imagem"))) return true;
+  return false;
 }

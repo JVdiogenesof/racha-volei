@@ -4,24 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Award, CalendarPlus, LayoutDashboard, Phone, Shirt, SlidersHorizontal, WalletCards, BarChart3, UserRoundX, Medal } from "lucide-react";
 
-const TABS = [
-  { href: "/admin", label: "Painel", icon: LayoutDashboard, exact: true },
-  { href: "/admin/reserva", label: "Cadastros", icon: Phone },
-  { href: "/admin/rachas", label: "Rachas", icon: CalendarPlus },
-  { href: "/admin/jogadores", label: "Notas", icon: SlidersHorizontal },
-  { href: "/admin/atividade", label: "Atividade", icon: UserRoundX },
-  { href: "/admin/ranking", label: "Rankings", icon: Award },
-  { href: "/admin/financas", label: "Finanças", icon: WalletCards },
-  { href: "/admin/camisas", label: "Camisas", icon: Shirt },
-  { href: "/admin/medalhas", label: "Medalhas", icon: Medal },
-  { href: "/admin/resumo", label: "Resumo", icon: BarChart3 },
+type TabArea = "lists" | "arts" | "admin";
+const TABS: { href: string; label: string; icon: typeof Phone; exact?: boolean; area: TabArea }[] = [
+  { href: "/admin", label: "Painel", icon: LayoutDashboard, exact: true, area: "lists" },
+  { href: "/admin/reserva", label: "Cadastros", icon: Phone, area: "admin" },
+  { href: "/admin/rachas", label: "Rachas", icon: CalendarPlus, area: "lists" },
+  { href: "/admin/jogadores", label: "Notas", icon: SlidersHorizontal, area: "admin" },
+  { href: "/admin/atividade", label: "Atividade", icon: UserRoundX, area: "admin" },
+  { href: "/admin/ranking", label: "Rankings", icon: Award, area: "admin" },
+  { href: "/admin/financas", label: "Finanças", icon: WalletCards, area: "admin" },
+  { href: "/admin/camisas", label: "Camisas", icon: Shirt, area: "admin" },
+  { href: "/admin/medalhas", label: "Medalhas", icon: Medal, area: "admin" },
+  { href: "/admin/resumo", label: "Resumo", icon: BarChart3, area: "arts" },
 ];
 
 export function AdminTabs({
   canViewShirts = false,
+  scope = "full",
   badges = {},
 }: {
   canViewShirts?: boolean;
+  /** Nível de acesso do organizador: filtra as abas visíveis. */
+  scope?: "full" | "lists" | "lists_arts";
   /** Contadores de pendências por rota, mostrados ao lado do nome da aba. */
   badges?: Record<string, number>;
 }) {
@@ -29,7 +33,7 @@ export function AdminTabs({
 
   return (
     <nav aria-label="Administração" className="no-scrollbar mb-4 flex gap-1 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.03] p-1">
-      {TABS.filter((tab) => tab.href !== "/admin/camisas" || canViewShirts).map((tab) => {
+      {TABS.filter((tab) => (tab.href !== "/admin/camisas" || canViewShirts) && (scope === "full" || tab.area === "lists" || (tab.area === "arts" && scope === "lists_arts"))).map((tab) => {
         const active = tab.exact ? pathname === tab.href : pathname === tab.href || pathname.startsWith(`${tab.href}/`);
         const badge = badges[tab.href] ?? 0;
         return (

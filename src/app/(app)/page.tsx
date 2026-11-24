@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Gauge } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { organizerCan, requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
 import { NeonCard } from "@/components/NeonCard";
 import { BirthdaysCard } from "@/components/BirthdaysCard";
@@ -384,6 +384,7 @@ export default async function HomePage() {
             memberCapacity != null ? Math.max(0, memberCapacity - regularConfirmedCount) : null
           }
           reserveCount={reserveCount ?? 0}
+          canManageReserve={organizerCan(profile, "admin")}
           recentDeclines={(declineRows ?? []).map((d) => ({
             fullName: (d.profiles as unknown as { full_name: string } | null)?.full_name ?? "?",
           }))}

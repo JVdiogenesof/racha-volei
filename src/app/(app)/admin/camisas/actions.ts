@@ -18,7 +18,7 @@ function manualAmount(formData: FormData) {
 }
 
 export async function addManualShirtFinanceTransaction(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const transactionType = String(formData.get("transactionType") ?? "");
   const description = String(formData.get("description") ?? "").trim();
@@ -50,7 +50,7 @@ export async function addManualShirtFinanceTransaction(formData: FormData) {
 }
 
 export async function voidManualShirtFinanceTransaction(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const transactionId = String(formData.get("transactionId") ?? "").trim();
   if (!transactionId) throw new Error("Movimentação inválida.");
@@ -65,7 +65,7 @@ export async function voidManualShirtFinanceTransaction(formData: FormData) {
 }
 
 export async function setShirtOrderStatus(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   const status = String(formData.get("status") ?? "");
@@ -81,7 +81,7 @@ export async function setShirtOrderStatus(formData: FormData) {
 }
 
 export async function setShirtOrderPaid(formData: FormData) {
-  const organizer = await requireOrganizer();
+  const organizer = await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const profileId = String(formData.get("profileId") ?? "");
   const payment = String(formData.get("payment") ?? "");
@@ -104,7 +104,7 @@ export async function setShirtOrderPaid(formData: FormData) {
 }
 
 export async function deleteShirtOrder(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   if (!orderId) throw new Error("Pedido inválido.");
@@ -154,7 +154,7 @@ export async function deleteShirtOrder(formData: FormData) {
 }
 
 export async function updateShirtOrder(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const community = await getActiveCommunity();
   const orderId = String(formData.get("orderId") ?? "");
   const model = String(formData.get("model") ?? "");

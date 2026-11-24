@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 
 export async function toggleContacted(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const id = String(formData.get("id"));
   const contacted = String(formData.get("contacted")) === "true";
@@ -16,7 +16,7 @@ export async function toggleContacted(formData: FormData) {
 }
 
 export async function removeFromReserveList(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const id = String(formData.get("id"));
 
@@ -26,7 +26,7 @@ export async function removeFromReserveList(formData: FormData) {
 }
 
 export async function inviteToEvent(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const reserveEntryId = String(formData.get("reserveEntryId"));
   const eventId = String(formData.get("eventId") ?? "");
@@ -46,7 +46,7 @@ export async function inviteToEvent(formData: FormData) {
 }
 
 export async function promoteReserveToMember(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const reserveEntryId = String(formData.get("reserveEntryId"));
 
@@ -61,7 +61,7 @@ export async function promoteReserveToMember(formData: FormData) {
 }
 
 export async function makeGuestPermanent(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 
@@ -83,7 +83,7 @@ export async function makeGuestPermanent(formData: FormData) {
 }
 
 export async function endGuestAccess(formData: FormData) {
-  await requireOrganizer();
+  await requireOrganizer("admin");
   const supabase = await createClient();
   const profileId = String(formData.get("profileId"));
 

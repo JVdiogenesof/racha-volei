@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Award, Medal, BarChart3, Bell, CalendarPlus, ChevronRight, Clock, MapPin, Phone, Shirt, Users, WalletCards, UserRoundX, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { requireOrganizer } from "@/lib/auth";
+import { organizerCan, requireOrganizer } from "@/lib/auth";
 import { COMMUNITY_INFO, getActiveCommunity } from "@/lib/community";
 import { todayStringInFortaleza } from "@/lib/today";
 
@@ -10,11 +10,14 @@ function formatDay(date: string) {
 }
 
 export default async function AdminPainelPage() {
-  await requireOrganizer();
+  const organizer = await requireOrganizer();
+  const isFull = organizerCan(organizer, "admin");
+  const canArts = organizerCan(organizer, "arts");
   const supabase = await createClient();
   const community = await getActiveCommunity();
   const today = todayStringInFortaleza();
 
+  const empty = Promise.resolve({ count: 0, data: [] as { id: string; title: string; due_date: string | null }[] });
   const [{ data: nextEvents }, reserve, neverContacted, shirts, reminders] = await Promise.all([
     supabase
       .from("events")
@@ -24,10 +27,10 @@ export default async function AdminPainelPage() {
       .in("status", ["open", "teams_generated"])
       .order("date", { ascending: true })
       .limit(1),
-    supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]),
-    supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]).eq("contacted", false),
-    supabase.from("shirt_orders").select("id", { count: "exact", head: true }).eq("community", community).eq("paid", false),
-    supabase.from("finance_reminders").select("id, title, due_date").eq("community", community).eq("completed", false).order("due_date", { ascending: true, nullsFirst: false }).limit(3),
+    isFull ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]) : empty,
+    isFull ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community]).eq("contacted", false) : empty,
+    isFull ? supabase.from("shirt_orders").select("id", { count: "exact", head: true }).eq("community", community).eq("paid", false) : empty,
+    isFull ? supabase.from("finance_reminders").select("id, title, due_date").eq("community", community).eq("completed", false).order("due_date", { ascending: true, nullsFirst: false }).limit(3) : empty,
   ]);
 
   const next = nextEvents?.[0] ?? null;
@@ -47,14 +50,15 @@ export default async function AdminPainelPage() {
     pending.push({ href: "/admin/financas", icon: Bell, title: reminder.title, detail: reminder.due_date ? `Prazo ${formatDay(reminder.due_date)}` : "Agenda financeira", tone: "text-amber-300" });
   }
 
-  const shortcuts: { href: string; icon: LucideIcon; title: string; detail: string }[] = [
-    { href: "/racha", icon: CalendarPlus, title: "Criar racha", detail: "Agora na aba Rachas" },
-    { href: "/admin/ranking", icon: Award, title: "Ajustar ranking", detail: "Corrigir presença e vitórias" },
-    { href: "/admin/financas", icon: WalletCards, title: "Finanças", detail: "Caixa e saldos" },
-    { href: "/admin/atividade", icon: UserRoundX, title: "Atividade", detail: "Presenças e tempo sem ir" },
-    { href: "/admin/medalhas", icon: Medal, title: "Medalhas", detail: "Entregar troféus de torneios e eventos" },
-    { href: "/admin/resumo", icon: BarChart3, title: "Resumo mensal", detail: "Artes prontas pra postar" },
+  const allShortcuts: { href: string; icon: LucideIcon; title: string; detail: string; area: "lists" | "arts" | "admin" }[] = [
+    { href: "/racha", icon: CalendarPlus, title: "Criar racha", detail: "Agora na aba Rachas", area: "lists" },
+    { href: "/admin/ranking", icon: Award, title: "Ajustar ranking", detail: "Corrigir presença e vitórias", area: "admin" },
+    { href: "/admin/financas", icon: WalletCards, title: "Finanças", detail: "Caixa e saldos", area: "admin" },
+    { href: "/admin/atividade", icon: UserRoundX, title: "Atividade", detail: "Presenças e tempo sem ir", area: "admin" },
+    { href: "/admin/medalhas", icon: Medal, title: "Medalhas", detail: "Entregar troféus de torneios e eventos", area: "admin" },
+    { href: "/admin/resumo", icon: BarChart3, title: "Resumo mensal", detail: "Artes prontas pra postar", area: "arts" },
   ];
+  const shortcuts = allShortcuts.filter((item) => item.area === "lists" || (item.area === "arts" ? canArts : isFull));
 
   return (
     <div className="space-y-4">
@@ -93,13 +97,13 @@ export default async function AdminPainelPage() {
         )}
       </section>
 
-      <section className="grid grid-cols-3 gap-1.5">
+      {isFull && <section className="grid grid-cols-3 gap-1.5">
         <Tile label="Na reserva" value={reserve.count ?? 0} href="/admin/reserva" />
         <Tile label="Nunca chamados" value={neverContacted.count ?? 0} href="/admin/reserva" warn />
         <Tile label="Camisas a receber" value={shirts.count ?? 0} href="/admin/camisas" warn />
-      </section>
+      </section>}
 
-      <section className="space-y-1.5">
+      {isFull && <section className="space-y-1.5">
         <h2 className="px-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/40">Pendências</h2>
         {pending.length ? pending.map((item, index) => (
           <Link key={`${item.href}-${index}`} href={item.href} className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-2.5 transition hover:bg-white/[0.06]">
@@ -108,7 +112,7 @@ export default async function AdminPainelPage() {
             <ChevronRight className="h-4 w-4 shrink-0 text-white/30" />
           </Link>
         )) : <p className="rounded-2xl border border-white/10 px-3 py-4 text-center text-sm text-white/50">Tudo em dia por aqui.</p>}
-      </section>
+      </section>}
 
       <section className="space-y-1.5">
         <h2 className="px-0.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-white/40">Atalhos</h2>
