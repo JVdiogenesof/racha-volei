@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Wallet, Users2, ShieldAlert, Gauge, Trophy, type LucideIcon } from "lucide-react";
+import { CalendarDays, Wallet, ShieldAlert, Gauge, Trophy, type LucideIcon } from "lucide-react";
 
 type Topic = {
   id: string;
