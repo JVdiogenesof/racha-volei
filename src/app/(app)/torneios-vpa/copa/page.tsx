@@ -247,6 +247,7 @@ export default async function CopaVpaPage() {
           cupName={cup.name}
           amount={cup.confirm_amount == null ? null : Number(cup.confirm_amount)}
           deadline={cup.confirm_deadline}
+          opensAt={cup.confirm_opens_at}
           status={myConfirmation?.status ?? null}
           source={myConfirmation?.payment_source ?? null}
           activePix={Boolean(myPending)}

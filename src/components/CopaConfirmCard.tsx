@@ -67,6 +67,7 @@ export function CopaConfirmCard({
   cupName,
   amount,
   deadline,
+  opensAt = null,
   status,
   source,
   activePix = false,
@@ -77,6 +78,8 @@ export function CopaConfirmCard({
   amount: number | null;
   /** Fim do prazo (ISO); nulo = a organização ainda não abriu a confirmação. */
   deadline: string | null;
+  /** Quando a confirmação abre (ISO); nulo = já aberta. */
+  opensAt?: string | null;
   status: "confirmed" | "declined" | null;
   source: "pix" | "free" | "manual" | null;
   /** Já existe um código Pix em aberto: reabre sozinho ao chegar. */
@@ -287,6 +290,24 @@ export function CopaConfirmCard({
         <div>
           <p className="font-bold text-white">Confirmação de presença em breve</p>
           <p className="mt-0.5 text-sm leading-relaxed text-white/65">A organização vai abrir a confirmação aqui, com o prazo. Você será avisado(a).</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Antes da abertura: avisa quando o pagamento começa (o banco também recusa o Pix até lá).
+  if (opensAt && new Date(opensAt).getTime() > now) {
+    return (
+      <section className="flex items-start gap-3 rounded-2xl border border-pink-300/35 bg-gradient-to-br from-pink-400/15 to-transparent p-4">
+        <CalendarClock className="mt-0.5 h-6 w-6 shrink-0 text-pink-300" strokeWidth={2} />
+        <div>
+          <p className="font-bold text-white">Confirmação da {cupName} abre {deadlineLabel(opensAt)}</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-white/70">
+            {amount != null ? `Pague ${money.format(amount)} por Pix aqui mesmo` : "Confirme aqui mesmo"}, de {deadlineLabel(opensAt)} até {deadlineLabel(deadline)}. Só fica com a vaga quem confirmar nesse período.
+          </p>
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-xs font-semibold text-white/85">
+            <Clock3 className="h-3.5 w-3.5" /> Abre em {remainingLabel(new Date(opensAt).getTime() - now)}
+          </p>
         </div>
       </section>
     );

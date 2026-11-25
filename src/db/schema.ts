@@ -567,6 +567,7 @@ export const cups = pgTable("cups", {
   finalEventId: uuid("final_event_id").references(() => events.id, { onDelete: "set null" }),
   confirmAmount: numeric("confirm_amount", { precision: 10, scale: 2 }),
   confirmDeadline: timestamp("confirm_deadline", { withTimezone: true }),
+  confirmOpensAt: timestamp("confirm_opens_at", { withTimezone: true }),
   createdBy: uuid("created_by").notNull().references(() => profiles.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
