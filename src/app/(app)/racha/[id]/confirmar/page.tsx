@@ -27,7 +27,7 @@ import { RachaListTabs } from "@/components/RachaListTabs";
 import { RachaHowToJoin, joinMode, type JoinStatus } from "@/components/RachaHowToJoin";
 import { PIX_KEY } from "@/lib/payment";
 import { isListFullFor, setterSpotsFor } from "@/lib/rachaSpots";
-import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, joinAsExempt, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus, transferPixSpot } from "./actions";
+import { acceptSpotOffer, cancelPixAttendance, completePixRefund, declineSpotOffer, demoteToInterested, grantPreTournamentException, joinAsExempt, lockGuaranteedSpot, organizerResolvePixAttendance, organizerTransferPixSpot, promoteToConfirmed, releaseGuaranteedSpot, removeAttendance, revokePreTournamentException, setAttendance, setEventSetterRole, setOfficialListOpen, setPaymentStatus } from "./actions";
 import { SpotOfferBanner } from "@/components/SpotOfferBanner";
 import { inviteToEvent, endGuestAccess } from "@/app/(app)/admin/reserva/actions";
 import { getActiveCommunity } from "@/lib/community";
@@ -197,9 +197,14 @@ export default async function ConfirmarPresencaPage({
   const listOpen = event.official_list_open;
   const registrationOpen = isRegistrationOpen(event.registration_opens_at, event.official_list_open);
   const dateLabel = new Date(`${event.date}T00:00:00`).toLocaleDateString("pt-BR");
-  // 20h (horário de Fortaleza) do dia anterior ao racha -- mesma regra do RPC.
+  // Mesma regra do banco (event_cancellation_deadline): racha de sábado até 10h do próprio
+  // sábado; os demais até 20h (horário de Fortaleza) do dia anterior.
   const pixCancellationDeadline = new Date(`${event.date}T20:00:00-03:00`);
   pixCancellationDeadline.setDate(pixCancellationDeadline.getDate() - 1);
+  const pixDeadlineHour = new Date(`${event.date}T12:00:00-03:00`).getUTCDay() === 6 ? 10 : 20;
+  if (pixDeadlineHour === 10) {
+    pixCancellationDeadline.setTime(new Date(`${event.date}T10:00:00-03:00`).getTime());
+  }
   const isBeforePixCancellationDeadline = new Date() < pixCancellationDeadline;
 
   const confirmados = attendanceList?.filter((a) => a.status === "confirmed") ?? [];
@@ -496,7 +501,7 @@ export default async function ConfirmarPresencaPage({
             <div className="ml-auto flex w-full flex-col gap-2 border-t border-white/10 pt-3 sm:ml-auto sm:w-auto sm:border-0 sm:pt-0">
               {isBeforePixCancellationDeadline ? (
                 <>
-                  <p className="text-xs text-emerald-100/75">Até {pixCancellationDeadline.toLocaleDateString("pt-BR")} às 20h, você pode escolher saldo ou reembolso.</p>
+                  <p className="text-xs text-emerald-100/75">Até {pixCancellationDeadline.toLocaleDateString("pt-BR")} às {pixDeadlineHour}h, você pode escolher saldo ou reembolso.</p>
                   <div className="flex flex-wrap gap-2">
                     <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada: o valor virou saldo para outro racha.">
                       <input type="hidden" name="eventId" value={id} />
@@ -512,27 +517,15 @@ export default async function ConfirmarPresencaPage({
                   </div>
                 </>
               ) : (
-                <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada. Como o prazo passou, o valor virou saldo automaticamente.">
+                <ActionForm action={cancelPixAttendance} successMessage="Desistência registrada. Como o prazo passou, não há saldo nem reembolso: o valor fica no caixa do VPA.">
                   <input type="hidden" name="eventId" value={id} />
                   <input type="hidden" name="choice" value="balance" />
-                  <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha (virará saldo)</button>
+                  <button className="inline-flex min-h-10 items-center rounded-lg border border-amber-200/25 bg-amber-400/10 px-3 text-sm font-semibold text-amber-100 hover:bg-amber-400/20">Desistir do racha (prazo passou, sem saldo)</button>
                 </ActionForm>
               )}
-              {transferCandidates.length > 0 && (
-                <ActionForm action={transferPixSpot} successMessage="Vaga transferida e registrada. Combine o pagamento diretamente com a pessoa escolhida.">
-                  <input type="hidden" name="eventId" value={id} />
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <select name="toProfileId" required defaultValue="" className="min-h-10 rounded-lg border border-white/15 bg-brand-navy px-3 text-sm text-white">
-                      <option value="" disabled>Escolher pessoa interessada</option>
-                      {transferCandidates.map((candidate) => {
-                        const candidateProfile = candidate.profiles as unknown as { full_name: string } | null;
-                        return <option key={candidate.profile_id} value={candidate.profile_id}>{candidateProfile?.full_name ?? "Jogador"}</option>;
-                      })}
-                    </select>
-                    <button className="inline-flex min-h-10 items-center justify-center rounded-lg border border-purple-200/30 bg-purple-400/15 px-3 text-sm font-semibold text-purple-100 hover:bg-purple-400/25">Transferir vaga</button>
-                  </div>
-                </ActionForm>
-              )}
+              <p className="text-xs leading-relaxed text-white/50">
+                Quer passar sua vaga para outra pessoa? Fale com um organizador: a transferência só vale com a aprovação dele e é feita por ele no app.
+              </p>
             </div>
           ) : (
             <CancelAttendanceButton

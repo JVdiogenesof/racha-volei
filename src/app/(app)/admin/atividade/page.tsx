@@ -136,7 +136,7 @@ export default async function AdminAtividadePage({ searchParams }: { searchParam
                 {atRisk && (
                   <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-100">
                     <TriangleAlert className="h-3 w-3" strokeWidth={2.5} />
-                    {player.streak}/{ATTENDANCE_REMOVE_THRESHOLD} faltas seguidas · sai em {remaining === 1 ? "1 racha" : `${remaining} rachas`}
+                    {player.streak}/{ATTENDANCE_REMOVE_THRESHOLD} fins de semana sem vir · sai em {remaining === 1 ? "1 fim de semana" : `${remaining} fins de semana`}
                   </p>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import { Logo } from "@/components/Logo";
+import { RULES_UPDATED_LABEL } from "@/lib/rulesVersion";
 import { RegulamentoTabs } from "@/components/RegulamentoTabs";
 
 export const metadata = {
@@ -12,7 +13,7 @@ export default function RegulamentoPage() {
 
       <h1 className="text-2xl font-bold text-white">Regulamento VPA</h1>
       <p className="mt-1 text-sm text-white/60">
-        As regras do nosso racha, resumidas por tópico. Última atualização: outubro de 2026.
+        As regras do nosso racha, resumidas por tópico. Última atualização: {RULES_UPDATED_LABEL}.
       </p>
 
       <div className="mt-8">

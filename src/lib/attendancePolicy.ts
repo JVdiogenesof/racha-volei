@@ -3,14 +3,23 @@ import type { Community } from "./community";
 import { getPresentProfileIdsByEvent } from "./presence";
 import { sendPushToProfiles } from "./push";
 
-// Regulamento de Permanência do VPA: 4 rachas finalizados seguidos sem
-// participação alertam o jogador; 6 seguidos removem do grupo. Conta todo
-// racha finalizado da comunidade -- normal, pré-torneio e mini torneio.
+// Regulamento de Permanência do VPA: 4 FINS DE SEMANA seguidos sem participação
+// alertam o jogador; 6 seguidos removem do grupo. Cada fim de semana (sábado +
+// domingo) conta uma vez: quem vai a qualquer racha dele não tem falta. Conta
+// racha normal, pré-torneio e mini torneio (menos os marcados para não contar
+// no ranking).
 export const ATTENDANCE_ALERT_THRESHOLD = 4;
 export const ATTENDANCE_REMOVE_THRESHOLD = 6;
 // Olha só os rachas finalizados recentes -- o suficiente pra cobrir o streak
 // mesmo que a pessoa não tenha ido em nenhum nesse intervalo todo.
-const LOOKBACK_EVENT_COUNT = ATTENDANCE_REMOVE_THRESHOLD + 5;
+const LOOKBACK_EVENT_COUNT = (ATTENDANCE_REMOVE_THRESHOLD + 3) * 2;
+
+/** Domingo do fim de semana do racha (sábado e domingo caem na mesma chave). */
+export function weekendKey(date: string) {
+  const day = new Date(`${date.slice(0, 10)}T12:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + ((7 - day.getUTCDay()) % 7));
+  return day.toISOString().slice(0, 10);
+}
 
 type StreakPlayer = { id: string; created_at: string; absence_counts_from: string | null };
 
@@ -34,9 +43,18 @@ export async function getAbsenceStreaks(
     .select("id, date")
     .eq("community", community)
     .eq("status", "finished")
+    .eq("counts_for_ranking", true)
     .order("date", { ascending: false })
     .limit(LOOKBACK_EVENT_COUNT);
   if (!events?.length) return streaks;
+
+  // Do fim de semana mais recente para trás.
+  const weekends: { date: string; id: string }[][] = [];
+  for (const event of events) {
+    const last = weekends[weekends.length - 1];
+    if (last && weekendKey(last[0].date) === weekendKey(event.date)) last.push(event);
+    else weekends.push([event]);
+  }
 
   const [presentByEvent, { data: players }] = await Promise.all([
     getPresentProfileIdsByEvent(supabase, events.map((event) => event.id)),
@@ -51,9 +69,10 @@ export async function getAbsenceStreaks(
   for (const player of (players ?? []) as StreakPlayer[]) {
     const countsFrom = new Date(player.absence_counts_from ?? player.created_at);
     let streak = 0;
-    for (const event of events) {
-      if (new Date(`${event.date}T00:00:00`) < countsFrom) break;
-      if (presentByEvent.get(event.id)?.has(player.id)) break;
+    for (const weekend of weekends) {
+      const counted = weekend.filter((event) => new Date(`${event.date}T00:00:00`) >= countsFrom);
+      if (!counted.length) break;
+      if (counted.some((event) => presentByEvent.get(event.id)?.has(player.id))) break;
       streak += 1;
     }
     streaks.set(player.id, streak);
@@ -90,7 +109,7 @@ export async function applyAttendancePolicy(supabase: SupabaseClient, community:
     await supabase.from("tournament_reserved_players").delete().eq("community", community).in("profile_id", toRemove);
     await sendPushToProfiles(supabase, toRemove, {
       title: "Você foi removido do VPA",
-      body: "6 rachas seguidos sem participar. Pra voltar, entre pela lista de reserva -- sem vaga garantida.",
+      body: "6 fins de semana seguidos sem participar. Pra voltar, entre pela lista de reserva -- sem vaga garantida.",
       url: "/",
     });
   }
@@ -98,7 +117,7 @@ export async function applyAttendancePolicy(supabase: SupabaseClient, community:
   if (toAlert.length) {
     await sendPushToProfiles(supabase, toAlert, {
       title: "Fica de olho! ⚠️",
-      body: "Você está há 4 rachas seguidos sem participar. Com 6 seguidos, o acesso é removido automaticamente.",
+      body: "Você está há 4 fins de semana seguidos sem participar. Com 6 seguidos, o acesso é removido automaticamente.",
       url: "/",
     });
   }

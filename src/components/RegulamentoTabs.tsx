@@ -13,42 +13,35 @@ type Topic = {
 const TOPICS: Topic[] = [
   {
     id: "lista",
-    label: "Lista",
+    label: "Lista e vagas",
     icon: CalendarDays,
     items: [
       {
-        title: "Abertura",
+        title: "Abertura das listas",
         points: [
-          "A lista de interesse abre toda quinta, às 20h.",
-          "Ao marcar interesse, você já paga a vaga por Pix na hora — a confirmação é automática, sem aprovação manual.",
+          "Racha de sábado: a lista abre na quarta-feira, às 20h, em lote único.",
+          "Racha de domingo: a lista abre em dois lotes. Quinta-feira, às 20h, com 16 vagas. Sexta-feira, às 12h, com 8 vagas. O que sobrar do primeiro lote passa para o segundo.",
+          "Os horários são os definidos pela organização em cada racha, sempre avisados antes.",
+          "A confirmação é automática: marcou interesse, pagou o Pix, a vaga é sua.",
         ],
       },
       {
-        title: "Lista cheia",
+        title: "Vagas especiais",
         points: [
-          "Ainda dá pra marcar interesse — você entra na lista de espera, em ordem de quem marcou primeiro.",
+          "Levantador, novato e vaga garantida estão incluídos no total de vagas do racha.",
+          "Levantador tem cota própria (1 a cada 6 vagas), separada da vaga comum.",
+          "Novatos têm cota reservada quando a organização define. Dentro dela pode haver 1 ou 2 vagas de levantador novato: elas contam dentro das vagas de novato, então o total do grupo não muda.",
+          "A organização pode garantir uma vaga antes da lista abrir. A pessoa conclui o Pix depois, sem disputar vaga.",
         ],
       },
       {
-        title: "Vaga aberta por desistência",
+        title: "Lista cheia e desistências",
         points: [
-          "A próxima pessoa da lista de espera é chamada automaticamente e tem 1 hora pra aceitar.",
-          "Sem resposta no prazo, ou se recusar, ela sai da lista e a vaga passa pra próxima pessoa.",
-          "Em racha pago, \"aceitar\" significa pagar — a vaga só é garantida depois do Pix confirmado.",
+          "Com a lista cheia, quem marca interesse entra na lista de espera, por ordem de chegada.",
+          "Quando uma vaga abre, a próxima pessoa é chamada automaticamente e tem 1 hora para aceitar. Em racha pago, aceitar significa pagar o Pix.",
+          "Sem resposta no prazo, ou se recusar, a vaga passa para a próxima pessoa.",
+          "As vagas são pessoais. Passar a vaga para outra pessoa só vale com a aprovação de um organizador, que faz a transferência no app.",
         ],
-      },
-    ],
-  },
-  {
-    id: "vagas",
-    label: "Vagas especiais",
-    icon: Users2,
-    items: [
-      { title: "Levantador", points: ["Tem cota própria, separada da vaga comum."] },
-      { title: "Convidado / novato", points: ["Cota reservada própria, quando definida pelo organizador."] },
-      {
-        title: "Vaga garantida",
-        points: ["O organizador pode reservar uma vaga pra alguém antes da lista abrir; a pessoa conclui o pagamento por Pix depois, sem disputar vaga com ninguém."],
       },
     ],
   },
@@ -58,62 +51,72 @@ const TOPICS: Topic[] = [
     icon: Wallet,
     items: [
       {
-        title: "Pagamento 100% automático por Pix",
+        title: "Pagamento por Pix",
         points: [
-          "Ao marcar interesse, você gera o Pix na hora e paga direto pelo site — sem precisar de ninguém aprovar.",
-          "A vaga fica reservada por 5 minutos pra você concluir o pagamento.",
-          "Assim que o Pix cai, sua vaga é confirmada automaticamente.",
+          "Todo pagamento é feito por Pix, pelo próprio site, sem precisar de aprovação de ninguém.",
+          "A vaga fica reservada por 5 minutos para você concluir o pagamento. Assim que o Pix cai, a vaga é confirmada.",
         ],
       },
       {
-        title: "Prazo pra desistir",
+        title: "Desistência dentro do prazo",
         points: [
-          "Até sábado, 20h: você escolhe entre virar saldo pra outro racha ou pedir reembolso.",
-          "Depois de sábado 20h: a desistência sempre vira saldo — nunca mais reembolso, e nunca fica retida.",
+          "Racha de sábado: até sábado, às 10h. Racha de domingo: até sábado, às 20h.",
+          "Dentro do prazo você escolhe entre ficar com o valor como saldo para outro racha ou pedir reembolso. O reembolso sai em até 48 horas.",
         ],
       },
-      { title: "Troca de vaga", points: ["Quem já pagou pode transferir a vaga direto pra uma pessoa específica da lista de interessados."] },
+      {
+        title: "Desistência fora do prazo",
+        points: [
+          "Passado o prazo, não há saldo nem reembolso: o valor vai para o caixa do VPA, mesmo que outra pessoa ocupe a vaga.",
+          "O caixa é usado em atividades, materiais, premiações, eventos e demais necessidades do VPA.",
+        ],
+      },
     ],
   },
   {
     id: "conduta",
-    label: "Conduta",
+    label: "Presença e conduta",
     icon: ShieldAlert,
     items: [
       {
-        title: "Participação e ausências",
+        title: "Ausências",
         points: [
-          "Depois de 4 rachas finalizados seguidos sem participar, você recebe um aviso automático.",
-          "Depois de 6 seguidos, o acesso ao grupo e ao app é removido automaticamente.",
-          "A contagem reseta assim que você participa de um racha de novo.",
+          "A contagem é por fim de semana: sábado e domingo juntos valem uma vez. Ir a qualquer racha do fim de semana interrompe a contagem.",
+          "Com 4 fins de semana seguidos sem participar, você recebe um aviso automático. Com 6 seguidos, o acesso ao grupo e ao app é removido.",
+          "Ficar na lista de espera sem chance de jogar não conta como ausência.",
+          "A contagem recomeça do zero assim que você participa de um racha.",
         ],
       },
       {
-        title: "O que acontece ao ser removido(a)",
+        title: "Remoção e retorno",
         points: [
-          "Sua pontuação no Índice VPA zera e some do ranking.",
-          "Vaga já garantida pro Torneio Oficial (por índice ou pré-torneio) é perdida e redistribuída pelos critérios do ranking.",
-        ],
-      },
-      {
-        title: "Retorno ao grupo",
-        points: [
-          "Dá pra pedir retorno pela lista de reserva, nos mesmos critérios de quem está entrando pela primeira vez.",
+          "A remoção por ausência é organizacional, não é punição. Quem sai pode pedir retorno pela lista de reserva, nos mesmos critérios de quem entra pela primeira vez.",
+          "Quem é removido(a) tem a pontuação do Índice zerada e perde a vaga já garantida no Torneio Oficial, que é redistribuída pelo ranking.",
           "Não há vaga garantida nem recuperação da pontuação anterior.",
         ],
       },
       {
-        title: "Situações excepcionais",
+        title: "Compromisso com a vaga",
         points: [
-          "Impedimentos de força maior devem ser avisados diretamente a um organizador -- casos assim são avaliados fora da contagem automática.",
-          "Comportamento que comprometa o respeito e a convivência do grupo pode gerar advertência ou remoção, independente da contagem de faltas.",
+          "Atraso de mais de 30 minutos reduz em 50% a presença daquele racha. Justificativas são avaliadas pela administração.",
+          "Falta sem justificativa depois de confirmar a vaga pode gerar impedimento de participar nos dois fins de semana seguintes.",
+          "Saída antes do fim do racha é avaliada caso a caso.",
+          "Impedimentos de força maior devem ser avisados a um organizador e são avaliados fora da contagem automática.",
         ],
       },
       {
-        title: "Uniforme oficial",
+        title: "Convivência e uniforme",
         points: [
-          "Recomendado nas atividades normais, pra fortalecer a identidade do VPA e valorizar os patrocinadores.",
-          "Obrigatório no Torneio Oficial.",
+          "Respeito, diversão e boa convivência valem para todos. Comportamento que fere isso pode gerar advertência ou remoção, independente da contagem de ausências.",
+          "Dúvidas técnicas, como notas e formação de times, são tratadas direto com a administração.",
+          "O uniforme oficial é recomendado nos rachas e obrigatório no Torneio Oficial.",
+        ],
+      },
+      {
+        title: "Times e notas",
+        points: [
+          "As equipes são formadas pelo aplicativo e a administração pode ajustá-las antes e durante o racha.",
+          "As notas são confidenciais, exclusivas da administração, e servem só para equilibrar as equipes.",
         ],
       },
     ],
@@ -126,34 +129,52 @@ const TOPICS: Topic[] = [
       {
         title: "Como é calculado",
         points: [
-          "Nota viva dos últimos 8 rachas — os 4 mais recentes pesam mais que os antigos.",
-          "55% aproveitamento (vitórias) + 35% presença + 10% saldo de pontos, com bônus por evolução recente.",
-          "Saldo de pontos é a margem média dos seus jogos (só os que têm placar). Pesa pouco e funciona como desempate fino entre quem tem campanha parecida.",
-          "Precisa de pelo menos 2 rachas jogados pra entrar na classificação.",
+          "Nota viva dos últimos 8 rachas — os 4 mais recentes pesam 2,5 vezes mais que os anteriores.",
+          "40% saldo de pontos + 30% aproveitamento + 30% presença, mais o bônus de evolução.",
+          "Saldo de pontos: margem média dos seus jogos com placar, entre pontos feitos e sofridos. Aproveitamento: percentual de vitórias. Presença: quanto você esteve nos rachas da janela.",
+          "Com poucos jogos, aproveitamento e saldo ficam mais perto de 50, para uma boa sequência curta não valer como campanha sólida.",
+          "Bônus de evolução de até 10 pontos para quem voltou a jogar e melhorou o aproveitamento dos 4 rachas mais recentes em relação aos anteriores.",
+          "É preciso ao menos 2 participações para aparecer no ranking.",
         ],
       },
       {
-        title: "Classificação pro Torneio Oficial",
+        title: "O que conta pontos",
         points: [
-          "As 24 primeiras posições garantem vaga.",
-          "Top 10 aparece em verde, 11º–24º em azul, o resto em vermelho (fora da zona).",
+          "Todo racha conta para o Índice e para os demais rankings, inclusive os de sábado, com 3 ou 4 times. Pré-torneios e copas também pontuam.",
+          "A organização escolhe, racha a racha, se ele conta para o ranking (por exemplo, um racha de teste ou especial pode ficar de fora) e avisa antes.",
+          "A seleção do mês segue a mesma lógica e conta todos os rachas do mês.",
+        ],
+      },
+      {
+        title: "Desempate",
+        points: ["Em empate no Índice, vale o saldo de pontos, depois o aproveitamento, depois a presença."],
+      },
+      {
+        title: "Quando começa",
+        points: [
+          "Os pesos novos e a contagem dos sábados valem a partir do primeiro racha de dezembro de 2026.",
+          "Ninguém é zerado e não nasce um índice novo. Os rachas anteriores continuam como foram registrados.",
         ],
       },
     ],
   },
   {
-    id: "pretorneio",
-    label: "Pré-torneio",
+    id: "torneios",
+    label: "Torneios",
     icon: Trophy,
     items: [
       {
-        title: "Formato",
-        points: ["Fase de grupos + final decide o time campeão do pré-torneio."],
+        title: "Torneio Oficial",
+        points: [
+          "As 24 primeiras posições do Índice garantem vaga. Top 10 em verde, 11º ao 24º em azul, o resto fora da zona.",
+          "O time campeão do pré-torneio garante vaga direta, sem depender do Índice.",
+          "Quem não confirma dentro do prazo perde a vaga, que é redistribuída pelo ranking.",
+        ],
       },
       {
-        title: "Classificação",
+        title: "Pré-torneio",
         points: [
-          "O time campeão garante vaga direto no Torneio Oficial, sem depender da nota do Índice.",
+          "Fase de grupos + final decide o time campeão.",
           "Todo mundo já classificado (por nota ou por pré-torneio) aparece em Torneios VPA.",
         ],
       },

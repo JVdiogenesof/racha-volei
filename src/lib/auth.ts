@@ -34,6 +34,8 @@ export interface CurrentProfile {
   organizer_scope: OrganizerScope;
   status: "pending" | "approved" | "rejected" | "removed" | "guest" | "visitor" | "suspended";
   guest_for_event_id: string | null;
+  /** Versão do regulamento aceita (ver RULES_VERSION). */
+  rules_accepted_version: string | null;
 }
 
 export async function requireMember(): Promise<CurrentProfile> {

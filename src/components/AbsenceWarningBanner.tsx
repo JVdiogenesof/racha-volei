@@ -25,11 +25,11 @@ export function AbsenceWarningBanner({ streak }: { streak: number }) {
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-bold text-white">
-            {critical ? "Falta 1 racha pra você sair do grupo" : `Faltam ${remaining} rachas pra você sair do grupo`}
+            {critical ? "Falta 1 fim de semana pra você sair do grupo" : `Faltam ${remaining} fins de semana pra você sair do grupo`}
           </h3>
           <p className="mt-0.5 text-xs leading-relaxed text-white/70">
-            Já são <strong className="font-bold text-white">{streak} rachas seguidos</strong> sem participar. Na {ATTENDANCE_REMOVE_THRESHOLD}ª falta
-            seguida o acesso é removido automaticamente, junto com sua pontuação no Índice e vaga de torneio.
+            Já são <strong className="font-bold text-white">{streak} fins de semana seguidos</strong> sem participar de nenhum racha. No {ATTENDANCE_REMOVE_THRESHOLD}º fim de semana
+            sem vir o acesso é removido automaticamente, junto com sua pontuação no Índice e vaga de torneio.
           </p>
         </div>
         <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-black tabular-nums ${tone.chip}`}>

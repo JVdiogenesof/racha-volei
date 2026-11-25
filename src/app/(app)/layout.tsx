@@ -15,9 +15,15 @@ import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { ProfileNewsPrompt } from "@/components/ProfileNewsPrompt";
 import { BadgeCelebrationGate } from "@/components/BadgeCelebrationGate";
 import { ViewportRecovery } from "@/components/ViewportRecovery";
+import { RulesAcceptance } from "@/components/RulesAcceptance";
+import { RULES_VERSION } from "@/lib/rulesVersion";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const profile = await requireProfile();
+  // Todo mundo precisa aceitar a versão vigente do regulamento antes de usar o app.
+  if (profile.rules_accepted_version !== RULES_VERSION) {
+    return <RulesAcceptance name={profile.full_name} />;
+  }
   const isVisitor = profile.status === "visitor" || profile.status === "guest";
   const community = await getActiveCommunity();
   const supabase = await createClient();

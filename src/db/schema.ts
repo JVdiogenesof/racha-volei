@@ -83,6 +83,9 @@ export const profiles = pgTable("profiles", {
   fullName: text("full_name").notNull(),
   birthdate: date("birthdate"),
   phone: text("phone"),
+  // Versão do regulamento que a pessoa aceitou e quando.
+  rulesAcceptedVersion: text("rules_accepted_version"),
+  rulesAcceptedAt: timestamp("rules_accepted_at", { withTimezone: true }),
   instagramHandle: text("instagram_handle"),
   avatarUrl: text("avatar_url"),
   // Moldura da foto escolhida pela pessoa (id de src/lib/avatarFrames.ts); nulo = sem moldura.
