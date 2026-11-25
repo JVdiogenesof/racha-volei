@@ -6,7 +6,7 @@ import { requireEventParticipant, requireOrganizer } from "@/lib/auth";
 import { removeFromCurrentTeam } from "@/lib/teamCleanup";
 import { sendPushToProfiles } from "@/lib/push";
 import { isRegistrationOpen } from "@/lib/registrationSchedule";
-import { setterSpotsFor } from "@/lib/rachaSpots";
+import { newcomerSetterSpotsFor, setterSpotsFor } from "@/lib/rachaSpots";
 
 /**
  * Vaga de confirmado abriu: oferece pra próxima pessoa da fila de
@@ -455,28 +455,44 @@ export async function setEventSetterRole(formData: FormData) {
   }
 
   const isSetter = setterValue === "true";
-  if (isSetter) {
-    const [{ data: event }, { count: setters }] = await Promise.all([
-      supabase.from("events").select("max_players, num_teams, team_size").eq("id", eventId).maybeSingle(),
-      supabase
-        .from("attendance")
-        .select("id", { count: "exact", head: true })
-        .eq("event_id", eventId)
-        .eq("status", "confirmed")
-        .eq("uses_setter_spot", true)
-        .neq("profile_id", profileId),
-    ]);
-    const capacity = event ? (event.max_players ?? event.num_teams * event.team_size) : 0;
-    if (capacity && (setters ?? 0) >= setterSpotsFor(capacity)) {
-      throw new Error(`As ${setterSpotsFor(capacity)} vagas de levantador já estão ocupadas. Desmarque um levantador antes.`);
+  const [{ data: event }, { data: person }, { data: confirmedRows }] = await Promise.all([
+    supabase.from("events").select("max_players, num_teams, team_size, newcomer_reserved_spots, newcomer_setter_spots").eq("id", eventId).maybeSingle(),
+    supabase.from("profiles").select("status").eq("id", profileId).maybeSingle(),
+    supabase
+      .from("attendance")
+      .select("uses_setter_spot, uses_newcomer_spot")
+      .eq("event_id", eventId)
+      .eq("status", "confirmed")
+      .neq("profile_id", profileId),
+  ]);
+  const isNewcomerPerson = person?.status === "guest";
+  const newcomerReserved = event?.newcomer_reserved_spots ?? 0;
+  // Novato com vagas de novato no racha continua novato mesmo sendo levantador.
+  const staysNewcomer = isNewcomerPerson && (!isSetter || newcomerReserved > 0);
+  if (isSetter && event) {
+    const capacity = event.max_players ?? event.num_teams * event.team_size;
+    const spots = setterSpotsFor(capacity);
+    const k = newcomerSetterSpotsFor(capacity, newcomerReserved, event.newcomer_setter_spots ?? 0);
+    const rows = confirmedRows ?? [];
+    const newcomerSetters = rows.filter((row) => row.uses_setter_spot && row.uses_newcomer_spot).length;
+    const memberSetters = rows.filter((row) => row.uses_setter_spot && !row.uses_newcomer_spot).length;
+    if (staysNewcomer) {
+      if (newcomerSetters >= k) {
+        throw new Error(
+          k === 0
+            ? "Este racha não tem vaga de levantador novato. Ajuste a quantidade ao editar o racha."
+            : `As ${k} vaga${k === 1 ? "" : "s"} de levantador novato já estão ocupadas. Desmarque um levantador novato antes.`,
+        );
+      }
+    } else if (memberSetters + Math.max(0, newcomerSetters - k) >= spots - k) {
+      throw new Error(`As ${spots - k} vagas de levantador do grupo já estão ocupadas. Desmarque um levantador antes.`);
     }
   }
 
   // Levantador marcado à mão conta na cota de levantadores da lista.
-  const { data: person } = await supabase.from("profiles").select("status").eq("id", profileId).maybeSingle();
   const { error: spotError } = await supabase
     .from("attendance")
-    .update({ uses_setter_spot: isSetter, uses_newcomer_spot: !isSetter && person?.status === "guest" })
+    .update({ uses_setter_spot: isSetter, uses_newcomer_spot: staysNewcomer })
     .eq("event_id", eventId)
     .eq("profile_id", profileId);
   if (spotError) throw new Error(spotError.message);

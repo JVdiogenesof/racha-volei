@@ -32,6 +32,8 @@ function parseEventCapacity(formData: FormData) {
   const teamSize = Number(formData.get("teamSize") ?? 6);
   const maxPlayers = Number(formData.get("maxPlayers") ?? 0);
   const newcomerReservedSpots = Number(formData.get("newcomerReservedSpots") ?? 0);
+  const newcomerSetterSpots = newcomerReservedSpots > 0 ? Number(formData.get("newcomerSetterSpots") ?? 0) : 0;
+  const countsForRanking = String(formData.get("countsForRanking") ?? "true") !== "false";
   const teamCapacity = numTeams * teamSize;
   const gameStyle = String(formData.get("gameStyle") ?? "casual") as EventGameStyle;
 
@@ -58,7 +60,17 @@ function parseEventCapacity(formData: FormData) {
     throw new Error(`Reserve no máximo ${maxPlayers - setterReservedSpots} vagas para novatos: ${setterReservedSpots} já ficam protegidas para levantadores.`);
   }
 
-  return { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle };
+  if (
+    !Number.isInteger(newcomerSetterSpots) ||
+    newcomerSetterSpots < 0 ||
+    newcomerSetterSpots > 2 ||
+    newcomerSetterSpots > newcomerReservedSpots ||
+    newcomerSetterSpots > setterReservedSpots
+  ) {
+    throw new Error("Levantadores novatos: escolha 0, 1 ou 2, dentro das vagas de novato e das vagas de levantador.");
+  }
+
+  return { numTeams, teamSize, maxPlayers, newcomerReservedSpots, newcomerSetterSpots, countsForRanking, gameStyle };
 }
 
 export async function createEvent(formData: FormData) {
@@ -70,7 +82,7 @@ export async function createEvent(formData: FormData) {
   const time = String(formData.get("time") ?? "") || null;
   const location = String(formData.get("location") ?? "").trim() || null;
   const registrationOpensAt = parseRegistrationSchedule(formData, date, time);
-  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
+  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, newcomerSetterSpots, countsForRanking, gameStyle } = parseEventCapacity(formData);
   const spotBatches = spotBatchesFromForm(formData, maxPlayers, registrationOpensAt, date);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
@@ -100,6 +112,8 @@ export async function createEvent(formData: FormData) {
       pix_payment_enabled: pixPaymentEnabled,
       max_players: maxPlayers,
       newcomer_reserved_spots: newcomerReservedSpots,
+      newcomer_setter_spots: newcomerSetterSpots,
+      counts_for_ranking: countsForRanking,
       community,
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
@@ -167,7 +181,7 @@ export async function updateEvent(formData: FormData) {
     ? parseRegistrationSchedule(formData, date, time)
     : currentEvent.registration_opens_at;
   if (registrationOpensAt) validateRegistrationSchedule(registrationOpensAt, date, time);
-  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, gameStyle } = parseEventCapacity(formData);
+  const { numTeams, teamSize, maxPlayers, newcomerReservedSpots, newcomerSetterSpots, countsForRanking, gameStyle } = parseEventCapacity(formData);
   const spotBatches = spotBatchesFromForm(formData, maxPlayers, registrationOpensAt, date);
   const pricePerPlayerRaw = String(formData.get("pricePerPlayer") ?? "").trim();
   const pricePerPlayer = pricePerPlayerRaw ? Number(pricePerPlayerRaw) : null;
@@ -195,17 +209,23 @@ export async function updateEvent(formData: FormData) {
   const confirmed = confirmedRows ?? [];
   const setterCount = confirmed.filter((row) => row.uses_setter_spot).length;
   const newcomerCount = confirmed.filter((row) => row.uses_newcomer_spot).length;
+  const newcomerSetterCount = confirmed.filter((row) => row.uses_setter_spot && row.uses_newcomer_spot).length;
+  const memberSetterCount = setterCount - newcomerSetterCount;
+  const newcomerRegularCount = newcomerCount - newcomerSetterCount;
+  const setterReservedSpots = setterSpotsFor(maxPlayers);
   // Novato além da cota de novatos ocupa vaga comum (mesma regra do banco), então
   // não bloqueia a edição: só entra na conta das vagas comuns.
-  const regularCount = confirmed.length - setterCount - Math.min(newcomerCount, newcomerReservedSpots);
-  const setterReservedSpots = setterSpotsFor(maxPlayers);
+  const regularCount = confirmed.length - setterCount - Math.min(newcomerRegularCount, newcomerReservedSpots - newcomerSetterSpots);
   if (confirmed.length > maxPlayers) {
     throw new Error(`Já existem ${confirmed.length} confirmados. Aumente o total de vagas antes de salvar.`);
   }
-  if (setterCount > setterReservedSpots) {
-    throw new Error(`Já existem ${setterCount} levantadores confirmados. Mantenha ao menos ${setterCount * 6} vagas ou ajuste a lista antes de salvar.`);
+  if (memberSetterCount > setterReservedSpots - newcomerSetterSpots) {
+    throw new Error(`Já existem ${memberSetterCount} levantadores do grupo confirmados. Mantenha ao menos ${(memberSetterCount + newcomerSetterSpots) * 6} vagas ou ajuste a lista antes de salvar.`);
   }
-  if (regularCount > maxPlayers - newcomerReservedSpots - setterReservedSpots) {
+  if (newcomerSetterCount > newcomerSetterSpots) {
+    throw new Error(`Já existem ${newcomerSetterCount} levantadores novatos confirmados. Mantenha ao menos essa quantidade de vagas de levantador novato.`);
+  }
+  if (regularCount > maxPlayers - newcomerReservedSpots - setterReservedSpots + newcomerSetterSpots) {
     throw new Error(
       `Já existem ${regularCount} jogadores nas vagas comuns. Reduza as vagas protegidas ou aumente o total de vagas.`,
     );
@@ -223,6 +243,8 @@ export async function updateEvent(formData: FormData) {
       pix_payment_enabled: pixPaymentEnabled,
       max_players: maxPlayers,
       newcomer_reserved_spots: newcomerReservedSpots,
+      newcomer_setter_spots: newcomerSetterSpots,
+      counts_for_ranking: countsForRanking,
       is_pre_torneio: isPreTorneio,
       is_mini_torneio: isMiniTorneio,
       registration_opens_at: registrationOpensAt,

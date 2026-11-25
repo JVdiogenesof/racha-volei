@@ -79,7 +79,7 @@ export default async function ConfirmarPresencaPage({
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, community, registration_opens_at, is_pre_torneio, first_batch_spots, second_batch_opens_at")
+        .select("id, date, time, location, status, official_list_open, price_per_player, pix_payment_enabled, max_players, team_size, num_teams, newcomer_reserved_spots, newcomer_setter_spots, community, registration_opens_at, is_pre_torneio, first_batch_spots, second_batch_opens_at")
         .eq("id", id)
         .maybeSingle(),
       supabase
@@ -239,9 +239,11 @@ export default async function ConfirmarPresencaPage({
   const isFull = batchFull || isListFullFor({
     capacity: eventCapacity,
     newcomerReserved: event.newcomer_reserved_spots,
+    newcomerSetterSpots: event.newcomer_setter_spots ?? 0,
     confirmed: confirmados.length,
     setters: setterConfirmedCount,
     newcomers: newcomerConfirmedCount,
+    newcomerSetters: confirmados.filter((attendance) => attendance.uses_setter_spot && attendance.uses_newcomer_spot).length,
     isSetter: amSetter,
     isGuest: profile.status === "guest",
   });

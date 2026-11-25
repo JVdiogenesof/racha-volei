@@ -55,7 +55,7 @@ export default async function HomePage() {
     await Promise.all([
       supabase
         .from("events")
-        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, is_pre_torneio, is_mini_torneio, registration_opens_at, first_batch_spots, second_batch_opens_at")
+        .select("id, date, time, location, team_size, status, official_list_open, price_per_player, pix_payment_enabled, max_players, newcomer_reserved_spots, newcomer_setter_spots, is_pre_torneio, is_mini_torneio, registration_opens_at, first_batch_spots, second_batch_opens_at")
         .eq("community", community)
         .gte("date", today)
         .neq("status", "finished")
@@ -116,12 +116,13 @@ export default async function HomePage() {
 
   // Situação da pessoa e contagens do segundo racha (o primeiro usa as consultas abaixo).
   const loadSecondaryState = async (event: NonNullable<typeof secondaryRacha>) => {
-    const [{ data: attendance }, { data: payment }, { count: confirmed }, { count: newcomers }, { count: setters }, level] = await Promise.all([
+    const [{ data: attendance }, { data: payment }, { count: confirmed }, { count: newcomers }, { count: setters }, { count: newcomerSetters }, level] = await Promise.all([
       supabase.from("attendance").select("status").eq("event_id", event.id).eq("profile_id", profile.id).maybeSingle(),
       supabase.from("payments").select("paid").eq("event_id", event.id).eq("profile_id", profile.id).maybeSingle(),
       supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed"),
       supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed").eq("uses_newcomer_spot", true),
       supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed").eq("uses_setter_spot", true),
+      supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", event.id).eq("status", "confirmed").eq("uses_setter_spot", true).eq("uses_newcomer_spot", true),
       event.official_list_open ? getRachaLevel(supabase, event.id) : Promise.resolve(null),
     ]);
     const confirmedTotal = confirmed ?? 0;
@@ -132,9 +133,11 @@ export default async function HomePage() {
       isListFullFor({
         capacity: event.max_players,
         newcomerReserved: event.newcomer_reserved_spots ?? 0,
+        newcomerSetterSpots: event.newcomer_setter_spots ?? 0,
         confirmed: confirmedTotal,
         setters: setters ?? 0,
         newcomers: newcomers ?? 0,
+        newcomerSetters: newcomerSetters ?? 0,
         isSetter: Boolean(profile.is_setter),
         isGuest: profile.status === "guest",
       }));
@@ -191,6 +194,7 @@ export default async function HomePage() {
     { count: confirmedCount },
     { count: newcomerConfirmedCount },
     { count: setterConfirmedCount },
+    { count: newcomerSetterConfirmedCount },
     { count: reserveCount },
     { count: interessadosCount },
     { data: declineRows },
@@ -212,6 +216,9 @@ export default async function HomePage() {
       : Promise.resolve({ count: null }),
     proximoRacha
       ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed").eq("uses_setter_spot", true)
+      : Promise.resolve({ count: null }),
+    proximoRacha
+      ? supabase.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", proximoRacha.id).eq("status", "confirmed").eq("uses_setter_spot", true).eq("uses_newcomer_spot", true)
       : Promise.resolve({ count: null }),
     profile.is_organizer
       ? supabase.from("reserve_list").select("id", { count: "exact", head: true }).contains("communities", [community])
@@ -243,9 +250,11 @@ export default async function HomePage() {
     isListFullFor({
       capacity: proximoRacha.max_players,
       newcomerReserved: proximoRacha.newcomer_reserved_spots ?? 0,
+      newcomerSetterSpots: proximoRacha.newcomer_setter_spots ?? 0,
       confirmed: confirmedCount ?? 0,
       setters: setterConfirmedCount ?? 0,
       newcomers: newcomerConfirmedCount ?? 0,
+      newcomerSetters: newcomerSetterConfirmedCount ?? 0,
       isSetter: Boolean(profile.is_setter),
       isGuest: profile.status === "guest",
     }));

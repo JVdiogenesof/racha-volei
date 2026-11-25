@@ -20,6 +20,8 @@ export type RachaFormDefaults = {
   maxPlayers: number | null;
   teamSize: number;
   newcomerReservedSpots: number;
+  newcomerSetterSpots: number;
+  countsForRanking: boolean;
   isPreTorneio: boolean;
   isMiniTorneio: boolean;
   pricePerPlayer: number | null;
@@ -65,6 +67,8 @@ export function RachaForm({
         defaultMaxPlayers={defaults.maxPlayers}
         defaultTeamSize={defaults.teamSize}
         defaultNewcomerReservedSpots={defaults.newcomerReservedSpots}
+        defaultNewcomerSetterSpots={defaults.newcomerSetterSpots}
+        defaultCountsForRanking={defaults.countsForRanking}
         defaultIsPreTorneio={defaults.isPreTorneio}
         defaultIsMiniTorneio={defaults.isMiniTorneio}
       />

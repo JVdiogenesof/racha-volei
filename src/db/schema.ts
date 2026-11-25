@@ -163,6 +163,10 @@ export const events = pgTable("events", {
   // avisar quem marcar interesse depois que a lista já estiver cheia.
   maxPlayers: integer("max_players"),
   newcomerReservedSpots: integer("newcomer_reserved_spots").notNull().default(0),
+  // Das vagas de novato, quantas são de levantador novato (0 a 2).
+  newcomerSetterSpots: integer("newcomer_setter_spots").notNull().default(0),
+  // O organizador escolhe se o racha entra no Índice e nos rankings.
+  countsForRanking: boolean("counts_for_ranking").notNull().default(true),
   community: text("community").notNull().default("court"),
   status: eventStatusEnum("status").notNull().default("open"),
   // Fase de interesse (false) vs lista de confirmados pública (true). Novos

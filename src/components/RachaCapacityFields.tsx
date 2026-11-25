@@ -12,6 +12,8 @@ export function RachaCapacityFields({
   defaultMaxPlayers,
   defaultTeamSize = 6,
   defaultNewcomerReservedSpots = 0,
+  defaultNewcomerSetterSpots = 0,
+  defaultCountsForRanking = true,
   defaultIsPreTorneio = false,
   defaultIsMiniTorneio = false,
 }: {
@@ -19,6 +21,8 @@ export function RachaCapacityFields({
   defaultMaxPlayers: number | null;
   defaultTeamSize?: number;
   defaultNewcomerReservedSpots?: number;
+  defaultNewcomerSetterSpots?: number;
+  defaultCountsForRanking?: boolean;
   defaultIsPreTorneio?: boolean;
   defaultIsMiniTorneio?: boolean;
 }) {
@@ -36,6 +40,8 @@ export function RachaCapacityFields({
   const [newcomerReservedSpots, setNewcomerReservedSpots] = useState(
     Math.max(1, defaultNewcomerReservedSpots || 1),
   );
+  const [newcomerSetterSpots, setNewcomerSetterSpots] = useState(defaultNewcomerSetterSpots);
+  const [countsForRanking, setCountsForRanking] = useState(defaultCountsForRanking);
   // Só abre sozinho quando já tem algo fora do padrão -- senão fica
   // escondido, que é o caso comum (racha casual, sem vaga protegida).
   const [showAdvanced, setShowAdvanced] = useState(gameStyle !== "casual" || reserveNewcomerSpots);
@@ -44,6 +50,8 @@ export function RachaCapacityFields({
   const chosenCapacity = typeof maxPlayers === "number" ? maxPlayers : teamCapacity;
   const setterReservedSpots = setterSpotsFor(chosenCapacity);
   const maxNewcomerReservedSpots = Math.max(0, chosenCapacity - setterReservedSpots);
+  const maxNewcomerSetterSpots = Math.max(0, Math.min(2, newcomerReservedSpots, setterReservedSpots));
+  const effectiveNewcomerSetterSpots = reserveNewcomerSpots ? Math.min(newcomerSetterSpots, maxNewcomerSetterSpots) : 0;
 
   function selectGameStyle(style: EventGameStyle) {
     setGameStyle(style);
@@ -67,6 +75,8 @@ export function RachaCapacityFields({
           (hidden só tira da tela, não desmonta -- o valor continua indo no submit). */}
       <input type="hidden" name="gameStyle" value={gameStyle} />
       {!reserveNewcomerSpots && <input type="hidden" name="newcomerReservedSpots" value="0" />}
+      <input type="hidden" name="newcomerSetterSpots" value={effectiveNewcomerSetterSpots} />
+      <input type="hidden" name="countsForRanking" value={countsForRanking ? "true" : "false"} />
 
       <div className="sm:col-span-2 rounded-xl border border-white/10 bg-white/[0.035] p-4">
         <div className="flex items-center gap-2">
@@ -235,9 +245,52 @@ export function RachaCapacityFields({
                   onChange={(e) => setNewcomerReservedSpots(Number(e.target.value))}
                   className="mt-1 w-full min-w-0 rounded-lg border border-white/15 px-3 py-2"
                 />
+                <p className="mt-3 text-xs font-medium text-white/65">Levantadores novatos</p>
+                <div className="mt-1 grid grid-cols-3 gap-2">
+                  {[0, 1, 2].map((count) => (
+                    <button
+                      type="button"
+                      key={count}
+                      disabled={count > maxNewcomerSetterSpots}
+                      aria-pressed={effectiveNewcomerSetterSpots === count}
+                      onClick={() => setNewcomerSetterSpots(count)}
+                      className={`rounded-lg border px-2 py-2 text-sm font-semibold transition disabled:opacity-30 ${
+                        effectiveNewcomerSetterSpots === count
+                          ? "border-cyan-300/60 bg-cyan-400/15 text-white"
+                          : "border-white/10 bg-white/5 text-white/55 hover:bg-white/10"
+                      }`}
+                    >
+                      {count === 0 ? "Nenhum" : count}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-white/40">
+                  Os levantadores novatos contam dentro das {newcomerReservedSpots} vagas de novato, então o total do grupo não muda
+                  {effectiveNewcomerSetterSpots > 0
+                    ? `: o grupo fica com ${Math.max(0, setterReservedSpots - effectiveNewcomerSetterSpots)} vaga${setterReservedSpots - effectiveNewcomerSetterSpots === 1 ? "" : "s"} de levantador e ${Math.max(0, chosenCapacity - setterReservedSpots - newcomerReservedSpots + effectiveNewcomerSetterSpots)} de jogador.`
+                    : "."}
+                </p>
               </div>
             )}
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5 text-sm text-white">
+            <input
+              type="checkbox"
+              checked={countsForRanking}
+              onChange={(e) => setCountsForRanking(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/15 text-purple-400 focus:ring-purple-400"
+            />
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5 font-semibold">
+                <Trophy className="h-4 w-4 shrink-0 text-amber-300" strokeWidth={2} />
+                Conta para o ranking
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-white/45">
+                Quando marcado, os jogos deste racha entram no Índice VPA e nos demais rankings. Desmarque para um racha de teste ou especial.
+              </span>
+            </span>
+          </label>
         </div>
       </div>
     </>
