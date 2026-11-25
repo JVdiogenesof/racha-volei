@@ -131,22 +131,22 @@ export function RankingTabs({
               <p>A nota junta três coisas. Toque em qualquer pessoa pra ver a conta dela:</p>
               <ul className="space-y-1">
                 <li className="flex gap-2">
-                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">55%</span>
+                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">30%</span>
                   <span><strong className="text-white/75">Aproveitamento</strong> — % de vitórias. Com poucos jogos, a nota fica mais perto de 50 até você jogar o suficiente.</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">35%</span>
+                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">30%</span>
                   <span><strong className="text-white/75">Presença</strong> — quanto você apareceu nos últimos {ROLLING_INDEX_EVENT_COUNT} rachas.</span>
                 </li>
                 <li className="flex gap-2">
-                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">10%</span>
-                  <span><strong className="text-white/75">Saldo de pontos</strong> — se você ganha/perde apertado ou folgado.</span>
+                  <span className="w-9 shrink-0 rounded bg-white/[0.06] text-center font-bold text-white/70">40%</span>
+                  <span><strong className="text-white/75">Saldo de pontos</strong> — a diferença entre pontos feitos e sofridos: ganhar folgado e perder apertado ajuda.</span>
                 </li>
               </ul>
               <p className="rounded-lg border border-purple-300/15 bg-purple-400/[0.07] px-2.5 py-2">
                 <strong className="text-purple-200">Os 4 rachas mais recentes valem 2,5x</strong> os mais antigos. Por isso dá pra ter mais vitórias no total e mesmo assim ficar atrás: o que conta mais é como você está agora, e faltar num racha recente pesa bem mais do que num antigo.
               </p>
-              <p>Melhorar de forma de verdade ainda rende até 5 pontos de bônus. Precisa de 2 participações pra entrar na classificação.</p>
+              <p>Melhorar de forma de verdade rende até 10 pontos de bônus. Precisa de 2 participações pra entrar na classificação. Em empate, vale o saldo de pontos, depois o aproveitamento, depois a presença. Estes pesos valem a partir do primeiro racha de dezembro/2026 (antes eram 55% aproveitamento, 35% presença e 10% saldo); os rachas anteriores continuam como foram registrados.</p>
             </div>
           ) : (
             <p>{activeConfig.description}</p>

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Community } from "./community";
 import { getPresentProfileIdsByEvent } from "./presence";
 import { INDEX_BASE_PERCENTAGE, INDEX_CONFIDENCE_MATCHES } from "./rankings";
-import { countsTowardIndexResults } from "./matchRankingEligibility";
+import { countsTowardIndexResults, usesNewRankingRules } from "./matchRankingEligibility";
 
 // A temporada continua sendo usada como referência do torneio oficial. O
 // Índice em si é uma janela viva: os oito últimos rachas deixam a tabela
@@ -13,11 +13,14 @@ export const INDEX_MIN_EVENTS = 2;
 const RECENT_EVENT_COUNT = 4;
 const RECENT_EVENT_WEIGHT = 2.5;
 const OLDER_EVENT_WEIGHT = 1;
-const MAX_PROGRESS_BONUS = 5;
-// Peso de cada parte do Índice: aproveitamento, presença e saldo de pontos.
-export const INDEX_PERFORMANCE_WEIGHT = 0.55;
-export const INDEX_ATTENDANCE_WEIGHT = 0.35;
-export const INDEX_POINT_BALANCE_WEIGHT = 0.1;
+// Regras até novembro/2026: 55% aproveitamento, 35% presença, 10% saldo; bônus até 5.
+// Regulamento novo (janela que termina em racha a partir de 01/12/2026):
+// 40% saldo de pontos, 30% aproveitamento, 30% presença; bônus de evolução até 10.
+export const INDEX_RULES_V1 = { performance: 0.55, attendance: 0.35, pointBalance: 0.1, maxProgressBonus: 5 };
+export const INDEX_RULES_V2 = { performance: 0.3, attendance: 0.3, pointBalance: 0.4, maxProgressBonus: 10 };
+export const INDEX_PERFORMANCE_WEIGHT = INDEX_RULES_V2.performance;
+export const INDEX_ATTENDANCE_WEIGHT = INDEX_RULES_V2.attendance;
+export const INDEX_POINT_BALANCE_WEIGHT = INDEX_RULES_V2.pointBalance;
 // A margem de um jogo é (pontos feitos - sofridos) / pontos totais da partida,
 // então jogos de tamanhos diferentes (grupo x final) ficam comparáveis. O teto
 // evita que uma lavada isolada pese muito mais que uma vitória folgada.
@@ -52,9 +55,11 @@ export type SeasonPlayerScore = {
   winRate: number | null;
   /** Partidas contabilizadas na janela (as que entram no ranking de partidas). */
   matchesPlayed: number;
+  /** Pesos do Índice usados nesta janela (mudam a partir do primeiro racha de dezembro/2026). */
+  weights: { performance: number; attendance: number; pointBalance: number };
 };
 
-type EventRow = { id: string; date: string; is_pre_torneio: boolean; is_mini_torneio: boolean; num_teams: number };
+type EventRow = { id: string; date: string; is_pre_torneio: boolean; is_mini_torneio: boolean; num_teams: number; counts_for_ranking: boolean };
 type EventPlayerRecord = { present: boolean; wins: number; losses: number; marginSum: number; marginGames: number; pointsFor: number; pointsAgainst: number };
 type ScoreDraft = Omit<SeasonPlayerScore, "trend" | "positionChange" | "indexChange">;
 
@@ -62,6 +67,12 @@ export { formatPointsDiff } from "./pointsDiff";
 
 function roundOne(value: number) {
   return Math.round(value * 10) / 10;
+}
+
+/** A janela usa o regulamento novo quando o racha mais recente dela é de dezembro/2026 em diante. */
+function indexRulesFor(events: EventRow[]) {
+  const latest = events[events.length - 1];
+  return latest && usesNewRankingRules(latest) ? INDEX_RULES_V2 : INDEX_RULES_V1;
 }
 
 function recordFor(records: Map<string, Map<string, EventPlayerRecord>>, eventId: string, profileId: string) {
@@ -95,6 +106,7 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
     for (const profileId of records.get(event.id)?.keys() ?? []) playerIds.add(profileId);
   }
 
+  const rules = indexRulesFor(events);
   const recentStart = Math.max(0, events.length - RECENT_EVENT_COUNT);
   const weights = events.map((_, index) => index >= recentStart ? RECENT_EVENT_WEIGHT : OLDER_EVENT_WEIGHT);
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
@@ -148,9 +160,9 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
     const marginConfidence = marginGames / (marginGames + INDEX_CONFIDENCE_MATCHES);
     const adjustedPointBalance = marginConfidence * pointBalance + (1 - marginConfidence) * INDEX_BASE_PERCENTAGE;
     const baseIndex =
-      adjustedPerformance * INDEX_PERFORMANCE_WEIGHT +
-      attendancePercentage * INDEX_ATTENDANCE_WEIGHT +
-      adjustedPointBalance * INDEX_POINT_BALANCE_WEIGHT;
+      adjustedPerformance * rules.performance +
+      attendancePercentage * rules.attendance +
+      adjustedPointBalance * rules.pointBalance;
 
     const recentAttendance = recentEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
     const olderAttendance = olderEvents.filter((event) => records.get(event.id)?.get(profileId)?.present).length;
@@ -158,7 +170,7 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
     const olderForm = adjustedForm(olderEvents, records, profileId);
     // Evolução só bonifica quem voltou a jogar e realmente melhorou a forma.
     const progressBonus = recentAttendance >= 2 && olderAttendance >= 1 && recentForm !== null && olderForm !== null
-      ? Math.min(MAX_PROGRESS_BONUS, Math.max(0, roundOne((recentForm - olderForm) * 0.15)))
+      ? Math.min(rules.maxProgressBonus, Math.max(0, roundOne((recentForm - olderForm) * 0.15)))
       : 0;
 
     scores.set(profileId, {
@@ -178,6 +190,7 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
       pointBalanceScore: roundOne(adjustedPointBalance),
       winRate: weightedMatches ? roundOne(percentage) : null,
       matchesPlayed: rawMatches,
+      weights: { performance: rules.performance, attendance: rules.attendance, pointBalance: rules.pointBalance },
     });
   }
 
@@ -187,7 +200,13 @@ function buildScores(events: EventRow[], records: Map<string, Map<string, EventP
 function positionsFor(scores: Map<string, ScoreDraft>) {
   const sorted = [...scores.values()]
     .filter((score) => score.eligible)
-    .sort((a, b) => b.averageIndex - a.averageIndex || b.totalWins - a.totalWins || b.totalAttendance - a.totalAttendance || a.profileId.localeCompare(b.profileId));
+    // Desempate: saldo de pontos, depois aproveitamento, depois presença.
+    .sort((a, b) =>
+      b.averageIndex - a.averageIndex ||
+      b.pointsDiff - a.pointsDiff ||
+      b.performanceScore - a.performanceScore ||
+      b.totalAttendance - a.totalAttendance ||
+      a.profileId.localeCompare(b.profileId));
   return new Map(sorted.map((score, index) => [score.profileId, index + 1]));
 }
 
@@ -197,9 +216,10 @@ export async function getSeasonRanking(
 ): Promise<Map<string, SeasonPlayerScore>> {
   const { data: eventRows, error: eventError } = await supabase
     .from("events")
-    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams")
+    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams, counts_for_ranking")
     .eq("community", community)
     .eq("status", "finished")
+    .eq("counts_for_ranking", true)
     .order("date", { ascending: false })
     // Um racha além da janela: com ele dá para recriar o Índice exatamente como
     // estava antes do último racha, e comparar posições e pontos com a tabela real.

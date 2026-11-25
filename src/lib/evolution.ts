@@ -105,7 +105,7 @@ export async function getPersonalEvolution(
   const [{ data: eventRows, error: eventError }, { data: attendanceRows, error: attendanceError }] = await Promise.all([
     supabase
       .from("events")
-      .select("id, date, location, status, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
+      .select("id, date, location, status, is_pre_torneio, is_mini_torneio, num_teams, counts_for_ranking, mvp_profile_id, mvp_profile_id_2")
       .eq("community", community)
       .order("date", { ascending: false }),
     supabase.from("attendance").select("event_id, status").eq("profile_id", profileId),

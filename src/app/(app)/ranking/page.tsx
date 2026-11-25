@@ -2,7 +2,7 @@ import { CalendarRange, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { getRankingCounts, TOURNAMENT_QUALIFYING_SLOTS, TOURNAMENT_QUALIFYING_LABEL } from "@/lib/rankings";
-import { formatPointsDiff, getSeasonRanking, INDEX_ATTENDANCE_WEIGHT, INDEX_MIN_EVENTS, INDEX_PERFORMANCE_WEIGHT, INDEX_POINT_BALANCE_WEIGHT, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
+import { formatPointsDiff, getSeasonRanking, INDEX_MIN_EVENTS, ROLLING_INDEX_EVENT_COUNT, SEASON_START_MONTH } from "@/lib/seasonRanking";
 import { type RankingEntry } from "@/components/Leaderboard";
 import { RankingTabs } from "@/components/RankingTabs";
 import { getActiveCommunity } from "@/lib/community";
@@ -91,9 +91,9 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
             breakdown: season.eligible
               ? {
                   parts: [
-                    { label: "Aproveitamento", score: season.performanceScore, weight: INDEX_PERFORMANCE_WEIGHT, points: season.performanceScore * INDEX_PERFORMANCE_WEIGHT },
-                    { label: "Presença", score: season.attendanceScore, weight: INDEX_ATTENDANCE_WEIGHT, points: season.attendanceScore * INDEX_ATTENDANCE_WEIGHT },
-                    { label: "Saldo de pontos", score: season.pointBalanceScore, weight: INDEX_POINT_BALANCE_WEIGHT, points: season.pointBalanceScore * INDEX_POINT_BALANCE_WEIGHT },
+                    { label: "Aproveitamento", score: season.performanceScore, weight: season.weights.performance, points: season.performanceScore * season.weights.performance },
+                    { label: "Presença", score: season.attendanceScore, weight: season.weights.attendance, points: season.attendanceScore * season.weights.attendance },
+                    { label: "Saldo de pontos", score: season.pointBalanceScore, weight: season.weights.pointBalance, points: season.pointBalanceScore * season.weights.pointBalance },
                   ],
                   bonus: season.progressBonus,
                   total: season.averageIndex,

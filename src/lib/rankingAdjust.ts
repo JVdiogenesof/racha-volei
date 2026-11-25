@@ -31,7 +31,7 @@ export async function getProfileRankingSheet(
 ): Promise<SheetEvent[]> {
   const { data: eventRows, error: eventError } = await supabase
     .from("events")
-    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
+    .select("id, date, is_pre_torneio, is_mini_torneio, num_teams, counts_for_ranking, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
     .eq("status", "finished")
     .order("date", { ascending: false })

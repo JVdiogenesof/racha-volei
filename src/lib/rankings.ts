@@ -77,8 +77,9 @@ export async function getRankingCounts(
 
   let eventsQuery = supabase
     .from("events")
-    .select("id, date, status, is_pre_torneio, is_mini_torneio, num_teams, mvp_profile_id, mvp_profile_id_2")
+    .select("id, date, status, is_pre_torneio, is_mini_torneio, num_teams, counts_for_ranking, mvp_profile_id, mvp_profile_id_2")
     .eq("community", community)
+    .eq("counts_for_ranking", true)
     .order("date", { ascending: false });
   if (range) {
     eventsQuery = eventsQuery.gte("date", range.start).lt("date", range.nextStart);
