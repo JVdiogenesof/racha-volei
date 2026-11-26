@@ -141,8 +141,8 @@ export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; on
                 const canSave = draw.basis === "confirmed" && draw.openSpots === 0;
                 return (
                   <div className="mt-1 flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                    <span className={`text-xs font-bold ${gap <= 2 ? "text-emerald-200" : gap <= 5 ? "text-amber-200" : "text-rose-200"}`}>
-                      Diferença entre o time mais forte e o mais fraco: {gap.toFixed(1)} pontos de Índice (média)
+                    <span className={`text-xs font-bold ${gap <= 0.15 ? "text-emerald-200" : gap <= 0.35 ? "text-amber-200" : "text-rose-200"}`}>
+                      Diferença de nota média entre o time mais forte e o mais fraco: {gap.toFixed(2)}
                     </span>
                     <button
                       type="button"
@@ -166,7 +166,7 @@ export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; on
                       <div className="flex items-center gap-2.5">
                         <CopaTeamLogo slug={team.slug} size={34} />
                         <h3 className="min-w-0 flex-1 truncate text-sm font-bold text-white">{team.name}</h3>
-                        <span className="text-xs text-white/50">média {(team.strength / Math.max(1, team.members.length)).toFixed(1)}</span>
+                        <span className="text-xs text-white/50">nota média {(team.strength / Math.max(1, team.members.length)).toFixed(2)}</span>
                       </div>
                       <ul className="mt-2.5 space-y-1.5">
                         {team.members.map((member) => {
@@ -183,7 +183,7 @@ export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; on
                                 <Avatar src={member.avatarUrl} name={member.name} size="sm" />
                                 <span className={`min-w-0 flex-1 truncate ${member.open ? "italic text-white/40" : "text-white"}`}>{member.name}</span>
                                 {member.isSetter && <SetterBadge />}
-                                {!member.open && <span className="w-9 text-right text-[11px] tabular-nums text-white/45">{member.strength.toFixed(1)}</span>}
+                                {!member.open && <span className="w-9 text-right text-[11px] tabular-nums text-white/45">{member.strength.toFixed(2)}</span>}
                                 {swapTarget && <ArrowLeftRight className="h-3.5 w-3.5 text-cyan-200" />}
                               </button>
                             </li>

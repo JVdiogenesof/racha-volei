@@ -42,7 +42,7 @@ export function shuffled<T>(items: readonly T[], random: () => number = Math.ran
 /**
  * Monta o sorteio inteiro de uma vez.
  * - Pote 0: levantadores (um por time, os de maior índice quando sobram).
- * - Demais potes: jogadores por índice, `numTeams` por pote.
+ * - Demais potes: jogadores por nota (a nota geral do jogador), `numTeams` por pote.
  * - Em cada pote, o mais forte vai para o time mais fraco até ali; a ordem em
  *   que os nomes aparecem para a plateia é embaralhada, então parece aleatório.
  * Retorna as escolhas na ordem em que serão reveladas.

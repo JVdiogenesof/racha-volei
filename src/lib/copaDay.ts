@@ -1,7 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
-import { getSeasonRanking } from "@/lib/seasonRanking";
+import { getRatingWeights, getRatingsFor } from "@/lib/ratings";
+import { finalScoresForPlayer, overallScore } from "@/lib/scoring";
 import { sendPushToProfiles } from "@/lib/push";
 import { COPA_TEAMS, computeStandings, matchWinner, planDraw, roundRobin, scheduleAt, shuffled, teamIdentity, type DrawPick } from "@/lib/copaDraw";
 
@@ -83,6 +84,21 @@ export async function getDrawPool(supabase: SupabaseClient, cup: Pick<Cup, "id" 
   return { pool, readiness };
 }
 
+/**
+ * Nota geral de cada jogador (média das categorias, juntando autoavaliação e
+ * nota do organizador com os pesos configurados), a mesma usada para montar
+ * os times dos rachas. É ela que equilibra os times da Copa.
+ */
+async function playerNotes(supabase: SupabaseClient, profileIds: string[]) {
+  const [{ selfByProfile, organizerByProfile }, weights] = await Promise.all([getRatingsFor(supabase, profileIds), getRatingWeights(supabase)]);
+  return new Map(
+    profileIds.map((id) => [
+      id,
+      overallScore(finalScoresForPlayer(selfByProfile.get(id) ?? {}, organizerByProfile.get(id) ?? {}, weights.selfWeight, weights.organizerWeight)),
+    ]),
+  );
+}
+
 /** Monta o sorteio com quem pode jogar e grava tudo escondido (nada é revelado ainda). */
 export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
   const { pool, readiness } = await getDrawPool(supabase, cup);
@@ -91,11 +107,11 @@ export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
     throw new Error(`Para sortear são necessários ${readiness.needed} jogadores e hoje há ${who}.`);
   }
 
-  const season = await getSeasonRanking(supabase, cup.community);
+  const notes = await playerNotes(supabase, pool.map((row) => row.profileId));
   const players = pool.map((row) => ({
     profileId: row.profileId,
     isSetter: row.isSetter,
-    strength: season.get(row.profileId)?.averageIndex ?? 0,
+    strength: notes.get(row.profileId) ?? 0,
   }));
   const picks = planDraw(players, cup.num_teams, cup.team_size);
 
@@ -133,7 +149,7 @@ async function writeDrawPlan(supabase: SupabaseClient, cup: Cup, picks: DrawPick
 /**
  * Times montados pelos organizadores (a partir da simulação, com trocas).
  * Só vale com todos os jogadores do sorteio confirmados e antes da revelação começar.
- * Pote k = k-ésimo jogador de cada time (levantador primeiro, depois por índice),
+ * Pote k = k-ésimo jogador de cada time (levantador primeiro, depois por nota),
  * e a ordem de revelação dentro de cada pote é embaralhada, como no sorteio automático.
  */
 export async function saveManualDrawPlan(supabase: SupabaseClient, cup: Cup, teamsInput: string[][]) {
@@ -158,8 +174,8 @@ export async function saveManualDrawPlan(supabase: SupabaseClient, cup: Cup, tea
   if (new Set(all).size !== all.length) throw new Error("Tem jogador repetido em dois times.");
   if (all.some((id) => !poolById.has(id))) throw new Error("Tem jogador que não está no sorteio (confirmação mudou). Simule de novo.");
 
-  const season = await getSeasonRanking(supabase, cup.community);
-  const strength = (id: string) => season.get(id)?.averageIndex ?? 0;
+  const notes = await playerNotes(supabase, all);
+  const strength = (id: string) => notes.get(id) ?? 0;
   const ordered = teamsInput.map((team) =>
     [...team].sort((a, b) => Number(poolById.get(b)!.isSetter) - Number(poolById.get(a)!.isSetter) || strength(b) - strength(a)),
   );
@@ -319,11 +335,11 @@ export async function simulateCupDraw(supabase: SupabaseClient, cup: Cup): Promi
   if (!rows.length) throw new Error("Ainda não há jogadores classificados para simular.");
   if (rows.length > needed) rows = rows.slice(0, needed);
 
-  const season = await getSeasonRanking(supabase, cup.community);
+  const notes = await playerNotes(supabase, rows.map((row) => row.profileId));
   const real = rows.map((row) => ({
     profileId: row.profileId,
     isSetter: row.isSetter,
-    strength: season.get(row.profileId)?.averageIndex ?? 0,
+    strength: notes.get(row.profileId) ?? 0,
   }));
   const average = real.reduce((sum, player) => sum + player.strength, 0) / real.length;
   const openSpots = needed - real.length;
