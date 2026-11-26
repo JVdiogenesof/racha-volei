@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
-import { prepareCupDraw, revealNextPick, saveCupScore, simulateCupDraw, type SimulatedDraw } from "@/lib/copaDay";
+import { prepareCupDraw, revealNextPick, saveCupScore, saveManualDrawPlan, simulateCupDraw, type SimulatedDraw } from "@/lib/copaDay";
 
 /**
  * Em produção o Next esconde o texto do erro lançado numa server action
@@ -72,6 +72,25 @@ export async function simulateDraw(formData: FormData): Promise<SimulateDrawResu
     console.error("[copa-sorteio-simulacao]", message);
     return { ok: false, error: message };
   }
+}
+
+/** Salva os times montados na simulação (com trocas) para a revelação ao vivo. */
+export async function saveDrawPlan(formData: FormData): Promise<DrawActionResult> {
+  return guarded(async () => {
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    let teams: unknown;
+    try {
+      teams = JSON.parse(String(formData.get("teams") ?? ""));
+    } catch {
+      throw new Error("Times inválidos.");
+    }
+    if (!Array.isArray(teams) || teams.some((team) => !Array.isArray(team) || team.some((id) => typeof id !== "string"))) {
+      throw new Error("Times inválidos.");
+    }
+    const total = await saveManualDrawPlan(supabase, cup, teams as string[][]);
+    refresh();
+    return { ok: true, message: `Times salvos (${total} jogadores). Na live, aperte Iniciar para revelar.` };
+  });
 }
 
 export async function revealNext(formData: FormData): Promise<DrawActionResult> {

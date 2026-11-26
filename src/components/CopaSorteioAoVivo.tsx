@@ -385,7 +385,7 @@ export function CopaSorteioAoVivo({
         </div>
       ) : (
         <div className="text-center">
-          <p className="text-2xl font-black">O sorteio começa em instantes</p>
+          <p className="text-2xl font-black">A revelação dos times começa em instantes</p>
           <p className="mt-1 text-sm text-white/70">
             {numTeams} times com {teamSize} jogadores cada · deixe esta tela aberta, os nomes aparecem sozinhos.
           </p>
@@ -413,7 +413,8 @@ export function CopaSorteioAoVivo({
       <header className="flex items-center justify-between gap-2 px-4 pt-4">
         <div className="min-w-0">
           <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">{cupName}</p>
-          <h2 className={`font-black leading-tight ${big ? "text-2xl" : "text-xl"}`}>Sorteio dos times</h2>
+          <h2 className={`font-black leading-tight ${big ? "text-2xl" : "text-xl"}`}>Revelação dos times</h2>
+          <p className="truncate text-[11px] font-semibold text-white/60">Times montados pela organização para ficarem equilibrados</p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-black ${done ? "bg-white/15" : "bg-rose-600"}`}>
@@ -536,7 +537,7 @@ export function CopaSorteioAoVivo({
       <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-3">
         {isOrganizer && (
           <>
-            {!placed.length && <CopaSimularSorteioButton cupId={cupId} />}
+            {!placed.length && <CopaSimularSorteioButton cupId={cupId} onSaved={() => { setPlan(true); router.refresh(); }} />}
             {!plan && !placed.length ? (
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <button
@@ -563,7 +564,7 @@ export function CopaSorteioAoVivo({
             ) : (
               <>
                 <button type="button" disabled={busy || remaining === 0} onClick={() => setAuto((value) => !value)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-300 px-4 text-sm font-black text-[#2a1760] disabled:opacity-50">
-                  {auto ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {auto ? "Pausar" : placed.length ? "Continuar" : "Iniciar sorteio"}
+                  {auto ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {auto ? "Pausar" : placed.length ? "Continuar" : "Iniciar revelação"}
                 </button>
                 <button type="button" disabled={busy || auto || remaining === 0} onClick={() => void nextPick()} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/20 px-3 text-sm font-bold disabled:opacity-50">
                   <SkipForward className="h-4 w-4" /> Próximo

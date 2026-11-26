@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
 import { getSeasonRanking } from "@/lib/seasonRanking";
 import { sendPushToProfiles } from "@/lib/push";
-import { COPA_TEAMS, computeStandings, matchWinner, planDraw, roundRobin, scheduleAt, teamIdentity } from "@/lib/copaDraw";
+import { COPA_TEAMS, computeStandings, matchWinner, planDraw, roundRobin, scheduleAt, shuffled, teamIdentity, type DrawPick } from "@/lib/copaDraw";
 
 export type CupTeam = { id: string; slug: string; name: string; position: number };
 export type CupMember = {
@@ -99,6 +99,11 @@ export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
   }));
   const picks = planDraw(players, cup.num_teams, cup.team_size);
 
+  return writeDrawPlan(supabase, cup, picks);
+}
+
+/** Grava o plano escondido (nada revelado): times novos + jogadores com pote e ordem de revelação. */
+async function writeDrawPlan(supabase: SupabaseClient, cup: Cup, picks: DrawPick[]) {
   // Refaz do zero: placar e times antigos de um sorteio anterior saem junto.
   const { error: clearError } = await supabase.from("cup_teams").delete().eq("cup_id", cup.id);
   if (clearError) throw new Error(clearError.message);
@@ -123,6 +128,51 @@ export async function prepareCupDraw(supabase: SupabaseClient, cup: Cup) {
   );
   if (membersError) throw new Error(membersError.message);
   return picks.length;
+}
+
+/**
+ * Times montados pelos organizadores (a partir da simulação, com trocas).
+ * Só vale com todos os jogadores do sorteio confirmados e antes da revelação começar.
+ * Pote k = k-ésimo jogador de cada time (levantador primeiro, depois por índice),
+ * e a ordem de revelação dentro de cada pote é embaralhada, como no sorteio automático.
+ */
+export async function saveManualDrawPlan(supabase: SupabaseClient, cup: Cup, teamsInput: string[][]) {
+  const { count: revealedCount, error: revealedError } = await supabase
+    .from("cup_team_members")
+    .select("id", { count: "exact", head: true })
+    .eq("cup_id", cup.id)
+    .not("revealed_at", "is", null);
+  if (revealedError) throw new Error(revealedError.message);
+  if ((revealedCount ?? 0) > 0) throw new Error("A revelação já começou. Use Refazer antes de trocar os times.");
+
+  const { pool, readiness } = await getDrawPool(supabase, cup);
+  if (readiness.ready !== readiness.needed) {
+    const who = readiness.usesConfirmation ? `${readiness.ready} confirmados` : `${readiness.ready} classificados`;
+    throw new Error(`Para salvar os times são necessários ${readiness.needed} jogadores e hoje há ${who}.`);
+  }
+  if (teamsInput.length !== cup.num_teams || teamsInput.some((team) => team.length !== cup.team_size)) {
+    throw new Error(`Cada um dos ${cup.num_teams} times precisa de ${cup.team_size} jogadores.`);
+  }
+  const poolById = new Map(pool.map((row) => [row.profileId, row]));
+  const all = teamsInput.flat();
+  if (new Set(all).size !== all.length) throw new Error("Tem jogador repetido em dois times.");
+  if (all.some((id) => !poolById.has(id))) throw new Error("Tem jogador que não está no sorteio (confirmação mudou). Simule de novo.");
+
+  const season = await getSeasonRanking(supabase, cup.community);
+  const strength = (id: string) => season.get(id)?.averageIndex ?? 0;
+  const ordered = teamsInput.map((team) =>
+    [...team].sort((a, b) => Number(poolById.get(b)!.isSetter) - Number(poolById.get(a)!.isSetter) || strength(b) - strength(a)),
+  );
+  const picks: DrawPick[] = [];
+  let pickOrder = 1;
+  for (let pot = 0; pot < cup.team_size; pot += 1) {
+    const slice = ordered.map((team, teamIndex) => ({ profileId: team[pot]!, teamIndex }));
+    for (const item of shuffled(slice)) {
+      picks.push({ profileId: item.profileId, teamIndex: item.teamIndex, pot, pickOrder });
+      pickOrder += 1;
+    }
+  }
+  return writeDrawPlan(supabase, cup, picks);
 }
 
 /** Revela a próxima escolha. Ao revelar a última, a tabela de jogos é criada e os jogadores avisados. */
@@ -239,7 +289,7 @@ export type SimulatedDrawTeam = {
   slug: string;
   name: string;
   strength: number;
-  members: { profileId: string; name: string; avatarUrl: string | null; isSetter: boolean; pot: number; open: boolean }[];
+  members: { profileId: string; name: string; avatarUrl: string | null; isSetter: boolean; pot: number; open: boolean; strength: number }[];
 };
 export type SimulatedDraw = {
   teams: SimulatedDrawTeam[];
@@ -304,6 +354,7 @@ export async function simulateCupDraw(supabase: SupabaseClient, cup: Cup): Promi
       isSetter: player.isSetter,
       pot: pick.pot,
       open: !profile,
+      strength: player.strength,
     });
   }
   return { teams, basis, players: real.length, openSpots };
