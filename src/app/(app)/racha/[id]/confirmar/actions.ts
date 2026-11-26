@@ -448,8 +448,9 @@ export async function setEventSetterRole(formData: FormData) {
   ]);
   const isNewcomerPerson = person?.status === "guest";
   const newcomerReserved = event?.newcomer_reserved_spots ?? 0;
-  // Novato com vagas de novato no racha continua novato mesmo sendo levantador.
-  const staysNewcomer = isNewcomerPerson && (!isSetter || newcomerReserved > 0);
+  // Novato levantador usa vaga de levantador novato quando o racha tem e ainda há livre;
+  // senão usa uma vaga de levantador do grupo (comportamento anterior).
+  let staysNewcomer = isNewcomerPerson && !isSetter;
   if (isSetter && event) {
     const capacity = event.max_players ?? event.num_teams * event.team_size;
     const spots = setterSpotsFor(capacity);
@@ -457,16 +458,10 @@ export async function setEventSetterRole(formData: FormData) {
     const rows = confirmedRows ?? [];
     const newcomerSetters = rows.filter((row) => row.uses_setter_spot && row.uses_newcomer_spot).length;
     const memberSetters = rows.filter((row) => row.uses_setter_spot && !row.uses_newcomer_spot).length;
-    if (staysNewcomer) {
-      if (newcomerSetters >= k) {
-        throw new Error(
-          k === 0
-            ? "Este racha não tem vaga de levantador novato. Ajuste a quantidade ao editar o racha."
-            : `As ${k} vaga${k === 1 ? "" : "s"} de levantador novato já estão ocupadas. Desmarque um levantador novato antes.`,
-        );
-      }
+    if (isNewcomerPerson && newcomerReserved > 0 && k > 0 && newcomerSetters < k) {
+      staysNewcomer = true;
     } else if (memberSetters + Math.max(0, newcomerSetters - k) >= spots - k) {
-      throw new Error(`As ${spots - k} vagas de levantador do grupo já estão ocupadas. Desmarque um levantador antes.`);
+      throw new Error(`As ${spots - k} vagas de levantador já estão ocupadas. Desmarque um levantador antes.`);
     }
   }
 
