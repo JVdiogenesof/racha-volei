@@ -1,7 +1,8 @@
 "use client";
 
-import { type ReactNode, useSyncExternalStore } from "react";
+import { type ReactNode, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useStickToViewportBottom } from "@/lib/useStickToViewportBottom";
 
 const noopSubscribe = () => () => {};
 
@@ -18,12 +19,18 @@ export function useBodyPortalReady() {
 export function FloatingDock({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ready = useBodyPortalReady();
   if (!ready) return null;
-  return createPortal(
+  return createPortal(<DockBar className={className}>{children}</DockBar>, document.body);
+}
+
+function DockBar({ children, className }: { children: ReactNode; className: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useStickToViewportBottom(ref);
+  return (
     <div
+      ref={ref}
       className={`fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-white/15 bg-[#171122]/95 p-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl ${className}`}
     >
       {children}
-    </div>,
-    document.body,
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ComponentType } from "react";
+import { useStickToViewportBottom } from "@/lib/useStickToViewportBottom";
 import { Award, CalendarDays, ChevronDown, Clapperboard, History, Home, LayoutGrid, Megaphone, ShieldCheck, Shirt, TrendingUp, Trophy, UserRound, Users } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: ComponentType<{ className?: string; strokeWidth?: number }> };
@@ -127,6 +128,8 @@ export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
   // O destaque anda já no toque, sem esperar a página nova carregar.
   const [pressed, setPressed] = useState<{ href: string; from: string } | null>(null);
   const [ripple, setRipple] = useState<{ index: number; id: number } | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  useStickToViewportBottom(navRef);
   const extras = moreItems(isOrganizer, true);
   const moreActive = extras.some((item) => isActive(pathname, item.href));
   const moreBadge = extras.reduce((sum, item) => sum + (badgeByHref[item.href] ?? 0), 0);
@@ -181,7 +184,7 @@ export function BottomTabBar({ badgeByHref, isOrganizer }: NavProps) {
           </div>
         </div>
       )}
-      <nav aria-label="Navegação principal" className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[46] transform-gpu mx-auto max-w-md rounded-full border border-white/15 bg-[#0c0722]/45 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-lg">
+      <nav ref={navRef} aria-label="Navegação principal" className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-[46] transform-gpu mx-auto max-w-md rounded-full border border-white/15 bg-[#0c0722]/45 p-1 shadow-[0_12px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-lg">
         <div className="relative grid grid-cols-5">
           {/* Destaque que desliza até a aba tocada */}
           <span
