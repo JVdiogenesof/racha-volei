@@ -8,7 +8,7 @@ import { BirthdaysCard } from "@/components/BirthdaysCard";
 import { TodayBirthdayCard } from "@/components/TodayBirthdayCard";
 import { RecentTournamentChampionCard } from "@/components/RecentTournamentChampionCard";
 import { CopaHomeCard } from "@/components/CopaHomeCard";
-import { COPA_PATH, cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
+import { COPA_PATH, copaPaymentCta, cupCapacity, cupFinalDateLabel, daysUntilInBrazil, getCopaHomeSummary } from "@/lib/copaVpa";
 import { OrganizerPanel } from "@/components/OrganizerPanel";
 import { NicknamePromptCard } from "@/components/NicknamePromptCard";
 import { getRachaLevel } from "@/lib/rachaLevel";
@@ -327,6 +327,7 @@ export default async function HomePage() {
           capacity={cupCapacity(copaSummary.cup)}
           qualifiedCount={copaSummary.qualifiedCount}
           iAmQualified={copaSummary.iAmQualified}
+          payment={copaSummary.iAmQualified ? copaPaymentCta(copaSummary.cup, copaSummary.myConfirmation) : null}
         />
       )}
 

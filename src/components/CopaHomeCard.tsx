@@ -10,6 +10,7 @@ export function CopaHomeCard({
   capacity,
   qualifiedCount,
   iAmQualified,
+  payment: cta = null,
 }: {
   href: string;
   name: string;
@@ -18,6 +19,8 @@ export function CopaHomeCard({
   capacity: number;
   qualifiedCount: number;
   iAmQualified: boolean;
+  /** Presente só para classificado que ainda não confirmou: leva ao pagamento. */
+  payment?: { title: string; detail: string; open: boolean } | null;
 }) {
   const progress = Math.min(100, Math.round((qualifiedCount / Math.max(1, capacity)) * 100));
 
@@ -53,6 +56,15 @@ export function CopaHomeCard({
             {qualifiedCount}/{capacity}
           </span>
         </div>
+        {cta && (
+          <div className={`relative z-10 mt-2.5 flex items-center gap-2 rounded-xl px-3 py-2 ${cta.open ? "bg-pink-400 text-pink-950" : "border border-pink-200/40 bg-white/10 text-white"}`}>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-black leading-tight">{cta.title}</p>
+              <p className={`text-[11px] font-semibold leading-snug ${cta.open ? "text-pink-950/80" : "text-pink-100/90"}`}>{cta.detail}</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0" strokeWidth={2.5} />
+          </div>
+        )}
       </div>
     </Link>
   );

@@ -89,11 +89,32 @@ export async function getFeaturedCup(supabase: SupabaseClient, community: Commun
 export async function getCopaHomeSummary(supabase: SupabaseClient, community: Community, profileId: string) {
   const cup = await getUpcomingCup(supabase, community);
   if (!cup) return null;
-  const [{ count }, { data: mine }] = await Promise.all([
+  const [{ count }, { data: mine }, { data: myConfirmation }] = await Promise.all([
     supabase.from("cup_qualified_players").select("id", { count: "exact", head: true }).eq("cup_id", cup.id),
     supabase.from("cup_qualified_players").select("id").eq("cup_id", cup.id).eq("profile_id", profileId).maybeSingle(),
+    supabase.from("cup_confirmations").select("status").eq("cup_id", cup.id).eq("profile_id", profileId).maybeSingle(),
   ]);
-  return { cup, qualifiedCount: count ?? 0, iAmQualified: Boolean(mine) };
+  return { cup, qualifiedCount: count ?? 0, iAmQualified: Boolean(mine), myConfirmation: (myConfirmation?.status as "confirmed" | "declined" | undefined) ?? null };
+}
+
+/** Chamada de pagamento da Copa para o classificado que ainda não confirmou (tela de início). */
+export function copaPaymentCta(cup: Pick<Cup, "confirm_amount" | "confirm_opens_at" | "confirm_deadline">, myConfirmation: "confirmed" | "declined" | null) {
+  if (!cup.confirm_deadline || myConfirmation === "confirmed") return null;
+  const now = Date.now();
+  if (new Date(cup.confirm_deadline).getTime() <= now) return null;
+  const when = (iso: string) => {
+    const parts = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Fortaleza", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(iso));
+    const g = (t: string) => parts.find((x) => x.type === t)?.value ?? "";
+    return { day: `${g("weekday").replace("-feira", "")} (${g("day")}/${g("month")})`, hour: g("minute") === "00" ? `${Number(g("hour"))}h` : `${Number(g("hour"))}h${g("minute")}` };
+  };
+  const end = when(cup.confirm_deadline);
+  const amount = Number(cup.confirm_amount ?? 0);
+  const price = amount > 0 ? ` · R$ ${amount.toFixed(2).replace(".", ",")}` : "";
+  if (cup.confirm_opens_at && new Date(cup.confirm_opens_at).getTime() > now) {
+    const start = when(cup.confirm_opens_at);
+    return { title: "Confirme sua vaga pagando o Pix", detail: `Abre ${start.day} às ${start.hour} e vai até ${end.hour}${price}`, open: false };
+  }
+  return { title: "Pagar e confirmar minha vaga", detail: `Até ${end.day} às ${end.hour}${price}`, open: true };
 }
 
 /**
