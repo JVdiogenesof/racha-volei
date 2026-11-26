@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getMercadoPagoOrder, isApprovedMercadoPagoOrder } from "@/lib/mercadoPago";
 
@@ -81,6 +82,46 @@ export async function reconcileCupPayments(cupId: string, profileId: string): Pr
     console.error("[copa-pix-reconcile] Falha", error instanceof Error ? error.message : error);
     return 0;
   }
+}
+
+/**
+ * Varre os Pix da Copa ainda abertos de TODOS os classificados (últimos 40
+ * minutos). Roda quando alguém abre a tela da Copa, então um pagamento é
+ * reconhecido mesmo se a pessoa pagou no app do banco e fechou o site e o
+ * aviso (webhook) do Mercado Pago atrasou. Nunca lança erro e não segura a
+ * página: o que não terminar a tempo continua depois da resposta.
+ */
+export async function reconcileAllCupPaymentsWithinBudget(cupId: string, budgetMs = 2500) {
+  const work = (async () => {
+    try {
+      const supabase = serviceClient();
+      if (!supabase) return 0;
+      const since = new Date(Date.now() - 40 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("cup_payment_intents")
+        .select("provider_order_id")
+        .eq("cup_id", cupId)
+        .eq("status", "pending")
+        .not("provider_order_id", "is", null)
+        .gte("created_at", since)
+        .order("created_at", { ascending: true })
+        .limit(30);
+      const results = await Promise.all(
+        (data ?? []).map((row) =>
+          settleCupOrder(row.provider_order_id as string).catch((error) => {
+            console.error("[copa-pix-sweep] Falha ao conferir pedido", error instanceof Error ? error.message : error);
+            return "unknown" as const;
+          }),
+        ),
+      );
+      return results.filter((result) => result === "paid").length;
+    } catch (error) {
+      console.error("[copa-pix-sweep] Falha", error instanceof Error ? error.message : error);
+      return 0;
+    }
+  })();
+  after(() => work);
+  await Promise.race([work, new Promise((resolve) => setTimeout(resolve, budgetMs))]);
 }
 
 /** Organização registra que devolveu o valor de um Pix pago fora do prazo / sem vaga. */

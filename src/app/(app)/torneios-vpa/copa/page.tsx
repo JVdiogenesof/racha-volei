@@ -23,6 +23,7 @@ import { FormSelect } from "@/components/FormSelect";
 import { SetterBadge } from "@/components/SetterBadge";
 import { TorneiosVpaTabs } from "@/components/TorneiosVpaTabs";
 import { CopaHero } from "@/components/CopaHero";
+import { reconcileAllCupPaymentsWithinBudget } from "@/lib/copaConfirm";
 import { CopaConfirmCard } from "@/components/CopaConfirmCard";
 import {
   addCupPlayer,
@@ -84,6 +85,9 @@ export default async function CopaVpaPage() {
       </div>
     );
   }
+
+  // Reconhece Pix já pagos que o aviso do Mercado Pago ainda não trouxe (pessoa pagou no banco e saiu do site).
+  await reconcileAllCupPaymentsWithinBudget(cup.id);
 
   const capacity = cupCapacity(cup);
   const [{ data: qualifierRows }, { data: qualifiedRows }, { data: finalEvent }, { data: confirmationRows }, { data: myPending }] = await Promise.all([
