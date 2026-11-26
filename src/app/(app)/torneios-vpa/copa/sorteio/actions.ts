@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
-import { prepareCupDraw, revealNextPick, saveCupScore } from "@/lib/copaDay";
+import { prepareCupDraw, revealNextPick, saveCupScore, simulateCupDraw, type SimulatedDraw } from "@/lib/copaDay";
 
 /**
  * Em produção o Next esconde o texto do erro lançado numa server action
@@ -57,6 +57,21 @@ export async function prepareDraw(formData: FormData): Promise<DrawActionResult>
     refresh();
     return { ok: true, message: `Sorteio pronto com ${total} jogadores. Aperte Iniciar quando a galera estiver olhando.` };
   });
+}
+
+export type SimulateDrawResult = { ok: true; draw: SimulatedDraw } | { ok: false; error: string };
+
+/** Prévia do sorteio para o organizador: mesmo algoritmo, nada é gravado nem revelado. */
+export async function simulateDraw(formData: FormData): Promise<SimulateDrawResult> {
+  try {
+    await requireOrganizer();
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    return { ok: true, draw: await simulateCupDraw(supabase, cup) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível simular o sorteio.";
+    console.error("[copa-sorteio-simulacao]", message);
+    return { ok: false, error: message };
+  }
 }
 
 export async function revealNext(formData: FormData): Promise<DrawActionResult> {

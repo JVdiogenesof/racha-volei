@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { teamIdentity } from "@/lib/copaDraw";
 import { Avatar } from "./Avatar";
 import { CopaTeamLogo } from "./CopaTeamLogo";
+import { CopaSimularSorteioButton } from "./CopaSimularSorteioButton";
 import { useToast } from "./Toast";
 import { prepareDraw, resetDraw, revealNext, type DrawActionResult } from "@/app/(app)/torneios-vpa/copa/sorteio/actions";
 
@@ -535,6 +536,7 @@ export function CopaSorteioAoVivo({
       <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-3">
         {isOrganizer && (
           <>
+            {!placed.length && <CopaSimularSorteioButton cupId={cupId} />}
             {!plan && !placed.length ? (
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <button

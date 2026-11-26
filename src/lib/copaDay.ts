@@ -234,3 +234,77 @@ export function cupChampion(teams: CupTeam[], matches: CupMatch[]) {
 }
 
 export { teamIdentity };
+
+export type SimulatedDrawTeam = {
+  slug: string;
+  name: string;
+  strength: number;
+  members: { profileId: string; name: string; avatarUrl: string | null; isSetter: boolean; pot: number; open: boolean }[];
+};
+export type SimulatedDraw = {
+  teams: SimulatedDrawTeam[];
+  /** Quem entrou na conta: só confirmados, ou todos os classificados enquanto a confirmação não fecha. */
+  basis: "confirmed" | "qualified";
+  players: number;
+  openSpots: number;
+};
+
+/**
+ * Simula o sorteio com o mesmo algoritmo do oficial, sem gravar nada.
+ * Se ainda faltam jogadores, as vagas em aberto entram com a força média do grupo,
+ * para dar para ver como os times ficariam.
+ */
+export async function simulateCupDraw(supabase: SupabaseClient, cup: Cup): Promise<SimulatedDraw> {
+  const { pool, readiness } = await getDrawPool(supabase, cup);
+  const needed = readiness.needed;
+  let rows = pool;
+  let basis: SimulatedDraw["basis"] = "confirmed";
+  if (rows.length < needed) {
+    // Confirmação ainda aberta: usa todos os classificados para a prévia.
+    const { data, error } = await supabase.from("cup_qualified_players").select("profile_id, plays_as_setter").eq("cup_id", cup.id);
+    if (error) throw new Error(error.message);
+    rows = (data ?? []).map((row) => ({ profileId: row.profile_id as string, isSetter: Boolean(row.plays_as_setter) }));
+    basis = "qualified";
+  }
+  if (!rows.length) throw new Error("Ainda não há jogadores classificados para simular.");
+  if (rows.length > needed) rows = rows.slice(0, needed);
+
+  const season = await getSeasonRanking(supabase, cup.community);
+  const real = rows.map((row) => ({
+    profileId: row.profileId,
+    isSetter: row.isSetter,
+    strength: season.get(row.profileId)?.averageIndex ?? 0,
+  }));
+  const average = real.reduce((sum, player) => sum + player.strength, 0) / real.length;
+  const openSpots = needed - real.length;
+  const placeholders = Array.from({ length: openSpots }, (_, index) => ({
+    profileId: `open-${index + 1}`,
+    isSetter: false,
+    strength: average,
+  }));
+  const picks = planDraw([...real, ...placeholders], cup.num_teams, cup.team_size);
+
+  const ids = real.map((player) => player.profileId);
+  const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id, full_name, avatar_url").in("id", ids);
+  if (profilesError) throw new Error(profilesError.message);
+  const profileById = new Map((profiles ?? []).map((row) => [row.id as string, row]));
+  const playerById = new Map([...real, ...placeholders].map((player) => [player.profileId, player]));
+
+  const identities = COPA_TEAMS.slice(0, cup.num_teams);
+  const teams: SimulatedDrawTeam[] = identities.map((identity) => ({ slug: identity.slug, name: identity.name, strength: 0, members: [] }));
+  for (const pick of picks) {
+    const player = playerById.get(pick.profileId)!;
+    const profile = profileById.get(pick.profileId);
+    const team = teams[pick.teamIndex];
+    team.strength += player.strength;
+    team.members.push({
+      profileId: pick.profileId,
+      name: profile ? String(profile.full_name) : "Vaga em aberto",
+      avatarUrl: profile ? ((profile.avatar_url as string | null) ?? null) : null,
+      isSetter: player.isSetter,
+      pot: pick.pot,
+      open: !profile,
+    });
+  }
+  return { teams, basis, players: real.length, openSpots };
+}
