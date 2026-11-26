@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireOrganizer } from "@/lib/auth";
 import { COPA_PATH, type Cup } from "@/lib/copaVpa";
-import { prepareCupDraw, revealNextPick, saveCupScore, saveManualDrawPlan, simulateCupDraw, type SimulatedDraw } from "@/lib/copaDay";
+import { loadSavedDrawPlan, prepareCupDraw, revealNextPick, saveCupScore, saveManualDrawPlan, simulateCupDraw, type SimulatedDraw } from "@/lib/copaDay";
 
 /**
  * Em produção o Next esconde o texto do erro lançado numa server action
@@ -70,6 +70,19 @@ export async function simulateDraw(formData: FormData): Promise<SimulateDrawResu
   } catch (error) {
     const message = error instanceof Error ? error.message : "Não foi possível simular o sorteio.";
     console.error("[copa-sorteio-simulacao]", message);
+    return { ok: false, error: message };
+  }
+}
+
+/** Abre os times já salvos (ainda escondidos) para os organizadores editarem. */
+export async function loadSavedPlan(formData: FormData): Promise<SimulateDrawResult> {
+  try {
+    await requireOrganizer();
+    const { supabase, cup } = await loadCup(cupIdOf(formData));
+    return { ok: true, draw: await loadSavedDrawPlan(supabase, cup) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Não foi possível abrir os times salvos.";
+    console.error("[copa-sorteio-editar]", message);
     return { ok: false, error: message };
   }
 }

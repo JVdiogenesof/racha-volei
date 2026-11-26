@@ -537,7 +537,7 @@ export function CopaSorteioAoVivo({
       <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-3 py-3">
         {isOrganizer && (
           <>
-            {!placed.length && <CopaSimularSorteioButton cupId={cupId} onSaved={() => { setPlan(true); router.refresh(); }} />}
+            {!placed.length && <CopaSimularSorteioButton cupId={cupId} hasPlan={plan} onSaved={() => { setPlan(true); router.refresh(); }} />}
             {!plan && !placed.length ? (
               <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <button

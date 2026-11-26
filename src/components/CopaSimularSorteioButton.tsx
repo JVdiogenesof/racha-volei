@@ -2,12 +2,12 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeftRight, FlaskConical, Loader2, Save, X } from "lucide-react";
+import { ArrowLeftRight, FlaskConical, Loader2, Pencil, Save, X } from "lucide-react";
 import { Avatar } from "./Avatar";
 import { CopaTeamLogo } from "./CopaTeamLogo";
 import { SetterBadge } from "./SetterBadge";
 import { useToast } from "./Toast";
-import { saveDrawPlan, simulateDraw } from "@/app/(app)/torneios-vpa/copa/sorteio/actions";
+import { loadSavedPlan, saveDrawPlan, simulateDraw } from "@/app/(app)/torneios-vpa/copa/sorteio/actions";
 import type { SimulatedDraw } from "@/lib/copaDay";
 import { teamIdentity } from "@/lib/copaDraw";
 
@@ -19,8 +19,10 @@ type Member = SimulatedDraw["teams"][number]["members"][number];
  * outro) e salva os times para a revelação ao vivo. Antes de salvar, nada é
  * gravado e ninguém mais vê.
  */
-export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; onSaved?: () => void }) {
+export function CopaSimularSorteioButton({ cupId, onSaved, hasPlan = false }: { cupId: string; onSaved?: () => void; hasPlan?: boolean }) {
   const [draw, setDraw] = useState<SimulatedDraw | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [loadingSaved, startLoadingSaved] = useTransition();
   const [selected, setSelected] = useState<{ team: number; profileId: string } | null>(null);
   const [pending, startTransition] = useTransition();
   const [saving, startSaving] = useTransition();
@@ -82,13 +84,37 @@ export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; on
       formData.set("cupId", cupId);
       const result = await simulateDraw(formData);
       setSelected(null);
+      setEditing(false);
       if (result.ok) setDraw(result.draw);
       else showToast(result.error);
     });
   }
 
+  function openSaved() {
+    startLoadingSaved(async () => {
+      const formData = new FormData();
+      formData.set("cupId", cupId);
+      const result = await loadSavedPlan(formData);
+      setSelected(null);
+      if (result.ok) {
+        setEditing(true);
+        setDraw(result.draw);
+      } else showToast(result.error);
+    });
+  }
+
   return (
     <>
+      {hasPlan && (
+        <button
+          type="button"
+          onClick={openSaved}
+          disabled={loadingSaved}
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-300/10 px-3 text-sm font-bold text-amber-100 hover:bg-amber-300/20 disabled:opacity-60"
+        >
+          {loadingSaved ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pencil className="h-4 w-4" />} Editar times salvos
+        </button>
+      )}
       <button
         type="button"
         onClick={run}
@@ -116,12 +142,12 @@ export function CopaSimularSorteioButton({ cupId, onSaved }: { cupId: string; on
               <div className="sticky top-0 z-10 flex items-start justify-between gap-3 bg-[#171122]/95 pb-3 backdrop-blur-xl">
                 <div className="min-w-0">
                   <h2 id="copa-sim-title" className="flex items-center gap-2 font-semibold text-white">
-                    <FlaskConical className="h-4 w-4 text-cyan-300" /> Montar times
+                    {editing ? <Pencil className="h-4 w-4 text-amber-300" /> : <FlaskConical className="h-4 w-4 text-cyan-300" />} {editing ? "Editar times salvos" : "Montar times"}
                   </h2>
                   <p className="mt-0.5 text-xs leading-relaxed text-white/50">
-                    Prévia só sua: não grava nada e não aparece para ninguém. Baseada em{" "}
+                    {editing ? "Estes são os times salvos (ainda escondidos). Nada muda até você salvar de novo." : (<>Prévia só sua: não grava nada e não aparece para ninguém. Baseada em{" "}
                     {draw.basis === "confirmed" ? "quem já confirmou" : `todos os ${draw.players} classificados (a confirmação ainda não fechou)`}
-                    {draw.openSpots > 0 ? `; ${draw.openSpots} vaga${draw.openSpots === 1 ? "" : "s"} em aberto entra${draw.openSpots === 1 ? "" : "m"} com força média` : ""}.
+                    {draw.openSpots > 0 ? `; ${draw.openSpots} vaga${draw.openSpots === 1 ? "" : "s"} em aberto entra${draw.openSpots === 1 ? "" : "m"} com força média` : ""}.</>)}
                     {" "}Toque num jogador e depois em outro de outro time para trocar os dois. Quando gostar, salve: na live, o botão Iniciar revela estes times.
                   </p>
                 </div>

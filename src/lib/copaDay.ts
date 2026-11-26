@@ -316,6 +316,44 @@ export type SimulatedDraw = {
 };
 
 /**
+ * Times já salvos (ainda escondidos), no mesmo formato da simulação, para os
+ * organizadores editarem. Depois que a revelação começa, não dá mais.
+ */
+export async function loadSavedDrawPlan(supabase: SupabaseClient, cup: Cup): Promise<SimulatedDraw> {
+  const [{ data: teams, error: teamsError }, { data: members, error: membersError }] = await Promise.all([
+    supabase.from("cup_teams").select("id, slug, name, position").eq("cup_id", cup.id).order("position"),
+    supabase
+      .from("cup_team_members")
+      .select("profile_id, team_id, pot, revealed_at, player:profiles!cup_team_members_profile_id_fkey(full_name, avatar_url)")
+      .eq("cup_id", cup.id)
+      .order("pot"),
+  ]);
+  if (teamsError) throw new Error(teamsError.message);
+  if (membersError) throw new Error(membersError.message);
+  const rows = (members ?? []) as unknown as { profile_id: string; team_id: string; pot: number; revealed_at: string | null; player: { full_name: string; avatar_url: string | null } | null }[];
+  if (!(teams ?? []).length || !rows.length) throw new Error("Ainda não há times salvos.");
+  if (rows.some((row) => row.revealed_at)) throw new Error("A revelação já começou. Use Refazer antes de editar os times.");
+
+  const { data: qualified } = await supabase.from("cup_qualified_players").select("profile_id, plays_as_setter").eq("cup_id", cup.id);
+  const setter = new Map((qualified ?? []).map((row) => [row.profile_id as string, Boolean(row.plays_as_setter)]));
+  const notes = await playerNotes(supabase, rows.map((row) => row.profile_id));
+  const result: SimulatedDrawTeam[] = ((teams ?? []) as CupTeam[]).map((team) => {
+    const list = rows.filter((row) => row.team_id === team.id);
+    const memberList = list.map((row) => ({
+      profileId: row.profile_id,
+      name: row.player?.full_name ?? "Jogador",
+      avatarUrl: row.player?.avatar_url ?? null,
+      isSetter: setter.get(row.profile_id) ?? false,
+      pot: row.pot,
+      open: false,
+      strength: notes.get(row.profile_id) ?? 0,
+    }));
+    return { slug: team.slug, name: team.name, strength: memberList.reduce((sum, m) => sum + m.strength, 0), members: memberList };
+  });
+  return { teams: result, basis: "confirmed", players: rows.length, openSpots: 0 };
+}
+
+/**
  * Simula o sorteio com o mesmo algoritmo do oficial, sem gravar nada.
  * Se ainda faltam jogadores, as vagas em aberto entram com a força média do grupo,
  * para dar para ver como os times ficariam.
