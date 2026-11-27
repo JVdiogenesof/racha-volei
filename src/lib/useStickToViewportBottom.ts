@@ -5,6 +5,25 @@ import { useEffect, type RefObject } from "react";
 const TYPING = "input, textarea, select, [contenteditable='true']";
 
 /**
+ * No app instalado do iPhone (tela cheia, barra de status translúcida) o fundo
+ * da tela é sempre a altura do aparelho. Depois que o teclado fecha, o iOS às
+ * vezes continua informando a altura "com teclado" em innerHeight e no
+ * visualViewport (a barra para ~1/3 acima do fundo), então não dá para confiar
+ * nesses valores; a altura da tela não muda. Devolve null fora desse caso
+ * (Safari com barras, Android, iPad em janela), onde vale o visualViewport.
+ */
+function installedIOSScreenBottom() {
+  const nav = navigator as Navigator & { standalone?: boolean };
+  if (nav.standalone !== true) return null;
+  const short = Math.min(screen.width, screen.height);
+  const long = Math.max(screen.width, screen.height);
+  const width = window.innerWidth;
+  if (Math.abs(width - short) <= 1) return long; // retrato
+  if (Math.abs(width - long) <= 1) return short; // paisagem
+  return null;
+}
+
+/**
  * Mantém um elemento `position: fixed` colado no fundo da área visível.
  *
  * No iPhone (Safari e app instalado), depois do teclado, da rolagem com a barra
@@ -33,7 +52,8 @@ export function useStickToViewportBottom(ref: RefObject<HTMLElement | null>) {
       const zoomed = viewport ? viewport.scale > 1.01 : false;
       const active = document.activeElement as HTMLElement | null;
       const typing = Boolean(active?.matches?.(TYPING));
-      const viewBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+      const screenBottom = typing ? null : installedIOSScreenBottom();
+      const viewBottom = screenBottom ?? (viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
       // Onde ficaria sem a correção atual.
       const naturalBottom = el.getBoundingClientRect().bottom - shift;
       let next = zoomed || typing ? 0 : Math.round(viewBottom - base - naturalBottom);
