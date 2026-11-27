@@ -255,6 +255,14 @@ export default async function ConfirmarPresencaPage({
   // Ainda há vaga, mas só de levantador (ou de novato): explica por que a pessoa não entra.
   const secondBatchOpensLabel = batchFull && event.second_batch_opens_at ? formatBatchOpening(event.second_batch_opens_at) : null;
   const onlyProtectedSpotsLeft = isFull && !batchFull && confirmados.length < eventCapacity;
+  const setterSpotsLeft = Math.max(0, setterCapacity - setterConfirmedCount);
+  const newcomerSpotsLeft = Math.max(0, event.newcomer_reserved_spots - newcomerConfirmedCount);
+  const protectedSpotsMessage =
+    setterSpotsLeft > 0 && newcomerSpotsLeft > 0
+      ? "As vagas que restam são reservadas para levantadores e para novatos."
+      : newcomerSpotsLeft > 0
+        ? `${newcomerSpotsLeft === 1 ? "A vaga que resta é reservada" : "As vagas que restam são reservadas"} para novatos.`
+        : `${setterSpotsLeft === 1 ? "A vaga que resta é reservada" : "As vagas que restam são reservadas"} para levantadores.`;
   const setterSlotsFull = amSetter && !batchActive && setterConfirmedCount >= setterCapacity;
   // A fila só vale com a lista cheia: a oferta segura a única vaga que abriu até
   // o prazo vencer ou a pessoa recusar. Com 2 ou mais vagas livres, qualquer um entra.
@@ -556,7 +564,7 @@ export default async function ConfirmarPresencaPage({
           {onlyProtectedSpotsLeft && (
             <p className="flex items-start gap-2 rounded-xl border border-cyan-300/25 bg-cyan-400/10 px-3.5 py-3 text-sm leading-relaxed text-cyan-100">
               <Volleyball className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" strokeWidth={2.25} />
-              As vagas que restam são reservadas para levantadores. Você pode entrar na fila de espera.
+              {protectedSpotsMessage} Você pode entrar na fila de espera.
             </p>
           )}
           {queueLockedForMe && !setterSlotsFull && (
