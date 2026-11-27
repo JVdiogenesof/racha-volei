@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Gauge } from "lucide-react";
+import { CalendarDays, Megaphone, ArrowRight, Sparkles, ChevronRight, Gauge, HandHeart } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { organizerCan, requireProfile } from "@/lib/auth";
 import { HomeRachaCard } from "@/components/HomeRachaCard";
@@ -90,7 +90,7 @@ export default async function HomePage() {
       profile.status === "approved" ? getAbsenceStreaks(supabase, community) : Promise.resolve(null),
     ]);
   const myAbsenceStreak = absenceStreaks?.get(profile.id) ?? 0;
-  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary] = await Promise.all([
+  const [{ data: myPendingOffer }, { data: myExemption }, copaSummary, { data: donationCampaign }, { data: donationTotals }] = await Promise.all([
     supabase
       .from("spot_offers")
       .select("event_id, expires_at, events(pix_payment_enabled, price_per_player)")
@@ -100,7 +100,20 @@ export default async function HomePage() {
       .maybeSingle(),
     supabase.from("payment_exempt_profiles").select("profile_id").eq("profile_id", profile.id).maybeSingle(),
     getCopaHomeSummary(supabase, community, profile.id).catch(() => null),
+    // Campanha de doação aberta (aba Apoiar): aparece num card discreto na Início.
+    supabase
+      .from("donation_campaigns")
+      .select("id, title, goal_amount")
+      .eq("active", true)
+      .eq("is_general", false)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.rpc("donation_campaign_totals"),
   ]);
+  const donationRaised = donationCampaign
+    ? Number(((donationTotals ?? []) as { campaign_id: string; total: number }[]).find((row) => row.campaign_id === donationCampaign.id)?.total ?? 0)
+    : 0;
   const isPaymentExempt = Boolean(myExemption);
   const myPendingOfferEvent = myPendingOffer?.events as unknown as
     | { pix_payment_enabled: boolean; price_per_player: string | null }
@@ -357,6 +370,22 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+      )}
+
+      {donationCampaign && (
+        <Link href="/apoiar" className="flex items-center gap-3 rounded-2xl border border-pink-300/30 bg-gradient-to-r from-pink-500/15 to-purple-500/10 px-3.5 py-3 transition hover:border-pink-300/50">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-pink-400/20 text-pink-200">
+            <HandHeart className="h-[18px] w-[18px]" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold text-white">{donationCampaign.title}</span>
+            <span className="block text-xs text-white/60">
+              {donationRaised.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} arrecadados
+              {donationCampaign.goal_amount ? ` de ${Number(donationCampaign.goal_amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` : ""} · Apoiar
+            </span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-white/50" aria-hidden />
+        </Link>
       )}
 
       {secondaryRacha && secondaryState && (

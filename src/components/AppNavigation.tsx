@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { useStickToViewportBottom } from "@/lib/useStickToViewportBottom";
-import { Award, CalendarDays, ChevronDown, Clapperboard, History, Home, LayoutGrid, Megaphone, ShieldCheck, Shirt, TrendingUp, Trophy, UserRound, Users } from "lucide-react";
+import { Award, CalendarDays, ChevronDown, Clapperboard, HandHeart, History, Home, LayoutGrid, Megaphone, ShieldCheck, Shirt, TrendingUp, Trophy, UserRound, Users } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: ComponentType<{ className?: string; strokeWidth?: number }> };
 
@@ -29,6 +29,7 @@ const JOGADORES: NavItem = { href: "/jogadores", label: "Jogadores", icon: Users
 const MORE: NavItem[] = [
   { href: "/selecao-do-mes", label: "Seleção do mês", icon: VolleyballCourtIcon },
   { href: "/momentos", label: "Momentos", icon: Clapperboard },
+  { href: "/apoiar", label: "Apoiar o VPA", icon: HandHeart },
   { href: "/camisas", label: "Camisas VPA", icon: Shirt },
   { href: "/avisos", label: "Avisos", icon: Megaphone },
   { href: "/historico", label: "Histórico", icon: History },

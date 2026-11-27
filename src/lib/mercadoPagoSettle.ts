@@ -4,6 +4,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getMercadoPagoOrder, isApprovedMercadoPagoOrder } from "@/lib/mercadoPago";
 import { notifyPixSettled } from "@/lib/listNotifications";
 import { settleApprovedCupOrder } from "@/lib/copaConfirm";
+import { settleApprovedDonationOrder } from "@/lib/donations";
 
 /**
  * Confere o pedido no Mercado Pago e, se já foi pago, conclui a reserva
@@ -27,7 +28,11 @@ export async function settleMercadoPagoOrder(orderId: string): Promise<"paid" | 
     .maybeSingle();
   if (intentError) return "unknown";
   // Não é cobrança de racha: pode ser a confirmação de presença da Copa VPA.
-  if (!intent) return (await settleApprovedCupOrder(orderId)) === "unknown" ? "unknown" : "paid";
+  if (!intent) {
+    if ((await settleApprovedCupOrder(orderId)) !== "unknown") return "paid";
+    // Nem racha nem Copa: pode ser uma doação da aba Apoiar.
+    return (await settleApprovedDonationOrder(orderId)) === "unknown" ? "unknown" : "paid";
+  }
   if (intent.status === "paid") return "paid";
 
   const { error } = await supabase.rpc("complete_event_pix_payment", {
